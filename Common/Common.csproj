@@ -7,4 +7,8 @@
         <RootNamespace>Tyr.Common</RootNamespace>
     </PropertyGroup>
 
+    <ItemGroup>
+      <PackageReference Include="Tomlyn" Version="0.19.0" />
+    </ItemGroup>
+
 </Project>
