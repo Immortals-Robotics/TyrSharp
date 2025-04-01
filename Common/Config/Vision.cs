@@ -1,4 +1,6 @@
-﻿namespace Tyr.Common.Config;
+﻿using System.Runtime.Serialization;
+
+namespace Tyr.Common.Config;
 
 public class Vision
 {
@@ -14,7 +16,11 @@ public class Vision
 
     public float MergeDistance { get; set; } = 70.0f;
     public float BallMergeDistance { get; set; } = 70.0f;
+
+    [DataMember(Name = "max_ball_2_frame_dist")]
     public float MaxBall2FrameDist { get; set; } = 1000.0f;
+
+    [DataMember(Name = "max_robot_2_frame_dist")]
     public float MaxRobot2FrameDist { get; set; } = 1000.0f;
 
     public int MaxRobotFrameNotSeen { get; set; } = 200;
@@ -27,7 +33,7 @@ public class Vision
     public int ChipMaxRecords { get; set; } = 200;
     public float ChipMaxVelZ { get; set; } = 7000.0f;
     public float KickerDepth { get; set; } = 150.0f;
-    public bool UseBall3D { get; set; } = true;
+    [DataMember(Name = "use_ball_3d")] public bool UseBall3D { get; set; } = true;
 
     public float BallRollingFriction { get; set; } = 700.0f;
 }

@@ -9,19 +9,23 @@ public class Network
     public bool UseSimulatedVision { get; set; } = false;
     public bool UseInternalReferee { get; set; } = false;
 
-    public Address VisionAddress { get; set; } = new() { Ip = "224.5.23.2", Port = 10006 };
-    public Address TrackerAddress { get; set; } = new() { Ip = "224.5.23.2", Port = 10010 };
+    public Address Vision { get; set; } = new() { Ip = "224.5.23.2", Port = 10006 };
+    public Address VisionSim { get; set; } = new() { Ip = "224.5.23.2", Port = 10025 };
+    
+    
+    public Address Tracker { get; set; } = new() { Ip = "224.5.23.2", Port = 10010 };
 
-    public Address RefereeAddress { get; set; } = new() { Ip = "224.5.23.1", Port = 10003 };
+    public Address Referee { get; set; } = new() { Ip = "224.5.23.1", Port = 10003 };
+    public Address InternalReferee { get; set; } = new() { Ip = "224.5.23.69", Port = 10069 };
 
-    public Address StrategyAddress { get; set; } = new() { Ip = "224.5.23.3", Port = 60006 };
+    public Address Strategy { get; set; } = new() { Ip = "224.5.23.3", Port = 60006 };
 
-    public Address SenderAddress { get; set; } = new() { Ip = "224.5.92.5", Port = 60005 };
-    public Address GrSimAddress  { get; set; } = new() { Ip = "127.0.0.1", Port = 20011 };
+    public Address Sender { get; set; } = new() { Ip = "224.5.92.5", Port = 60005 };
+    public Address Grsim { get; set; } = new() { Ip = "127.0.0.1", Port = 20011 };
 
-    public Address ControlSimulationAddress      { get; set; } = new() { Ip = "127.0.0.1", Port = 10300 };
-    public Address BlueRobotSimulationAddress   { get; set; } = new() { Ip = "127.0.0.1", Port = 10301 };
-    public Address YellowRobotSimulationAddress { get; set; } = new() { Ip = "127.0.0.1", Port = 10302 };
+    public Address ControlSimulation { get; set; } = new() { Ip = "127.0.0.1", Port = 10300 };
+    public Address BlueRobotSimulation { get; set; } = new() { Ip = "127.0.0.1", Port = 10301 };
+    public Address YellowRobotSimulation { get; set; } = new() { Ip = "127.0.0.1", Port = 10302 };
 
 
     // NNG URLs

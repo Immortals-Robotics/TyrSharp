@@ -1,4 +1,6 @@
-﻿namespace Tyr.Common.Config;
+﻿using System.Runtime.Serialization;
+
+namespace Tyr.Common.Config;
 
 public class RobotPhysicalStatus
 {
@@ -6,5 +8,5 @@ public class RobotPhysicalStatus
     public bool HasDribbler { get; set; } = false;
     public bool HasDirectKick { get; set; } = false;
     public bool HasChipKick { get; set; } = false;
-    public bool Is3DPrinted { get; set; } = false;
+    [DataMember(Name = "is_3d_printed")] public bool Is3dPrinted { get; set; } = false;
 }
