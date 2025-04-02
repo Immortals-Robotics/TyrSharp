@@ -10,7 +10,7 @@ public class UdpClient
     private IPEndPoint _listenEndpoint;
     private IPEndPoint? _lastReceiveEndpoint;
     private IPAddress _multicastAddress;
-    
+
     public UdpClient(Address address)
     {
         _listenEndpoint = new IPEndPoint(IPAddress.Any, address.Port);
@@ -26,44 +26,39 @@ public class UdpClient
         _socket.Client.Blocking = false;
     }
 
-    public bool ReceiveRaw(out ReadOnlySpan<byte> data)
+    public ReadOnlySpan<byte> ReceiveRaw()
     {
-        data = default;
-
         try
         {
             _lastReceiveEndpoint = new IPEndPoint(IPAddress.Any, 0);
-            data = _socket.Receive(ref _lastReceiveEndpoint);
-            return true;
+            return _socket.Receive(ref _lastReceiveEndpoint);
         }
         catch (SocketException ex) when (ex.SocketErrorCode == SocketError.WouldBlock)
         {
-            return false;
+            return default;
         }
         catch (Exception ex)
         {
             Console.Error.WriteLine($"UDP receive error: {ex.Message}");
-            return false;
+            return default;
         }
     }
 
-    public bool Receive<T>(out T? message) where T : class
+    public T? Receive<T>() where T : class
     {
-        message = null;
-
-        if (!ReceiveRaw(out var data))
-            return false;
+        var data = ReceiveRaw();
+        if (data.IsEmpty)
+            return null;
 
         try
         {
             using var ms = new MemoryStream(data.ToArray());
-            message = Serializer.Deserialize<T>(ms);
-            return true;
+            return Serializer.Deserialize<T>(ms);
         }
         catch (Exception ex)
         {
             Console.Error.WriteLine($"Failed to deserialize Protobuf-net message: {ex.Message}");
-            return false;
+            return null;
         }
     }
 

@@ -3,7 +3,7 @@
 namespace Tyr.Common.Ssl.Vision.Geometry;
 
 [ProtoContract]
-public class CameraCalibration
+public struct CameraCalibration
 {
     [ProtoMember(1, IsRequired = true)] public uint CameraId { get; set; }
     [ProtoMember(2, IsRequired = true)] public float FocalLength { get; set; }

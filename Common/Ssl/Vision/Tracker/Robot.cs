@@ -3,11 +3,11 @@
 namespace Tyr.Common.Ssl.Vision.Tracker;
 
 [ProtoContract]
-public class Robot
+public struct Robot
 {
-    [ProtoMember(1, IsRequired = true)] public RobotId RobotId { get; set; } = new();
+    [ProtoMember(1, IsRequired = true)] public RobotId RobotId { get; set; }
 
-    [ProtoMember(2, IsRequired = true)] public Vector2 Pos { get; set; } = new();
+    [ProtoMember(2, IsRequired = true)] public Vector2 Pos { get; set; }
 
     [ProtoMember(3, IsRequired = true)] public float Orientation { get; set; }
 

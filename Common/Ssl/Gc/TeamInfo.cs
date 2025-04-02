@@ -4,13 +4,13 @@ namespace Tyr.Common.Ssl.Gc;
 
 public class TeamInfo
 {
-    [ProtoMember(1)] public string Name { get; set; }
+    [ProtoMember(1)] public required string Name { get; set; }
 
     [ProtoMember(2)] public uint Score { get; set; }
 
     [ProtoMember(3)] public uint RedCards { get; set; }
 
-    [ProtoMember(4)] public List<uint> YellowCardTimes { get; set; } = new List<uint>();
+    [ProtoMember(4)] public List<uint> YellowCardTimes { get; set; } = [];
 
     [ProtoMember(5)] public uint YellowCards { get; set; }
 

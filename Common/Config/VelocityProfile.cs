@@ -1,7 +1,7 @@
 ﻿namespace Tyr.Common.Config;
 
-public class VelocityProfile
+public struct VelocityProfile
 {
-    public float Speed { get; set; } = 0.0f;
-    public float Acceleration { get; set; } = 0.0f;
+    public float Speed { get; set; }
+    public float Acceleration { get; set; }
 }

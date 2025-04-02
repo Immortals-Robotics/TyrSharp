@@ -3,7 +3,7 @@
 namespace Tyr.Common.Ssl.Vision.Detection;
 
 [ProtoContract]
-public class Ball
+public struct Ball
 {
     [ProtoMember(1, IsRequired = true)] public float Confidence { get; set; }
 

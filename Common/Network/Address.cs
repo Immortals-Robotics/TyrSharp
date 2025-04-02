@@ -2,6 +2,6 @@
 
 public record Address
 {
-    public string Ip { get; set; } = "127.0.0.1";
-    public int Port { get; set; } = 0;
+    public required string Ip { get; init; }
+    public int Port { get; init; }
 }

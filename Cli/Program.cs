@@ -1,4 +1,6 @@
-﻿namespace Tyr.Cli;
+﻿using Tyr.Common.Ssl.Vision;
+
+namespace Tyr.Cli;
 
 internal static class Program
 {
@@ -10,14 +12,13 @@ internal static class Program
         var client = new Common.Network.UdpClient(config.Network.VisionSim);
         while (true)
         {
-            var packet = new Common.Ssl.Vision.WrapperPacket();
-            var result = client.Receive(out packet);
-            if (!result)
+            var packet = client.Receive<WrapperPacket>();
+            if (packet == null)
             {
                 Thread.Sleep(1);
                 continue;
             }
-            
+
             Console.WriteLine($"received detection: {packet.Detection != null}, geometry: {packet.Geometry != null}");
         }
     }

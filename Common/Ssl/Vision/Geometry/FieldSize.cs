@@ -11,8 +11,8 @@ public class FieldSize
     [ProtoMember(4, IsRequired = true)] public int GoalDepth { get; set; }
     [ProtoMember(5, IsRequired = true)] public int BoundaryWidth { get; set; }
 
-    [ProtoMember(6)] public List<FieldLineSegment> FieldLines { get; set; } = new();
-    [ProtoMember(7)] public List<FieldCircularArc> FieldArcs { get; set; } = new();
+    [ProtoMember(6)] public List<FieldLineSegment> FieldLines { get; set; } = [];
+    [ProtoMember(7)] public List<FieldCircularArc> FieldArcs { get; set; } = [];
 
     [ProtoMember(8)] public int? PenaltyAreaDepth { get; set; }
     [ProtoMember(9)] public int? PenaltyAreaWidth { get; set; }

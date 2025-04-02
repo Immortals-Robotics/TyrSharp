@@ -4,10 +4,10 @@ public class Soccer
 {
     public List<RobotPhysicalStatus> RobotPhysicalStatus { get; set; } = new(Common.MaxRobots);
 
-    public VelocityProfile VelocityProfileSooski { get; set; } = new();
-    public VelocityProfile VelocityProfileAroom { get; set; } = new();
-    public VelocityProfile VelocityProfileMamooli { get; set; } = new();
-    public VelocityProfile VelocityProfileKharaki { get; set; } = new();
+    public VelocityProfile VelocityProfileSooski { get; set; }
+    public VelocityProfile VelocityProfileAroom { get; set; }
+    public VelocityProfile VelocityProfileMamooli { get; set; }
+    public VelocityProfile VelocityProfileKharaki { get; set; }
 
     public float OneTouchBeta { get; set; } = 0.4f;
     public float OneTouchGamma { get; set; } = 0.14f;

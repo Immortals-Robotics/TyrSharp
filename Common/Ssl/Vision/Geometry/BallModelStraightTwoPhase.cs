@@ -3,7 +3,7 @@
 namespace Tyr.Common.Ssl.Vision.Geometry;
 
 [ProtoContract]
-public class BallModelStraightTwoPhase
+public struct BallModelStraightTwoPhase
 {
     [ProtoMember(1, IsRequired = true)] public double AccSlide { get; set; }
     [ProtoMember(2, IsRequired = true)] public double AccRoll { get; set; }

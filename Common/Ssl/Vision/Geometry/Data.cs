@@ -6,6 +6,6 @@ namespace Tyr.Common.Ssl.Vision.Geometry;
 public class Data
 {
     [ProtoMember(1, IsRequired = true)] public FieldSize Field { get; set; } = new();
-    [ProtoMember(2)] public List<CameraCalibration> Calibrations { get; set; } = new();
+    [ProtoMember(2)] public List<CameraCalibration> Calibrations { get; set; } = [];
     [ProtoMember(3)] public BallModels? BallModels { get; set; }
 }

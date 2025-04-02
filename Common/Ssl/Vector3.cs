@@ -3,7 +3,7 @@
 namespace Tyr.Common.Ssl;
 
 [ProtoContract]
-public class Vector3
+public struct Vector3
 {
     [ProtoMember(1, IsRequired = true)] public float X { get; set; }
     [ProtoMember(2, IsRequired = true)] public float Y { get; set; }

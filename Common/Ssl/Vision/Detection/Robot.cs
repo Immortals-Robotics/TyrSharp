@@ -3,7 +3,7 @@
 namespace Tyr.Common.Ssl.Vision.Detection;
 
 [ProtoContract]
-public class Robot
+public struct Robot
 {
     [ProtoMember(1, IsRequired = true)] public float Confidence { get; set; }
 

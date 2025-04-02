@@ -3,9 +3,9 @@
 namespace Tyr.Common.Ssl.Vision.Geometry;
 
 [ProtoContract]
-public class BallModelChipFixedLoss
+public struct BallModelChipFixedLoss
 {
-    [ProtoMember(1, IsRequired = true)] public double DampingXYFirstHop { get; set; }
-    [ProtoMember(2, IsRequired = true)] public double DampingXYOtherHops { get; set; }
+    [ProtoMember(1, IsRequired = true)] public double DampingXyFirstHop { get; set; }
+    [ProtoMember(2, IsRequired = true)] public double DampingXyOtherHops { get; set; }
     [ProtoMember(3, IsRequired = true)] public double DampingZ { get; set; }
 }
