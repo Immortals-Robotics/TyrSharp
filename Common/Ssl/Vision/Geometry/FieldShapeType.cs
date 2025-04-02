@@ -1,8 +1,5 @@
-﻿using ProtoBuf;
+﻿namespace Tyr.Common.Ssl.Vision.Geometry;
 
-namespace Tyr.Common.Ssl.Vision.Geometry;
-
-[ProtoContract]
 public enum FieldShapeType
 {
     Undefined = 0,

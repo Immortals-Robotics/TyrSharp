@@ -1,8 +1,5 @@
-﻿using ProtoBuf;
+﻿namespace Tyr.Common.Ssl;
 
-namespace Tyr.Common.Ssl;
-
-[ProtoContract]
 public enum Division
 {
     Unknown = 0,

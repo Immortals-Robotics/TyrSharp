@@ -1,8 +1,5 @@
-﻿using ProtoBuf;
+﻿namespace Tyr.Common.Ssl.Vision.Tracker;
 
-namespace Tyr.Common.Ssl.Vision.Tracker;
-
-[ProtoContract]
 public enum Capability
 {
     Unknown = 0,
