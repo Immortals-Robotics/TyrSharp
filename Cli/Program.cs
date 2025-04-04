@@ -1,4 +1,7 @@
 ﻿using Tyr.Common.Ssl.Vision;
+using ZLogger;
+using Microsoft.Extensions.Logging;
+using Tyr.Common.Debug;
 
 namespace Tyr.Cli;
 
@@ -6,6 +9,8 @@ internal static class Program
 {
     private static void Main(string[] args)
     {
+        Debug.InitLogging(LogLevel.Debug);
+
         var configPath = args[0];
         var config = Common.Config.Config.Load(configPath);
 
@@ -19,7 +24,8 @@ internal static class Program
                 continue;
             }
 
-            Console.WriteLine($"received detection: {packet.Detection != null}, geometry: {packet.Geometry != null}");
+            Debug.Logger.ZLogDebug(
+                $"received detection: {packet.Detection != null}, geometry: {packet.Geometry != null}");
         }
     }
 }
