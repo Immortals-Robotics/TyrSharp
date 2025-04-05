@@ -18,7 +18,7 @@ public static partial class Debug
                 options.CaptureThreadInfo = true;
                 options.UsePlainTextFormatter(formatter =>
                 {
-                    formatter.SetPrefixFormatter($"{0:timeonly} | {1} | {2} @ {3}:{4} | ",
+                    formatter.SetPrefixFormatter($"[{0:timeonly} | {1} | {2} @ {3}:{4}] ",
                         (in MessageTemplate template, in LogInfo info) =>
                         {
                             template.Format(
