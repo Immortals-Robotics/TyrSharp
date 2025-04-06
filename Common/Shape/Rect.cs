@@ -1,10 +1,10 @@
 ﻿using ProtoBuf;
 using Tyr.Common.Math;
 
-namespace Tyr.Common.Geom;
+namespace Tyr.Common.Shape;
 
 [ProtoContract]
-public struct Rect(Vector2 p1, Vector2 p2)
+public struct Rect(Vector2 p1, Vector2 p2) : IShape
 {
     [ProtoMember(1)]
     public Vector2 Min { get; set; } = new(
@@ -23,6 +23,28 @@ public struct Rect(Vector2 p1, Vector2 p2)
     }
 
     public readonly bool Inside(Vector2 point, float margin = 0f) => Distance(point) <= margin;
+
+    public Vector2 NearestOutside(Vector2 point, float margin = 0)
+    {
+        float dxMin = MathF.Abs(point.X - Min.X);
+        float dxMax = MathF.Abs(point.X - Max.X);
+        float dyMin = MathF.Abs(point.Y - Min.Y);
+        float dyMax = MathF.Abs(point.Y - Max.Y);
+
+        float minDist = new[] { dxMin, dxMax, dyMin, dyMax }.Min();
+
+        if (minDist == dxMin)
+            return new Vector2(Min.X - margin, point.Y);
+        if (minDist == dxMax)
+            return new Vector2(Max.X + margin, point.Y);
+        if (minDist == dyMin)
+            return new Vector2(point.X, Min.Y - margin);
+
+        return new Vector2(point.X, Max.Y + margin);
+    }
+
+    public float Circumference => (Width + Height) * 2f;
+    public float Area => Width * Height;
 
     public readonly float Distance(Vector2 point)
     {
@@ -55,35 +77,14 @@ public struct Rect(Vector2 p1, Vector2 p2)
         }
     }
 
-    public readonly Vector2 NearestOutside(Vector2 point)
-    {
-        const float extension = 5.0f;
-
-        float dxMin = MathF.Abs(point.X - Min.X);
-        float dxMax = MathF.Abs(point.X - Max.X);
-        float dyMin = MathF.Abs(point.Y - Min.Y);
-        float dyMax = MathF.Abs(point.Y - Max.Y);
-
-        float minDist = new[] { dxMin, dxMax, dyMin, dyMax }.Min();
-
-        if (minDist == dxMin)
-            return new Vector2(Min.X - extension, point.Y);
-        if (minDist == dxMax)
-            return new Vector2(Max.X + extension, point.Y);
-        if (minDist == dyMin)
-            return new Vector2(point.X, Min.Y - extension);
-
-        return new Vector2(point.X, Max.Y + extension);
-    }
-
     public readonly bool IsCircleCross(Vector2 point)
     {
         return Min.X <= point.X && Max.X >= point.X &&
                Min.Y <= point.Y && Max.Y >= point.Y;
     }
 
-    public readonly Vector2 Size() => Max - Min;
-    public readonly float Width() => Max.X - Min.X;
-    public readonly float Height() => Max.Y - Min.Y;
-    public readonly Vector2 Center() => (Min + Max) / 2f;
+    public readonly Vector2 Size => Max - Min;
+    public readonly float Width => Max.X - Min.X;
+    public readonly float Height => Max.Y - Min.Y;
+    public readonly Vector2 Center => (Min + Max) / 2f;
 }

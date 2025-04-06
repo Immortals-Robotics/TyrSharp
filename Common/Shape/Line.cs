@@ -1,10 +1,10 @@
 ﻿using ProtoBuf;
 using Tyr.Common.Math;
 
-namespace Tyr.Common.Geom;
+namespace Tyr.Common.Shape;
 
 [ProtoContract]
-public struct Line(float a, float b, float c)
+public struct Line(float a, float b, float c) : IShape
 {
     // ay + bx + c = 0
     [ProtoMember(1)] public float A { get; init; } = a;
@@ -172,9 +172,22 @@ public struct Line(float a, float b, float c)
         return TangentLine(point).Intersect(this).Value;
     }
 
-    public readonly float DistanceTo(Vector2 point)
+    public float Circumference => float.PositiveInfinity;
+    public float Area => 0f;
+
+    public float Distance(Vector2 point)
     {
         var closest = ClosestPoint(point);
         return point.DistanceTo(closest);
+    }
+
+    public bool Inside(Vector2 point, float margin = 0)
+    {
+        return false;
+    }
+
+    public Vector2 NearestOutside(Vector2 point, float margin = 0)
+    {
+        return point;
     }
 }

@@ -1,10 +1,10 @@
 ﻿using ProtoBuf;
 using Tyr.Common.Math;
 
-namespace Tyr.Common.Geom;
+namespace Tyr.Common.Shape;
 
 [ProtoContract]
-public struct Circle(Vector2 center, float radius)
+public struct Circle(Vector2 center, float radius) : IShape
 {
     [ProtoMember(1)] public Vector2 Center { get; set; } = center;
     [ProtoMember(2)] public float Radius { get; set; } = radius;

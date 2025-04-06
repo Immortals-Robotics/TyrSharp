@@ -1,10 +1,10 @@
 ﻿using ProtoBuf;
 using Tyr.Common.Math;
 
-namespace Tyr.Common.Geom;
+namespace Tyr.Common.Shape;
 
 [ProtoContract]
-public struct Robot(Vector2 center, float radius, Angle angle)
+public struct Robot(Vector2 center, float radius, Angle angle) : IShape
 {
     [ProtoMember(1)] public Vector2 Center { get; } = center;
     [ProtoMember(2)] public float Radius { get; } = radius;
@@ -14,17 +14,6 @@ public struct Robot(Vector2 center, float radius, Angle angle)
     private const float KickerDepth = 150f;
 
     public readonly float FrontDistance() => Radius * HalfArcAngle.Cos();
-
-    public readonly bool Inside(Vector2 point)
-    {
-        var rel = point - Center;
-        var dis = rel.Length();
-
-        var start = Angle - HalfArcAngle;
-        var end = Angle + HalfArcAngle;
-
-        return dis < FrontDistance() || (dis <= Radius && rel.ToAngle().IsBetween(start, end));
-    }
 
     public readonly bool CanKick(Vector2 point, float kickerDepth = KickerDepth)
     {
@@ -42,10 +31,10 @@ public struct Robot(Vector2 center, float radius, Angle angle)
         Vector2 v3 = point - p3;
         Vector2 v4 = point - p4;
 
-        float cross1 = Cross(p2 - p1, v1);
-        float cross2 = Cross(p3 - p2, v2);
-        float cross3 = Cross(p4 - p3, v3);
-        float cross4 = Cross(p1 - p4, v4);
+        float cross1 = (p2 - p1).Cross(v1);
+        float cross2 = (p3 - p2).Cross(v2);
+        float cross3 = (p4 - p3).Cross(v3);
+        float cross4 = (p1 - p4).Cross(v4);
 
         int s1 = Utils.SignInt(cross1);
         int s2 = Utils.SignInt(cross2);
@@ -75,5 +64,27 @@ public struct Robot(Vector2 center, float radius, Angle angle)
         return new LineSegment(p1, p2);
     }
 
-    private static float Cross(Vector2 a, Vector2 b) => a.X * b.Y - a.Y * b.X;
+    public float Circumference { get; }
+    public float Area { get; }
+
+    public float Distance(Vector2 point)
+    {
+        throw new NotImplementedException();
+    }
+
+    public bool Inside(Vector2 point, float margin = 0)
+    {
+        var rel = point - Center;
+        var dis = rel.Length();
+
+        var start = Angle - HalfArcAngle;
+        var end = Angle + HalfArcAngle;
+
+        return dis < FrontDistance() || (dis <= Radius && rel.ToAngle().IsBetween(start, end));
+    }
+
+    public Vector2 NearestOutside(Vector2 point, float margin = 0)
+    {
+        throw new NotImplementedException();
+    }
 }
