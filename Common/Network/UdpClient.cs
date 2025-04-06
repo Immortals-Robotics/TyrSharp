@@ -30,7 +30,7 @@ public class UdpClient
     {
         try
         {
-            _lastReceiveEndpoint = new IPEndPoint(IPAddress.Any, 0);
+            _lastReceiveEndpoint ??= new IPEndPoint(IPAddress.Any, 0);
             return _socket.Receive(ref _lastReceiveEndpoint);
         }
         catch (SocketException ex) when (ex.SocketErrorCode == SocketError.WouldBlock)
