@@ -28,15 +28,16 @@ public class UdpClient
         _socket.Client.Blocking = false;
     }
 
+    public bool IsDataAvailable(int timeoutMicroSeconds = 1000)
+    {
+        return _socket.Client.Poll(1000, SelectMode.SelectRead);
+    }
+
     public ReadOnlySpan<byte> ReceiveRaw()
     {
-        if (_socket.Available == 0)
-            return default;
-
         try
         {
             // don't use UdpClient's receive as it allocates a new byte[] every time :\
-
             _lastReceiveEndpoint ??= new IPEndPoint(IPAddress.Any, 0);
             EndPoint tempRemoteEp = _lastReceiveEndpoint;
 

@@ -18,10 +18,16 @@ internal static class Program
         var client = new Common.Network.UdpClient(config.Network.VisionSim);
         while (true)
         {
+            if (!client.IsDataAvailable())
+            {
+                Thread.Yield();
+                continue;
+            }
+
             var packet = client.Receive<WrapperPacket>();
             if (packet == null)
             {
-                Thread.Sleep(1);
+                Debug.Logger.ZLogError($"Received null packet");
                 continue;
             }
 
