@@ -1,4 +1,6 @@
 ﻿using ProtoBuf;
+using Tyr.Common.Math;
+using Tyr.Common.Shape;
 
 namespace Tyr.Common.Data.Ssl.Vision.Geometry;
 
@@ -6,8 +8,11 @@ namespace Tyr.Common.Data.Ssl.Vision.Geometry;
 public struct FieldLineSegment
 {
     [ProtoMember(1, IsRequired = true)] public string Name { get; set; }
+
     [ProtoMember(2, IsRequired = true)] public Vector2 P1 { get; set; }
     [ProtoMember(3, IsRequired = true)] public Vector2 P2 { get; set; }
+    public LineSegment LineSegment => new LineSegment(P1, P2);
+
     [ProtoMember(4, IsRequired = true)] public float Thickness { get; set; }
     [ProtoMember(5)] public FieldShapeType? Type { get; set; }
 }

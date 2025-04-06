@@ -33,8 +33,8 @@ internal static class Program
 
             if (packet.Detection != null)
             {
-                DateTime captureTime = UnixTime.FromSeconds(packet.Detection.CaptureTime);
-                DateTime sentTime = UnixTime.FromSeconds(packet.Detection.SentTime);
+                DateTime captureTime = packet.Detection.CaptureTime;
+                DateTime sentTime = packet.Detection.SentTime;
                 DateTime now = DateTime.UtcNow;
 
                 var processingTime = sentTime - captureTime;

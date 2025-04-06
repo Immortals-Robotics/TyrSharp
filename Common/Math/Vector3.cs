@@ -5,9 +5,11 @@ namespace Tyr.Common.Math;
 [ProtoContract]
 public struct Vector3(float x, float y, float z) : IEquatable<Vector3>
 {
-    [ProtoMember(1)] public float X = x;
-    [ProtoMember(2)] public float Y = y;
-    [ProtoMember(3)] public float Z = z;
+    // it is important to keep the tags as x: 1, y: 2, z: 3
+    // so that they match the SSL ones
+    [ProtoMember(1, IsRequired = true)] public float X = x;
+    [ProtoMember(2, IsRequired = true)] public float Y = y;
+    [ProtoMember(3, IsRequired = true)] public float Z = z;
 
     public Vector3(float f) : this(f, f, f)
     {

@@ -1,4 +1,5 @@
 ﻿using ProtoBuf;
+using Tyr.Common.Math;
 
 namespace Tyr.Common.Data.Ssl.Vision.Tracker;
 

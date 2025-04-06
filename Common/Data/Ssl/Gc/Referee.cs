@@ -1,4 +1,6 @@
 ﻿using ProtoBuf;
+using Tyr.Common.Math;
+using Tyr.Common.Time;
 
 namespace Tyr.Common.Data.Ssl.Gc;
 
@@ -9,7 +11,8 @@ public class Referee
 
     [ProtoMember(19)] public MatchType MatchType { get; set; } = MatchType.UnknownMatch;
 
-    [ProtoMember(1)] public ulong PacketTimestamp { get; set; }
+    [ProtoMember(1)] public ulong PacketTimestampMicroseconds { get; set; }
+    public DateTime PacketTimestamp => UnixTime.FromMicroseconds((long)PacketTimestampMicroseconds);
 
     [ProtoMember(2)] public Stage Stage { get; set; }
 
@@ -19,7 +22,8 @@ public class Referee
 
     [ProtoMember(5)] public uint CommandCounter { get; set; }
 
-    [ProtoMember(6)] public ulong CommandTimestamp { get; set; }
+    [ProtoMember(6)] public ulong CommandTimestampMicroseconds { get; set; }
+    public DateTime CommandTimestamp => UnixTime.FromMicroseconds((long)CommandTimestampMicroseconds);
 
     [ProtoMember(7)] public required TeamInfo Yellow { get; set; }
 

@@ -5,8 +5,10 @@ namespace Tyr.Common.Math;
 [ProtoContract]
 public struct Vector2(float x, float y) : IEquatable<Vector2>
 {
-    [ProtoMember(1)] public float X = x;
-    [ProtoMember(2)] public float Y = y;
+    // it is important to keep the tags as x: 1, y: 2
+    // so that they match the SSL ones
+    [ProtoMember(1, IsRequired = true)] public float X = x;
+    [ProtoMember(2, IsRequired = true)] public float Y = y;
 
     public Vector2(float f) : this(f, f)
     {

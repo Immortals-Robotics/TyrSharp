@@ -11,11 +11,14 @@ public struct Robot
 
     [ProtoMember(3, IsRequired = true)] public float X { get; set; }
     [ProtoMember(4, IsRequired = true)] public float Y { get; set; }
+    public Math.Vector2 Position => new(X, Y);
 
-    [ProtoMember(5)] public float? Orientation { get; set; }
+    [ProtoMember(5)] public float? OrientationRad { get; set; }
+    public Math.Angle? Orientation => OrientationRad.HasValue ? Math.Angle.FromRad(OrientationRad.Value) : null;
 
     [ProtoMember(6, IsRequired = true)] public float PixelX { get; set; }
     [ProtoMember(7, IsRequired = true)] public float PixelY { get; set; }
+    public Math.Vector2 PixelPosition => new(PixelX, PixelY);
 
     [ProtoMember(8)] public float? Height { get; set; }
 }

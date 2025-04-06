@@ -169,7 +169,7 @@ public struct Line(float a, float b, float c) : IShape
 
     public readonly Vector2 ClosestPoint(Vector2 point)
     {
-        return TangentLine(point).Intersect(this).Value;
+        return TangentLine(point).Intersect(this)!.Value;
     }
 
     public float Circumference => float.PositiveInfinity;
