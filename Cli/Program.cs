@@ -2,6 +2,7 @@
 using Microsoft.Extensions.Logging;
 using Tyr.Common.Data.Ssl.Vision;
 using Tyr.Common.Debug;
+using Tyr.Common.Time;
 
 namespace Tyr.Cli;
 
@@ -22,6 +23,20 @@ internal static class Program
             {
                 Thread.Sleep(1);
                 continue;
+            }
+
+            if (packet.Detection != null)
+            {
+                DateTime captureTime = UnixTime.FromSeconds(packet.Detection.CaptureTime);
+                DateTime sentTime = UnixTime.FromSeconds(packet.Detection.SentTime);
+                DateTime now = DateTime.UtcNow;
+
+                var processingTime = sentTime - captureTime;
+                var networkDelay = now - sentTime;
+                var totalDelay = now - captureTime;
+
+                Debug.Logger.ZLogDebug(
+                    $"delays: process: {processingTime.TotalMilliseconds}ms, network: {networkDelay.TotalMilliseconds}ms, total: {totalDelay.TotalMilliseconds}ms");
             }
 
             Debug.Logger.ZLogDebug(
