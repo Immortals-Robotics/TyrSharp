@@ -1,6 +1,6 @@
-﻿using Tyr.Common.Ssl.Vision;
-using ZLogger;
+﻿using ZLogger;
 using Microsoft.Extensions.Logging;
+using Tyr.Common.Data.Ssl.Vision;
 using Tyr.Common.Debug;
 
 namespace Tyr.Cli;
