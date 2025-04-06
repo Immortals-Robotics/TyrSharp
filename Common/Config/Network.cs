@@ -4,7 +4,7 @@ using Tyr.Common.Network;
 
 public class Network
 {
-    public const int MaxUdpPacketSize = 16 * 1024;
+    public const int MaxUdpPacketSize = 64 * 1024;
 
     public bool UseSimulatedVision { get; set; } = false;
     public bool UseInternalReferee { get; set; } = false;

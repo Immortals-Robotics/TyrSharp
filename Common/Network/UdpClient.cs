@@ -11,6 +11,8 @@ public class UdpClient
     private IPEndPoint? _lastReceiveEndpoint;
     private IPAddress _multicastAddress;
 
+    private readonly byte[] _buffer = new byte[Config.Network.MaxUdpPacketSize];
+
     public UdpClient(Address address)
     {
         _listenEndpoint = new IPEndPoint(IPAddress.Any, address.Port);
@@ -28,10 +30,20 @@ public class UdpClient
 
     public ReadOnlySpan<byte> ReceiveRaw()
     {
+        if (_socket.Available == 0)
+            return default;
+
         try
         {
+            // don't use UdpClient's receive as it allocates a new byte[] every time :\
+
             _lastReceiveEndpoint ??= new IPEndPoint(IPAddress.Any, 0);
-            return _socket.Receive(ref _lastReceiveEndpoint);
+            EndPoint tempRemoteEp = _lastReceiveEndpoint;
+
+            var received = _socket.Client.ReceiveFrom(_buffer, Config.Network.MaxUdpPacketSize, 0, ref tempRemoteEp);
+            _lastReceiveEndpoint = (IPEndPoint)tempRemoteEp;
+
+            return _buffer.AsSpan(0, received);
         }
         catch (SocketException ex) when (ex.SocketErrorCode == SocketError.WouldBlock)
         {
