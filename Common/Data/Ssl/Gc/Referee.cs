@@ -10,7 +10,7 @@ public class Referee
 {
     [ProtoMember(18)] public required string SourceIdentifier { get; set; }
 
-    [ProtoMember(19)] public MatchType MatchType { get; set; } = MatchType.UnknownMatch;
+    [ProtoMember(19)] public MatchType MatchType { get; set; } = MatchType.Unknown;
 
     [ProtoMember(1)] public ulong PacketTimestampMicroseconds { get; set; }
     public DateTime PacketTimestamp => UnixTime.FromMicroseconds((long)PacketTimestampMicroseconds);

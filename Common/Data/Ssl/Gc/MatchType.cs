@@ -2,7 +2,7 @@
 
 public enum MatchType
 {
-    UnknownMatch = 0,
+    Unknown = 0,
     GroupPhase = 1,
     EliminationPhase = 2,
     Friendly = 3

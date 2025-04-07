@@ -2,6 +2,8 @@
 
 public enum Stage
 {
+    Unknown = -1,
+    
     NormalFirstHalfPre = 0,
     NormalFirstHalf = 1,
     NormalHalfTime = 2,
