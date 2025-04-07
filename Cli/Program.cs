@@ -2,7 +2,7 @@
 using Microsoft.Extensions.Logging;
 using Tyr.Common.Data.Ssl.Vision;
 using Tyr.Common.Debug;
-using Tyr.Common.Time;
+using Tyr.Common.Config;
 
 namespace Tyr.Cli;
 
@@ -13,9 +13,9 @@ internal static class Program
         Debug.InitLogging(LogLevel.Debug);
 
         var configPath = args[0];
-        var config = Common.Config.Config.Load(configPath);
+        Configs.Load(configPath);
 
-        var client = new Common.Network.UdpClient(config.Network.VisionSim);
+        var client = new Common.Network.UdpClient(Configs.Network.VisionSim);
         while (true)
         {
             if (!client.IsDataAvailable())

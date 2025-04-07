@@ -35,7 +35,7 @@ public struct State
     {
     }
 
-    public bool Our() => Color == Config.Common.OurColor;
+    public bool Our() => Color == Configs.Common.OurColor;
     public bool Halt() => GameState == GameState.Halt;
     public bool Stop() => GameState == GameState.Stop;
     public bool Running() => GameState == GameState.Running;
@@ -64,9 +64,9 @@ public struct State
     public bool ShouldSlowDown() => Stop() || BallPlacement() || CanEnterField();
     public bool CanEnterField() => Timeout();
 
-    public TeamInfo OurInfo() => Config.Common.OurColor == TeamColor.Blue ? BlueInfo : YellowInfo;
-    public TeamInfo OppInfo() => Config.Common.OurColor == TeamColor.Yellow ? BlueInfo : YellowInfo;
-    
+    public TeamInfo OurInfo() => Configs.Common.OurColor == TeamColor.Blue ? BlueInfo : YellowInfo;
+    public TeamInfo OppInfo() => Configs.Common.OurColor == TeamColor.Yellow ? BlueInfo : YellowInfo;
+
     public float Elapsed() => (float)(DateTime.UtcNow - Time).TotalSeconds;
 
     public override string ToString()

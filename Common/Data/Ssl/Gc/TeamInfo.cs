@@ -4,7 +4,7 @@ namespace Tyr.Common.Data.Ssl.Gc;
 
 public class TeamInfo
 {
-    [ProtoMember(1)] public string Name { get; set; }
+    [ProtoMember(1)] public string Name { get; set; } = "";
 
     [ProtoMember(2)] public uint Score { get; set; }
 
