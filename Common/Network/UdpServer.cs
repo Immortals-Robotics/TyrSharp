@@ -6,14 +6,8 @@ namespace Tyr.Common.Network;
 
 public class UdpServer
 {
-    private readonly System.Net.Sockets.UdpClient _socket;
-    private readonly byte[] _buffer;
-
-    public UdpServer()
-    {
-        _buffer = new byte[Config.Network.MaxUdpPacketSize];
-        _socket = new System.Net.Sockets.UdpClient(AddressFamily.InterNetwork);
-    }
+    private readonly System.Net.Sockets.UdpClient _socket = new(AddressFamily.InterNetwork);
+    private readonly byte[] _buffer = new byte[Config.Network.MaxUdpPacketSize];
 
     public Span<byte> GetBuffer()
     {
@@ -50,15 +44,5 @@ public class UdpServer
             Console.Error.WriteLine($"[UdpServer] Send failed: {ex.Message}");
             return false;
         }
-    }
-
-    public Address GetListenEndpoint()
-    {
-        var local = (IPEndPoint)_socket.Client.LocalEndPoint!;
-        return new Address
-        {
-            Ip = local.Address.ToString(),
-            Port = (ushort)local.Port
-        };
     }
 }
