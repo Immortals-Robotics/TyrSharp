@@ -1,4 +1,5 @@
 ﻿using ProtoBuf;
+using Tyr.Common.Config;
 using Tyr.Common.Math;
 using Tyr.Common.Time;
 
@@ -32,6 +33,7 @@ public class Referee
     [ProtoMember(9)] public required Vector2 DesignatedPosition { get; set; }
 
     [ProtoMember(10)] public bool? BlueTeamOnPositiveHalf { get; set; }
+    public TeamSide BlueTeamSide => BlueTeamOnPositiveHalf.GetValueOrDefault() ? TeamSide.Right : TeamSide.Left;
 
     [ProtoMember(12)] public Command? NextCommand { get; set; }
 

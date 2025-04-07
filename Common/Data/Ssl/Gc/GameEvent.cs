@@ -1,4 +1,5 @@
-﻿using Tyr.Common.Math;
+﻿using Tyr.Common.Config;
+using Tyr.Common.Math;
 
 namespace Tyr.Common.Data.Ssl.Gc;
 
@@ -396,7 +397,7 @@ public partial class GameEvent : global::ProtoBuf.IExtensible
             => global::ProtoBuf.Extensible.GetExtensionObject(ref __pbn__extensionData, createIfMissing);
 
         [global::ProtoBuf.ProtoMember(1, Name = @"by_team", IsRequired = true)]
-        public Team ByTeam { get; set; }
+        public TeamColor ByTeam { get; set; }
 
         [global::ProtoBuf.ProtoMember(2, Name = @"by_bot")]
         public uint ByBot
@@ -421,7 +422,7 @@ public partial class GameEvent : global::ProtoBuf.IExtensible
             => global::ProtoBuf.Extensible.GetExtensionObject(ref __pbn__extensionData, createIfMissing);
 
         [global::ProtoBuf.ProtoMember(1, Name = @"by_team", IsRequired = true)]
-        public Team ByTeam { get; set; }
+        public TeamColor ByTeam { get; set; }
 
         [global::ProtoBuf.ProtoMember(2, Name = @"by_bot")]
         public uint ByBot
@@ -449,18 +450,18 @@ public partial class GameEvent : global::ProtoBuf.IExtensible
             => global::ProtoBuf.Extensible.GetExtensionObject(ref __pbn__extensionData, createIfMissing);
 
         [global::ProtoBuf.ProtoMember(1, Name = @"by_team", IsRequired = true)]
-        public Team ByTeam { get; set; }
+        public TeamColor ByTeam { get; set; }
 
         [global::ProtoBuf.ProtoMember(6, Name = @"kicking_team")]
-        [global::System.ComponentModel.DefaultValue(Team.Unknown)]
-        public Team KickingTeam
+        [global::System.ComponentModel.DefaultValue(TeamColor.Unknown)]
+        public TeamColor KickingTeam
         {
-            get => __pbn__KickingTeam ?? Team.Unknown;
+            get => __pbn__KickingTeam ?? TeamColor.Unknown;
             set => __pbn__KickingTeam = value;
         }
         public bool ShouldSerializeKickingTeam() => __pbn__KickingTeam != null;
         public void ResetKickingTeam() => __pbn__KickingTeam = null;
-        private Team? __pbn__KickingTeam;
+        private TeamColor? __pbn__KickingTeam;
 
         [global::ProtoBuf.ProtoMember(2, Name = @"kicking_bot")]
         public uint KickingBot
@@ -529,7 +530,7 @@ public partial class GameEvent : global::ProtoBuf.IExtensible
             => global::ProtoBuf.Extensible.GetExtensionObject(ref __pbn__extensionData, createIfMissing);
 
         [global::ProtoBuf.ProtoMember(1, Name = @"by_team", IsRequired = true)]
-        public Team ByTeam { get; set; }
+        public TeamColor ByTeam { get; set; }
 
         [global::ProtoBuf.ProtoMember(2, Name = @"by_bot")]
         public uint ByBot
@@ -557,7 +558,7 @@ public partial class GameEvent : global::ProtoBuf.IExtensible
             => global::ProtoBuf.Extensible.GetExtensionObject(ref __pbn__extensionData, createIfMissing);
 
         [global::ProtoBuf.ProtoMember(1, Name = @"by_team", IsRequired = true)]
-        public Team ByTeam { get; set; }
+        public TeamColor ByTeam { get; set; }
 
         [global::ProtoBuf.ProtoMember(2, Name = @"by_bot")]
         public uint ByBot
@@ -595,7 +596,7 @@ public partial class GameEvent : global::ProtoBuf.IExtensible
             => global::ProtoBuf.Extensible.GetExtensionObject(ref __pbn__extensionData, createIfMissing);
 
         [global::ProtoBuf.ProtoMember(1, Name = @"by_team", IsRequired = true)]
-        public Team ByTeam { get; set; }
+        public TeamColor ByTeam { get; set; }
 
         [global::ProtoBuf.ProtoMember(2, Name = @"by_bot")]
         public uint ByBot
@@ -630,7 +631,7 @@ public partial class GameEvent : global::ProtoBuf.IExtensible
             => global::ProtoBuf.Extensible.GetExtensionObject(ref __pbn__extensionData, createIfMissing);
 
         [global::ProtoBuf.ProtoMember(1, Name = @"by_team", IsRequired = true)]
-        public Team ByTeam { get; set; }
+        public TeamColor ByTeam { get; set; }
 
         [global::ProtoBuf.ProtoMember(2, Name = @"by_bot")]
         public uint ByBot
@@ -727,7 +728,7 @@ public partial class GameEvent : global::ProtoBuf.IExtensible
             => global::ProtoBuf.Extensible.GetExtensionObject(ref __pbn__extensionData, createIfMissing);
 
         [global::ProtoBuf.ProtoMember(1, Name = @"by_team", IsRequired = true)]
-        public Team ByTeam { get; set; }
+        public TeamColor ByTeam { get; set; }
 
         [global::ProtoBuf.ProtoMember(2, Name = @"violator")]
         public uint Violator
@@ -792,7 +793,7 @@ public partial class GameEvent : global::ProtoBuf.IExtensible
             => global::ProtoBuf.Extensible.GetExtensionObject(ref __pbn__extensionData, createIfMissing);
 
         [global::ProtoBuf.ProtoMember(1, Name = @"by_team", IsRequired = true)]
-        public Team ByTeam { get; set; }
+        public TeamColor ByTeam { get; set; }
 
         [global::ProtoBuf.ProtoMember(2, Name = @"violator")]
         public uint Violator
@@ -837,7 +838,7 @@ public partial class GameEvent : global::ProtoBuf.IExtensible
             => global::ProtoBuf.Extensible.GetExtensionObject(ref __pbn__extensionData, createIfMissing);
 
         [global::ProtoBuf.ProtoMember(1, Name = @"by_team", IsRequired = true)]
-        public Team ByTeam { get; set; }
+        public TeamColor ByTeam { get; set; }
 
         [global::ProtoBuf.ProtoMember(2, Name = @"by_bot")]
         public uint ByBot
@@ -865,7 +866,7 @@ public partial class GameEvent : global::ProtoBuf.IExtensible
             => global::ProtoBuf.Extensible.GetExtensionObject(ref __pbn__extensionData, createIfMissing);
 
         [global::ProtoBuf.ProtoMember(1, Name = @"by_team", IsRequired = true)]
-        public Team ByTeam { get; set; }
+        public TeamColor ByTeam { get; set; }
 
         [global::ProtoBuf.ProtoMember(2, Name = @"by_bot")]
         public uint ByBot
@@ -893,7 +894,7 @@ public partial class GameEvent : global::ProtoBuf.IExtensible
             => global::ProtoBuf.Extensible.GetExtensionObject(ref __pbn__extensionData, createIfMissing);
 
         [global::ProtoBuf.ProtoMember(1, Name = @"by_team", IsRequired = true)]
-        public Team ByTeam { get; set; }
+        public TeamColor ByTeam { get; set; }
 
         [global::ProtoBuf.ProtoMember(2, Name = @"by_bot")]
         public uint ByBot
@@ -928,7 +929,7 @@ public partial class GameEvent : global::ProtoBuf.IExtensible
             => global::ProtoBuf.Extensible.GetExtensionObject(ref __pbn__extensionData, createIfMissing);
 
         [global::ProtoBuf.ProtoMember(1, Name = @"by_team", IsRequired = true)]
-        public Team ByTeam { get; set; }
+        public TeamColor ByTeam { get; set; }
 
         [global::ProtoBuf.ProtoMember(2, Name = @"by_bot")]
         public uint ByBot
@@ -966,7 +967,7 @@ public partial class GameEvent : global::ProtoBuf.IExtensible
             => global::ProtoBuf.Extensible.GetExtensionObject(ref __pbn__extensionData, createIfMissing);
 
         [global::ProtoBuf.ProtoMember(1, Name = @"by_team", IsRequired = true)]
-        public Team ByTeam { get; set; }
+        public TeamColor ByTeam { get; set; }
 
         [global::ProtoBuf.ProtoMember(2, Name = @"by_bot")]
         public uint ByBot
@@ -1001,7 +1002,7 @@ public partial class GameEvent : global::ProtoBuf.IExtensible
             => global::ProtoBuf.Extensible.GetExtensionObject(ref __pbn__extensionData, createIfMissing);
 
         [global::ProtoBuf.ProtoMember(1, Name = @"by_team", IsRequired = true)]
-        public Team ByTeam { get; set; }
+        public TeamColor ByTeam { get; set; }
 
         [global::ProtoBuf.ProtoMember(2, Name = @"by_bot")]
         public uint ByBot
@@ -1046,7 +1047,7 @@ public partial class GameEvent : global::ProtoBuf.IExtensible
             => global::ProtoBuf.Extensible.GetExtensionObject(ref __pbn__extensionData, createIfMissing);
 
         [global::ProtoBuf.ProtoMember(1, Name = @"by_team", IsRequired = true)]
-        public Team ByTeam { get; set; }
+        public TeamColor ByTeam { get; set; }
 
         [global::ProtoBuf.ProtoMember(2, Name = @"by_bot")]
         public uint ByBot
@@ -1074,7 +1075,7 @@ public partial class GameEvent : global::ProtoBuf.IExtensible
             => global::ProtoBuf.Extensible.GetExtensionObject(ref __pbn__extensionData, createIfMissing);
 
         [global::ProtoBuf.ProtoMember(1, Name = @"by_team", IsRequired = true)]
-        public Team ByTeam { get; set; }
+        public TeamColor ByTeam { get; set; }
 
         [global::ProtoBuf.ProtoMember(2, Name = @"by_bot")]
         public uint ByBot
@@ -1109,7 +1110,7 @@ public partial class GameEvent : global::ProtoBuf.IExtensible
             => global::ProtoBuf.Extensible.GetExtensionObject(ref __pbn__extensionData, createIfMissing);
 
         [global::ProtoBuf.ProtoMember(1, Name = @"by_team", IsRequired = true)]
-        public Team ByTeam { get; set; }
+        public TeamColor ByTeam { get; set; }
 
         [global::ProtoBuf.ProtoMember(2, Name = @"by_bot")]
         public uint ByBot
@@ -1134,7 +1135,7 @@ public partial class GameEvent : global::ProtoBuf.IExtensible
             => global::ProtoBuf.Extensible.GetExtensionObject(ref __pbn__extensionData, createIfMissing);
 
         [global::ProtoBuf.ProtoMember(1, Name = @"by_team", IsRequired = true)]
-        public Team ByTeam { get; set; }
+        public TeamColor ByTeam { get; set; }
 
         [global::ProtoBuf.ProtoMember(2, Name = @"by_bot")]
         public uint ByBot
@@ -1172,7 +1173,7 @@ public partial class GameEvent : global::ProtoBuf.IExtensible
             => global::ProtoBuf.Extensible.GetExtensionObject(ref __pbn__extensionData, createIfMissing);
 
         [global::ProtoBuf.ProtoMember(1, Name = @"by_team", IsRequired = true)]
-        public Team ByTeam { get; set; }
+        public TeamColor ByTeam { get; set; }
 
         [global::ProtoBuf.ProtoMember(2, Name = @"by_bot")]
         public uint ByBot
@@ -1207,7 +1208,7 @@ public partial class GameEvent : global::ProtoBuf.IExtensible
             => global::ProtoBuf.Extensible.GetExtensionObject(ref __pbn__extensionData, createIfMissing);
 
         [global::ProtoBuf.ProtoMember(1, Name = @"by_team", IsRequired = true)]
-        public Team ByTeam { get; set; }
+        public TeamColor ByTeam { get; set; }
 
         [global::ProtoBuf.ProtoMember(2, Name = @"by_bot")]
         public uint ByBot
@@ -1232,7 +1233,7 @@ public partial class GameEvent : global::ProtoBuf.IExtensible
             => global::ProtoBuf.Extensible.GetExtensionObject(ref __pbn__extensionData, createIfMissing);
 
         [global::ProtoBuf.ProtoMember(1, Name = @"by_team", IsRequired = true)]
-        public Team ByTeam { get; set; }
+        public TeamColor ByTeam { get; set; }
 
     }
 
@@ -1244,7 +1245,7 @@ public partial class GameEvent : global::ProtoBuf.IExtensible
             => global::ProtoBuf.Extensible.GetExtensionObject(ref __pbn__extensionData, createIfMissing);
 
         [global::ProtoBuf.ProtoMember(1, Name = @"by_team", IsRequired = true)]
-        public Team ByTeam { get; set; }
+        public TeamColor ByTeam { get; set; }
 
         [global::ProtoBuf.ProtoMember(2, Name = @"caused_game_events")]
         public global::System.Collections.Generic.List<GameEvent> CausedGameEvents { get; } = new global::System.Collections.Generic.List<GameEvent>();
@@ -1259,7 +1260,7 @@ public partial class GameEvent : global::ProtoBuf.IExtensible
             => global::ProtoBuf.Extensible.GetExtensionObject(ref __pbn__extensionData, createIfMissing);
 
         [global::ProtoBuf.ProtoMember(1, Name = @"by_team", IsRequired = true)]
-        public Team ByTeam { get; set; }
+        public TeamColor ByTeam { get; set; }
 
     }
 
@@ -1271,7 +1272,7 @@ public partial class GameEvent : global::ProtoBuf.IExtensible
             => global::ProtoBuf.Extensible.GetExtensionObject(ref __pbn__extensionData, createIfMissing);
 
         [global::ProtoBuf.ProtoMember(1, Name = @"by_team", IsRequired = true)]
-        public Team ByTeam { get; set; }
+        public TeamColor ByTeam { get; set; }
 
         [global::ProtoBuf.ProtoMember(2, Name = @"location")]
         public Vector2 Location { get; set; }
@@ -1318,7 +1319,7 @@ public partial class GameEvent : global::ProtoBuf.IExtensible
             => global::ProtoBuf.Extensible.GetExtensionObject(ref __pbn__extensionData, createIfMissing);
 
         [global::ProtoBuf.ProtoMember(1, Name = @"by_team", IsRequired = true)]
-        public Team ByTeam { get; set; }
+        public TeamColor ByTeam { get; set; }
 
         [global::ProtoBuf.ProtoMember(2, Name = @"remaining_distance")]
         public float RemainingDistance
@@ -1350,7 +1351,7 @@ public partial class GameEvent : global::ProtoBuf.IExtensible
             => global::ProtoBuf.Extensible.GetExtensionObject(ref __pbn__extensionData, createIfMissing);
 
         [global::ProtoBuf.ProtoMember(1, Name = @"by_team", IsRequired = true)]
-        public Team ByTeam { get; set; }
+        public TeamColor ByTeam { get; set; }
 
         [global::ProtoBuf.ProtoMember(2, Name = @"reason", IsRequired = true)]
         public string Reason { get; set; }
@@ -1365,7 +1366,7 @@ public partial class GameEvent : global::ProtoBuf.IExtensible
             => global::ProtoBuf.Extensible.GetExtensionObject(ref __pbn__extensionData, createIfMissing);
 
         [global::ProtoBuf.ProtoMember(1, Name = @"by_team", IsRequired = true)]
-        public Team ByTeam { get; set; }
+        public TeamColor ByTeam { get; set; }
 
         [global::ProtoBuf.ProtoMember(2, Name = @"reason", IsRequired = true)]
         public string Reason { get; set; }
@@ -1380,7 +1381,7 @@ public partial class GameEvent : global::ProtoBuf.IExtensible
             => global::ProtoBuf.Extensible.GetExtensionObject(ref __pbn__extensionData, createIfMissing);
 
         [global::ProtoBuf.ProtoMember(1, Name = @"by_team", IsRequired = true)]
-        public Team ByTeam { get; set; }
+        public TeamColor ByTeam { get; set; }
 
         [global::ProtoBuf.ProtoMember(2, Name = @"location")]
         public Vector2 Location { get; set; }
@@ -1405,7 +1406,7 @@ public partial class GameEvent : global::ProtoBuf.IExtensible
             => global::ProtoBuf.Extensible.GetExtensionObject(ref __pbn__extensionData, createIfMissing);
 
         [global::ProtoBuf.ProtoMember(1, Name = @"by_team", IsRequired = true)]
-        public Team ByTeam { get; set; }
+        public TeamColor ByTeam { get; set; }
 
         [global::ProtoBuf.ProtoMember(2, Name = @"time_taken")]
         public float TimeTaken
@@ -1466,7 +1467,7 @@ public partial class GameEvent : global::ProtoBuf.IExtensible
             => global::ProtoBuf.Extensible.GetExtensionObject(ref __pbn__extensionData, createIfMissing);
 
         [global::ProtoBuf.ProtoMember(1, Name = @"by_team", IsRequired = true)]
-        public Team ByTeam { get; set; }
+        public TeamColor ByTeam { get; set; }
 
     }
 
@@ -1478,7 +1479,7 @@ public partial class GameEvent : global::ProtoBuf.IExtensible
             => global::ProtoBuf.Extensible.GetExtensionObject(ref __pbn__extensionData, createIfMissing);
 
         [global::ProtoBuf.ProtoMember(1, Name = @"by_team", IsRequired = true)]
-        public Team ByTeam { get; set; }
+        public TeamColor ByTeam { get; set; }
 
     }
 
@@ -1490,7 +1491,7 @@ public partial class GameEvent : global::ProtoBuf.IExtensible
             => global::ProtoBuf.Extensible.GetExtensionObject(ref __pbn__extensionData, createIfMissing);
 
         [global::ProtoBuf.ProtoMember(1, Name = @"by_team", IsRequired = true)]
-        public Team ByTeam { get; set; }
+        public TeamColor ByTeam { get; set; }
 
     }
 
@@ -1502,7 +1503,7 @@ public partial class GameEvent : global::ProtoBuf.IExtensible
             => global::ProtoBuf.Extensible.GetExtensionObject(ref __pbn__extensionData, createIfMissing);
 
         [global::ProtoBuf.ProtoMember(1, Name = @"by_team", IsRequired = true)]
-        public Team ByTeam { get; set; }
+        public TeamColor ByTeam { get; set; }
 
         [global::ProtoBuf.ProtoMember(2, Name = @"accepted", IsRequired = true)]
         public bool Accepted { get; set; }
@@ -1517,7 +1518,7 @@ public partial class GameEvent : global::ProtoBuf.IExtensible
             => global::ProtoBuf.Extensible.GetExtensionObject(ref __pbn__extensionData, createIfMissing);
 
         [global::ProtoBuf.ProtoMember(1, Name = @"by_team", IsRequired = true)]
-        public Team ByTeam { get; set; }
+        public TeamColor ByTeam { get; set; }
 
     }
 
@@ -1529,7 +1530,7 @@ public partial class GameEvent : global::ProtoBuf.IExtensible
             => global::ProtoBuf.Extensible.GetExtensionObject(ref __pbn__extensionData, createIfMissing);
 
         [global::ProtoBuf.ProtoMember(1, Name = @"by_team", IsRequired = true)]
-        public Team ByTeam { get; set; }
+        public TeamColor ByTeam { get; set; }
 
         [global::ProtoBuf.ProtoMember(2, Name = @"num_robots_allowed")]
         public int NumRobotsAllowed
@@ -1564,7 +1565,7 @@ public partial class GameEvent : global::ProtoBuf.IExtensible
             => global::ProtoBuf.Extensible.GetExtensionObject(ref __pbn__extensionData, createIfMissing);
 
         [global::ProtoBuf.ProtoMember(1, Name = @"by_team", IsRequired = true)]
-        public Team ByTeam { get; set; }
+        public TeamColor ByTeam { get; set; }
 
         [global::ProtoBuf.ProtoMember(2, Name = @"location")]
         public Vector2 Location { get; set; }
@@ -1579,7 +1580,7 @@ public partial class GameEvent : global::ProtoBuf.IExtensible
             => global::ProtoBuf.Extensible.GetExtensionObject(ref __pbn__extensionData, createIfMissing);
 
         [global::ProtoBuf.ProtoMember(1, Name = @"by_team", IsRequired = true)]
-        public Team ByTeam { get; set; }
+        public TeamColor ByTeam { get; set; }
 
         [global::ProtoBuf.ProtoMember(2, Name = @"location")]
         public Vector2 Location { get; set; }
