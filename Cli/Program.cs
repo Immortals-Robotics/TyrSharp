@@ -10,7 +10,7 @@ internal static class Program
 {
     private static void Main(string[] args)
     {
-        Debug.InitLogging(LogLevel.Debug);
+        Log.Init(LogLevel.Debug);
 
         var configPath = args[0];
         Configs.Load(configPath);
@@ -27,7 +27,7 @@ internal static class Program
             var packet = client.Receive<WrapperPacket>();
             if (packet == null)
             {
-                Debug.Logger.ZLogError($"Received null packet");
+                Log.Logger.ZLogError($"Received null packet");
                 continue;
             }
 
@@ -41,11 +41,11 @@ internal static class Program
                 var networkDelay = now - sentTime;
                 var totalDelay = now - captureTime;
 
-                Debug.Logger.ZLogDebug(
+                Log.Logger.ZLogDebug(
                     $"delays: process: {processingTime.TotalMilliseconds}ms, network: {networkDelay.TotalMilliseconds}ms, total: {totalDelay.TotalMilliseconds}ms");
             }
 
-            Debug.Logger.ZLogDebug(
+            Log.Logger.ZLogDebug(
                 $"received detection: {packet.Detection != null}, geometry: {packet.Geometry != null}");
         }
     }

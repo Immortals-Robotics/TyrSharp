@@ -3,12 +3,12 @@ using ZLogger;
 
 namespace Tyr.Common.Debug;
 
-public static partial class Debug
+public static class Log
 {
     private static ILoggerFactory Factory { get; set; } = null!;
     public static ILogger Logger { get; private set; } = null!;
 
-    public static void InitLogging(LogLevel level)
+    public static void Init(LogLevel level)
     {
         Factory = LoggerFactory.Create(logging =>
         {

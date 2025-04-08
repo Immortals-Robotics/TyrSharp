@@ -3,7 +3,7 @@ using Tyr.Common.Shape;
 
 namespace Tyr.Common.Debug;
 
-public static partial class Debug
+public static class Drawing
 {
     public static void Draw<T>(T shape, Color color, bool filled = true, float thickness = 1f,
         [CallerMemberName] string? memberName = null,
