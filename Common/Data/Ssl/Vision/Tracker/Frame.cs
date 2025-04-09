@@ -12,6 +12,9 @@ public class Frame
     public DateTime Timestamp => UnixTime.FromSeconds(TimestampSeconds);
 
     [ProtoMember(3)] public List<Ball> Balls { get; set; } = [];
+    public Ball Ball => Balls.Count > 0 ? Balls[0] : new Ball();
+
+
     [ProtoMember(4)] public List<Robot> Robots { get; set; } = [];
 
     [ProtoMember(5)] public KickedBall? KickedBall { get; set; }
