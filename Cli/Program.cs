@@ -1,7 +1,6 @@
 ﻿using ZLogger;
 using Microsoft.Extensions.Logging;
 using Tyr.Common.Data.Ssl.Vision;
-using Tyr.Common.Debug;
 using Tyr.Common.Config;
 
 namespace Tyr.Cli;
@@ -10,8 +9,6 @@ internal static class Program
 {
     private static void Main(string[] args)
     {
-        Log.Init(LogLevel.Debug);
-
         var configPath = args[0];
         Configs.Load(configPath);
 
@@ -27,7 +24,7 @@ internal static class Program
             var packet = client.Receive<WrapperPacket>();
             if (packet == null)
             {
-                Log.Logger.ZLogError($"Received null packet");
+                Logger.ZLogError($"Received null packet");
                 continue;
             }
 
@@ -41,11 +38,11 @@ internal static class Program
                 var networkDelay = now - sentTime;
                 var totalDelay = now - captureTime;
 
-                Log.Logger.ZLogDebug(
+                Logger.ZLogDebug(
                     $"delays: process: {processingTime.TotalMilliseconds}ms, network: {networkDelay.TotalMilliseconds}ms, total: {totalDelay.TotalMilliseconds}ms");
             }
 
-            Log.Logger.ZLogDebug(
+            Logger.ZLogDebug(
                 $"received detection: {packet.Detection != null}, geometry: {packet.Geometry != null}");
         }
     }

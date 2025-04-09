@@ -11,11 +11,9 @@ internal static class Program
         builder.EnableDebugTools(true);
         builder.SetTitle("Tyr");
         builder.StyleColorsClassic();
-        
+
         builder.AddWindow<Window>();
 
         builder.Run();
     }
 }
-
-

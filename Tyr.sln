@@ -8,6 +8,10 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Gui", "Gui\Gui.csproj", "{D
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Referee", "Referee\Referee.csproj", "{255CE868-76E0-4E2E-BF8F-AEF0B33A73E7}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Vision", "Vision\Vision.csproj", "{0F1422E3-5BA8-4C30-8520-F1673D2ACACF}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Soccer", "Soccer\Soccer.csproj", "{9F3865A0-E628-4BFD-9806-715CC17FF3A9}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -30,5 +34,13 @@ Global
 		{255CE868-76E0-4E2E-BF8F-AEF0B33A73E7}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{255CE868-76E0-4E2E-BF8F-AEF0B33A73E7}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{255CE868-76E0-4E2E-BF8F-AEF0B33A73E7}.Release|Any CPU.Build.0 = Release|Any CPU
+		{0F1422E3-5BA8-4C30-8520-F1673D2ACACF}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{0F1422E3-5BA8-4C30-8520-F1673D2ACACF}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{0F1422E3-5BA8-4C30-8520-F1673D2ACACF}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{0F1422E3-5BA8-4C30-8520-F1673D2ACACF}.Release|Any CPU.Build.0 = Release|Any CPU
+		{9F3865A0-E628-4BFD-9806-715CC17FF3A9}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{9F3865A0-E628-4BFD-9806-715CC17FF3A9}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{9F3865A0-E628-4BFD-9806-715CC17FF3A9}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{9F3865A0-E628-4BFD-9806-715CC17FF3A9}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal
