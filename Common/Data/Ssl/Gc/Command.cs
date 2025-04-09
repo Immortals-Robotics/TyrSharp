@@ -14,6 +14,8 @@ public enum Command
     DirectFreeBlue = 9,
     TimeoutYellow = 12,
     TimeoutBlue = 13,
+    GoalYellow = 14,
+    GoalBlue = 15,
     BallPlacementYellow = 16,
     BallPlacementBlue = 17
 }

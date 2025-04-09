@@ -55,4 +55,34 @@ public static class StateExtensions
     public static TeamSide OurSide(this State state) => Configs.Common.OurColor == TeamColor.Blue
         ? state.Gc.BlueTeamSide
         : state.Gc.YellowTeamSide;
+
+    public static TeamColor? ToColor(this Command command)
+    {
+        switch (command)
+        {
+            case Command.PrepareKickoffBlue:
+            case Command.PreparePenaltyBlue:
+            case Command.DirectFreeBlue:
+            case Command.BallPlacementBlue:
+            case Command.TimeoutBlue:
+            case Command.GoalBlue:
+                return TeamColor.Blue;
+
+            case Command.PrepareKickoffYellow:
+            case Command.PreparePenaltyYellow:
+            case Command.DirectFreeYellow:
+            case Command.BallPlacementYellow:
+            case Command.TimeoutYellow:
+            case Command.GoalYellow:
+                return TeamColor.Yellow;
+
+            case Command.Halt:
+            case Command.Stop:
+            case Command.NormalStart:
+            case Command.ForceStart:
+                return null;
+        }
+
+        return null;
+    }
 }
