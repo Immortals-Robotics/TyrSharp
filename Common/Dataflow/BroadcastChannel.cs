@@ -1,5 +1,4 @@
 ﻿using System.Threading.Channels;
-using Tyr.Common.Debug;
 using ZLogger;
 
 namespace Tyr.Common.Dataflow;
@@ -8,13 +7,26 @@ public class BroadcastChannel<T>
 {
     private readonly List<Channel<T>> _subscribers = [];
 
-    public ChannelReader<T> Subscribe()
+    public enum Mode
     {
-        var channel = Channel.CreateUnbounded<T>(new UnboundedChannelOptions()
+        Latest,
+        All,
+    }
+
+    public ChannelReader<T> Subscribe(Mode mode = Mode.All)
+    {
+        var channel = mode switch
         {
-            SingleWriter = true,
-            SingleReader = true,
-        });
+            Mode.All => Channel.CreateUnbounded<T>(new UnboundedChannelOptions()
+            {
+                SingleWriter = true, SingleReader = true,
+            }),
+            Mode.Latest => Channel.CreateBounded<T>(new BoundedChannelOptions(1)
+            {
+                SingleWriter = true, SingleReader = true, FullMode = BoundedChannelFullMode.DropOldest,
+            }),
+            _ => throw new ArgumentOutOfRangeException(nameof(mode), mode, null)
+        };
 
         lock (_subscribers)
         {
