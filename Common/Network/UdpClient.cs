@@ -65,8 +65,7 @@ public class UdpClient
 
         try
         {
-            using var ms = new MemoryStream(data.ToArray());
-            return Serializer.Deserialize<T>(ms);
+            return Serializer.Deserialize<T>(data);
         }
         catch (Exception ex)
         {
