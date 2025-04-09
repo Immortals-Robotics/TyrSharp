@@ -23,7 +23,7 @@ public class Referee
 
     [ProtoMember(4)] public Command Command { get; set; }
 
-    [ProtoMember(5)] public uint CommandCounter { get; set; }
+    [ProtoMember(5)] public uint CommandCounter { get; set; } = uint.MaxValue;
 
     [ProtoMember(6)] public ulong CommandTimestampMicroseconds { get; set; }
     public DateTime CommandTimestamp => UnixTime.FromMicroseconds((long)CommandTimestampMicroseconds);

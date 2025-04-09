@@ -1,6 +1,4 @@
 ﻿using System.Threading.Channels;
-using Tyr.Common.Config;
-using Tyr.Common.Network;
 using Tracker = Tyr.Common.Data.Ssl.Vision.Tracker;
 using Gc = Tyr.Common.Data.Ssl.Gc;
 using Tyr.Common.Data.Referee;
@@ -10,7 +8,7 @@ namespace Tyr.Referee;
 
 public class Referee
 {
-    private UdpClient _udp;
+    private ChannelReader<Gc.Referee> _gcReader;
     private ChannelReader<Tracker.Frame> _visionReader;
 
     private Tracker.Frame _visionFrame = new();
@@ -21,21 +19,19 @@ public class Referee
 
     private Gc.Referee? _receivedGc;
 
-    Referee()
+    internal Referee()
     {
-        _udp = new UdpClient(Configs.Network.Referee);
+        _gcReader = Hub.Gc.Subscribe(BroadcastChannel<Gc.Referee>.Mode.All);
         _visionReader = Hub.Vision.Subscribe(BroadcastChannel<Tracker.Frame>.Mode.Latest);
     }
 
     internal bool ReceiveGc()
     {
-        if (!_udp.IsDataAvailable()) return false;
-
-        _receivedGc = _udp.Receive<Gc.Referee>();
+        if (!_gcReader.TryRead(out _receivedGc)) return false;
 
         if (_receivedGc != null && _state.Gc.CommandCounter != _receivedGc.CommandCounter)
         {
-            Logger.ZLogInformation($"received GC command: [{_state.Gc.CommandCounter}] | {_state.Gc.Command}");
+            Logger.ZLogInformation($"received GC command: [{_receivedGc.CommandCounter}] | {_receivedGc.Command}");
         }
 
         return true;

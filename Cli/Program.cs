@@ -1,5 +1,4 @@
 ﻿using Tyr.Common.Config;
-using Tyr.Referee;
 using Tyr.Vision;
 
 namespace Tyr.Cli;
@@ -14,8 +13,11 @@ internal static class Program
         var sslVisionRunner = new SslVisionRunner();
         sslVisionRunner.Start();
 
-        var gcRunner = new GcRunner();
+        var gcRunner = new Referee.GcRunner();
         gcRunner.Start();
+
+        var refereeRunner = new Referee.Runner();
+        refereeRunner.Start();
 
         Thread.Sleep(Timeout.Infinite);
     }
