@@ -1,4 +1,6 @@
 ﻿global using static Tyr.Gui.Logging;
+global using ZLogger;
+
 using Microsoft.Extensions.Logging;
 
 namespace Tyr.Gui;

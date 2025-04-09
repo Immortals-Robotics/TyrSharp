@@ -5,7 +5,6 @@ using Tracker = Tyr.Common.Data.Ssl.Vision.Tracker;
 using Gc = Tyr.Common.Data.Ssl.Gc;
 using Tyr.Common.Data.Referee;
 using Tyr.Common.Dataflow;
-using ZLogger;
 
 namespace Tyr.Referee;
 

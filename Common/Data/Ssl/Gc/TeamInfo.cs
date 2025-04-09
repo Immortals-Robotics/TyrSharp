@@ -2,6 +2,7 @@
 
 namespace Tyr.Common.Data.Ssl.Gc;
 
+[ProtoContract]
 public struct TeamInfo
 {
     public TeamInfo()

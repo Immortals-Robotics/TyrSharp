@@ -13,6 +13,8 @@ public abstract class Runner
     protected abstract void Tick();
     protected abstract void OnStop();
 
+    protected abstract string Name { get; }
+
     protected virtual int TickRateHz => 0;
 
     private float TickDuration => 1f / TickRateHz;
@@ -25,7 +27,11 @@ public abstract class Runner
         Timer.Start();
         OnStart();
 
-        _thread = new Thread(Loop) { IsBackground = true };
+        _thread = new Thread(Loop)
+        {
+            IsBackground = true,
+            Name = Name
+        };
         _thread.Start();
     }
 

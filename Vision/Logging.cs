@@ -1,4 +1,6 @@
 ﻿global using static Tyr.Vision.Logging;
+global using ZLogger;
+
 using Microsoft.Extensions.Logging;
 
 namespace Tyr.Vision;
