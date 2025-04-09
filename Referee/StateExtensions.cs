@@ -4,7 +4,7 @@ using Tyr.Common.Data.Ssl.Gc;
 
 namespace Tyr.Referee;
 
-public static class RefereeStateExtensions
+public static class StateExtensions
 {
     public static float Elapsed(this State state) => (float)(DateTime.UtcNow - state.Time).TotalSeconds;
 
