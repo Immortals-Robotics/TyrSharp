@@ -2,5 +2,7 @@
 bin/
 obj/
 
+packages/
+
 # Rider IDE user-specific settings
 *.DotSettings.user
