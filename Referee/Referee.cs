@@ -3,10 +3,11 @@ using Tracker = Tyr.Common.Data.Ssl.Vision.Tracker;
 using Gc = Tyr.Common.Data.Ssl.Gc;
 using Tyr.Common.Data.Referee;
 using Tyr.Common.Dataflow;
+using Tyr.Common.Module;
 
 namespace Tyr.Referee;
 
-public class Referee
+public class Referee : AsyncRunner
 {
     private readonly ChannelReader<Gc.Referee> _gcReader;
     private readonly ChannelReader<Tracker.Frame> _visionReader;
@@ -19,7 +20,7 @@ public class Referee
 
     private Gc.Referee? _receivedGc;
 
-    internal Referee()
+    public Referee()
     {
         _gcReader = Hub.RawReferee.Subscribe(BroadcastChannel<Gc.Referee>.Mode.All);
         _visionReader = Hub.Vision.Subscribe(BroadcastChannel<Tracker.Frame>.Mode.Latest);
@@ -168,5 +169,12 @@ public class Referee
             default:
                 throw new ArgumentOutOfRangeException("Command", _state.Gc.Command, null);
         }
+    }
+
+    protected override async Task Tick(CancellationToken token)
+    {
+        await Task.WhenAny(ReceiveGc(token), ReceiveVision(token));
+
+        Process();
     }
 }
