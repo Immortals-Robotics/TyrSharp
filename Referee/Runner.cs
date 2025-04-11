@@ -1,29 +1,12 @@
 ﻿namespace Tyr.Referee;
 
-public class Runner : Common.Module.Runner
+public class Runner : Common.Module.AsyncRunner
 {
-    protected override string Name => "Referee";
-
     private readonly Referee _referee = new();
 
-    protected override void OnStart()
+    protected override async Task Tick(CancellationToken token)
     {
-    }
-
-    protected override void OnStop()
-    {
-    }
-
-    protected override void Tick()
-    {
-        var gcReceived = _referee.ReceiveGc();
-        var visionReceived = _referee.ReceiveVision();
-
-        if (!gcReceived && !visionReceived)
-        {
-            Thread.Sleep(1);
-            return;
-        }
+        await Task.WhenAny(_referee.ReceiveGc(token), _referee.ReceiveVision(token));
 
         _referee.Process();
     }

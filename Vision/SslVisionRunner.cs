@@ -8,12 +8,14 @@ namespace Tyr.Vision;
 
 public class SslVisionRunner : UdpRunner<WrapperPacket>
 {
-    protected override string Name => "SSL Vision";
-
     protected override Address Address => Configs.Network.VisionSim;
 
     protected override void OnData(WrapperPacket data)
     {
-        Hub.SslVision.Publish(data);
+        if (data.Detection != null)
+            Hub.RawDetection.Publish(data.Detection);
+
+        if (data.Geometry != null)
+            Hub.RawGeometry.Publish(data.Geometry);
     }
 }

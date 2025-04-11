@@ -33,33 +33,33 @@ public class UdpClient
         return _socket.Client.Poll(1000, SelectMode.SelectRead);
     }
 
-    public ReadOnlySpan<byte> ReceiveRaw()
+    public async Task<ReadOnlyMemory<byte>> ReceiveRaw(CancellationToken token = default)
     {
         try
         {
-            // don't use UdpClient's receive as it allocates a new byte[] every time :\
-            _lastReceiveEndpoint ??= new IPEndPoint(IPAddress.Any, 0);
-            EndPoint tempRemoteEp = _lastReceiveEndpoint;
-
-            var received = _socket.Client.ReceiveFrom(_buffer, Config.Network.MaxUdpPacketSize, 0, ref tempRemoteEp);
-            _lastReceiveEndpoint = (IPEndPoint)tempRemoteEp;
-
-            return _buffer.AsSpan(0, received);
+            // TODO: fix the allocation inside this
+            var result = await _socket.ReceiveAsync(token);
+            _lastReceiveEndpoint = result.RemoteEndPoint;
+            return result.Buffer;
         }
-        catch (SocketException ex) when (ex.SocketErrorCode == SocketError.WouldBlock)
+        catch (SocketException ex) when (ex.SocketErrorCode == SocketError.Interrupted)
         {
-            return default;
+            return ReadOnlyMemory<byte>.Empty;
+        }
+        catch (OperationCanceledException)
+        {
+            return ReadOnlyMemory<byte>.Empty;
         }
         catch (Exception ex)
         {
-            Console.Error.WriteLine($"UDP receive error: {ex.Message}");
-            return default;
+            Logger.ZLogError(ex, $"UDP async receive error");
+            return ReadOnlyMemory<byte>.Empty;
         }
     }
 
-    public T? Receive<T>() where T : class
+    public async Task<T?> Receive<T>(CancellationToken token) where T : class
     {
-        var data = ReceiveRaw();
+        var data = await ReceiveRaw(token);
         if (data.IsEmpty)
             return null;
 
@@ -69,7 +69,7 @@ public class UdpClient
         }
         catch (Exception ex)
         {
-            Console.Error.WriteLine($"Failed to deserialize Protobuf-net message: {ex.Message}");
+            Logger.ZLogError(ex, $"Failed to deserialize Protobuf-net message");
             return null;
         }
     }

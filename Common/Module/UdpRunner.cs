@@ -2,38 +2,29 @@
 
 namespace Tyr.Common.Module;
 
-public abstract class UdpRunner<T> : Runner where T : class
+public abstract class UdpRunner<T> : AsyncRunner where T : class
 {
     protected abstract Address Address { get; }
 
     protected abstract void OnData(T data);
 
-    private UdpClient _client = null!;
+    private readonly UdpClient _client;
 
-    protected override void OnStart()
+    protected UdpRunner()
     {
         _client = new UdpClient(Address);
     }
 
-    protected override void OnStop()
+    protected override async Task Tick(CancellationToken token)
     {
-    }
-
-    protected override void Tick()
-    {
-        if (!_client.IsDataAvailable())
-        {
-            return;
-        }
-
-        var packet = _client.Receive<T>();
+        var packet = await _client.Receive<T>(token);
         if (packet == null)
         {
-            Logger.ZLogError($"Received null {Name} packet");
+            Logger.ZLogError($"Received null {typeof(T).Name} packet");
             return;
         }
 
-        Logger.ZLogTrace($"Received {Name} packet from {_client.GetLastReceiveEndpoint()}");
+        Logger.ZLogTrace($"Received {typeof(T).Name} packet from {_client.GetLastReceiveEndpoint()}");
 
         OnData(packet);
     }

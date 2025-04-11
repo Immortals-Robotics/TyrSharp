@@ -36,6 +36,38 @@ public class BroadcastChannel<T>
         return channel.Reader;
     }
 
+    public Subscription Subscribe(Action<T> onData, Mode mode = Mode.All)
+    {
+        var reader = Subscribe(mode);
+        var cts = new CancellationTokenSource();
+
+        _ = Task.Run(async () =>
+        {
+            await foreach (var item in reader.ReadAllAsync(cts.Token))
+            {
+                onData(item);
+            }
+        }, cts.Token);
+
+        return new Subscription(cts);
+    }
+
+    public Subscription Subscribe(Func<T, Task> onDataAsync, Mode mode = Mode.All)
+    {
+        var reader = Subscribe(mode);
+        var cts = new CancellationTokenSource();
+
+        _ = Task.Run(async () =>
+        {
+            await foreach (var item in reader.ReadAllAsync(cts.Token))
+            {
+                await onDataAsync(item);
+            }
+        }, cts.Token);
+
+        return new Subscription(cts);
+    }
+
     public void Publish(T item)
     {
         lock (_subscribers)

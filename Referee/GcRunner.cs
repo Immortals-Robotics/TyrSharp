@@ -8,12 +8,10 @@ namespace Tyr.Referee;
 
 public class GcRunner : UdpRunner<Gc.Referee>
 {
-    protected override string Name => "Game Controller";
-
     protected override Address Address => Configs.Network.Referee;
 
     protected override void OnData(Gc.Referee data)
     {
-        Hub.Gc.Publish(data);
+        Hub.RawReferee.Publish(data);
     }
 }

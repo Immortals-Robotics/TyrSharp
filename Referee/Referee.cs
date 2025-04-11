@@ -8,8 +8,8 @@ namespace Tyr.Referee;
 
 public class Referee
 {
-    private ChannelReader<Gc.Referee> _gcReader;
-    private ChannelReader<Tracker.Frame> _visionReader;
+    private readonly ChannelReader<Gc.Referee> _gcReader;
+    private readonly ChannelReader<Tracker.Frame> _visionReader;
 
     private Tracker.Frame _visionFrame = new();
     private State _state = new();
@@ -21,37 +21,45 @@ public class Referee
 
     internal Referee()
     {
-        _gcReader = Hub.Gc.Subscribe(BroadcastChannel<Gc.Referee>.Mode.All);
+        _gcReader = Hub.RawReferee.Subscribe(BroadcastChannel<Gc.Referee>.Mode.All);
         _visionReader = Hub.Vision.Subscribe(BroadcastChannel<Tracker.Frame>.Mode.Latest);
     }
 
-    internal bool ReceiveGc()
+    internal async Task ReceiveGc(CancellationToken token)
     {
-        if (!_gcReader.TryRead(out _receivedGc)) return false;
-
-        if (_receivedGc != null && _state.Gc.CommandCounter != _receivedGc.CommandCounter)
+        try
         {
-            Logger.ZLogInformation($"received GC command: [{_receivedGc.CommandCounter}] | {_receivedGc.Command}");
+            _receivedGc = await _gcReader.ReadAsync(token);
+
+            if (_receivedGc.CommandCounter != _state.Gc.CommandCounter)
+            {
+                Logger.ZLogInformation($"received GC command: [{_receivedGc.CommandCounter}] | {_receivedGc.Command}");
+            }
         }
-
-        return true;
+        catch (OperationCanceledException)
+        {
+        }
     }
 
-    internal bool ReceiveVision()
+    internal async Task ReceiveVision(CancellationToken token)
     {
-        if (!_visionReader.TryRead(out var visionFrame)) return false;
-
-        _visionFrame = visionFrame;
-        return true;
+        try
+        {
+            _visionFrame = await _visionReader.ReadAsync(token);
+        }
+        catch (OperationCanceledException)
+        {
+        }
     }
 
-    public void Process()
+    internal void Process()
     {
         var oldState = _state;
 
         if (_receivedGc != null)
         {
             _state.Gc = _receivedGc;
+            _receivedGc = null;
         }
 
         if (oldState.Gc.CommandCounter != _state.Gc.CommandCounter)
@@ -76,6 +84,8 @@ public class Referee
             _lastBall = _visionFrame.Ball;
             _moveHysteresis = 0;
         }
+
+        Hub.Referee.Publish(_state);
     }
 
     private bool BallInPlay()
@@ -154,7 +164,7 @@ public class Referee
             case Gc.Command.GoalYellow:
             case Gc.Command.GoalBlue:
                 break;
-            
+
             default:
                 throw new ArgumentOutOfRangeException("Command", _state.Gc.Command, null);
         }

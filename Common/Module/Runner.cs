@@ -9,9 +9,7 @@ public abstract class Runner
 
     protected Common.Time.Timer Timer { get; } = new();
 
-    protected abstract void OnStart();
     protected abstract void Tick();
-    protected abstract void OnStop();
 
     protected abstract string Name { get; }
 
@@ -25,7 +23,6 @@ public abstract class Runner
         _running = true;
 
         Timer.Start();
-        OnStart();
 
         _thread = new Thread(Loop)
         {
@@ -40,7 +37,6 @@ public abstract class Runner
         _running = false;
         _thread?.Join();
 
-        OnStop();
         Timer.Stop();
     }
 

@@ -3,8 +3,9 @@
 public static class Hub
 {
     // external data
-    public static readonly BroadcastChannel<Data.Ssl.Vision.WrapperPacket> SslVision = new();
-    public static readonly BroadcastChannel<Data.Ssl.Gc.Referee> Gc = new();
+    public static readonly BroadcastChannel<Data.Ssl.Vision.Detection.Frame> RawDetection = new();
+    public static readonly BroadcastChannel<Data.Ssl.Vision.Geometry.Data> RawGeometry = new();
+    public static readonly BroadcastChannel<Data.Ssl.Gc.Referee> RawReferee = new();
 
     // our published data
     public static readonly BroadcastChannel<Data.Ssl.Vision.Tracker.Frame> Vision = new();
