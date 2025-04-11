@@ -64,8 +64,8 @@ public struct Robot(Vector2 center, float radius, Angle angle) : IShape
         return new LineSegment(p1, p2);
     }
 
-    public float Circumference { get; }
-    public float Area { get; }
+    public float Circumference => 0f;
+    public float Area => 0f;
 
     public float Distance(Vector2 point)
     {

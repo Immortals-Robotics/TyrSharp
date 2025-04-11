@@ -1,5 +1,4 @@
 ﻿using Microsoft.Extensions.Logging;
-using ZLogger;
 
 namespace Tyr.Common.Debug;
 

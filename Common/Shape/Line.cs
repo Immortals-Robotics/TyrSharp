@@ -148,11 +148,11 @@ public struct Line(float a, float b, float c) : IShape
         float cy = circle.Center.Y;
         float r2 = circle.Radius * circle.Radius;
 
-        float d_a = 1 + da * da;
-        float d_b = 2 * (da * db - cx - cy * da);
-        float d_c = cx * cx + db * db - 2 * cy * db + cy * cy - r2;
+        float dA = 1 + da * da;
+        float dB = 2 * (da * db - cx - cy * da);
+        float dC = cx * cx + db * db - 2 * cy * db + cy * cy - r2;
 
-        var xs = AbcFormula(d_a, d_b, d_c);
+        var xs = AbcFormula(dA, dB, dC);
         foreach (var x in xs)
         {
             float y = da * x + db;

@@ -24,7 +24,7 @@ public class Referee : IDisposable
 
     public Referee()
     {
-        _gcReader = Hub.RawReferee.Subscribe(BroadcastChannel<Gc.Referee>.Mode.All);
+        _gcReader = Hub.RawReferee.Subscribe();
         _visionReader = Hub.Vision.Subscribe(BroadcastChannel<Tracker.Frame>.Mode.Latest);
 
         _runner = new RunnerAsync(Tick);
@@ -172,7 +172,7 @@ public class Referee : IDisposable
                 break;
 
             default:
-                throw new ArgumentOutOfRangeException("Command", _state.Gc.Command, null);
+                throw new ArgumentOutOfRangeException(null, _state.Gc.Command, null);
         }
     }
 

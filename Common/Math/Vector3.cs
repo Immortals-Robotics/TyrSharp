@@ -27,7 +27,7 @@ public struct Vector3(float x, float y, float z) : IEquatable<Vector3>
     public float DistanceTo(Vector3 v) => (v - this).Length();
     public float DistanceSquaredTo(Vector3 v) => (v - this).LengthSquared();
 
-    public Vector2 XY() => new Vector2(X, Y);
+    public Vector2 Xy() => new Vector2(X, Y);
     public Vector3 Abs() => new Vector3(MathF.Abs(X), MathF.Abs(Y), MathF.Abs(Z));
 
     public static Vector3 operator +(Vector3 a, Vector3 b) => new Vector3(a.X + b.X, a.Y + b.Y, a.Z + b.Z);

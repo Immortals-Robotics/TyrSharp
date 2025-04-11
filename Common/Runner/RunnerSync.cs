@@ -40,7 +40,7 @@ public class RunnerSync(Action tick, string threadName = "Runner", int tickRateH
             var tickStart = Timer.Time;
 
             Timer.Update();
-            tick!();
+            tick();
 
             if (TickRateHz <= 0) continue;
 

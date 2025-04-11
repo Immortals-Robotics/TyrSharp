@@ -6,8 +6,8 @@ public class Timer
 {
     private readonly Stopwatch _stopwatch = new();
 
-    private long _timeOffsetTicks = 0;
-    private long _lastUpdateTicks = 0;
+    private long _timeOffsetTicks;
+    private long _lastUpdateTicks;
 
     private const float SmoothnessAlpha = 0.1f;
 

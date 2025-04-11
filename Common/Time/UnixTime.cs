@@ -18,5 +18,5 @@ public static class UnixTime
         => (time - DateTime.UnixEpoch).TotalMilliseconds;
 
     public static long ToMicroseconds(DateTime time)
-        => (long)((time - DateTime.UnixEpoch).Ticks / 10);
+        => (time - DateTime.UnixEpoch).Ticks / 10;
 }

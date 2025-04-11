@@ -6,7 +6,7 @@ public class MedianFilter<T>(int size = 10)
     private readonly T[] _buffer = new T[size];
     private readonly T[] _sortBuffer = new T[size];
 
-    private int _index = 0;
+    private int _index;
     private bool _empty = true;
 
     public void Add(T value)

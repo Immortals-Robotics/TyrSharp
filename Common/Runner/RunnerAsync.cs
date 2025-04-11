@@ -43,7 +43,7 @@ public class RunnerAsync(Func<CancellationToken, Task> tick, int tickRateHz = 0)
 
             Timer.Update();
 
-            await tick!(token);
+            await tick(token);
 
             if (TickRateHz <= 0) continue;
 

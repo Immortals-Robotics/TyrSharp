@@ -87,7 +87,7 @@ public class UdpClient : IDisposable
         };
     }
 
-    public bool IsConnected => _socket.Client?.Connected ?? false;
+    public bool IsConnected => _socket.Client.Connected;
 
     public void Dispose()
     {

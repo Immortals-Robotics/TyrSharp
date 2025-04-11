@@ -55,9 +55,9 @@ public struct Vector2(float x, float y) : IEquatable<Vector2>
 
     public Vector2 CircleAroundPoint(Angle angle, float radius) => this + angle.ToUnitVec() * radius;
 
-    public Vector2 XX() => new(X, X);
-    public Vector2 YY() => new(Y, Y);
-    public Vector2 YX() => new(Y, X);
+    public Vector2 Xx() => new(X, X);
+    public Vector2 Yy() => new(Y, Y);
+    public Vector2 Yx() => new(Y, X);
 
     public static Vector2 Max(Vector2 a, Vector2 b) => new(MathF.Max(a.X, b.X), MathF.Max(a.Y, b.Y));
     public static Vector2 Min(Vector2 a, Vector2 b) => new(MathF.Min(a.X, b.X), MathF.Min(a.Y, b.Y));

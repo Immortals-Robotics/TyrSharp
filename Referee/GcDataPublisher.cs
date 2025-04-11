@@ -1,7 +1,6 @@
 ﻿using Tyr.Common.Config;
 using Tyr.Common.Dataflow;
 using Tyr.Common.Network;
-using Tyr.Common.Runner;
 using Gc = Tyr.Common.Data.Ssl.Gc;
 
 namespace Tyr.Referee;

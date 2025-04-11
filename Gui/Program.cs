@@ -4,7 +4,7 @@ namespace Tyr.Gui;
 
 internal static class Program
 {
-    private static void Main(string[] args)
+    private static void Main()
     {
         var builder = AppBuilder.Create();
         builder.EnableLogging(true);
