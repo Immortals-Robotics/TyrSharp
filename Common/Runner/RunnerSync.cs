@@ -1,6 +1,6 @@
 ﻿namespace Tyr.Common.Runner;
 
-public class RunnerSync(Action tick, string threadName = "Runner", int tickRateHz = 0) : RunnerBase(tickRateHz)
+public class RunnerSync(Action tick, int tickRateHz = 0) : RunnerBase(tickRateHz)
 {
     private Thread? _thread;
     private volatile bool _running;
@@ -18,7 +18,7 @@ public class RunnerSync(Action tick, string threadName = "Runner", int tickRateH
         _thread = new Thread(Loop)
         {
             IsBackground = true,
-            Name = threadName
+            Name = $"{tick.Method.DeclaringType?.FullName ?? "Unknown"}:{tick.Method.Name}"
         };
         _thread.Start();
     }
