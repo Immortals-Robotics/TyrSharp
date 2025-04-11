@@ -17,6 +17,11 @@ public abstract class Runner
 
     private float TickDuration => 1f / TickRateHz;
 
+    static Runner()
+    {
+        TimerResolution.Set(1);
+    }
+
     public void Start()
     {
         if (_running) return;
@@ -53,6 +58,15 @@ public abstract class Runner
             if (TickRateHz <= 0) continue;
 
             var nextTick = tickStart + TickDuration;
+
+            var remaining = nextTick - Timer.Time;
+            if (remaining > 2f * TimerResolution.CurrentSeconds)
+            {
+                var sleepTime = (int)(1000f * (remaining - TimerResolution.CurrentSeconds));
+                Logger.ZLogDebug($"Sleeping for {sleepTime}ms");
+                Thread.Sleep(sleepTime);
+            }
+
             while (Timer.Time < nextTick) ;
         }
     }

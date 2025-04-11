@@ -51,6 +51,15 @@ public abstract class AsyncRunner
             if (TickRateHz <= 0) continue;
 
             var nextTick = tickStart + TickDuration;
+
+            var remaining = nextTick - Timer.Time;
+            if (remaining > 2f * TimerResolution.CurrentSeconds)
+            {
+                var sleepTime = (int)(1000f * (remaining - TimerResolution.CurrentSeconds));
+                Logger.ZLogDebug($"Sleeping for {sleepTime}ms");
+                Thread.Sleep(sleepTime);
+            }
+
             while (Timer.Time < nextTick) ;
         }
     }

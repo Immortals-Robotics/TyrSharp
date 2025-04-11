@@ -16,7 +16,7 @@ internal static class Program
         var gcRunner = new Referee.GcRunner();
         gcRunner.Start();
 
-        var refereeRunner = new Referee.Runner();
+        var refereeRunner = new Referee.Referee();
         refereeRunner.Start();
 
         Thread.Sleep(Timeout.Infinite);
