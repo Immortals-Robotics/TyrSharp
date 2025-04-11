@@ -3,11 +3,11 @@ using Tracker = Tyr.Common.Data.Ssl.Vision.Tracker;
 using Gc = Tyr.Common.Data.Ssl.Gc;
 using Tyr.Common.Data.Referee;
 using Tyr.Common.Dataflow;
-using Tyr.Common.Module;
+using Tyr.Common.Runner;
 
 namespace Tyr.Referee;
 
-public class Referee : AsyncRunner
+public class Referee : IDisposable
 {
     private readonly ChannelReader<Gc.Referee> _gcReader;
     private readonly ChannelReader<Tracker.Frame> _visionReader;
@@ -20,13 +20,18 @@ public class Referee : AsyncRunner
 
     private Gc.Referee? _receivedGc;
 
+    private readonly RunnerAsync _runner;
+
     public Referee()
     {
         _gcReader = Hub.RawReferee.Subscribe(BroadcastChannel<Gc.Referee>.Mode.All);
         _visionReader = Hub.Vision.Subscribe(BroadcastChannel<Tracker.Frame>.Mode.Latest);
+
+        _runner = new RunnerAsync(Tick);
+        _runner.Start();
     }
 
-    internal async Task ReceiveGc(CancellationToken token)
+    private async Task ReceiveGc(CancellationToken token)
     {
         try
         {
@@ -42,7 +47,7 @@ public class Referee : AsyncRunner
         }
     }
 
-    internal async Task ReceiveVision(CancellationToken token)
+    private async Task ReceiveVision(CancellationToken token)
     {
         try
         {
@@ -53,7 +58,7 @@ public class Referee : AsyncRunner
         }
     }
 
-    internal void Process()
+    private void Process()
     {
         var oldState = _state;
 
@@ -171,10 +176,15 @@ public class Referee : AsyncRunner
         }
     }
 
-    protected override async Task Tick(CancellationToken token)
+    private async Task Tick(CancellationToken token)
     {
         await Task.WhenAny(ReceiveGc(token), ReceiveVision(token));
 
         Process();
+    }
+
+    public void Dispose()
+    {
+        _runner.Stop();
     }
 }

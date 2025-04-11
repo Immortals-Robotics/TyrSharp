@@ -1,7 +1,6 @@
 ﻿using System.Runtime.InteropServices;
-using System.Security;
 
-namespace Tyr.Common.Module;
+namespace Tyr.Common.Runner;
 
 public static class TimerResolutionWindows
 {

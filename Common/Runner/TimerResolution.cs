@@ -1,4 +1,4 @@
-﻿namespace Tyr.Common.Module;
+﻿namespace Tyr.Common.Runner;
 
 public static class TimerResolution
 {

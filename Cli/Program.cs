@@ -10,14 +10,10 @@ internal static class Program
         var configPath = args[0];
         Configs.Load(configPath);
 
-        var sslVisionRunner = new SslVisionRunner();
-        sslVisionRunner.Start();
+        using var sslVisionPublisher = new SslVisionDataPublisher();
+        using var gcPublisher = new Referee.GcDataPublisher();
 
-        var gcRunner = new Referee.GcRunner();
-        gcRunner.Start();
-
-        var refereeRunner = new Referee.Referee();
-        refereeRunner.Start();
+        using var referee = new Referee.Referee();
 
         Thread.Sleep(Timeout.Infinite);
     }
