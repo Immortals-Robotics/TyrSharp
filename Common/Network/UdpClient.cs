@@ -4,14 +4,11 @@ using ProtoBuf;
 
 namespace Tyr.Common.Network;
 
-public class UdpClient
+public class UdpClient : IDisposable
 {
     private readonly System.Net.Sockets.UdpClient _socket;
-    private IPEndPoint _listenEndpoint;
+    private readonly IPEndPoint _listenEndpoint;
     private IPEndPoint? _lastReceiveEndpoint;
-    private IPAddress _multicastAddress;
-
-    private readonly byte[] _buffer = new byte[Config.Network.MaxUdpPacketSize];
 
     public UdpClient(Address address)
     {
@@ -21,16 +18,11 @@ public class UdpClient
         _socket.Client.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, true);
         _socket.Client.Bind(_listenEndpoint);
 
-        _multicastAddress = IPAddress.Parse(address.Ip);
+        var multicastAddress = IPAddress.Parse(address.Ip);
         // TODO: c++ code checks if the address is multicast
-        _socket.JoinMulticastGroup(_multicastAddress);
+        _socket.JoinMulticastGroup(multicastAddress);
 
         _socket.Client.Blocking = false;
-    }
-
-    public bool IsDataAvailable(int timeoutMicroSeconds = 1000)
-    {
-        return _socket.Client.Poll(1000, SelectMode.SelectRead);
     }
 
     public async Task<ReadOnlyMemory<byte>> ReceiveRaw(CancellationToken token = default)
@@ -96,4 +88,9 @@ public class UdpClient
     }
 
     public bool IsConnected => _socket.Client?.Connected ?? false;
+
+    public void Dispose()
+    {
+        _socket.Dispose();
+    }
 }
