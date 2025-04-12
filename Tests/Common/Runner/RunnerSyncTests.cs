@@ -99,7 +99,7 @@ public class RunnerSyncTests(ITestOutputHelper testOutputHelper)
                 $"[{tickRateHz} Hz] Mean tick interval error {meanError:F4}ms exceeds tolerance of {toleranceMs}ms");
 
             testOutputHelper.WriteLine(
-                $"[{tickRateHz} Hz] Ticks: {intervals.Count}, Mean: {meanInterval:F4}ms, Outliers: {outliers}, Ratio: {outlierRatio:P2}");
+                $"[{tickRateHz} Hz] Ticks: {intervals.Count} (expected: {expectedTicks}), Mean: {meanInterval:F4}ms, Outliers: {outliers}, Ratio: {outlierRatio:P2}");
         }
     }
 }
