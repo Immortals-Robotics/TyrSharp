@@ -13,7 +13,7 @@ internal static class Program
         using var sslVisionPublisher = new SslVisionDataPublisher();
         using var gcPublisher = new Referee.GcDataPublisher();
 
-        using var referee = new Referee.Referee();
+        using var referee = new Referee.Runner();
         using var vision = new Vision.Vision();
 
         Thread.Sleep(Timeout.Infinite);

@@ -1,75 +1,34 @@
-﻿using System.Threading.Channels;
-using Tracker = Tyr.Common.Data.Ssl.Vision.Tracker;
+﻿using Tracker = Tyr.Common.Data.Ssl.Vision.Tracker;
 using Gc = Tyr.Common.Data.Ssl.Gc;
 using Tyr.Common.Data.Referee;
-using Tyr.Common.Dataflow;
-using Tyr.Common.Runner;
 
 namespace Tyr.Referee;
 
-public class Referee : IDisposable
+public class Referee
 {
-    private readonly ChannelReader<Gc.Referee> _gcReader;
-    private readonly ChannelReader<Tracker.Frame> _visionReader;
+    private Tracker.Frame _vision = new();
 
-    private Tracker.Frame _visionFrame = new();
     private State _state = new();
+    public State State => _state;
 
     private Tracker.Ball _lastBall;
     private int _moveHysteresis;
 
-    private Gc.Referee? _receivedGc;
-
-    private readonly RunnerAsync _runner;
-
-    public Referee()
-    {
-        _gcReader = Hub.RawReferee.Subscribe();
-        _visionReader = Hub.Vision.Subscribe(BroadcastChannel<Tracker.Frame>.Mode.Latest);
-
-        _runner = new RunnerAsync(Tick);
-        _runner.Start();
-    }
-
-    private async Task ReceiveGc(CancellationToken token)
-    {
-        try
-        {
-            _receivedGc = await _gcReader.ReadAsync(token);
-
-            if (_receivedGc.CommandCounter != _state.Gc.CommandCounter)
-            {
-                Logger.ZLogInformation($"received GC command: [{_receivedGc.CommandCounter}] | {_receivedGc.Command}");
-            }
-        }
-        catch (OperationCanceledException)
-        {
-        }
-    }
-
-    private async Task ReceiveVision(CancellationToken token)
-    {
-        try
-        {
-            _visionFrame = await _visionReader.ReadAsync(token);
-        }
-        catch (OperationCanceledException)
-        {
-        }
-    }
-
-    private void Process()
+    public bool Process(Tracker.Frame? vision, Gc.Referee? gc)
     {
         var oldState = _state;
 
-        if (_receivedGc != null)
+        if (vision != null)
+            _vision = vision;
+
+        if (gc != null)
         {
-            _state.Gc = _receivedGc;
-            _receivedGc = null;
+            _state.Gc = gc;
         }
 
         if (oldState.Gc.CommandCounter != _state.Gc.CommandCounter)
         {
+            Logger.ZLogInformation($"received GC command: [{_state.Gc.CommandCounter}] | {_state.Gc.Command}");
             OnNewCommand();
         }
 
@@ -87,11 +46,13 @@ public class Referee : IDisposable
             Logger.ZLogInformation($"state transition: {oldState} -> {_state}");
 
             _state.Time = DateTime.UtcNow;
-            _lastBall = _visionFrame.Ball;
+            _lastBall = _vision.Ball;
             _moveHysteresis = 0;
+
+            return true;
         }
 
-        Hub.Referee.Publish(_state);
+        return false;
     }
 
     private bool BallInPlay()
@@ -109,7 +70,7 @@ public class Referee : IDisposable
         const int requiredHys = 5;
         var requiredDis = _state.Our() && _state.Restart() ? 150.0f : 50.0f;
 
-        var ballMoveDis = _visionFrame.Ball.Position.DistanceTo(_lastBall.Position);
+        var ballMoveDis = _vision.Ball.Position.DistanceTo(_lastBall.Position);
 
         if (ballMoveDis > requiredDis)
         {
@@ -174,17 +135,5 @@ public class Referee : IDisposable
             default:
                 throw new ArgumentOutOfRangeException(null, _state.Gc.Command, null);
         }
-    }
-
-    private async Task Tick(CancellationToken token)
-    {
-        await Task.WhenAny(ReceiveGc(token), ReceiveVision(token));
-
-        Process();
-    }
-
-    public void Dispose()
-    {
-        _runner.Stop();
     }
 }
