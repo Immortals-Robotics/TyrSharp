@@ -1,9 +1,17 @@
-﻿using Microsoft.Extensions.Logging;
+﻿using System.Globalization;
+using Microsoft.Extensions.Logging;
 
 namespace Tyr.Common.Debug;
 
 public static class Log
 {
+    static Log()
+    {
+        // some cultures especially in europe use ',' instead of '.' for the decimal point 
+        CultureInfo.DefaultThreadCurrentCulture = CultureInfo.InvariantCulture;
+        CultureInfo.DefaultThreadCurrentUICulture = CultureInfo.InvariantCulture;
+    }
+    
     private static ILoggerFactory Factory { get; set; } = LoggerFactory.Create(logging =>
     {
         logging.SetMinimumLevel(LogLevel.Trace);

@@ -1,9 +1,15 @@
-﻿using Tyr.Common.Math;
+﻿using System.Globalization;
+using Tyr.Common.Math;
 
 namespace Tyr.Tests.Common.Math;
 
 public class Vector2Tests
 {
+    static Vector2Tests()
+    {
+        CultureInfo.DefaultThreadCurrentCulture = CultureInfo.InvariantCulture;    
+    }
+    
     [Fact]
     public void ZeroVector_HasZeroLength()
     {
