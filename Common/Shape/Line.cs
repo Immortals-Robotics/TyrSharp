@@ -29,13 +29,13 @@ public struct Line(float a, float b, float c) : IShape
             lineB = -delta.Y / delta.X;
         }
 
-        float lineC = -lineA * b.Y - lineB * b.X;
+        var lineC = -lineA * b.Y - lineB * b.X;
         return new Line { A = lineA, B = lineB, C = lineC };
     }
 
     public static Line FromPointAndAngle(Vector2 point, float angleRad)
     {
-        Vector2 dir = new Vector2(MathF.Cos(angleRad), MathF.Sin(angleRad));
+        var dir = new Vector2(MathF.Cos(angleRad), MathF.Sin(angleRad));
         return FromTwoPoints(point, point + dir);
     }
 
@@ -64,7 +64,7 @@ public struct Line(float a, float b, float c) : IShape
 
     public static List<float> AbcFormula(float a, float b, float c)
     {
-        float discr = b * b - 4 * a * c;
+        var discr = b * b - 4 * a * c;
 
         if (MathF.Abs(discr) < 1e-6f)
             return new() { -b / (2 * a) };
@@ -72,7 +72,7 @@ public struct Line(float a, float b, float c) : IShape
         if (discr < 0)
             return new();
 
-        float sqrt = MathF.Sqrt(discr);
+        var sqrt = MathF.Sqrt(discr);
         return new() { (-b + sqrt) / (2 * a), (-b - sqrt) / (2 * a) };
     }
 
@@ -83,21 +83,21 @@ public struct Line(float a, float b, float c) : IShape
 
         if (MathF.Abs(A) < 1e-6f)
         {
-            float x = -C / B;
+            var x = -C / B;
             return new Vector2(x, other.Y(x));
         }
         else if (MathF.Abs(other.A) < 1e-6f)
         {
-            float x = -other.C / other.B;
+            var x = -other.C / other.B;
             return new Vector2(x, Y(x));
         }
         else
         {
-            float denom = other.A * B - A * other.B;
+            var denom = other.A * B - A * other.B;
             if (MathF.Abs(denom) < 1e-6f)
                 return null;
 
-            float x = (A * other.C - other.A * C) / denom;
+            var x = (A * other.C - other.A * C) / denom;
             return new Vector2(x, Y(x));
         }
     }
@@ -110,13 +110,13 @@ public struct Line(float a, float b, float c) : IShape
             return null;
 
         var p = point.Value;
-        float minX = MathF.Min(segment.Start.X, segment.End.X);
-        float maxX = MathF.Max(segment.Start.X, segment.End.X);
-        float minY = MathF.Min(segment.Start.Y, segment.End.Y);
-        float maxY = MathF.Max(segment.Start.Y, segment.End.Y);
+        var minX = MathF.Min(segment.Start.X, segment.End.X);
+        var maxX = MathF.Max(segment.Start.X, segment.End.X);
+        var minY = MathF.Min(segment.Start.Y, segment.End.Y);
+        var maxY = MathF.Max(segment.Start.Y, segment.End.Y);
 
-        bool withinX = p.X >= minX && p.X <= maxX;
-        bool withinY = p.Y >= minY && p.Y <= maxY;
+        var withinX = p.X >= minX && p.X <= maxX;
+        var withinY = p.Y >= minY && p.Y <= maxY;
 
         return (withinX && withinY) ? p : null;
     }
@@ -127,13 +127,13 @@ public struct Line(float a, float b, float c) : IShape
 
         if (MathF.Abs(A) < 1e-6f)
         {
-            float x = -C / B;
-            float dx = x - circle.Center.X;
-            float dySquared = circle.Radius * circle.Radius - dx * dx;
+            var x = -C / B;
+            var dx = x - circle.Center.X;
+            var dySquared = circle.Radius * circle.Radius - dx * dx;
 
             if (dySquared < 0) return result;
 
-            float dy = MathF.Sqrt(dySquared);
+            var dy = MathF.Sqrt(dySquared);
             result.Add(new Vector2(x, circle.Center.Y + dy));
             if (dy > 0f)
                 result.Add(new Vector2(x, circle.Center.Y - dy));
@@ -141,21 +141,21 @@ public struct Line(float a, float b, float c) : IShape
             return result;
         }
 
-        float da = -B / A;
-        float db = -C / A;
+        var da = -B / A;
+        var db = -C / A;
 
-        float cx = circle.Center.X;
-        float cy = circle.Center.Y;
-        float r2 = circle.Radius * circle.Radius;
+        var cx = circle.Center.X;
+        var cy = circle.Center.Y;
+        var r2 = circle.Radius * circle.Radius;
 
-        float dA = 1 + da * da;
-        float dB = 2 * (da * db - cx - cy * da);
-        float dC = cx * cx + db * db - 2 * cy * db + cy * cy - r2;
+        var dA = 1 + da * da;
+        var dB = 2 * (da * db - cx - cy * da);
+        var dC = cx * cx + db * db - 2 * cy * db + cy * cy - r2;
 
         var xs = AbcFormula(dA, dB, dC);
         foreach (var x in xs)
         {
-            float y = da * x + db;
+            var y = da * x + db;
             result.Add(new Vector2(x, y));
         }
 
