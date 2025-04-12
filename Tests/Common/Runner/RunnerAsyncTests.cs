@@ -24,6 +24,7 @@ public class RunnerAsyncTests(ITestOutputHelper testOutputHelper)
         Assert.False(runner.IsRunning);
     }
 
+    [Trait("Category", "Timing")]
     [Fact]
     public void Tick_IsCalledMultipleTimes()
     {
