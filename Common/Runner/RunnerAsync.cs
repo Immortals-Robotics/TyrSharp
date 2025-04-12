@@ -30,9 +30,23 @@ public class RunnerAsync(Func<CancellationToken, Task> tick, int tickRateHz = 0)
         if (!IsRunning) return;
 
         _cts!.Cancel();
-        _task!.Wait();
+
+        try
+        {
+            if (!_task!.Wait(5000)) // waits up to 5 seconds
+            {
+                throw new TimeoutException("RunnerAsync.Stop() timed out waiting for task to complete.");
+            }
+        }
+        catch (AggregateException ex)
+        {
+            // Ignore cancellation-related exceptions
+            if (!ex.InnerExceptions.Any(e => e is TaskCanceledException or OperationCanceledException))
+                throw;
+        }
 
         Timer.Stop();
+        _task = null;
     }
 
     private async Task Loop(CancellationToken token)

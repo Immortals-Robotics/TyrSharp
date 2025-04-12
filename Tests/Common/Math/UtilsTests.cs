@@ -18,9 +18,9 @@ public class UtilsTests
     [Fact]
     public void AlmostEqual_CustomEpsilon_Works()
     {
-        float a = 5.0f;
-        float b = 5.5f;
-        float epsilon = 0.6f;
+        var a = 5.0f;
+        var b = 5.5f;
+        var epsilon = 0.6f;
         Assert.True(Utils.AlmostEqual(a, b, epsilon));
 
         epsilon = 0.4f;

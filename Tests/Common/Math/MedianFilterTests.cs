@@ -9,7 +9,7 @@ public class MedianFilterTests
     {
         var filter = new MedianFilter<float>(5);
 
-        for (int i = 0; i < 5; i++)
+        for (var i = 0; i < 5; i++)
             filter.Add(3f);
 
         Assert.Equal(3f, filter.Current(), 3);
