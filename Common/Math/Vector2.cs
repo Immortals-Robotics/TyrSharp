@@ -10,15 +10,11 @@ public struct Vector2(float x, float y) : IEquatable<Vector2>
     [ProtoMember(1, IsRequired = true)] public float X = x;
     [ProtoMember(2, IsRequired = true)] public float Y = y;
 
-    public Vector2(float f) : this(f, f)
-    {
-    }
-
     public static readonly Vector2 Zero = new(0, 0);
 
     public Vector2 Normalized()
     {
-        float len = Length();
+        var len = Length();
         return Utils.AlmostEqual(len, 0f) ? Zero : this / len;
     }
 
@@ -36,11 +32,8 @@ public struct Vector2(float x, float y) : IEquatable<Vector2>
 
     public Vector2 PointOnConnectingLine(Vector2 to, float dist)
     {
-        float m = (to.Y - Y) / (to.X - X);
-        float dx = dist / MathF.Sqrt(m * m + 1);
-        float x = to.X > X ? X + dx : X - dx;
-        float y = Y + m * (x - X);
-        return new Vector2(x, y);
+        var direction = (to - this).Normalized();
+        return this + direction * dist;
     }
 
     public Vector2 Abs() => new(MathF.Abs(X), MathF.Abs(Y));
@@ -64,7 +57,7 @@ public struct Vector2(float x, float y) : IEquatable<Vector2>
 
     public static Vector2 Clamp(Vector2 value, Vector2 min, Vector2 max)
     {
-        return new(
+        return new Vector2(
             System.Math.Clamp(value.X, min.X, max.X),
             System.Math.Clamp(value.Y, min.Y, max.Y)
         );
