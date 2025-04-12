@@ -11,36 +11,43 @@ public struct Vector3(float x, float y, float z) : IEquatable<Vector3>
     [ProtoMember(2, IsRequired = true)] public float Y = y;
     [ProtoMember(3, IsRequired = true)] public float Z = z;
 
-    public Vector3(float f) : this(f, f, f)
-    {
-    }
+    public static readonly Vector3 Zero = new(0, 0, 0);
 
-    public Vector3 Normalized()
+    public readonly Vector3 Normalized()
     {
         var length = Length();
-        return Utils.AlmostEqual(length, 0.0f) ? new Vector3() : this / length;
+        return Utils.AlmostEqual(length, 0.0f) ? Zero : this / length;
     }
 
-    public float Length() => MathF.Sqrt(X * X + Y * Y + Z * Z);
-    public float LengthSquared() => X * X + Y * Y + Z * Z;
-    public float Dot(Vector3 v) => X * v.X + Y * v.Y + Z * v.Z;
+    public readonly float Length() => MathF.Sqrt(LengthSquared());
+    public readonly float LengthSquared() => Dot(this);
+
     public float DistanceTo(Vector3 v) => (v - this).Length();
     public float DistanceSquaredTo(Vector3 v) => (v - this).LengthSquared();
 
-    public Vector2 Xy() => new Vector2(X, Y);
-    public Vector3 Abs() => new Vector3(MathF.Abs(X), MathF.Abs(Y), MathF.Abs(Z));
+    public readonly float Dot(Vector3 v) => X * v.X + Y * v.Y + Z * v.Z;
 
-    public static Vector3 operator +(Vector3 a, Vector3 b) => new Vector3(a.X + b.X, a.Y + b.Y, a.Z + b.Z);
-    public static Vector3 operator -(Vector3 a, Vector3 b) => new Vector3(a.X - b.X, a.Y - b.Y, a.Z - b.Z);
-    public static Vector3 operator *(Vector3 a, Vector3 b) => new Vector3(a.X * b.X, a.Y * b.Y, a.Z * b.Z);
-    public static Vector3 operator /(Vector3 a, Vector3 b) => new Vector3(a.X / b.X, a.Y / b.Y, a.Z / b.Z);
-    public static Vector3 operator *(Vector3 a, float d) => new Vector3(a.X * d, a.Y * d, a.Z * d);
-    public static Vector3 operator /(Vector3 a, float d) => new Vector3(a.X / d, a.Y / d, a.Z / d);
-    public static Vector3 operator -(Vector3 v) => new Vector3(-v.X, -v.Y, -v.Z);
+    public Vector3 Cross(Vector3 v) =>
+        new(
+            Y * v.Z - Z * v.Y,
+            Z * v.X - X * v.Z,
+            X * v.Y - Y * v.X
+        );
+
+    public Vector2 Xy() => new(X, Y);
+    public Vector3 Abs() => new(MathF.Abs(X), MathF.Abs(Y), MathF.Abs(Z));
+
+    public static Vector3 operator +(Vector3 a, Vector3 b) => new(a.X + b.X, a.Y + b.Y, a.Z + b.Z);
+    public static Vector3 operator -(Vector3 a, Vector3 b) => new(a.X - b.X, a.Y - b.Y, a.Z - b.Z);
+    public static Vector3 operator *(Vector3 a, Vector3 b) => new(a.X * b.X, a.Y * b.Y, a.Z * b.Z);
+    public static Vector3 operator /(Vector3 a, Vector3 b) => new(a.X / b.X, a.Y / b.Y, a.Z / b.Z);
+    public static Vector3 operator *(Vector3 a, float d) => new(a.X * d, a.Y * d, a.Z * d);
+    public static Vector3 operator /(Vector3 a, float d) => new(a.X / d, a.Y / d, a.Z / d);
+    public static Vector3 operator -(Vector3 v) => new(-v.X, -v.Y, -v.Z);
     public static Vector3 operator +(Vector3 v) => v;
 
-    public static bool operator ==(Vector3 a, Vector3 b) => Equals(a, b);
-    public static bool operator !=(Vector3 a, Vector3 b) => !Equals(a, b);
+    public static bool operator ==(Vector3 a, Vector3 b) => a.Equals(b);
+    public static bool operator !=(Vector3 a, Vector3 b) => !a.Equals(b);
 
     public bool Equals(Vector3 other)
     {

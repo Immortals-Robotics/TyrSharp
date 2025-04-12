@@ -72,8 +72,8 @@ public struct Vector2(float x, float y) : IEquatable<Vector2>
     public static Vector2 operator *(float f, Vector2 v) => v * f;
     public static Vector2 operator -(Vector2 v) => new(-v.X, -v.Y);
 
-    public static bool operator ==(Vector2 a, Vector2 b) => Equals(a, b);
-    public static bool operator !=(Vector2 a, Vector2 b) => !Equals(a, b);
+    public static bool operator ==(Vector2 a, Vector2 b) => a.Equals(b);
+    public static bool operator !=(Vector2 a, Vector2 b) => !a.Equals(b);
 
     public bool Equals(Vector2 other)
     {
