@@ -23,17 +23,33 @@ public class Camera(uint id)
 
     public void OnFrame(Frame frame)
     {
-        // TODO: check frame id and update
+        var expectedFrameId = FrameId == 0 ? frame.FrameNumber : FrameId + 1;
+        if (frame.FrameNumber != expectedFrameId)
+        {
+            Logger.ZLogWarning($"Camera {Id} frame id mismatch, expected {expectedFrameId}, got {frame.FrameNumber}");
+
+            if (Math.Abs((int)expectedFrameId - (int)frame.FrameNumber) > 10)
+                Reset();
+        }
+
+        FrameId = frame.FrameNumber;
 
         if (!_frameTimeEstimator.IsFull || frame.FrameNumber % FrameEstimatorStride == 0)
         {
             _frameTimeEstimator.AddSample(frame.FrameNumber, frame.CaptureTime.ToUnixTimeSeconds());
         }
 
-        Logger.ZLogDebug($"Delta time: {DeltaTime}");
+        Logger.ZLogTrace($"Camera {Id} Delta time: {DeltaTime}");
 
         ProcessRobots(frame);
         ProcessBalls(frame);
+    }
+
+    private void Reset()
+    {
+        _frameTimeEstimator.Reset();
+        _robots.Clear();
+        _balls.Clear();
     }
 
     private void ProcessRobots(Frame frame)
