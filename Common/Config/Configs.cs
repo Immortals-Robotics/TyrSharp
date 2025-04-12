@@ -10,7 +10,7 @@ public class Configs
     [DataMember(Name = "vision")] public Vision VisionInternal { get; set; } = new();
     [DataMember(Name = "soccer")] public Soccer SoccerInternal { get; set; } = new();
 
-    private static Configs Instance { get; set; } = null!;
+    private static Configs Instance { get; set; } = new();
 
     public static Common Common => Instance.CommonInternal;
     public static Network Network => Instance.NetworkInternal;
