@@ -25,7 +25,7 @@ public class RunnerSyncTests(ITestOutputHelper testOutputHelper)
 
         Assert.False(runner.IsRunning);
     }
-
+    
     [Fact]
     public void Tick_IsCalledMultipleTimes()
     {
@@ -38,7 +38,7 @@ public class RunnerSyncTests(ITestOutputHelper testOutputHelper)
 
         Assert.True(count > 2, $"Expected more ticks, got {count}");
     }
-
+    
     [Fact]
     public void TickRateHz_RespectsThrottling()
     {
@@ -52,6 +52,7 @@ public class RunnerSyncTests(ITestOutputHelper testOutputHelper)
         Assert.InRange(count, 1, 5); // be lenient due to thread scheduling
     }
 
+    [Trait("Category", "Timing")]
     [Theory]
     [InlineData(10)]
     [InlineData(60)]

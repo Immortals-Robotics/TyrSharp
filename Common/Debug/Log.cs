@@ -14,7 +14,7 @@ public static class Log
     
     private static ILoggerFactory Factory { get; set; } = LoggerFactory.Create(logging =>
     {
-        logging.SetMinimumLevel(LogLevel.Trace);
+        logging.SetMinimumLevel(LogLevel.Debug);
         logging.AddZLoggerConsole(options =>
         {
             options.CaptureThreadInfo = true;

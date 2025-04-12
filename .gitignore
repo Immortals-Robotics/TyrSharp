@@ -6,3 +6,7 @@ packages/
 
 # Rider IDE user-specific settings
 *.DotSettings.user
+
+# macOS system files
+.DS_Store
+**/.DS_Store

@@ -42,6 +42,7 @@ public class RunnerAsyncTests(ITestOutputHelper testOutputHelper)
         Assert.True(count > 2, $"Expected more ticks, got {count}");
     }
 
+    [Trait("Category", "Timing")]
     [Theory]
     [InlineData(10)]
     [InlineData(60)]
