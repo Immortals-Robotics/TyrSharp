@@ -12,7 +12,7 @@ public class BroadcastChannel<T>
         All,
     }
 
-    public ChannelReader<T> Subscribe(Mode mode = Mode.All)
+    public Subscriber<T> Subscribe(Mode mode = Mode.All)
     {
         var channel = mode switch
         {
@@ -32,7 +32,15 @@ public class BroadcastChannel<T>
             _subscribers.Add(channel);
         }
 
-        return channel.Reader;
+        return new Subscriber<T>(this, channel.Reader);
+    }
+
+    public void Unsubscribe(Subscriber<T> subscriber)
+    {
+        lock (_subscribers)
+        {
+            _subscribers.RemoveAll(channel => channel.Reader == subscriber.Reader);
+        }
     }
 
     public void Publish(T item)

@@ -8,29 +8,29 @@ public class BroadcastChannelTests
     public async Task AllSubscribers_Receive_AllPublishedMessages()
     {
         var channel = new BroadcastChannel<int>();
-        var reader1 = channel.Subscribe(BroadcastChannel<int>.Mode.All);
-        var reader2 = channel.Subscribe(BroadcastChannel<int>.Mode.All);
+        var subscriber1 = channel.Subscribe(BroadcastChannel<int>.Mode.All);
+        var subscriber2 = channel.Subscribe(BroadcastChannel<int>.Mode.All);
 
         channel.Publish(42);
         channel.Publish(99);
 
-        Assert.Equal(42, await reader1.ReadAsync());
-        Assert.Equal(99, await reader1.ReadAsync());
+        Assert.Equal(42, await subscriber1.Reader.ReadAsync());
+        Assert.Equal(99, await subscriber1.Reader.ReadAsync());
 
-        Assert.Equal(42, await reader2.ReadAsync());
-        Assert.Equal(99, await reader2.ReadAsync());
+        Assert.Equal(42, await subscriber2.Reader.ReadAsync());
+        Assert.Equal(99, await subscriber2.Reader.ReadAsync());
     }
 
     [Fact]
     public async Task LatestSubscriber_Receives_OnlyLatestValue()
     {
         var channel = new BroadcastChannel<string>();
-        var reader = channel.Subscribe(BroadcastChannel<string>.Mode.Latest);
+        var subscriber = channel.Subscribe(BroadcastChannel<string>.Mode.Latest);
 
         channel.Publish("old");
         channel.Publish("new");
 
-        var result = await reader.ReadAsync();
+        var result = await subscriber.Reader.ReadAsync();
         Assert.Equal("new", result); // "old" was dropped
     }
 
@@ -38,18 +38,18 @@ public class BroadcastChannelTests
     public async Task MixedSubscribers_RespectModes()
     {
         var channel = new BroadcastChannel<int>();
-        var allReader = channel.Subscribe(BroadcastChannel<int>.Mode.All);
-        var latestReader = channel.Subscribe(BroadcastChannel<int>.Mode.Latest);
+        var allSubscriber = channel.Subscribe(BroadcastChannel<int>.Mode.All);
+        var latestSubscriber = channel.Subscribe(BroadcastChannel<int>.Mode.Latest);
 
         channel.Publish(1);
         channel.Publish(2);
         channel.Publish(3);
 
-        Assert.Equal(1, await allReader.ReadAsync());
-        Assert.Equal(2, await allReader.ReadAsync());
-        Assert.Equal(3, await allReader.ReadAsync());
+        Assert.Equal(1, await allSubscriber.Reader.ReadAsync());
+        Assert.Equal(2, await allSubscriber.Reader.ReadAsync());
+        Assert.Equal(3, await allSubscriber.Reader.ReadAsync());
 
-        Assert.Equal(3, await latestReader.ReadAsync()); // only latest survives
+        Assert.Equal(3, await latestSubscriber.Reader.ReadAsync()); // only latest survives
     }
 
     [Fact]
@@ -59,5 +59,29 @@ public class BroadcastChannelTests
 
         var reader = channel.Subscribe();
         Assert.NotNull(reader);
+    }
+
+    [Fact]
+    public async Task Unsubscribe_removes_channel_and_stops_delivery()
+    {
+        var channel = new BroadcastChannel<int>();
+        var subscriber = channel.Subscribe();
+        var reader = subscriber.Reader;
+
+        // Confirm initial delivery works
+        channel.Publish(42);
+        var received = await reader.ReadAsync();
+        Assert.Equal(42, received);
+
+        // Unsubscribe and publish again
+        subscriber.Dispose(); // calls Unsubscribe internally
+
+        // There should be no more items
+        channel.Publish(99);
+
+        // Add a short delay to account for async delivery
+        await Task.Delay(10);
+
+        Assert.False(reader.TryRead(out _));
     }
 }

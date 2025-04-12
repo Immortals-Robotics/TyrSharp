@@ -7,7 +7,7 @@ namespace Tyr.Vision;
 
 public class Vision : IDisposable
 {
-    private readonly ChannelReader<Frame> _reader = Hub.RawDetection.Subscribe();
+    private readonly Subscriber<Frame> _subscriber = Hub.RawDetection.Subscribe();
 
     private Dictionary<uint, Camera> _cameras = new();
 
@@ -23,7 +23,7 @@ public class Vision : IDisposable
 
     private void ReceiveDetections()
     {
-        while (_reader.TryRead(out var frame))
+        while (_subscriber.Reader.TryRead(out var frame))
         {
             if (!_cameras.TryGetValue(frame.CameraId, out var camera))
             {
