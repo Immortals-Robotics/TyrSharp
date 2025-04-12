@@ -34,7 +34,7 @@ public class Vision : IDisposable
             camera.OnFrame(frame);
         }
 
-        Logger.ZLogDebug($"fps: requested: {_runner.TickRateHz}, actual: {1f / Timer.DeltaTime:F2}");
+        Logger.ZLogTrace($"fps: requested: {_runner.TickRateHz}, actual: {1f / Timer.DeltaTime:F2}");
     }
 
     private void Tick()

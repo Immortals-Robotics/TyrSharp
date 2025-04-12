@@ -24,7 +24,7 @@ public abstract class RunnerBase(int tickRateHz)
         if (remaining > 2f * TimerResolution.CurrentSeconds)
         {
             var sleepTime = (int)(1000f * (remaining - TimerResolution.CurrentSeconds));
-            Logger.ZLogDebug($"Sleeping for {sleepTime}ms");
+            Logger.ZLogTrace($"Sleeping for {sleepTime}ms");
             Thread.Sleep(sleepTime);
         }
 

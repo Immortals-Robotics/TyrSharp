@@ -1,11 +1,11 @@
 ﻿using MathNet.Numerics.LinearAlgebra;
-using MathNet.Numerics.LinearAlgebra.Single;
+using MathNet.Numerics.LinearAlgebra.Double;
 
 namespace Tyr.Common.Math;
 
 public class LineEstimator
 {
-    public (float slope, float intercept)? Estimate;
+    public (double slope, double intercept)? Estimate;
 
     public int Capacity { get; }
     public int Count { get; private set; }
@@ -13,8 +13,8 @@ public class LineEstimator
 
     private int _index;
 
-    private readonly Matrix<float> _x;
-    private readonly Vector<float> _y;
+    private readonly Matrix<double> _x;
+    private readonly Vector<double> _y;
 
     public LineEstimator(int capacity)
     {
@@ -26,7 +26,7 @@ public class LineEstimator
         _y = Vector.Build.Dense(capacity, 0f);
     }
 
-    public void AddSample(float x, float y)
+    public void AddSample(double x, double y)
     {
         _x[_index, 1] = x;
         _y[_index] = y;

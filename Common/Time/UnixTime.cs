@@ -11,12 +11,12 @@ public static class UnixTime
     public static DateTime FromMicroseconds(long microseconds)
         => DateTime.UnixEpoch.AddTicks(microseconds * 10); // 1 tick = 100ns
 
-    public static double ToSeconds(DateTime time)
+    public static double ToUnixTimeSeconds(this DateTime time)
         => (time - DateTime.UnixEpoch).TotalSeconds;
 
-    public static double ToMilliseconds(DateTime time)
+    public static double ToUnixTimeMilliseconds(this DateTime time)
         => (time - DateTime.UnixEpoch).TotalMilliseconds;
 
-    public static long ToMicroseconds(DateTime time)
+    public static long ToUnixTimeMicroseconds(this DateTime time)
         => (time - DateTime.UnixEpoch).Ticks / 10;
 }
