@@ -5,6 +5,7 @@
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
         <RootNamespace>Tyr.Vision</RootNamespace>
+        <AssemblyName>Tyr.Vision</AssemblyName>
     </PropertyGroup>
 
     <ItemGroup>

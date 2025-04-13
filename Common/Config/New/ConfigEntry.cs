@@ -18,10 +18,12 @@ public class ConfigEntry(MemberInfo memberInfo, Configurable owner)
         get => _info.GetValue(null)!;
         set
         {
-            if (Value == value)
-                return;
+            var converted = Convert.ChangeType(value, Type);
 
-            _info.SetValue(null, Convert.ChangeType(value, Type));
+            var current = _info.GetValue(null);
+            if (Equals(current, converted)) return;
+
+            _info.SetValue(null, converted);
             owner.OnEntryChanged(this);
         }
     }

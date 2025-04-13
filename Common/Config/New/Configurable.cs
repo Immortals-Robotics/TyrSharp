@@ -34,9 +34,20 @@ public class Configurable(Type type)
         }
     }
 
-    public static IEnumerable<Configurable> GetAllConfigurables() => Assembly
-        .GetExecutingAssembly()
-        .GetTypes()
-        .Where(type => type.GetCustomAttribute<ConfigurableAttribute>() != null)
-        .Select(info => new Configurable(info));
+    public static IEnumerable<Configurable> GetAllConfigurables()
+    {
+        foreach (var assembly in AppDomain.CurrentDomain.GetAssemblies())
+        {
+            var name = assembly.GetName().Name;
+            if (name == null || !name.StartsWith("Tyr."))
+                continue;
+
+            foreach (var type in assembly.GetTypes())
+            {
+                if (type.GetCustomAttribute<ConfigurableAttribute>() == null) continue;
+
+                yield return new Configurable(type);
+            }
+        }
+    }
 }

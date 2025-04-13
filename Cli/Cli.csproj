@@ -6,6 +6,7 @@
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
         <RootNamespace>Tyr.Cli</RootNamespace>
+        <AssemblyName>Tyr.Cli</AssemblyName>
     </PropertyGroup>
 
     <ItemGroup>

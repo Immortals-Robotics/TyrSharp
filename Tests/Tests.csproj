@@ -6,6 +6,7 @@
         <Nullable>enable</Nullable>
         <IsPackable>false</IsPackable>
         <RootNamespace>Tyr.Tests</RootNamespace>
+        <AssemblyName>Tyr.Tests</AssemblyName>
     </PropertyGroup>
 
     <ItemGroup>
