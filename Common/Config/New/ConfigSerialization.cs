@@ -2,19 +2,21 @@
 
 namespace Tyr.Common.Config.New;
 
-public class ConfigSerialization
+public static class ConfigSerialization
 {
-    public static readonly Func<string, string> ConvertName = TomlNamingHelper.PascalToSnakeCase;
+    private static readonly Func<string, string> ConvertName = TomlNamingHelper.PascalToSnakeCase;
 
-    // Converts a list of Configurable into a nested tree
-    public static IDictionary<string, object> ToTree(IEnumerable<Configurable> configurables)
+    // A nested tree containing ConfigEntries that can be used for serialization
+    public static IDictionary<string, object> Tree { get; }
+
+    static ConfigSerialization()
     {
-        var root = new Dictionary<string, object>();
+        Tree = new Dictionary<string, object>();
 
-        foreach (var configurable in configurables)
+        foreach (var configurable in Configurable.AllInDomain)
         {
             var namespaceParts = configurable.Namespace.Split('.').Skip(1);
-            var current = root;
+            var current = Tree;
 
             foreach (var namespacePart in namespaceParts)
             {
@@ -24,13 +26,50 @@ public class ConfigSerialization
                 current = (Dictionary<string, object>)child!;
             }
 
-            var entries = configurable
-                .Entries()
-                .ToDictionary(entry => ConvertName(entry.Name), entry => entry.Value);
+            var entries = configurable.Entries
+                .ToDictionary(entry => ConvertName(entry.Name), object (entry) => entry);
 
             current[ConvertName(configurable.TypeName)] = entries;
         }
+    }
 
-        return root;
+
+    // Loads values from a config tree into entries
+    public static void ApplyConfig(IDictionary<string, object> config)
+    {
+        ApplyConfig(config, Tree);
+    }
+
+    private static void ApplyConfig(IDictionary<string, object> currentConfig, IDictionary<string, object> currentTree)
+    {
+        foreach (var (key, configValue) in currentConfig)
+        {
+            if (!currentTree.TryGetValue(key, out var internalValue))
+                continue;
+
+            switch (configValue)
+            {
+                case IDictionary<string, object> configSubTree
+                    when internalValue is IDictionary<string, object> internalSubTree:
+                    ApplyConfig(configSubTree, internalSubTree);
+                    break;
+
+                case not null when internalValue is ConfigEntry entry:
+                    try
+                    {
+                        entry.Value = configValue;
+                    }
+                    catch (Exception e)
+                    {
+                        Logger.ZLogError(e, $"Failed to apply value to '{entry.Name}': {e.Message}");
+                    }
+
+                    break;
+
+                default:
+                    Logger.ZLogWarning($"Ignoring config {key} due to type mismatch");
+                    break;
+            }
+        }
     }
 }
