@@ -11,7 +11,7 @@ public class ConfigEntry(MemberInfo memberInfo, Configurable owner)
     public Type Type => _info.PropertyType;
 
     public string Comment => _meta.Comment;
-    public object DefaultValue => _meta.DefaultValue;
+    public object DefaultValue { get; } = ((PropertyInfo)memberInfo).GetValue(null)!;
 
     public object Value
     {
