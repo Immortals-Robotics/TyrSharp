@@ -6,8 +6,10 @@ namespace Tyr.Common.Network;
 
 public class UdpServer
 {
+    private const int MaxUdpPacketSize = 64 * 1024;
+
     private readonly System.Net.Sockets.UdpClient _socket = new(AddressFamily.InterNetwork);
-    private readonly byte[] _buffer = new byte[Config.Network.MaxUdpPacketSize];
+    private readonly byte[] _buffer = new byte[MaxUdpPacketSize];
 
     public Span<byte> GetBuffer()
     {

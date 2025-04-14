@@ -1,4 +1,4 @@
-﻿namespace Tyr.Common.Config.New;
+﻿namespace Tyr.Common.Config;
 
 [AttributeUsage(AttributeTargets.Property)]
 public class ConfigEntryAttribute(string? comment = null) : Attribute

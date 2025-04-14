@@ -1,4 +1,4 @@
-﻿using Tyr.Common.Config;
+﻿using Tyr.Common.Data;
 using Tyr.Common.Data.Referee;
 using Tyr.Common.Math;
 using Gc = Tyr.Common.Data.Ssl.Gc;

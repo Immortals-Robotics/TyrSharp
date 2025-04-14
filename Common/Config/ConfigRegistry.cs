@@ -1,28 +1,30 @@
 ﻿using System.Reflection;
 using System.Text;
 using Tomlet.Models;
-using Tomlyn.Helpers;
 
-namespace Tyr.Common.Config.New;
+namespace Tyr.Common.Config;
 
 public static class ConfigRegistry
 {
-    internal static readonly Func<string, string> ConvertName = TomlNamingHelper.PascalToSnakeCase;
+    internal static string ConvertName(string s) => s;
 
     private static string MapName(Type type) => $"{type.Namespace}.{type.Name}";
 
-    private static Dictionary<string, Configurable>? _configurables;
-
-    public static Dictionary<string, Configurable> Configurables => _configurables ??= AppDomain.CurrentDomain
-        .GetAssemblies()
-        .Where(assembly => assembly.GetName().Name != null && assembly.GetName().Name!.StartsWith("Tyr"))
-        .SelectMany(assembly => assembly.GetTypes())
-        .Where(type => type.GetCustomAttribute<ConfigurableAttribute>() != null)
-        .ToDictionary(MapName, type => new Configurable(type));
+    public static Dictionary<string, Configurable> Configurables { get; set; } = null!;
 
     public static Configurable Get(object obj) => Configurables[MapName(obj.GetType())];
     public static Configurable Get(Type type) => Configurables[MapName(type)];
     public static Configurable Get<T>() => Configurables[MapName(typeof(T))];
+
+    public static void Initialize()
+    {
+        Configurables = AppDomain.CurrentDomain
+            .GetAssemblies()
+            .Where(assembly => assembly.GetName().Name != null && assembly.GetName().Name!.StartsWith("Tyr"))
+            .SelectMany(assembly => assembly.GetTypes())
+            .Where(type => type.GetCustomAttribute<ConfigurableAttribute>() != null)
+            .ToDictionary(MapName, type => new Configurable(type));
+    }
 
     private static string ConvertPath(string path)
     {

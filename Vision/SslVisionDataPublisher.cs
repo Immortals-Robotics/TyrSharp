@@ -5,9 +5,13 @@ using Tyr.Common.Network;
 
 namespace Tyr.Vision;
 
+[Configurable]
 public class SslVisionDataPublisher : IDisposable
 {
-    private readonly UdpReceiver<WrapperPacket> _udpReceiver = new(Configs.Network.VisionSim, OnData);
+    [ConfigEntry] public static Address VisionAddress { get; set; } = new() { Ip = "224.5.23.2", Port = 10006 };
+    [ConfigEntry] public static Address VisionSimAddress { get; set; } = new() { Ip = "224.5.23.2", Port = 10025 };
+
+    private readonly UdpReceiver<WrapperPacket> _udpReceiver = new(VisionSimAddress, OnData);
 
     private static void OnData(WrapperPacket data)
     {

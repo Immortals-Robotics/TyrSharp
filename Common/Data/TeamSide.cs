@@ -1,4 +1,4 @@
-﻿namespace Tyr.Common.Config;
+﻿namespace Tyr.Common.Data;
 
 public enum TeamSide
 {

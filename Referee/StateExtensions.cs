@@ -1,4 +1,4 @@
-﻿using Tyr.Common.Config;
+﻿using Tyr.Common.Data;
 using Tyr.Common.Data.Referee;
 using Tyr.Common.Data.Ssl.Gc;
 
@@ -8,7 +8,7 @@ public static class StateExtensions
 {
     public static float Elapsed(this State state) => (float)(DateTime.UtcNow - state.Time).TotalSeconds;
 
-    public static bool Our(this State state) => state.Color == Configs.Common.OurColor;
+    public static bool Our(this State state) => state.Color == Common.Config.Common.OurColor;
     public static bool Halt(this State state) => state.GameState == GameState.Halt;
     public static bool Stop(this State state) => state.GameState == GameState.Stop;
     public static bool Running(this State state) => state.GameState == GameState.Running;
@@ -47,12 +47,12 @@ public static class StateExtensions
     public static bool CanEnterField(this State state) => state.Timeout();
 
     public static TeamInfo OurInfo(this State state) =>
-        Configs.Common.OurColor == TeamColor.Blue ? state.Gc.Blue : state.Gc.Yellow;
+        Common.Config.Common.OurColor == TeamColor.Blue ? state.Gc.Blue : state.Gc.Yellow;
 
     public static TeamInfo OppInfo(this State state) =>
-        Configs.Common.OurColor == TeamColor.Yellow ? state.Gc.Blue : state.Gc.Yellow;
+        Common.Config.Common.OurColor == TeamColor.Yellow ? state.Gc.Blue : state.Gc.Yellow;
 
-    public static TeamSide OurSide(this State state) => Configs.Common.OurColor == TeamColor.Blue
+    public static TeamSide OurSide(this State state) => Common.Config.Common.OurColor == TeamColor.Blue
         ? state.Gc.BlueTeamSide
         : state.Gc.YellowTeamSide;
 

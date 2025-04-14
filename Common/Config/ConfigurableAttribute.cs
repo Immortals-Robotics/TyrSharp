@@ -1,4 +1,4 @@
-﻿namespace Tyr.Common.Config.New;
+﻿namespace Tyr.Common.Config;
 
 // Attributes to mark configurable types and fields
 [AttributeUsage(AttributeTargets.Class | AttributeTargets.Struct)]

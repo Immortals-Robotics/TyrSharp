@@ -2,7 +2,7 @@
 using Tomlet;
 using Tomlet.Models;
 
-namespace Tyr.Common.Config.New;
+namespace Tyr.Common.Config;
 
 public class Configurable
 {
@@ -32,7 +32,7 @@ public class Configurable
         _meta = type.GetCustomAttribute<ConfigurableAttribute>()!;
 
         _entries = Type
-            .GetMembers(BindingFlags.Public | BindingFlags.Static)
+            .GetProperties(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static)
             .Where(info => info.GetCustomAttribute<ConfigEntryAttribute>() != null)
             .Select(info => new ConfigEntry(info, this))
             .ToArray();
