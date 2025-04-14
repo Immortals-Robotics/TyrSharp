@@ -1,20 +1,25 @@
 ﻿using System.Globalization;
 using Microsoft.Extensions.Logging;
+using Tyr.Common.Config;
 
 namespace Tyr.Common.Debug;
 
+[Configurable]
 public static class Log
 {
+    // TODO: changes to these are not picked up due to init order issues
+    [ConfigEntry] private static LogLevel Level { get; set; } = LogLevel.Trace;
+
     static Log()
     {
         // some cultures especially in europe use ',' instead of '.' for the decimal point 
         CultureInfo.DefaultThreadCurrentCulture = CultureInfo.InvariantCulture;
         CultureInfo.DefaultThreadCurrentUICulture = CultureInfo.InvariantCulture;
     }
-    
+
     private static ILoggerFactory Factory { get; set; } = LoggerFactory.Create(logging =>
     {
-        logging.SetMinimumLevel(LogLevel.Debug);
+        logging.SetMinimumLevel(Level);
         logging.AddZLoggerConsole(options =>
         {
             options.CaptureThreadInfo = true;

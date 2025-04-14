@@ -6,12 +6,43 @@ public static class ConfigStorage
 {
     public static string Path { get; private set; } = string.Empty;
 
-    private static bool _loading = false;
+    private static bool _loading;
+
+    private static FileSystemWatcher? _watcher;
+    private static DateTime _lastReadTime;
 
     public static void Initialize(string path)
     {
         Path = path;
         ConfigRegistry.OnAnyUpdated += OnOnAnyConfigUpdated;
+
+        // setup the file watcher
+        var fullPath = System.IO.Path.GetFullPath(Path);
+        var directory = System.IO.Path.GetDirectoryName(fullPath)!;
+        var filename = System.IO.Path.GetFileName(fullPath);
+
+        _watcher = new FileSystemWatcher(directory, filename)
+        {
+            NotifyFilter = NotifyFilters.LastWrite | NotifyFilters.Size,
+            EnableRaisingEvents = true
+        };
+
+        _watcher.Changed += (_, _) => OnFileChanged();
+
+        // load changes made when we were not running
+        Load();
+
+        // and write back any changes to the config definitions
+        Save();
+    }
+
+    private static void OnFileChanged()
+    {
+        var newWriteTime = File.GetLastWriteTimeUtc(Path);
+        if (newWriteTime <= _lastReadTime) return;
+
+        Logger.ZLogTrace($"Loading external changes to config file {Path}");
+        Load();
     }
 
     public static void Load()
@@ -23,6 +54,10 @@ public static class ConfigStorage
             _loading = true;
             ConfigRegistry.FromToml(toml);
             _loading = false;
+
+            _lastReadTime = File.GetLastWriteTimeUtc(Path);
+
+            Logger.ZLogTrace($"Loaded config file {Path}");
         }
         catch (Exception e)
         {
@@ -36,6 +71,10 @@ public static class ConfigStorage
         {
             var toml = ConfigRegistry.ToToml();
             File.WriteAllText(Path, toml.SerializedValue);
+
+            _lastReadTime = File.GetLastWriteTimeUtc(Path);
+
+            Logger.ZLogTrace($"Saved config file {Path}");
         }
         catch (Exception e)
         {
@@ -46,6 +85,8 @@ public static class ConfigStorage
     private static void OnOnAnyConfigUpdated()
     {
         if (_loading) return;
+
+        Logger.ZLogTrace($"Saving runtime changes to config file {Path}");
 
         Save();
     }

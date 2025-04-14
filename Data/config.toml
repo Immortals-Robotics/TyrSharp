@@ -1,4 +1,20 @@
+[Vision]
+[Vision.SslVisionDataPublisher]
+VisionAddress = { Ip = "224.5.23.2", Port = 10006 } # default: 224.5.23.2:10006
+VisionSimAddress = { Ip = "224.5.23.2", Port = 10025 } # default: 224.5.23.2:10025
+
+
+[Referee]
+[Referee.GcDataPublisher]
+GcAddress = { Ip = "224.5.23.1", Port = 10003 } # default: 224.5.23.1:10003
+
+
 [Common]
+[Common.Debug]
+[Common.Debug.Log]
+Level = "Trace" # default: Trace
+
+
 [Common.Config]
 [Common.Config.Common]
 # The variety of standard patterns that we can have is 16
@@ -8,15 +24,5 @@ ImmortalsIsTheBestTeam = true # default: True
 OurColor = "Unknown" # default: Unknown
 EnableDebug = false # default: False
 
-
-
-[Vision]
-[Vision.SslVisionDataPublisher]
-VisionSimAddress = { Ip = "224.5.23.2", Port = 10020 } # default: 224.5.23.2:10025
-
-
-[Referee]
-[Referee.GcDataPublisher]
-GcAddress = { Ip = "224.5.23.1", Port = 10003 } # default: 224.5.23.1:10003
 
 

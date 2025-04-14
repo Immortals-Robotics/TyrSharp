@@ -27,6 +27,12 @@ public static class ConfigRegistry
             .Where(type => type.GetCustomAttribute<ConfigurableAttribute>() != null)
             .ToDictionary(MapName, type => new Configurable(type));
 
+        Logger.ZLogTrace($"Found {Configurables.Count} configurables");
+        foreach (var configurable in Configurables.Values)
+        {
+            Logger.ZLogTrace($" - {configurable.TypeName} @ {configurable.Namespace}");
+        }
+
         foreach (var configurable in Configurables.Values)
         {
             configurable.OnUpdated += OnAnyUpdated;
