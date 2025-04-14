@@ -13,6 +13,30 @@ public class RefereeTests
         Balls = [new Tracker.Ball { Position = pos }]
     };
 
+    private static void SimulateBallMovement(ref Tyr.Referee.Referee referee, float distance, int frames)
+    {
+        for (int i = 1; i <= frames; i++)
+        {
+            referee.Process(FrameAt(new Vector3(distance, 0, 0)), null);
+        }
+    }
+
+    [Theory]
+    [InlineData(200f, 10, GameState.Running)] // Expected to transition
+    [InlineData(45f, 10, GameState.Kickoff)] // Expected to stay in Kickoff
+    public void Referee_BallMovementAffectsStateTransition(float distance, int frames, GameState expectedState)
+    {
+        var referee = new Tyr.Referee.Referee();
+
+        referee.Process(FrameAt(Vector3.Zero),
+            new Gc.Referee { Command = Gc.Command.PrepareKickoffBlue, CommandCounter = 1 });
+        referee.Process(null, new Gc.Referee { Command = Gc.Command.NormalStart, CommandCounter = 2 });
+
+        SimulateBallMovement(ref referee, distance, frames);
+
+        Assert.Equal(expectedState, referee.State.GameState);
+    }
+
     [Fact]
     public void Referee_EntersHaltState_WhenHaltCommandReceived()
     {
@@ -36,25 +60,6 @@ public class RefereeTests
 
         Assert.True(changed);
         Assert.True(referee.State.Ready);
-    }
-
-    [Fact]
-    public void Referee_TransitionsToRunning_WhenBallInPlayAfterKickoff()
-    {
-        var referee = new Tyr.Referee.Referee();
-
-        referee.Process(FrameAt(Vector3.Zero),
-            new Gc.Referee { Command = Gc.Command.PrepareKickoffBlue, CommandCounter = 1 });
-        referee.Process(null, new Gc.Referee { Command = Gc.Command.NormalStart, CommandCounter = 2 });
-
-        bool transitioned = false;
-        for (int i = 0; i < 10; i++) // trigger hysteresis
-        {
-            transitioned |= referee.Process(FrameAt(new Vector3(200f, 0, 0)), null);
-        }
-
-        Assert.True(transitioned);
-        Assert.Equal(GameState.Running, referee.State.GameState);
     }
 
     [Fact]
