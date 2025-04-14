@@ -1,4 +1,6 @@
 ﻿using System.Reflection;
+using Tomlet;
+using Tomlet.Models;
 
 namespace Tyr.Common.Config.New;
 
@@ -10,7 +12,7 @@ public class ConfigEntry(MemberInfo memberInfo, Configurable owner)
     public string Name => _info.Name;
     public Type Type => _info.PropertyType;
 
-    public string Comment => _meta.Comment;
+    public string? Comment => _meta.Comment;
     public object DefaultValue { get; } = ((PropertyInfo)memberInfo).GetValue(null)!;
 
     public object Value
@@ -26,5 +28,14 @@ public class ConfigEntry(MemberInfo memberInfo, Configurable owner)
             _info.SetValue(null, converted);
             owner.OnEntryChanged(this);
         }
+    }
+
+    public TomlValue ToToml()
+    {
+        var value = TomletMain.ValueFrom(Type, Value);
+        value.Comments.PrecedingComment = Comment;
+        value.Comments.InlineComment = $"default: {DefaultValue}";
+        
+        return value;
     }
 }

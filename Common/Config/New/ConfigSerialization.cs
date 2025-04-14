@@ -1,43 +1,50 @@
-﻿using Tomlyn.Helpers;
+﻿using System.Text;
+using Tomlet;
+using Tomlet.Models;
+using Tomlyn.Helpers;
 
 namespace Tyr.Common.Config.New;
 
 public static class ConfigSerialization
 {
-    private static readonly Func<string, string> ConvertName = TomlNamingHelper.PascalToSnakeCase;
+    internal static readonly Func<string, string> ConvertName = TomlNamingHelper.PascalToSnakeCase;
 
-    // A nested tree containing ConfigEntries that can be used for serialization
-    public static IDictionary<string, object> Tree { get; }
+    private static string ConvertPath(string path)
+    {
+        var parts = path.Split('.').Skip(1);
+        var sb = new StringBuilder();
+        foreach (var part in parts)
+        {
+            sb.Append(ConvertName(part));
+            sb.Append('.');
+        }
+        sb.Remove(sb.Length - 1, 1);
+        
+        return sb.ToString();
+    }
 
     static ConfigSerialization()
     {
-        Tree = new Dictionary<string, object>();
+        TomletMain.RegisterMapper<ConfigEntry>(entry => entry?.ToToml(), null);
+        TomletMain.RegisterMapper<Configurable>(configurable => configurable?.ToToml(), null);
+    }
+    
+    public static TomlDocument ToToml()
+    {
+        var document = TomlDocument.CreateEmpty();
 
         foreach (var configurable in Configurable.AllInDomain)
         {
-            var namespaceParts = configurable.Namespace.Split('.').Skip(1);
-            var current = Tree;
-
-            foreach (var namespacePart in namespaceParts)
-            {
-                var convertedName = ConvertName(namespacePart);
-                if (!current.TryGetValue(convertedName, out var child))
-                    current[convertedName] = child = new Dictionary<string, object>();
-                current = (Dictionary<string, object>)child!;
-            }
-
-            var entries = configurable.Entries
-                .ToDictionary(entry => ConvertName(entry.Name), object (entry) => entry);
-
-            current[ConvertName(configurable.TypeName)] = entries;
+            var path = ConvertPath($"{configurable.Namespace}.{configurable.TypeName}");
+            document.Put(path, configurable);
         }
-    }
 
+        return document;
+    }
 
     // Loads values from a config tree into entries
     public static void ApplyConfig(IDictionary<string, object> config)
     {
-        ApplyConfig(config, Tree);
     }
 
     private static void ApplyConfig(IDictionary<string, object> currentConfig, IDictionary<string, object> currentTree)
