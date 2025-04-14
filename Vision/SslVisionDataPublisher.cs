@@ -13,6 +13,11 @@ public class SslVisionDataPublisher : IDisposable
 
     private readonly UdpReceiver<WrapperPacket> _udpReceiver = new(VisionSimAddress, OnData);
 
+    public SslVisionDataPublisher()
+    {
+        Logger.ZLogInformation($"SSL Vision Data publisher initialized on {VisionSimAddress}.");
+    }
+
     private static void OnData(WrapperPacket data)
     {
         if (data.Detection != null)

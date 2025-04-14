@@ -16,6 +16,8 @@ public static class ConfigRegistry
     public static Configurable Get(Type type) => Configurables[MapName(type)];
     public static Configurable Get<T>() => Configurables[MapName(typeof(T))];
 
+    public static event Action? OnAnyUpdated;
+
     public static void Initialize()
     {
         Configurables = AppDomain.CurrentDomain
@@ -24,6 +26,11 @@ public static class ConfigRegistry
             .SelectMany(assembly => assembly.GetTypes())
             .Where(type => type.GetCustomAttribute<ConfigurableAttribute>() != null)
             .ToDictionary(MapName, type => new Configurable(type));
+
+        foreach (var configurable in Configurables.Values)
+        {
+            configurable.OnUpdated += OnAnyUpdated;
+        }
     }
 
     private static string ConvertPath(string path)
