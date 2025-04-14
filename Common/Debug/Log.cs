@@ -7,7 +7,6 @@ namespace Tyr.Common.Debug;
 [Configurable]
 public static class Log
 {
-    // TODO: changes to these are not picked up due to init order issues
     [ConfigEntry] private static LogLevel Level { get; set; } = LogLevel.Trace;
 
     static Log()
@@ -19,7 +18,8 @@ public static class Log
 
     private static ILoggerFactory Factory { get; set; } = LoggerFactory.Create(logging =>
     {
-        logging.SetMinimumLevel(Level);
+        logging.SetMinimumLevel(LogLevel.Trace);
+        logging.AddFilter(level => level >= Level);
         logging.AddZLoggerConsole(options =>
         {
             options.CaptureThreadInfo = true;

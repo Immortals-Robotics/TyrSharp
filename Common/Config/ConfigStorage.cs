@@ -47,22 +47,36 @@ public static class ConfigStorage
 
     public static void Load()
     {
-        try
+        const int maxAttempts = 10;
+        const int delayMs = 100;
+
+        for (var attempt = 1; attempt <= maxAttempts; attempt++)
         {
-            var toml = TomlParser.ParseFile(Path);
+            try
+            {
+                var toml = TomlParser.ParseFile(Path);
 
-            _loading = true;
-            ConfigRegistry.FromToml(toml);
-            _loading = false;
+                _loading = true;
+                ConfigRegistry.FromToml(toml);
+                _loading = false;
 
-            _lastReadTime = File.GetLastWriteTimeUtc(Path);
+                _lastReadTime = File.GetLastWriteTimeUtc(Path);
 
-            Logger.ZLogTrace($"Loaded config file {Path}");
+                Logger.ZLogTrace($"Loaded config file {Path}");
+
+                return;
+            }
+            catch (IOException) when (attempt < maxAttempts)
+            {
+                Thread.Sleep(delayMs);
+            }
+            catch (Exception e)
+            {
+                Logger.ZLogError(e, $"Failed to load config file {Path}");
+            }
         }
-        catch (Exception e)
-        {
-            Logger.ZLogError(e, $"Failed to load config file {Path}");
-        }
+
+        Logger.ZLogError($"Failed to load config file {Path} after {maxAttempts} attempts.");
     }
 
     public static void Save()
