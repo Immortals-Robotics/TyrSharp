@@ -1,5 +1,4 @@
-﻿using System.Threading.Channels;
-using Tyr.Common.Data.Ssl.Vision.Detection;
+﻿using Tyr.Common.Data.Ssl.Vision.Detection;
 using Tyr.Common.Dataflow;
 using Tyr.Common.Runner;
 
@@ -12,8 +11,6 @@ public class Vision : IDisposable
     private Dictionary<uint, Camera> _cameras = new();
 
     private readonly RunnerSync _runner;
-
-    private Common.Time.Timer Timer => _runner.Timer;
 
     public Vision()
     {
@@ -33,8 +30,6 @@ public class Vision : IDisposable
 
             camera.OnFrame(frame);
         }
-
-        Logger.ZLogTrace($"fps: requested: {_runner.TickRateHz}, actual: {1f / Timer.DeltaTime:F2}");
     }
 
     private void Tick()

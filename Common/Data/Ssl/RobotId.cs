@@ -1,5 +1,4 @@
 ﻿using ProtoBuf;
-using Tyr.Common.Config;
 
 namespace Tyr.Common.Data.Ssl;
 

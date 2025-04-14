@@ -5,9 +5,12 @@ using Gc = Tyr.Common.Data.Ssl.Gc;
 
 namespace Tyr.Referee;
 
+[Configurable]
 public class GcDataPublisher : IDisposable
 {
-    private readonly UdpReceiver<Gc.Referee> _udpReceiver = new(Configs.Network.Referee, OnData);
+    [ConfigEntry] private static Address GcAddress { get; set; } = new() { Ip = "224.5.23.1", Port = 10003 };
+
+    private readonly UdpReceiver<Gc.Referee> _udpReceiver = new(GcAddress, OnData);
 
     private static void OnData(Gc.Referee data)
     {

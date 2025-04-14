@@ -1,6 +1,4 @@
-﻿using Tyr.Common.Config;
-
-namespace Tyr.Common.Data.Referee;
+﻿namespace Tyr.Common.Data.Referee;
 
 public struct State
 {

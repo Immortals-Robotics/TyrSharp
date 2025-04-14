@@ -1,5 +1,4 @@
 ﻿using ProtoBuf;
-using Tyr.Common.Config;
 using Tyr.Common.Math;
 using Tyr.Common.Time;
 

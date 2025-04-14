@@ -1,5 +1,4 @@
-﻿using Tyr.Common.Config;
-using Tyr.Common.Math;
+﻿using Tyr.Common.Math;
 
 namespace Tyr.Common.Data.Ssl.Gc;
 

@@ -7,8 +7,10 @@ internal static class Program
 {
     private static void Main(string[] args)
     {
+        ConfigRegistry.Initialize();
+
         var configPath = args[0];
-        Configs.Load(configPath);
+        ConfigStorage.Initialize(configPath);
 
         using var sslVisionPublisher = new SslVisionDataPublisher();
         using var gcPublisher = new Referee.GcDataPublisher();
