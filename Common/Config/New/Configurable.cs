@@ -1,4 +1,5 @@
 ﻿using System.Reflection;
+using Tomlet;
 using Tomlet.Models;
 
 namespace Tyr.Common.Config.New;
@@ -9,7 +10,7 @@ public class Configurable
 
     public readonly Type Type;
 
-    public string Namespace => Type.Namespace ?? "Global";
+    public string Namespace => Type.Namespace ?? "Tyr.Global";
     public string TypeName => Type.Name;
 
     public string? Comment => _meta.Comment;
@@ -20,24 +21,12 @@ public class Configurable
 
     public IEnumerable<ConfigEntry> Entries => _entries;
 
-    private static string MapName(Type type) => $"{type.Namespace}.{type.Name}";
+    static Configurable()
+    {
+        TomletMain.RegisterMapper<Configurable>(configurable => configurable?.ToToml(), null);
+    }
 
-    private static Dictionary<string, Configurable>? _configurables;
-
-    private static Dictionary<string, Configurable> Configurables => _configurables ??= AppDomain.CurrentDomain
-        .GetAssemblies()
-        .Where(assembly => assembly.GetName().Name != null && assembly.GetName().Name!.StartsWith("Tyr"))
-        .SelectMany(assembly => assembly.GetTypes())
-        .Where(type => type.GetCustomAttribute<ConfigurableAttribute>() != null)
-        .ToDictionary(MapName, type => new Configurable(type));
-
-    public static IEnumerable<Configurable> AllInDomain => Configurables.Values;
-
-    public static Configurable Get(object obj) => Configurables[MapName(obj.GetType())];
-    public static Configurable Get(Type type) => Configurables[MapName(type)];
-    public static Configurable Get<T>() => Configurables[MapName(typeof(T))];
-
-    private Configurable(Type type)
+    internal Configurable(Type type)
     {
         Type = type;
         _meta = type.GetCustomAttribute<ConfigurableAttribute>()!;
@@ -65,14 +54,24 @@ public class Configurable
     public TomlTable ToToml()
     {
         var table = new TomlTable();
-        if (Comment != null)
-            table.Comments.PrecedingComment = Comment;
+        table.Comments.PrecedingComment = Comment;
 
         foreach (var entry in Entries)
         {
-            table.Put(ConfigSerialization.ConvertName($"{entry.Name}"), entry);
+            table.Put(ConfigRegistry.ConvertName($"{entry.Name}"), entry);
         }
 
         return table;
+    }
+
+    public void FromToml(TomlTable table)
+    {
+        foreach (var entry in Entries)
+        {
+            var key = ConfigRegistry.ConvertName($"{entry.Name}");
+            if (!table.TryGetValue(key, out var value)) continue;
+
+            entry.FromToml(value);
+        }
     }
 }

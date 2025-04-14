@@ -11,9 +11,13 @@ public class ConfigEntry(MemberInfo memberInfo, Configurable owner)
 
     public string Name => _info.Name;
     public Type Type => _info.PropertyType;
-
     public string? Comment => _meta.Comment;
     public object DefaultValue { get; } = ((PropertyInfo)memberInfo).GetValue(null)!;
+
+    static ConfigEntry()
+    {
+        TomletMain.RegisterMapper<ConfigEntry>(entry => entry?.ToToml(), null);
+    }
 
     public object Value
     {
@@ -35,7 +39,12 @@ public class ConfigEntry(MemberInfo memberInfo, Configurable owner)
         var value = TomletMain.ValueFrom(Type, Value);
         value.Comments.PrecedingComment = Comment;
         value.Comments.InlineComment = $"default: {DefaultValue}";
-        
+
         return value;
+    }
+
+    public void FromToml(TomlValue value)
+    {
+        Value = TomletMain.To(Type, value);
     }
 }
