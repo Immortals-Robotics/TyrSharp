@@ -1,4 +1,7 @@
-﻿namespace Tyr.Common.Dataflow;
+﻿using Tyr.Common.Debug;
+using Tyr.Common.Shape;
+
+namespace Tyr.Common.Dataflow;
 
 public static class Hub
 {
@@ -11,4 +14,12 @@ public static class Hub
     public static readonly BroadcastChannel<Data.Ssl.Vision.Tracker.Frame> Vision = new();
     public static readonly BroadcastChannel<Data.Referee.State> Referee = new();
     public static readonly BroadcastChannel<Data.Robot.Command[]> RobotCommands = new();
+
+    // debug draws
+    private static class DrawChannel<T>
+    {
+        public static readonly BroadcastChannel<DrawCommand<T>> Instance = new();
+    }
+
+    public static BroadcastChannel<DrawCommand<T>> Draws<T>() => DrawChannel<T>.Instance;
 }
