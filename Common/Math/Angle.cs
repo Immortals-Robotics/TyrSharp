@@ -42,7 +42,7 @@ public readonly struct Angle(float deg) : IEquatable<Angle>
         var diffB = System.Math.Abs((b - this).Deg);
         var diffAb = System.Math.Abs((a - b).Deg);
 
-        return Utils.AlmostEqual(diffA + diffB, diffAb);
+        return Utils.ApproximatelyEqual(diffA + diffB, diffAb);
     }
 
     public static Angle Average(Angle a, Angle b)
@@ -64,7 +64,7 @@ public readonly struct Angle(float deg) : IEquatable<Angle>
 
     public override string ToString() => $"{Deg:F2} deg";
 
-    public bool Equals(Angle other) => Utils.AlmostEqual(_deg, other._deg);
+    public bool Equals(Angle other) => Utils.ApproximatelyEqual(_deg, other._deg);
     public override bool Equals(object? obj) => obj is Angle other && Equals(other);
     public override int GetHashCode() => _deg.GetHashCode();
 }

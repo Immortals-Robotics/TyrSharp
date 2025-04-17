@@ -33,11 +33,11 @@ public struct Rect(Vector2 p1, Vector2 p2) : IShape
 
         float minDist = new[] { dxMin, dxMax, dyMin, dyMax }.Min();
 
-        if (Utils.AlmostEqual(minDist, dxMin))
+        if (Utils.ApproximatelyEqual(minDist, dxMin))
             return new Vector2(Min.X - margin, point.Y);
-        if (Utils.AlmostEqual(minDist, dxMax))
+        if (Utils.ApproximatelyEqual(minDist, dxMax))
             return new Vector2(Max.X + margin, point.Y);
-        if (Utils.AlmostEqual(minDist, dyMin))
+        if (Utils.ApproximatelyEqual(minDist, dyMin))
             return new Vector2(point.X, Min.Y - margin);
 
         return new Vector2(point.X, Max.Y + margin);

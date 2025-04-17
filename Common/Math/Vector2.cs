@@ -15,7 +15,7 @@ public struct Vector2(float x, float y) : IEquatable<Vector2>
     public Vector2 Normalized()
     {
         var len = Length();
-        return Utils.AlmostEqual(len, 0f) ? Zero : this / len;
+        return Utils.ApproximatelyEqual(len, 0f) ? Zero : this / len;
     }
 
     public float Length() => MathF.Sqrt(X * X + Y * Y);
@@ -77,8 +77,8 @@ public struct Vector2(float x, float y) : IEquatable<Vector2>
 
     public bool Equals(Vector2 other)
     {
-        return Utils.AlmostEqual(X, other.X) &&
-               Utils.AlmostEqual(Y, other.Y);
+        return Utils.ApproximatelyEqual(X, other.X) &&
+               Utils.ApproximatelyEqual(Y, other.Y);
     }
 
     public override bool Equals(object? obj)
