@@ -6,13 +6,23 @@
         <Nullable>enable</Nullable>
         <RootNamespace>Tyr.Common</RootNamespace>
         <AssemblyName>Tyr.Common</AssemblyName>
+        <IsPackable>false</IsPackable>
     </PropertyGroup>
 
     <ItemGroup>
       <PackageReference Include="MathNet.Numerics" Version="5.0.0" />
+      <PackageReference Include="Microsoft.CodeAnalysis.BannedApiAnalyzers" Version="3.3.4">
+        <PrivateAssets>all</PrivateAssets>
+        <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+      </PackageReference>
       <PackageReference Include="protobuf-net" Version="3.2.46" />
       <PackageReference Include="Samboy063.Tomlet" Version="6.0.0" />
       <PackageReference Include="ZLogger" Version="2.5.10" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <None Remove="BannedSymbols.txt" />
+      <AdditionalFiles Include="BannedSymbols.txt" />
     </ItemGroup>
 
 </Project>
