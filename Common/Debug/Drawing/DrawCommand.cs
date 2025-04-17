@@ -1,7 +1,7 @@
 ﻿namespace Tyr.Common.Debug.Drawing;
 
-public readonly record struct DrawCommand<T>(
-    T Drawable,
+public readonly record struct DrawCommand(
+    IDrawable Drawable,
     Color Color,
     DrawOptions Options,
     string Category,

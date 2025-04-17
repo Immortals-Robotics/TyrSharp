@@ -11,6 +11,7 @@ public struct Vector2(float x, float y) : IEquatable<Vector2>
     [ProtoMember(2, IsRequired = true)] public float Y = y;
 
     public static readonly Vector2 Zero = new(0, 0);
+    public static readonly Vector2 NaN = new(float.NaN, float.NaN);
 
     public Vector2 Normalized()
     {

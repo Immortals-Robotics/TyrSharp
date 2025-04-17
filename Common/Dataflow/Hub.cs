@@ -17,10 +17,5 @@ public static class Hub
     public static readonly BroadcastChannel<Data.Robot.Command[]> RobotCommands = new();
 
     // debug draws
-    private static class DrawChannel<T>
-    {
-        public static readonly BroadcastChannel<DrawCommand<T>> Instance = new();
-    }
-
-    public static BroadcastChannel<DrawCommand<T>> Draws<T>() => DrawChannel<T>.Instance;
+    public static readonly BroadcastChannel<DrawCommand> Draws = new();
 }

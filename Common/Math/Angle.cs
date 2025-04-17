@@ -17,8 +17,8 @@ public readonly struct Angle(float deg) : IEquatable<Angle>
     public static Angle FromVector(Vector2 v)
     {
         if (v == Vector2.Zero) return FromDeg(0);
-        var angle = MathF.Atan2(v.Y, v.X) * Rad2Deg;
-        return FromDeg(angle);
+        var angle = MathF.Atan2(v.Y, v.X);
+        return FromRad(angle);
     }
 
     public float Deg => _deg;

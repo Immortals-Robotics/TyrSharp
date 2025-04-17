@@ -33,10 +33,9 @@ public struct Line(float a, float b, float c) : IShape
         return new Line { A = lineA, B = lineB, C = lineC };
     }
 
-    public static Line FromPointAndAngle(Vector2 point, float angleRad)
+    public static Line FromPointAndAngle(Vector2 point, Angle angle)
     {
-        var dir = new Vector2(MathF.Cos(angleRad), MathF.Sin(angleRad));
-        return FromTwoPoints(point, point + dir);
+        return FromTwoPoints(point, point + angle.ToUnitVec());
     }
 
     public static Line FromSegment(LineSegment segment)
@@ -45,19 +44,35 @@ public struct Line(float a, float b, float c) : IShape
     }
 
     public readonly float Slope => -B / A;
+    public readonly Vector2 Direction => new(-B, A);
+    public readonly Angle Angle => Angle.FromVector(Direction);
+
+    // a point that is guaranteed to be on the line
+    public Vector2 SomePoint
+    {
+        get
+        {
+            if (!Utils.ApproximatelyEqual(A, 0f))
+                return new Vector2(0f, Y(0f));
+            if (!Utils.ApproximatelyEqual(B, 0f))
+                return new Vector2(X(0f), 0f);
+            
+            return Vector2.NaN;
+        }
+    }
 
     public readonly float Y(float x)
     {
-        if (MathF.Abs(A) < 1e-6f)
-            return 0f;
+        if (Utils.ApproximatelyEqual(A, 0f))
+            return float.NaN;
 
         return -(B * x + C) / A;
     }
 
     public readonly float X(float y)
     {
-        if (MathF.Abs(B) < 1e-6f)
-            return 0f;
+        if (Utils.ApproximatelyEqual(B, 0f))
+            return float.NaN;
 
         return -(A * y + C) / B;
     }
