@@ -11,6 +11,9 @@ public static class ConfigStorage
     private static FileSystemWatcher? _watcher;
     private static DateTime _lastReadTime;
 
+    private static Debouncer _loadDebouncer = new(500, Load);
+    private static Debouncer _saveDebouncer = new(500, Save);
+
     public static void Initialize(string path)
     {
         Path = path;
@@ -41,8 +44,8 @@ public static class ConfigStorage
         var newWriteTime = File.GetLastWriteTimeUtc(Path);
         if (newWriteTime <= _lastReadTime) return;
 
-        Logger.ZLogTrace($"Loading external changes to config file {Path}");
-        Load();
+        Logger.ZLogTrace($"Detected external changes to config file {Path}");
+        _loadDebouncer.Trigger();
     }
 
     public static void Load()
@@ -100,8 +103,8 @@ public static class ConfigStorage
     {
         if (_loading) return;
 
-        Logger.ZLogTrace($"Saving runtime changes to config file {Path}");
+        Logger.ZLogTrace($"Detected runtime changes to configs");
 
-        Save();
+        _saveDebouncer.Trigger();
     }
 }
