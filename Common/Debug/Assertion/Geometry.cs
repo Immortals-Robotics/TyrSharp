@@ -1,7 +1,7 @@
 ﻿using System.Runtime.CompilerServices;
 using Tyr.Common.Math;
 
-namespace Tyr.Common.Debug;
+namespace Tyr.Common.Debug.Assertion;
 
 public partial class Assert
 {

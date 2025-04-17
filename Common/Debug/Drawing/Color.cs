@@ -1,6 +1,6 @@
 ﻿using ProtoBuf;
 
-namespace Tyr.Common.Debug;
+namespace Tyr.Common.Debug.Drawing;
 
 [ProtoContract]
 public readonly struct Color(float r, float g, float b, float a = 1f)

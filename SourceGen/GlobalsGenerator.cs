@@ -41,6 +41,7 @@ public class GlobalsGenerator : ISourceGenerator
                          global using ZLogger;
                          using Microsoft.Extensions.Logging;
                          using Tyr.Common.Debug;
+                         using Tyr.Common.Debug.Assertion;
 
                          namespace {{ns}}
                          {

@@ -3,7 +3,7 @@ using Tyr.Common.Dataflow;
 using Tyr.Common.Math;
 using Tyr.Common.Shape;
 
-namespace Tyr.Common.Debug;
+namespace Tyr.Common.Debug.Drawing;
 
 public class Drawer(string category)
 {

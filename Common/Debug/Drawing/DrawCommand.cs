@@ -1,4 +1,4 @@
-﻿namespace Tyr.Common.Debug;
+﻿namespace Tyr.Common.Debug.Drawing;
 
 public readonly record struct DrawCommand<T>(
     T Drawable,

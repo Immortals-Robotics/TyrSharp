@@ -1,6 +1,6 @@
 ﻿using System.Runtime.CompilerServices;
 
-namespace Tyr.Common.Debug;
+namespace Tyr.Common.Debug.Assertion;
 
 public partial class Assert
 {

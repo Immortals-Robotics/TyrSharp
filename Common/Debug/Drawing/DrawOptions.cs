@@ -1,4 +1,4 @@
-﻿namespace Tyr.Common.Debug;
+﻿namespace Tyr.Common.Debug.Drawing;
 
 public readonly record struct DrawOptions(
     bool Filled = false,
