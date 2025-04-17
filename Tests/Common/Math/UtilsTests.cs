@@ -12,7 +12,7 @@ public class UtilsTests
     [InlineData(-1.000f, -1.01f, false)]
     public void AlmostEqual_DefaultEpsilon_WorksCorrectly(float a, float b, bool expected)
     {
-        Assert.Equal(expected, Utils.AlmostEqual(a, b));
+        Assert.Equal(expected, Utils.ApproximatelyEqual(a, b));
     }
 
     [Fact]
@@ -21,10 +21,10 @@ public class UtilsTests
         var a = 5.0f;
         var b = 5.5f;
         var epsilon = 0.6f;
-        Assert.True(Utils.AlmostEqual(a, b, epsilon));
+        Assert.True(Utils.ApproximatelyEqual(a, b, epsilon));
 
         epsilon = 0.4f;
-        Assert.False(Utils.AlmostEqual(a, b, epsilon));
+        Assert.False(Utils.ApproximatelyEqual(a, b, epsilon));
     }
 
     [Theory]
