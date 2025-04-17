@@ -25,4 +25,8 @@
       <AdditionalFiles Include="BannedSymbols.txt" />
     </ItemGroup>
 
+    <ItemGroup>
+      <ProjectReference Include="..\SourceGen\SourceGen.csproj" OutputItemType="Analyzer" />
+    </ItemGroup>
+
 </Project>
