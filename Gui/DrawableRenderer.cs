@@ -173,11 +173,22 @@ internal class DrawableRenderer
 
     private void DrawText(Text text, Color color, Options options)
     {
-        throw new NotImplementedException();
+        var pos = Camera.WorldToScreen(text.Position);
+
+        _drawList.AddText(pos, color.U32, text.Content);
     }
 
     private void DrawTriangle(Triangle triangle, Color color, Options options)
     {
-        throw new NotImplementedException();
+        var a = Camera.WorldToScreen(triangle.A);
+        var b = Camera.WorldToScreen(triangle.B);
+        var c = Camera.WorldToScreen(triangle.C);
+
+        var thickness = Camera.WorldToScreenLength(options.Thickness);
+
+        if (options.Filled)
+            _drawList.AddTriangleFilled(a, b, c, color.U32);
+        else
+            _drawList.AddTriangle(a, b, c, color.U32, thickness);
     }
 }

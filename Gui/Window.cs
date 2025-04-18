@@ -6,6 +6,7 @@ using Tyr.Common.Debug.Drawing;
 using Tyr.Common.Debug.Drawing.Drawables;
 using Tyr.Common.Math;
 using Color = Tyr.Common.Debug.Drawing.Color;
+using Triangle = Tyr.Common.Debug.Drawing.Drawables.Triangle;
 
 namespace Tyr.Gui;
 
@@ -28,7 +29,9 @@ public class Window : ImWindow
         //var drawable = new Circle(new Vector2(0f, 400f), 50f);
         //var drawable = new Point(new Vector2(0f, 0f));
         //var drawable = new Arrow(Vector2.Zero, new Vector2(100f, 100f));
-        var drawable = new Line(new Vector2(-100f, -100f), Angle.FromDeg(45f));
+        //var drawable = new Line(new Vector2(-100f, -100f), Angle.FromDeg(45f));
+        //var drawable = new Text("Have no fear,\nHippo is here", new Vector2(100f, 100f), 20f);
+        var drawable = new Triangle(Vector2.Zero, new Vector2(50f, 100f), new Vector2(100f, 0f));
         var options = new Options(Filled: false, Thickness: 5f);
         var command = new Command(drawable, Color.Green, options,
             "Gui", DateTime.UtcNow, "", "", 0);
