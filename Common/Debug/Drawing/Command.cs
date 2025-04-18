@@ -6,7 +6,7 @@ public readonly record struct Command(
     Options Options,
     string Category,
     DateTime Time,
-    string? MemberName = null,
-    string? FilePath = null,
-    int LineNumber = 0
+    string? MemberName,
+    string? FilePath,
+    int LineNumber
 );
