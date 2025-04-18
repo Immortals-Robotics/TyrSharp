@@ -8,7 +8,7 @@ public record struct Color(
     float B,
     float A = 1f)
 {
-    public Color Transparent => new(R, G, B, A / 4f);
+    public Color Transparent => this with { A = A / 4f };
 
     public readonly uint U32 =>
         ((uint)(A * 255.0f) << 24) |

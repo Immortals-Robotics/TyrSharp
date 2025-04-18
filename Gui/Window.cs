@@ -12,7 +12,7 @@ public class Window : ImWindow
 {
     public override string Name => "Window";
 
-    private DrawableRenderer _renderer = new();
+    private readonly DrawableRenderer _renderer = new();
 
     public override void DrawContent()
     {
@@ -25,9 +25,10 @@ public class Window : ImWindow
             Size: ImGui.GetContentRegionAvail());
 
         //var drawable = new Circle(new Vector2(0f, 400f), 50f);
-        var drawable = new Point(new Vector2(0f, 0f));
+        //var drawable = new Point(new Vector2(0f, 0f));
+        var drawable = new Arrow(Vector2.Zero, new Vector2(100f, 100f));
         var options = new Options(Filled: false, Thickness: 5f);
-        var command = new Command(drawable, Color.Black, options,
+        var command = new Command(drawable, Color.Green, options,
             "Gui", DateTime.UtcNow, "", "", 0);
 
         _renderer.Draw(command);

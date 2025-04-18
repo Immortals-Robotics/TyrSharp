@@ -56,7 +56,25 @@ internal class DrawableRenderer
 
     private void DrawArrow(Arrow arrow, Color color, Options options)
     {
-        throw new NotImplementedException();
+        var start = Camera.WorldToScreen(arrow.Start);
+        var end = Camera.WorldToScreen(arrow.End);
+
+        var thickness = Camera.WorldToScreenLength(options.Thickness);
+
+        // Line part
+        _drawList.AddLine(start, end, color.U32, thickness);
+
+        // Arrowhead (simple triangle)
+        const float headSize = 20f;
+        var headSizeScreen = Camera.WorldToScreenLength(headSize);
+        var dir = Vector2.Normalize(end - start);
+        var perp = new Vector2(-dir.Y, dir.X); // perpendicular for triangle base
+
+        var tip = end;
+        var left = end - dir * headSizeScreen + perp * (headSizeScreen * 0.5f);
+        var right = end - dir * headSizeScreen - perp * (headSizeScreen * 0.5f);
+
+        _drawList.AddTriangleFilled(tip, left, right, color.U32);
     }
 
     private void DrawCircle(Circle circle, Color color, Options options)
