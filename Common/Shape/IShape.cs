@@ -1,4 +1,4 @@
-﻿using Tyr.Common.Math;
+﻿using System.Numerics;
 
 namespace Tyr.Common.Shape;
 

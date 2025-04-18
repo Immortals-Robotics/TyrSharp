@@ -1,8 +1,8 @@
 ﻿using Tyr.Common.Data;
 using Tyr.Common.Data.Referee;
-using Tyr.Common.Math;
 using Gc = Tyr.Common.Data.Ssl.Gc;
 using Tracker = Tyr.Common.Data.Ssl.Vision.Tracker;
+using Vector3 = System.Numerics.Vector3;
 
 namespace Tyr.Tests.Referee;
 

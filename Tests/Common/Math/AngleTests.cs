@@ -1,4 +1,5 @@
 ﻿using System.Globalization;
+using System.Numerics;
 using Tyr.Common.Math;
 
 namespace Tyr.Tests.Common.Math;
@@ -9,7 +10,7 @@ public class AngleTests
     {
         CultureInfo.DefaultThreadCurrentCulture = CultureInfo.InvariantCulture;
     }
-    
+
     [Fact]
     public void FromDeg_CreatesNormalizedAngle()
     {

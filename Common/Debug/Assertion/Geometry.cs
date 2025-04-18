@@ -1,5 +1,6 @@
 ﻿using System.Runtime.CompilerServices;
 using Tyr.Common.Math;
+using System.Numerics;
 
 namespace Tyr.Common.Debug.Assertion;
 
@@ -32,7 +33,7 @@ public partial class Assert
         [CallerFilePath] string? file = null,
         [CallerLineNumber] int line = 0)
     {
-        var dot = a.Dot(b);
+        var dot = Vector2.Dot(a, b);
         if (!Enabled || Utils.ApproximatelyEqual(dot, 0f)) return;
         logger.ZLogError($"Expected orthogonal vectors: {aExpr} · {bExpr} = {dot:0.###}", null, member, file, line);
     }
@@ -44,7 +45,7 @@ public partial class Assert
         [CallerFilePath] string? file = null,
         [CallerLineNumber] int line = 0)
     {
-        var cross = a.Cross(b);
+        var cross = Utils.Vector2Cross(a, b);
         if (!Enabled || Utils.ApproximatelyEqual(cross, 0f)) return;
         logger.ZLogError($"Expected parallel vectors: {aExpr} × {bExpr} = {cross:0.###}", null, member, file, line);
     }

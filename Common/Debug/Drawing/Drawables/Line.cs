@@ -1,4 +1,5 @@
-﻿using Tyr.Common.Math;
+﻿using System.Numerics;
+using Tyr.Common.Math;
 
 namespace Tyr.Common.Debug.Drawing.Drawables;
 

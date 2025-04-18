@@ -1,5 +1,6 @@
 ﻿using ProtoBuf;
 using Tyr.Common.Math;
+using System.Numerics;
 
 namespace Tyr.Common.Shape;
 
@@ -56,7 +57,7 @@ public struct Line(float a, float b, float c) : IShape
                 return new Vector2(0f, Y(0f));
             if (!Utils.ApproximatelyEqual(B, 0f))
                 return new Vector2(X(0f), 0f);
-            
+
             return Vector2.NaN;
         }
     }
@@ -193,7 +194,7 @@ public struct Line(float a, float b, float c) : IShape
     public float Distance(Vector2 point)
     {
         var closest = ClosestPoint(point);
-        return point.DistanceTo(closest);
+        return Vector2.Distance(point, closest);
     }
 
     public bool Inside(Vector2 point, float margin = 0)

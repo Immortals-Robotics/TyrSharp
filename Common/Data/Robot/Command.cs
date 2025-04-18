@@ -8,7 +8,14 @@ public struct Command
 {
     [ProtoMember(1)] public int VisionId;
 
-    [ProtoMember(2)] public Vector2 Motion;
+    [ProtoMember(2)] public Vector2 MotionRaw;
+
+    public System.Numerics.Vector2 Motion
+    {
+        get => MotionRaw;
+        set => MotionRaw = value;
+    }
+
     [ProtoMember(3)] public bool Halted;
 
     [ProtoMember(4)] public Angle CurrentAngle;

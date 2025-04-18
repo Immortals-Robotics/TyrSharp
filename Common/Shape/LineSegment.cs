@@ -1,5 +1,5 @@
 ﻿using ProtoBuf;
-using Tyr.Common.Math;
+using System.Numerics;
 
 namespace Tyr.Common.Shape;
 
@@ -9,17 +9,17 @@ public struct LineSegment(Vector2 start, Vector2 end) : IShape
     [ProtoMember(1)] public Vector2 Start { get; init; } = start;
     [ProtoMember(2)] public Vector2 End { get; init; } = end;
 
-    public readonly float Length() => Start.DistanceTo(End);
+    public readonly float Length() => Vector2.Distance(Start, End);
 
     public readonly Vector2 ClosestPoint(Vector2 point)
     {
         Vector2 seg = End - Start;
         Vector2 toPoint = point - Start;
 
-        float segDot = seg.Dot(seg);
+        float segDot = Vector2.Dot(seg, seg);
         if (segDot < 1e-6f) return Start; // Degenerate
 
-        float t = toPoint.Dot(seg) / segDot;
+        float t = Vector2.Dot(toPoint, seg) / segDot;
 
         if (t < 0f) return Start;
         else if (t > 1f) return End;
@@ -34,17 +34,17 @@ public struct LineSegment(Vector2 start, Vector2 end) : IShape
         Vector2 seg = End - Start;
         Vector2 toPoint = point - Start;
 
-        float segDot = seg.Dot(seg);
-        if (segDot < 1e-6f) return point.DistanceTo(Start); // Degenerate
+        float segDot = Vector2.Dot(seg, seg);
+        if (segDot < 1e-6f) return Vector2.Distance(point, Start); // Degenerate
 
-        float t = toPoint.DistanceTo(seg) / segDot;
+        float t = Vector2.Distance(toPoint, seg) / segDot;
 
         if (t < 0f)
-            return point.DistanceTo(Start);
+            return Vector2.Distance(point, Start);
         else if (t > 1f)
-            return point.DistanceTo(End);
+            return Vector2.Distance(point, End);
         else
-            return point.DistanceTo(Start + seg * t);
+            return Vector2.Distance(point, Start + seg * t);
     }
 
     public bool Inside(Vector2 point, float margin = 0)

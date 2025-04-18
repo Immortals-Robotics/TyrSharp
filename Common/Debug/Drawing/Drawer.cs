@@ -1,4 +1,5 @@
-﻿using System.Runtime.CompilerServices;
+﻿using System.Numerics;
+using System.Runtime.CompilerServices;
 using Tyr.Common.Dataflow;
 using Tyr.Common.Debug.Drawing.Drawables;
 using Tyr.Common.Math;

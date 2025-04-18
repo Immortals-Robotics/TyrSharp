@@ -1,5 +1,5 @@
 ﻿using ProtoBuf;
-using Tyr.Common.Math;
+using System.Numerics;
 
 namespace Tyr.Common.Shape;
 
@@ -29,7 +29,7 @@ public struct Circle(Vector2 center, float radius) : IShape
         if (direction == Vector2.Zero)
             return Center + new Vector2(Radius + extraRadius, 0f);
 
-        return Center + direction.Normalized() * (Radius + extraRadius);
+        return Center + Vector2.Normalize(direction) * (Radius + extraRadius);
     }
 
     public readonly List<Vector2> Intersect(Circle other)
@@ -42,7 +42,7 @@ public struct Circle(Vector2 center, float radius) : IShape
         if (dMag > Radius + other.Radius || dMag < MathF.Abs(Radius - other.Radius))
             return result; // no intersection
 
-        var dNormal = dVec.Normalized();
+        var dNormal = Vector2.Normalize(dVec);
 
         var a = (Radius * Radius + dMag * dMag - other.Radius * other.Radius) / (2f * dMag);
         var arg = Radius * Radius - a * a;
@@ -80,19 +80,19 @@ public struct Circle(Vector2 center, float radius) : IShape
             return 0f;
 
         var intMid = (intersection[0] + intersection[1]) * 0.5f;
-        var d = intersection[0].DistanceTo(intMid);
+        var d = Vector2.Distance(intersection[0], intMid);
 
         var area = 0f;
 
         {
-            var h = intMid.DistanceTo(Center);
+            var h = Vector2.Distance(intMid, Center);
             var ang = MathF.Asin(d / Radius);
             area += ang * Radius * Radius;
             area -= d * h;
         }
 
         {
-            var h = intMid.DistanceTo(other.Center);
+            var h = Vector2.Distance(intMid, other.Center);
             var ang = MathF.Asin(d / other.Radius);
             area += ang * other.Radius * other.Radius;
             area -= d * h;

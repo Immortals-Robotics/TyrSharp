@@ -1,5 +1,5 @@
 ﻿using ProtoBuf;
-using Tyr.Common.Math;
+using System.Numerics;
 
 namespace Tyr.Common.Shape;
 
@@ -30,9 +30,9 @@ public struct Triangle : IShape
     {
         get
         {
-            var a = Corner1.DistanceTo(Corner2);
-            var b = Corner2.DistanceTo(Corner3);
-            var c = Corner3.DistanceTo(Corner1);
+            var a = Vector2.Distance(Corner1, Corner2);
+            var b = Vector2.Distance(Corner2, Corner3);
+            var c = Vector2.Distance(Corner3, Corner1);
             return a + b + c;
         }
     }

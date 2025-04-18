@@ -1,4 +1,5 @@
 ﻿using ProtoBuf;
+using System.Numerics;
 
 namespace Tyr.Common.Math;
 
