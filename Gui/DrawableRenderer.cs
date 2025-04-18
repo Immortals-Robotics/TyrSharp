@@ -93,7 +93,7 @@ internal class DrawableRenderer
     private void DrawLine(Line line, Color color, Options options)
     {
         var cameraBounds = Camera.GetVisibleWorldBounds();
-        var length = Math.Max(cameraBounds.Width , cameraBounds.Height);
+        var length = Math.Max(cameraBounds.Width, cameraBounds.Height);
 
         var dir = line.Angle.ToUnitVec();
         var p1 = line.Point - dir * length;
@@ -168,14 +168,68 @@ internal class DrawableRenderer
 
     private void DrawRobot(Robot robot, Color color, Options options)
     {
-        throw new NotImplementedException();
+        const float robotRadius = 90f;
+        const int segments = 20; // circle detail
+
+        var center = Camera.WorldToScreen(robot.Position);
+        var radius = Camera.WorldToScreenLength(robotRadius);
+
+        if (robot.Orientation.HasValue)
+        {
+            var angle = -robot.Orientation.Value.Rad;
+
+            const float flatAngle = MathF.PI / 4f; // amount to "flatten" at the front (adjust as needed)
+
+            var startAngle = angle + flatAngle;
+            var endAngle = angle + 2 * MathF.PI - flatAngle;
+
+            var points = new Vector2[segments + 1];
+
+            for (var i = 0; i <= segments; i++)
+            {
+                var t = (float)i / segments;
+                var theta = startAngle + (endAngle - startAngle) * t;
+
+                var dir = new Vector2(MathF.Cos(theta), MathF.Sin(theta));
+                points[i] = center + dir * radius;
+            }
+
+            unsafe
+            {
+                fixed (Vector2* ptr = points)
+                {
+                    _drawList.AddConvexPolyFilled(ptr, points.Length, color.U32);
+                }
+            }
+        }
+        else
+        {
+            _drawList.AddCircleFilled(center, radius, color.U32, segments);
+        }
+
+        if (robot.Id.HasValue)
+        {
+            var text = new Text(robot.Id.Value.ToString(), robot.Position, 80f, TextAlignment.Center);
+            DrawText(text, Color.Black, new Options());
+        }
     }
 
     private void DrawText(Text text, Color color, Options options)
     {
-        var pos = Camera.WorldToScreen(text.Position);
-
-        _drawList.AddText(pos, color.U32, text.Content);
+        var posScreen = Camera.WorldToScreen(text.Position);
+        var sizeScreen = Camera.WorldToScreenLength(text.Size);
+        
+        if (text.Alignment == TextAlignment.Center)
+        {
+            var sizeMul = sizeScreen / ImGui.GetFontSize();
+            var textSize = ImGui.CalcTextSize(text.Content) * sizeMul;
+            posScreen -= textSize * 0.5f;
+        }
+        
+        unsafe
+        {
+            _drawList.AddText(ImGui.GetFont().Handle, sizeScreen, posScreen, color.U32, text.Content);
+        }
     }
 
     private void DrawTriangle(Triangle triangle, Color color, Options options)
