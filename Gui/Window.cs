@@ -12,14 +12,21 @@ public class Window : ImWindow
     public override void DrawContent()
     {
         ImGui.Begin("Hippos");
-        
+
+        var camera = new Camera2D();
+
+        camera.Position = Vector2.Zero;
+        camera.Zoom = 0.5f;
+        camera.ScreenOffset = ImGui.GetCursorScreenPos();
+
         var drawList = ImGui.GetWindowDrawList();
 
-        var p = ImGui.GetCursorScreenPos() + new Vector2(40f, 40f);
+        var p = camera.WorldToScreen(new Vector2(40f, 40f));
         var col32 = Colors.Red.ToUIntRGBA();
-        var size = 50f;
+        var size = camera.WorldToScreenLength(50f);
+
         drawList.AddCircle(p + new Vector2(size, size) * 0.5f, size, col32, 40, 5f);
-        
+
         ImGui.End();
     }
 }
