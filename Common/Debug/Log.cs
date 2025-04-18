@@ -25,7 +25,7 @@ public static class Log
             options.CaptureThreadInfo = true;
             options.UsePlainTextFormatter(formatter =>
             {
-                formatter.SetPrefixFormatter($"[{0:timeonly} | {1} | {2} | {3} @ {4}:{5}] ",
+                formatter.SetPrefixFormatter($"[{0} | {1} | {2} | {3} @ {4}:{5}] ",
                     (in MessageTemplate template, in LogInfo info) =>
                     {
                         template.Format(
@@ -36,6 +36,5 @@ public static class Log
         });
     });
 
-    public static ILogger<T> GetLogger<T>() where T : class => Factory.CreateLogger<T>();
     public static ILogger GetLogger(string name) => Factory.CreateLogger(name);
 }

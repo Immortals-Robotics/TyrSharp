@@ -1,10 +1,11 @@
-﻿using System.Threading.Channels;
+﻿using System.Collections.Concurrent;
+using System.Threading.Channels;
 
 namespace Tyr.Common.Dataflow;
 
 public class BroadcastChannel<T>
 {
-    private readonly List<Channel<T>> _subscribers = [];
+    private readonly ConcurrentBag<Channel<T>> _subscribers = [];
 
     public enum Mode
     {
@@ -27,31 +28,34 @@ public class BroadcastChannel<T>
             _ => throw new ArgumentOutOfRangeException(nameof(mode), mode, null)
         };
 
-        lock (_subscribers)
-        {
-            _subscribers.Add(channel);
-        }
+        _subscribers.Add(channel);
 
-        return new Subscriber<T>(this, channel.Reader);
+        return new Subscriber<T>(this, channel);
     }
 
+    // This is not thread-safe
     public void Unsubscribe(Subscriber<T> subscriber)
     {
-        lock (_subscribers)
+        List<Channel<T>> temp = new(_subscribers.Count);
+
+        // drain
+        while (_subscribers.TryTake(out var item))
         {
-            _subscribers.RemoveAll(channel => channel.Reader == subscriber.Reader);
+            if (item != subscriber.Channel)
+                temp.Add(item);
         }
+
+        // then refill
+        foreach (var item in temp)
+            _subscribers.Add(item);
     }
 
     public void Publish(T item)
     {
-        lock (_subscribers)
+        foreach (var subscriber in _subscribers)
         {
-            foreach (var subscriber in _subscribers)
-            {
-                var result = subscriber.Writer.TryWrite(item);
-                if (!result) Logger.ZLogError($"Failed to publish item to channel");
-            }
+            var result = subscriber.Writer.TryWrite(item);
+            if (!result) Logger.ZLogError($"Failed to publish item to channel");
         }
     }
 }

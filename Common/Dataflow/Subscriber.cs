@@ -2,12 +2,12 @@
 
 namespace Tyr.Common.Dataflow;
 
-public sealed class Subscriber<T>(BroadcastChannel<T> channel, ChannelReader<T> reader) : IDisposable
+public sealed record Subscriber<T>(BroadcastChannel<T> BroadcastChannel, Channel<T> Channel) : IDisposable
 {
-    public ChannelReader<T> Reader => reader;
+    public ChannelReader<T> Reader => Channel.Reader;
 
     public void Dispose()
     {
-        channel.Unsubscribe(this);
+        BroadcastChannel.Unsubscribe(this);
     }
 }
