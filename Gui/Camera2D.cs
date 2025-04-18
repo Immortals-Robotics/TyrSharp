@@ -110,20 +110,19 @@ public class Camera2D
     public Rect GetVisibleWorldBounds()
     {
         if (_dirty) UpdateMatrix();
-
-        var corners = new[]
-        {
-            new Vector2(0, 0),
-            new Vector2(_viewport.Size.X, 0),
-            new Vector2(0, _viewport.Size.Y),
-            new Vector2(_viewport.Size.X, _viewport.Size.Y)
-        };
-
-        var worldCorners = corners.Select(ScreenToWorld).ToArray();
-        var min = Vector2.Min(Vector2.Min(worldCorners[0], worldCorners[1]),
-            Vector2.Min(worldCorners[2], worldCorners[3]));
-        var max = Vector2.Max(Vector2.Max(worldCorners[0], worldCorners[1]),
-            Vector2.Max(worldCorners[2], worldCorners[3]));
+        
+        var corner1 = ScreenToWorld(Vector2.Zero);
+        var corner2 = ScreenToWorld(_viewport.Size with { Y = 0 });
+        var corner3 = ScreenToWorld(_viewport.Size with { X = 0 });
+        var corner4 = ScreenToWorld(_viewport.Size);
+        
+        var min = Vector2.Min(
+            Vector2.Min(corner1, corner2),
+            Vector2.Min(corner3, corner4));
+        
+        var max = Vector2.Max(
+            Vector2.Max(corner1, corner2),
+            Vector2.Max(corner3, corner4));
 
         return new Rect(min, max);
     }

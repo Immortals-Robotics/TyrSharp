@@ -92,7 +92,19 @@ internal class DrawableRenderer
 
     private void DrawLine(Line line, Color color, Options options)
     {
-        throw new NotImplementedException();
+        var cameraBounds = Camera.GetVisibleWorldBounds();
+        var length = Math.Max(cameraBounds.Width , cameraBounds.Height);
+
+        var dir = line.Angle.ToUnitVec();
+        var p1 = line.Point - dir * length;
+        var p2 = line.Point + dir * length;
+
+        var start = Camera.WorldToScreen(p1);
+        var end = Camera.WorldToScreen(p2);
+
+        var thickness = Camera.WorldToScreenLength(options.Thickness);
+
+        _drawList.AddLine(start, end, color.U32, thickness);
     }
 
     private void DrawLineSegment(LineSegment lineSegment, Color color, Options options)
