@@ -1,8 +1,8 @@
 ﻿using System.Numerics;
 using Hexa.NET.ImGui;
-using Hexa.NET.Mathematics;
 using Tyr.Common.Debug.Drawing;
 using Tyr.Common.Debug.Drawing.Drawables;
+using Color = Tyr.Common.Debug.Drawing.Color;
 using Path = Tyr.Common.Debug.Drawing.Drawables.Path;
 using Rectangle = Tyr.Common.Debug.Drawing.Drawables.Rectangle;
 using Triangle = Tyr.Common.Debug.Drawing.Drawables.Triangle;
@@ -13,97 +13,141 @@ internal class DrawableRenderer
 {
     public Camera2D Camera { get; set; } = new();
 
+    private ImDrawListPtr _drawList;
+
     internal void Draw(Command command)
     {
-        var drawList = ImGui.GetWindowDrawList();
-
-        var thickness = Camera.WorldToScreenLength(command.Options.Thickness);
-        var col32 = Colors.Red.ToUIntRGBA();
+        _drawList = ImGui.GetWindowDrawList();
 
         switch (command.Drawable)
         {
             case Arrow arrow:
-                throw new NotImplementedException();
+                DrawArrow(arrow, command.Color, command.Options);
+                break;
             case Circle circle:
-            {
-                var center = Camera.WorldToScreen(circle.Center);
-                var radius = Camera.WorldToScreenLength(circle.Radius);
-
-                if (command.Options.Filled)
-                    drawList.AddCircleFilled(center, radius, col32, 40);
-                else
-                    drawList.AddCircle(center, radius, col32, 40, thickness);
+                DrawCircle(circle, command.Color, command.Options);
                 break;
-            }
             case Line line:
-                throw new NotImplementedException();
+                DrawLine(line, command.Color, command.Options);
+                break;
             case LineSegment segment:
-            {
-                var start = Camera.WorldToScreen(segment.Start);
-                var end = Camera.WorldToScreen(segment.End);
-
-                drawList.AddLine(start, end, col32, thickness);
-
+                DrawLineSegment(segment, command.Color, command.Options);
                 break;
-            }
-
             case Path path:
-            {
-                var points = new Vector2[path.Points.Length];
-                for (var i = 0; i < points.Length; ++i)
-                {
-                    points[i] = Camera.WorldToScreen(path.Points[i]);
-                }
-
-                unsafe
-                {
-                    fixed (Vector2* ptr = points)
-                    {
-                        drawList.AddPolyline(ptr, points.Length, col32, ImDrawFlags.None, thickness);
-                    }
-                }
-
+                DrawPath(path, command.Color, command.Options);
                 break;
-            }
-
             case Point point:
-            {
-                // draw it as a cross
-                const float crossSize = 10f;
-
-                var l1Start = Camera.WorldToScreen(point.Position + new Vector2(-crossSize, -crossSize));
-                var l1End = Camera.WorldToScreen(point.Position + new Vector2(crossSize, crossSize));
-
-                var l2Start = Camera.WorldToScreen(point.Position + new Vector2(-crossSize, crossSize));
-                var l2End = Camera.WorldToScreen(point.Position + new Vector2(crossSize, -crossSize));
-
-                drawList.AddLine(l1Start, l1End, col32, thickness);
-                drawList.AddLine(l2Start, l2End, col32, thickness);
-
+                DrawPoint(point, command.Color, command.Options);
                 break;
-            }
-
             case Rectangle rectangle:
-            {
-                var min = Camera.WorldToScreen(rectangle.Min);
-                var max = Camera.WorldToScreen(rectangle.Max);
-
-                if (command.Options.Filled)
-                    drawList.AddRectFilled(min, max, col32);
-                else
-                    drawList.AddRect(min, max, col32, ImDrawFlags.None, thickness);
-
+                DrawRectangle(rectangle, command.Color, command.Options);
                 break;
-            }
-
             case Robot robot:
-                throw new NotImplementedException();
-
+                DrawRobot(robot, command.Color, command.Options);
+                break;
             case Text text:
-                throw new NotImplementedException();
-
+                DrawText(text, command.Color, command.Options);
+                break;
             case Triangle triangle:
-                throw new NotImplementedException();
+                DrawTriangle(triangle, command.Color, command.Options);
+                break;
         }
+    }
+
+    private void DrawArrow(Arrow arrow, Color color, Options options)
+    {
+        throw new NotImplementedException();
+    }
+
+    private void DrawCircle(Circle circle, Color color, Options options)
+    {
+        var center = Camera.WorldToScreen(circle.Center);
+        var radius = Camera.WorldToScreenLength(circle.Radius);
+
+        var thickness = Camera.WorldToScreenLength(options.Thickness);
+
+        if (options.Filled)
+            _drawList.AddCircleFilled(center, radius, color.U32, 40);
+        else
+            _drawList.AddCircle(center, radius, color.U32, 40, thickness);
+    }
+
+    private void DrawLine(Line line, Color color, Options options)
+    {
+        throw new NotImplementedException();
+    }
+
+    private void DrawLineSegment(LineSegment lineSegment, Color color, Options options)
+    {
+        var start = Camera.WorldToScreen(lineSegment.Start);
+        var end = Camera.WorldToScreen(lineSegment.End);
+
+        var thickness = Camera.WorldToScreenLength(options.Thickness);
+
+        _drawList.AddLine(start, end, color.U32, thickness);
+    }
+
+    private void DrawPath(Path path, Color color, Options options)
+    {
+        var points = new Vector2[path.Points.Length];
+        for (var i = 0; i < points.Length; ++i)
+        {
+            points[i] = Camera.WorldToScreen(path.Points[i]);
+        }
+
+        var thickness = Camera.WorldToScreenLength(options.Thickness);
+
+        unsafe
+        {
+            fixed (Vector2* ptr = points)
+            {
+                _drawList.AddPolyline(ptr, points.Length, color.U32, ImDrawFlags.None, thickness);
+            }
+        }
+    }
+
+    private void DrawPoint(Point point, Color color, Options options)
+    {
+        // draw it as a cross
+        const float crossSize = 10f;
+
+        var l1Start = Camera.WorldToScreen(point.Position + new Vector2(-crossSize, -crossSize));
+        var l1End = Camera.WorldToScreen(point.Position + new Vector2(crossSize, crossSize));
+
+        var l2Start = Camera.WorldToScreen(point.Position + new Vector2(-crossSize, crossSize));
+        var l2End = Camera.WorldToScreen(point.Position + new Vector2(crossSize, -crossSize));
+
+        var thickness = Camera.WorldToScreenLength(options.Thickness);
+
+        _drawList.AddLine(l1Start, l1End, color.U32, thickness);
+        _drawList.AddLine(l2Start, l2End, color.U32, thickness);
+    }
+
+    private void DrawRectangle(Rectangle rectangle, Color color, Options options)
+    {
+        var min = Camera.WorldToScreen(rectangle.Min);
+        var max = Camera.WorldToScreen(rectangle.Max);
+
+        var thickness = Camera.WorldToScreenLength(options.Thickness);
+
+        if (options.Filled)
+            _drawList.AddRectFilled(min, max, color.U32);
+        else
+            _drawList.AddRect(min, max, color.U32, ImDrawFlags.None, thickness);
+    }
+
+    private void DrawRobot(Robot robot, Color color, Options options)
+    {
+        throw new NotImplementedException();
+    }
+
+    private void DrawText(Text text, Color color, Options options)
+    {
+        throw new NotImplementedException();
+    }
+
+    private void DrawTriangle(Triangle triangle, Color color, Options options)
+    {
+        throw new NotImplementedException();
     }
 }

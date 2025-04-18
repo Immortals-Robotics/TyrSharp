@@ -2,15 +2,19 @@
 
 namespace Tyr.Common.Debug.Drawing;
 
-[ProtoContract]
-public readonly struct Color(float r, float g, float b, float a = 1f)
+public record struct Color(
+    float R,
+    float G,
+    float B,
+    float A = 1f)
 {
-    [ProtoMember(1)] public readonly float R = r;
-    [ProtoMember(2)] public readonly float G = g;
-    [ProtoMember(3)] public readonly float B = b;
-    [ProtoMember(4)] public readonly float A = a;
-
     public Color Transparent => new(R, G, B, A / 4f);
+
+    public readonly uint U32 =>
+        ((uint)(A * 255.0f) << 24) |
+        ((uint)(B * 255.0f) << 16) |
+        ((uint)(G * 255.0f) << 8) |
+        ((uint)(R * 255.0f));
 
     public static Color Lerp(Color c1, Color c2, float t)
     {
