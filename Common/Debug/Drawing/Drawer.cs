@@ -7,17 +7,17 @@ namespace Tyr.Common.Debug.Drawing;
 
 public class Drawer(string category)
 {
-    private void Draw(IDrawable drawable, Color color, DrawOptions options,
+    private void Draw(IDrawable drawable, Color color, Options options,
         string? memberName, string? filePath, int lineNumber)
     {
-        var command = new DrawCommand(
+        var command = new Command(
             drawable, color, options,
             category, DateTime.UtcNow, memberName, filePath, lineNumber);
 
         Hub.Draws.Publish(command);
     }
 
-    public void DrawPoint(Vector2 position, Color color, DrawOptions options = default,
+    public void DrawPoint(Vector2 position, Color color, Options options = default,
         [CallerMemberName] string? memberName = null,
         [CallerFilePath] string? filePath = null,
         [CallerLineNumber] int lineNumber = 0)
@@ -26,7 +26,7 @@ public class Drawer(string category)
         Draw(point, color, options, memberName, filePath, lineNumber);
     }
 
-    public void DrawLine(Vector2 point, Angle angle, Color color, DrawOptions options = default,
+    public void DrawLine(Vector2 point, Angle angle, Color color, Options options = default,
         [CallerMemberName] string? memberName = null,
         [CallerFilePath] string? filePath = null,
         [CallerLineNumber] int lineNumber = 0)
@@ -35,7 +35,7 @@ public class Drawer(string category)
         Draw(line, color, options, memberName, filePath, lineNumber);
     }
 
-    public void DrawLine(Shape.Line line, Color color, DrawOptions options = default,
+    public void DrawLine(Shape.Line line, Color color, Options options = default,
         [CallerMemberName] string? memberName = null,
         [CallerFilePath] string? filePath = null,
         [CallerLineNumber] int lineNumber = 0)
@@ -43,7 +43,7 @@ public class Drawer(string category)
         DrawLine(line.SomePoint, line.Angle, color, options, memberName, filePath, lineNumber);
     }
 
-    public void DrawLineSegment(Vector2 start, Vector2 end, Color color, DrawOptions options = default,
+    public void DrawLineSegment(Vector2 start, Vector2 end, Color color, Options options = default,
         [CallerMemberName] string? memberName = null,
         [CallerFilePath] string? filePath = null,
         [CallerLineNumber] int lineNumber = 0)
@@ -52,7 +52,7 @@ public class Drawer(string category)
         Draw(segment, color, options, memberName, filePath, lineNumber);
     }
 
-    public void DrawLineSegment(Shape.LineSegment segment, Color color, DrawOptions options = default,
+    public void DrawLineSegment(Shape.LineSegment segment, Color color, Options options = default,
         [CallerMemberName] string? memberName = null,
         [CallerFilePath] string? filePath = null,
         [CallerLineNumber] int lineNumber = 0)
@@ -60,7 +60,7 @@ public class Drawer(string category)
         DrawLineSegment(segment.Start, segment.End, color, options, memberName, filePath, lineNumber);
     }
 
-    public void DrawArrow(Vector2 start, Vector2 end, Color color, DrawOptions options = default,
+    public void DrawArrow(Vector2 start, Vector2 end, Color color, Options options = default,
         [CallerMemberName] string? memberName = null,
         [CallerFilePath] string? filePath = null,
         [CallerLineNumber] int lineNumber = 0)
@@ -69,7 +69,7 @@ public class Drawer(string category)
         Draw(arrow, color, options, memberName, filePath, lineNumber);
     }
 
-    public void DrawArrow(Shape.LineSegment segment, Color color, DrawOptions options = default,
+    public void DrawArrow(Shape.LineSegment segment, Color color, Options options = default,
         [CallerMemberName] string? memberName = null,
         [CallerFilePath] string? filePath = null,
         [CallerLineNumber] int lineNumber = 0)
@@ -77,7 +77,7 @@ public class Drawer(string category)
         DrawArrow(segment.Start, segment.End, color, options, memberName, filePath, lineNumber);
     }
 
-    public void DrawRectangle(Vector2 min, Vector2 max, Color color, DrawOptions options = default,
+    public void DrawRectangle(Vector2 min, Vector2 max, Color color, Options options = default,
         [CallerMemberName] string? memberName = null,
         [CallerFilePath] string? filePath = null,
         [CallerLineNumber] int lineNumber = 0)
@@ -86,7 +86,7 @@ public class Drawer(string category)
         Draw(rect, color, options, memberName, filePath, lineNumber);
     }
 
-    public void DrawRectangle(Shape.Rect rect, Color color, DrawOptions options = default,
+    public void DrawRectangle(Shape.Rect rect, Color color, Options options = default,
         [CallerMemberName] string? memberName = null,
         [CallerFilePath] string? filePath = null,
         [CallerLineNumber] int lineNumber = 0)
@@ -94,7 +94,7 @@ public class Drawer(string category)
         DrawRectangle(rect.Min, rect.Max, color, options, memberName, filePath, lineNumber);
     }
 
-    public void DrawTriangle(Vector2 v1, Vector2 v2, Vector2 v3, Color color, DrawOptions options = default,
+    public void DrawTriangle(Vector2 v1, Vector2 v2, Vector2 v3, Color color, Options options = default,
         [CallerMemberName] string? memberName = null,
         [CallerFilePath] string? filePath = null,
         [CallerLineNumber] int lineNumber = 0)
@@ -103,7 +103,7 @@ public class Drawer(string category)
         Draw(triangle, color, options, memberName, filePath, lineNumber);
     }
 
-    public void DrawTriangle(Shape.Triangle triangle, Color color, DrawOptions options = default,
+    public void DrawTriangle(Shape.Triangle triangle, Color color, Options options = default,
         [CallerMemberName] string? memberName = null,
         [CallerFilePath] string? filePath = null,
         [CallerLineNumber] int lineNumber = 0)
@@ -112,7 +112,7 @@ public class Drawer(string category)
             color, options, memberName, filePath, lineNumber);
     }
 
-    public void DrawCircle(Vector2 center, float radius, Color color, DrawOptions options = default,
+    public void DrawCircle(Vector2 center, float radius, Color color, Options options = default,
         [CallerMemberName] string? memberName = null,
         [CallerFilePath] string? filePath = null,
         [CallerLineNumber] int lineNumber = 0)
@@ -121,7 +121,7 @@ public class Drawer(string category)
         Draw(circle, color, options, memberName, filePath, lineNumber);
     }
 
-    public void DrawCircle(Shape.Circle circle, Color color, DrawOptions options = default,
+    public void DrawCircle(Shape.Circle circle, Color color, Options options = default,
         [CallerMemberName] string? memberName = null,
         [CallerFilePath] string? filePath = null,
         [CallerLineNumber] int lineNumber = 0)
@@ -129,7 +129,7 @@ public class Drawer(string category)
         DrawCircle(circle.Center, circle.Radius, color, options, memberName, filePath, lineNumber);
     }
 
-    public void DrawRobot(Vector2 position, Angle? orientation, int? id, Color color, DrawOptions options = default,
+    public void DrawRobot(Vector2 position, Angle? orientation, int? id, Color color, Options options = default,
         [CallerMemberName] string? memberName = null,
         [CallerFilePath] string? filePath = null,
         [CallerLineNumber] int lineNumber = 0)
@@ -138,7 +138,7 @@ public class Drawer(string category)
         Draw(robot, color, options, memberName, filePath, lineNumber);
     }
 
-    public void DrawRobot(Shape.Robot robot, int? id, Color color, DrawOptions options = default,
+    public void DrawRobot(Shape.Robot robot, int? id, Color color, Options options = default,
         [CallerMemberName] string? memberName = null,
         [CallerFilePath] string? filePath = null,
         [CallerLineNumber] int lineNumber = 0)
@@ -146,7 +146,7 @@ public class Drawer(string category)
         DrawRobot(robot.Center, robot.Angle, id, color, options, memberName, filePath, lineNumber);
     }
 
-    public void DrawPath(IReadOnlyList<Vector2> points, Color color, DrawOptions options = default,
+    public void DrawPath(IReadOnlyList<Vector2> points, Color color, Options options = default,
         [CallerMemberName] string? memberName = null,
         [CallerFilePath] string? filePath = null,
         [CallerLineNumber] int lineNumber = 0)
@@ -155,7 +155,7 @@ public class Drawer(string category)
         Draw(path, color, options, memberName, filePath, lineNumber);
     }
 
-    public void DrawText(string content, Vector2 position, Color color, float size, DrawOptions options = default,
+    public void DrawText(string content, Vector2 position, Color color, float size, Options options = default,
         [CallerMemberName] string? memberName = null,
         [CallerFilePath] string? filePath = null,
         [CallerLineNumber] int lineNumber = 0)

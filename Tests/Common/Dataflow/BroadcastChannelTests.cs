@@ -8,8 +8,8 @@ public class BroadcastChannelTests
     public async Task AllSubscribers_Receive_AllPublishedMessages()
     {
         var channel = new BroadcastChannel<int>();
-        var subscriber1 = channel.Subscribe(BroadcastChannel<int>.Mode.All);
-        var subscriber2 = channel.Subscribe(BroadcastChannel<int>.Mode.All);
+        var subscriber1 = channel.Subscribe(Mode.All);
+        var subscriber2 = channel.Subscribe(Mode.All);
 
         channel.Publish(42);
         channel.Publish(99);
@@ -25,7 +25,7 @@ public class BroadcastChannelTests
     public async Task LatestSubscriber_Receives_OnlyLatestValue()
     {
         var channel = new BroadcastChannel<string>();
-        var subscriber = channel.Subscribe(BroadcastChannel<string>.Mode.Latest);
+        var subscriber = channel.Subscribe(Mode.Latest);
 
         channel.Publish("old");
         channel.Publish("new");
@@ -38,8 +38,8 @@ public class BroadcastChannelTests
     public async Task MixedSubscribers_RespectModes()
     {
         var channel = new BroadcastChannel<int>();
-        var allSubscriber = channel.Subscribe(BroadcastChannel<int>.Mode.All);
-        var latestSubscriber = channel.Subscribe(BroadcastChannel<int>.Mode.Latest);
+        var allSubscriber = channel.Subscribe(Mode.All);
+        var latestSubscriber = channel.Subscribe(Mode.Latest);
 
         channel.Publish(1);
         channel.Publish(2);
@@ -57,7 +57,7 @@ public class BroadcastChannelTests
     {
         var channel = new BroadcastChannel<int>();
 
-        var reader = channel.Subscribe();
+        var reader = channel.Subscribe(Mode.All);
         Assert.NotNull(reader);
     }
 
@@ -65,7 +65,7 @@ public class BroadcastChannelTests
     public async Task Unsubscribe_removes_channel_and_stops_delivery()
     {
         var channel = new BroadcastChannel<int>();
-        var subscriber = channel.Subscribe();
+        var subscriber = channel.Subscribe(Mode.All);
         var reader = subscriber.Reader;
 
         // Confirm initial delivery works

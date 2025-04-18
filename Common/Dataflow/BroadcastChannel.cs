@@ -7,13 +7,7 @@ public class BroadcastChannel<T>
 {
     private readonly ConcurrentBag<Channel<T>> _subscribers = [];
 
-    public enum Mode
-    {
-        Latest,
-        All,
-    }
-
-    public Subscriber<T> Subscribe(Mode mode = Mode.All)
+    public Subscriber<T> Subscribe(Mode mode)
     {
         var channel = mode switch
         {

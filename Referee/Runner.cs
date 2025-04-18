@@ -19,8 +19,8 @@ public class Runner : IDisposable
 
     public Runner()
     {
-        _gcSubscriber = Hub.RawReferee.Subscribe();
-        _visionSubscriber = Hub.Vision.Subscribe(BroadcastChannel<Tracker.Frame>.Mode.Latest);
+        _gcSubscriber = Hub.RawReferee.Subscribe(Mode.All);
+        _visionSubscriber = Hub.Vision.Subscribe(Mode.Latest);
 
         _runner = new RunnerAsync(Tick);
         _runner.Start();
