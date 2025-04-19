@@ -3,4 +3,4 @@
 namespace Tyr.SourceGen;
 
 [AttributeUsage(AttributeTargets.Class)]
-public sealed class GenerateGlobalsAttribute() : Attribute;
+public sealed class GenerateGlobalsAttribute : Attribute;

@@ -11,11 +11,13 @@ GcAddress = { Ip = "224.5.23.1", Port = 10003 } # default: 224.5.23.1:10003
 
 [Common]
 [Common.Debug]
-[Common.Debug.Assert]
-Enabled = true # default: True
-
 [Common.Debug.Log]
 Level = "Trace" # default: Trace
+
+[Common.Debug.Assertion]
+[Common.Debug.Assertion.Assert]
+Enabled = true # default: True
+
 
 
 [Common.Config]

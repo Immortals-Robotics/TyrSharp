@@ -1,4 +1,5 @@
-﻿using Tracker = Tyr.Common.Data.Ssl.Vision.Tracker;
+﻿using System.Numerics;
+using Tracker = Tyr.Common.Data.Ssl.Vision.Tracker;
 using Gc = Tyr.Common.Data.Ssl.Gc;
 using Tyr.Common.Data.Referee;
 
@@ -70,7 +71,7 @@ public class Referee
         const int requiredHys = 5;
         var requiredDis = _state.Our() && _state.Restart() ? 150.0f : 50.0f;
 
-        var ballMoveDis = _vision.Ball.Position.DistanceTo(_lastBall.Position);
+        var ballMoveDis = Vector3.Distance(_vision.Ball.Position, _lastBall.Position);
 
         if (ballMoveDis > requiredDis)
         {

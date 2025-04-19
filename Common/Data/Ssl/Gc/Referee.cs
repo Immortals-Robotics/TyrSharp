@@ -1,5 +1,4 @@
 ﻿using ProtoBuf;
-using Tyr.Common.Math;
 using Tyr.Common.Time;
 
 namespace Tyr.Common.Data.Ssl.Gc;
@@ -31,7 +30,13 @@ public class Referee
 
     [ProtoMember(8)] public TeamInfo Blue { get; set; }
 
-    [ProtoMember(9)] public Vector2 DesignatedPosition { get; set; }
+    [ProtoMember(9)] public Vector2 DesignatedPositionRaw { get; set; }
+
+    public System.Numerics.Vector2 DesignatedPosition
+    {
+        get => DesignatedPositionRaw;
+        set => DesignatedPositionRaw = value;
+    }
 
     [ProtoMember(10)] public bool? BlueTeamOnPositiveHalf { get; set; }
     public TeamSide BlueTeamSide => BlueTeamOnPositiveHalf.GetValueOrDefault() ? TeamSide.Right : TeamSide.Left;

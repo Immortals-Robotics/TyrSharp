@@ -41,6 +41,8 @@ public class GlobalsGenerator : ISourceGenerator
                          global using ZLogger;
                          using Microsoft.Extensions.Logging;
                          using Tyr.Common.Debug;
+                         using Tyr.Common.Debug.Assertion;
+                         using Tyr.Common.Debug.Drawing;
 
                          namespace {{ns}}
                          {
@@ -48,11 +50,13 @@ public class GlobalsGenerator : ISourceGenerator
                              {
                                  public static readonly ILogger Logger;
                                  public static readonly Assert Assert;
+                                 public static readonly Drawer Drawer;
                          
                                  static Globals()
                                  {
                                      Logger = Log.GetLogger("{{moduleName}}");
                                      Assert = new Assert(Logger);
+                                     Drawer = new Drawer("{{moduleName}}");
                                  }
                              }
                          }

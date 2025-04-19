@@ -6,7 +6,7 @@ namespace Tyr.Vision;
 
 public class Vision : IDisposable
 {
-    private readonly Subscriber<Frame> _subscriber = Hub.RawDetection.Subscribe();
+    private readonly Subscriber<Frame> _subscriber = Hub.RawDetection.Subscribe(Mode.All);
 
     private Dictionary<uint, Camera> _cameras = new();
 
