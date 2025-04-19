@@ -22,51 +22,48 @@ public class Window : ImWindow
 
     public Window()
     {
-        for (var i = 0; i < 1000; i++)
+        var circleDrawable = new Circle(new Vector2(Random.Get(-500f, 500f), Random.Get(-500f, 500f)),
+            Random.Get(10f, 100f));
+        var pointDrawable = new Point(new Vector2(Random.Get(-500f, 500f), Random.Get(-500f, 500f)));
+        var arrowDrawable = new Arrow(new Vector2(Random.Get(-500f, 500f), Random.Get(-500f, 500f)),
+            new Vector2(Random.Get(-500f, 500f), Random.Get(-500f, 500f)));
+        var lineDrawable = new Line(new Vector2(Random.Get(-500f, 500f), Random.Get(-500f, 500f)),
+            Angle.FromDeg(Random.Get(0f, 360f)));
+        var textDrawable = new Text("Have no fear,\nHippo is here",
+            new Vector2(Random.Get(-500f, 500f), Random.Get(-500f, 500f)), Random.Get(20f, 80f));
+        var triangleDrawable = new Triangle(
+            new Vector2(Random.Get(-500f, 500f), Random.Get(-500f, 500f)),
+            new Vector2(Random.Get(-500f, 500f), Random.Get(-500f, 500f)),
+            new Vector2(Random.Get(-500f, 500f), Random.Get(-500f, 500f)));
+        var robotDrawable = new Robot(new Vector2(Random.Get(-500f, 500f), Random.Get(-500f, 500f)),
+            Angle.FromDeg(Random.Get(0f, 360f)), Random.Get(0, 15));
+
+        var spiralPath = new Vector2[40];
+        for (var pathIdx = 0; pathIdx < spiralPath.Length; pathIdx++)
         {
-            var circleDrawable = new Circle(new Vector2(Random.Get(-500f, 500f), Random.Get(-500f, 500f)),
-                Random.Get(10f, 100f));
-            var pointDrawable = new Point(new Vector2(Random.Get(-500f, 500f), Random.Get(-500f, 500f)));
-            var arrowDrawable = new Arrow(new Vector2(Random.Get(-500f, 500f), Random.Get(-500f, 500f)),
-                new Vector2(Random.Get(-500f, 500f), Random.Get(-500f, 500f)));
-            var lineDrawable = new Line(new Vector2(Random.Get(-500f, 500f), Random.Get(-500f, 500f)),
-                Angle.FromDeg(Random.Get(0f, 360f)));
-            var textDrawable = new Text("Have no fear,\nHippo is here",
-                new Vector2(Random.Get(-500f, 500f), Random.Get(-500f, 500f)), Random.Get(20f, 80f));
-            var triangleDrawable = new Triangle(
-                new Vector2(Random.Get(-500f, 500f), Random.Get(-500f, 500f)),
-                new Vector2(Random.Get(-500f, 500f), Random.Get(-500f, 500f)),
-                new Vector2(Random.Get(-500f, 500f), Random.Get(-500f, 500f)));
-            var robotDrawable = new Robot(new Vector2(Random.Get(-500f, 500f), Random.Get(-500f, 500f)),
-                Angle.FromDeg(Random.Get(0f, 360f)), i % 20);
+            var t = pathIdx / 40f; // [0, 1]  
+            var angle = t * MathF.PI * 4; // 2 full turns
+            var radius = t * 1000f; // up to 1000 units
 
-            var spiralPath = new Vector2[40];
-            for (var pathIdx = 0; pathIdx < spiralPath.Length; pathIdx++)
-            {
-                var t = pathIdx / 40f; // [0, 1]  
-                var angle = t * MathF.PI * 4; // 2 full turns
-                var radius = t * 1000f; // up to 1000 units
+            var x = MathF.Cos(angle) * radius;
+            var y = MathF.Sin(angle) * radius;
 
-                var x = MathF.Cos(angle) * radius;
-                var y = MathF.Sin(angle) * radius;
-
-                spiralPath[pathIdx] = new Vector2(x, y);
-            }
-
-            var pathDrawable = new Path(spiralPath);
-
-            var options = new Options(Filled: Random.Get(0f, 1f) > 0.5f, Thickness: Random.Get(1f, 10f));
-            var meta = new Meta("Gui", DateTime.UtcNow, 0, null, null, 0);
-
-            _commands.Add(new Command(circleDrawable, Color.Random(), options, meta));
-            _commands.Add(new Command(pointDrawable, Color.Random(), options, meta));
-            _commands.Add(new Command(arrowDrawable, Color.Random(), options, meta));
-            _commands.Add(new Command(lineDrawable, Color.Random(), options, meta));
-            _commands.Add(new Command(textDrawable, Color.Random(), options, meta));
-            _commands.Add(new Command(triangleDrawable, Color.Random(), options, meta));
-            _commands.Add(new Command(robotDrawable, Color.Random(), options, meta));
-            _commands.Add(new Command(pathDrawable, Color.Random(), options, meta));
+            spiralPath[pathIdx] = new Vector2(x, y);
         }
+
+        var pathDrawable = new Path(spiralPath);
+
+        var options = new Options(Filled: Random.Get(0f, 1f) > 0.5f, Thickness: Random.Get(1f, 10f));
+        var meta = new Meta("Gui", DateTime.UtcNow, 0, null, null, 0);
+
+        _commands.Add(new Command(circleDrawable, Color.Random(), options, meta));
+        _commands.Add(new Command(pointDrawable, Color.Random(), options, meta));
+        _commands.Add(new Command(arrowDrawable, Color.Random(), options, meta));
+        _commands.Add(new Command(lineDrawable, Color.Random(), options, meta));
+        _commands.Add(new Command(textDrawable, Color.Random(), options, meta));
+        _commands.Add(new Command(triangleDrawable, Color.Random(), options, meta));
+        _commands.Add(new Command(robotDrawable, Color.Random(), options, meta));
+        _commands.Add(new Command(pathDrawable, Color.Random(), options, meta));
     }
 
     public override void Init()

@@ -104,7 +104,7 @@ public class AngleTests
 
         var b = Angle.FromDeg(90);
         Assert.Equal(1f, b.Sin(), 3);
-        Assert.True(MathF.Abs(b.Cos()) < 0.001f);
+        Assert.Equal(0f, b.Cos(), 3);
     }
 
     [Fact]

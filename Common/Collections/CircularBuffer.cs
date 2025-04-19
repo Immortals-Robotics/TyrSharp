@@ -2,16 +2,11 @@
 
 namespace Tyr.Common.Collections;
 
-public class CircularBuffer<T> : IEnumerable<T>
+public class CircularBuffer<T>(int capacity) : IEnumerable<T>
 {
-    private readonly T[] _buffer;
+    private readonly T[] _buffer = new T[capacity];
 
     private int _index;
-
-    public CircularBuffer(int capacity)
-    {
-        _buffer = new T[capacity];
-    }
 
     public int Capacity => _buffer.Length;
 
