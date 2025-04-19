@@ -1,19 +1,11 @@
 ﻿using Hexa.NET.KittyUI;
 
-namespace Tyr.Gui;
+var builder = AppBuilder.Create();
+builder.EnableLogging(true);
+builder.EnableDebugTools(true);
+builder.SetTitle("Tyr");
+builder.StyleColorsClassic();
 
-internal static class Program
-{
-    private static void Main()
-    {
-        var builder = AppBuilder.Create();
-        builder.EnableLogging(true);
-        builder.EnableDebugTools(true);
-        builder.SetTitle("Tyr");
-        builder.StyleColorsClassic();
+builder.AddWindow<Tyr.Gui.Window>();
 
-        builder.AddWindow<Window>();
-
-        builder.Run();
-    }
-}
+builder.Run();

@@ -1,23 +1,12 @@
 ﻿using Tyr.Common.Config;
-using Tyr.Vision;
 
-namespace Tyr.Cli;
+var configPath = args[0];
+ConfigStorage.Initialize(configPath);
 
-internal static class Program
-{
-    private static void Main(string[] args)
-    {
-        ConfigRegistry.Initialize();
+using var sslVisionPublisher = new Tyr.Vision.SslVisionDataPublisher();
+using var gcPublisher = new Tyr.Referee.GcDataPublisher();
 
-        var configPath = args[0];
-        ConfigStorage.Initialize(configPath);
+using var referee = new Tyr.Referee.Runner();
+using var vision = new Tyr.Vision.Vision();
 
-        using var sslVisionPublisher = new SslVisionDataPublisher();
-        using var gcPublisher = new Referee.GcDataPublisher();
-
-        using var referee = new Referee.Runner();
-        using var vision = new Vision.Vision();
-
-        Thread.Sleep(Timeout.Infinite);
-    }
-}
+Thread.Sleep(Timeout.Infinite);

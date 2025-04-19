@@ -5,7 +5,7 @@ using Tyr.Common.Runner;
 
 namespace Tyr.Referee;
 
-public class Runner : IDisposable
+public sealed class Runner : IDisposable
 {
     private readonly Subscriber<Gc.Referee> _gcSubscriber;
     private readonly Subscriber<Tracker.Frame> _visionSubscriber;

@@ -39,6 +39,8 @@ public class GlobalsGenerator : ISourceGenerator
             var code = $$"""
                          global using static Tyr.{{moduleName}}.Globals;
                          global using ZLogger;
+                         using System.Runtime.CompilerServices;
+                         using System.Reflection;
                          using Microsoft.Extensions.Logging;
                          using Tyr.Common.Debug;
                          using Tyr.Common.Debug.Assertion;
@@ -46,17 +48,20 @@ public class GlobalsGenerator : ISourceGenerator
 
                          namespace {{ns}}
                          {
-                             public static class Globals
+                             internal static class Globals
                              {
-                                 public static readonly ILogger Logger;
-                                 public static readonly Assert Assert;
-                                 public static readonly Drawer Drawer;
-                         
-                                 static Globals()
+                                 internal static ILogger Logger { get; private set; }
+                                 internal static Assert Assert { get; private set; }
+                                 internal static Drawer Drawer { get; private set; }
+
+                                 [ModuleInitializer]
+                                 internal static void Init()
                                  {
                                      Logger = Log.GetLogger("{{moduleName}}");
                                      Assert = new Assert(Logger);
                                      Drawer = new Drawer("{{moduleName}}");
+                                     
+                                     Tyr.Common.Config.ConfigRegistry.RegisterAssembly(Assembly.GetExecutingAssembly());
                                  }
                              }
                          }

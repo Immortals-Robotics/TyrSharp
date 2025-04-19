@@ -18,23 +18,18 @@ public static class ConfigRegistry
 
     public static event Action? OnAnyUpdated;
 
-    public static void Initialize()
+    public static void RegisterAssembly(Assembly assembly)
     {
-        Configurables = AppDomain.CurrentDomain
-            .GetAssemblies()
-            .Where(assembly => assembly.GetName().Name != null && assembly.GetName().Name!.StartsWith("Tyr"))
-            .SelectMany(assembly => assembly.GetTypes())
+        Configurables = assembly.GetTypes()
             .Where(type => type.GetCustomAttribute<ConfigurableAttribute>() != null)
             .ToDictionary(MapName, type => new Configurable(type));
 
-        Logger.ZLogTrace($"Found {Configurables.Count} configurables");
+        if (Configurables.Count == 0) return;
+
+        Logger.ZLogTrace($"Found {Configurables.Count} configurables in {assembly.GetName().Name}");
         foreach (var configurable in Configurables.Values)
         {
             Logger.ZLogTrace($" - {configurable.TypeName} @ {configurable.Namespace}");
-        }
-
-        foreach (var configurable in Configurables.Values)
-        {
             configurable.OnUpdated += OnAnyUpdated;
         }
     }
