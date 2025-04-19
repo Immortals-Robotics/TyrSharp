@@ -1,36 +1,30 @@
-﻿namespace Tyr.Common.Math;
+﻿using Tyr.Common.Collections;
 
-public class MedianFilter<T>(int size = 10)
-    where T : IComparable<T>
+namespace Tyr.Common.Math;
+
+public class MedianFilter<T>(int size = 10) where T : unmanaged, IComparable<T>
 {
-    private readonly T[] _buffer = new T[size];
-    private readonly T[] _sortBuffer = new T[size];
-
-    private int _index;
-    private bool _empty = true;
+    private readonly CircularBuffer<T> _buffer = new(size);
 
     public void Add(T value)
     {
-        if (_empty)
+        _buffer.Add(value);
+
+        Span<T> sortBuffer = stackalloc T[_buffer.Count];
+        for (var i = 0; i < _buffer.Count; i++)
         {
-            Array.Fill(_buffer, value);
-            _empty = false;
+            sortBuffer[i] = _buffer[i];
         }
 
-        _buffer[_index] = value;
-        _index = (_index + 1) % _buffer.Length;
+        sortBuffer.Sort();
+        Current = sortBuffer[sortBuffer.Length / 2];
     }
 
-    public T Current()
-    {
-        Array.Copy(_buffer, _sortBuffer, size);
-        Array.Sort(_sortBuffer);
-        return _sortBuffer[size / 2];
-    }
+    public T Current { get; private set; } = default;
 
     public void Reset()
     {
-        _index = 0;
-        _empty = true;
+        _buffer.Clear();
+        Current = default;
     }
 }

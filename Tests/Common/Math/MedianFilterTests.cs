@@ -12,7 +12,7 @@ public class MedianFilterTests
         for (var i = 0; i < 5; i++)
             filter.Add(3f);
 
-        Assert.Equal(3f, filter.Current(), 3);
+        Assert.Equal(3f, filter.Current, 3);
     }
 
     [Fact]
@@ -25,7 +25,7 @@ public class MedianFilterTests
         filter.Add(4);
         filter.Add(5);
 
-        Assert.Equal(3, filter.Current());
+        Assert.Equal(3, filter.Current);
     }
 
     [Fact]
@@ -45,7 +45,7 @@ public class MedianFilterTests
         filter.Add(100);
         filter.Add(100);
 
-        Assert.Equal(100, filter.Current()); // buffer is now [100,100,100,0,0] → median = 100
+        Assert.Equal(100, filter.Current); // buffer is now [100,100,100,0,0] → median = 100
     }
 
     [Fact]
@@ -56,13 +56,13 @@ public class MedianFilterTests
         filter.Add(20);
         filter.Add(30);
 
-        Assert.Equal(20, filter.Current());
+        Assert.Equal(20, filter.Current);
 
         filter.Reset();
         filter.Add(1);
 
         // Since it refills the buffer with 1 on first sample
-        Assert.Equal(1, filter.Current());
+        Assert.Equal(1, filter.Current);
     }
 
     [Fact]
@@ -73,7 +73,7 @@ public class MedianFilterTests
         filter.Add(2.2f);
         filter.Add(3.3f);
 
-        Assert.Equal(2.2f, filter.Current(), 3);
+        Assert.Equal(2.2f, filter.Current, 3);
     }
 
     [Fact]
@@ -86,6 +86,6 @@ public class MedianFilterTests
         filter.Add(5);
         filter.Add(10);
 
-        Assert.Equal(0, filter.Current());
+        Assert.Equal(0, filter.Current);
     }
 }
