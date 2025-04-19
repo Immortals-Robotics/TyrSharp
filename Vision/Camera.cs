@@ -12,7 +12,7 @@ public class Camera(uint id)
     public uint FrameId { get; private set; }
     public DateTime Time { get; private set; }
 
-    public float DeltaTime => (float)(_frameTimeEstimator.Estimate?.slope ?? 0f);
+    public float DeltaTime => (float)(_frameTimeEstimator.Estimate?.Slope ?? 0f);
 
     private Dictionary<RobotId, Tracker.Robot> _robots = [];
     private List<Tracker.Ball> _balls = [];

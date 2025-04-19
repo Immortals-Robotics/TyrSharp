@@ -39,14 +39,21 @@ public struct Line(float a, float b, float c) : IShape
         return FromTwoPoints(point, point + angle.ToUnitVec());
     }
 
+    public static Line FromSlopeAndIntercept(float slope, float intercept)
+    {
+        return new Line(1f, -slope, -intercept);
+    }
+
     public static Line FromSegment(LineSegment segment)
     {
         return FromTwoPoints(segment.Start, segment.End);
     }
 
-    public readonly float Slope => -B / A;
+    public readonly float Slope => Utils.ApproximatelyEqual(A, 0f) ? float.PositiveInfinity : -B / A;
     public readonly Vector2 Direction => new(-B, A);
     public readonly Angle Angle => Angle.FromVector(Direction);
+    
+    public readonly float Intercept => Utils.ApproximatelyEqual(A, 0f) ? float.NaN : -C / A;
 
     // a point that is guaranteed to be on the line
     public Vector2 SomePoint

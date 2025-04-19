@@ -1,11 +1,12 @@
 ﻿using MathNet.Numerics.LinearAlgebra;
 using MathNet.Numerics.LinearAlgebra.Double;
+using Tyr.Common.Shapes;
 
 namespace Tyr.Common.Math;
 
 public class LineEstimator
 {
-    public (double slope, double intercept)? Estimate;
+    public Line? Estimate { get; private set; }
 
     public int Capacity { get; }
     public int Count { get; private set; }
@@ -18,12 +19,13 @@ public class LineEstimator
 
     public LineEstimator(int capacity)
     {
+        if (capacity <= 0) throw new ArgumentException("Capacity must be positive", nameof(capacity));
         Capacity = capacity;
 
         _x = Matrix.Build.Dense(capacity, 2,
-            (_, j) => j == 0 ? 1f : 0f);
+            (_, j) => j == 0 ? 1.0 : 0.0);
 
-        _y = Vector.Build.Dense(capacity, 0f);
+        _y = Vector.Build.Dense(capacity, 0.0);
     }
 
     public void AddSample(double x, double y)
@@ -55,10 +57,21 @@ public class LineEstimator
         var x = IsFull ? _x : _x.SubMatrix(0, Count, 0, 2);
         var y = IsFull ? _y : _y.SubVector(0, Count);
 
-        var qr = x.QR();
-        var qTy = qr.Q.TransposeThisAndMultiply(y);
-        var beta = qr.R.UpperTriangle().Solve(qTy);
+        try
+        {
+            var qr = x.QR();
+            
+            var qTy = qr.Q.TransposeThisAndMultiply(y);
+            var beta = qr.R.UpperTriangle().Solve(qTy);
 
-        Estimate = (slope: beta[1], intercept: beta[0]);
+            Estimate = Line.FromSlopeAndIntercept(
+                slope: (float)beta[1],
+                intercept: (float)beta[0]);
+        }
+        catch (Exception exception)
+        {
+            Logger.ZLogError(exception, $"Failed to compute line estimate: {exception.Message}");
+            Estimate = null;
+        }
     }
 }

@@ -21,8 +21,8 @@ public class LineEstimatorTests
 
         var result = estimator.Estimate;
         Assert.NotNull(result);
-        Assert.Equal(1f, result.Value.slope, 3);
-        Assert.Equal(1f, result.Value.intercept, 3);
+        Assert.Equal(1f, result.Value.Slope, 3);
+        Assert.Equal(1f, result.Value.Intercept, 3);
     }
 
     [Fact]
@@ -37,8 +37,8 @@ public class LineEstimatorTests
 
         var result = estimator.Estimate;
         Assert.NotNull(result);
-        Assert.Equal(1f, result.Value.slope, 3);
-        Assert.Equal(0f, result.Value.intercept, 3);
+        Assert.Equal(1f, result.Value.Slope, 3);
+        Assert.Equal(0f, result.Value.Intercept, 3);
     }
 
     [Fact]
