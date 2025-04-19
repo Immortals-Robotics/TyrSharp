@@ -3,6 +3,12 @@ using System.Runtime.CompilerServices;
 using Tyr.Common.Dataflow;
 using Tyr.Common.Debug.Drawing.Drawables;
 using Tyr.Common.Math;
+using Tyr.Common.Shapes;
+using Circle = Tyr.Common.Debug.Drawing.Drawables.Circle;
+using Line = Tyr.Common.Debug.Drawing.Drawables.Line;
+using LineSegment = Tyr.Common.Debug.Drawing.Drawables.LineSegment;
+using Robot = Tyr.Common.Debug.Drawing.Drawables.Robot;
+using Triangle = Tyr.Common.Debug.Drawing.Drawables.Triangle;
 
 namespace Tyr.Common.Debug.Drawing;
 
@@ -11,9 +17,10 @@ public class Drawer(string category)
     private void Draw(IDrawable drawable, Color color, Options options,
         string? memberName, string? filePath, int lineNumber)
     {
-        var command = new Command(
-            drawable, color, options,
-            category, DateTime.UtcNow, memberName, filePath, lineNumber);
+        var time = DateTime.UtcNow;
+        var frameId = 0;
+        var meta = new Meta(category, time, frameId, memberName, filePath, lineNumber);
+        var command = new Command(drawable, color, options, meta);
 
         Hub.Draws.Publish(command);
     }
@@ -36,7 +43,7 @@ public class Drawer(string category)
         Draw(line, color, options, memberName, filePath, lineNumber);
     }
 
-    public void DrawLine(Shape.Line line, Color color, Options options = default,
+    public void DrawLine(Shapes.Line line, Color color, Options options = default,
         [CallerMemberName] string? memberName = null,
         [CallerFilePath] string? filePath = null,
         [CallerLineNumber] int lineNumber = 0)
@@ -53,7 +60,7 @@ public class Drawer(string category)
         Draw(segment, color, options, memberName, filePath, lineNumber);
     }
 
-    public void DrawLineSegment(Shape.LineSegment segment, Color color, Options options = default,
+    public void DrawLineSegment(Shapes.LineSegment segment, Color color, Options options = default,
         [CallerMemberName] string? memberName = null,
         [CallerFilePath] string? filePath = null,
         [CallerLineNumber] int lineNumber = 0)
@@ -70,7 +77,7 @@ public class Drawer(string category)
         Draw(arrow, color, options, memberName, filePath, lineNumber);
     }
 
-    public void DrawArrow(Shape.LineSegment segment, Color color, Options options = default,
+    public void DrawArrow(Shapes.LineSegment segment, Color color, Options options = default,
         [CallerMemberName] string? memberName = null,
         [CallerFilePath] string? filePath = null,
         [CallerLineNumber] int lineNumber = 0)
@@ -87,7 +94,7 @@ public class Drawer(string category)
         Draw(rect, color, options, memberName, filePath, lineNumber);
     }
 
-    public void DrawRectangle(Shape.Rect rect, Color color, Options options = default,
+    public void DrawRectangle(Rect rect, Color color, Options options = default,
         [CallerMemberName] string? memberName = null,
         [CallerFilePath] string? filePath = null,
         [CallerLineNumber] int lineNumber = 0)
@@ -104,7 +111,7 @@ public class Drawer(string category)
         Draw(triangle, color, options, memberName, filePath, lineNumber);
     }
 
-    public void DrawTriangle(Shape.Triangle triangle, Color color, Options options = default,
+    public void DrawTriangle(Shapes.Triangle triangle, Color color, Options options = default,
         [CallerMemberName] string? memberName = null,
         [CallerFilePath] string? filePath = null,
         [CallerLineNumber] int lineNumber = 0)
@@ -122,7 +129,7 @@ public class Drawer(string category)
         Draw(circle, color, options, memberName, filePath, lineNumber);
     }
 
-    public void DrawCircle(Shape.Circle circle, Color color, Options options = default,
+    public void DrawCircle(Shapes.Circle circle, Color color, Options options = default,
         [CallerMemberName] string? memberName = null,
         [CallerFilePath] string? filePath = null,
         [CallerLineNumber] int lineNumber = 0)
@@ -139,7 +146,7 @@ public class Drawer(string category)
         Draw(robot, color, options, memberName, filePath, lineNumber);
     }
 
-    public void DrawRobot(Shape.Robot robot, int? id, Color color, Options options = default,
+    public void DrawRobot(Shapes.Robot robot, int? id, Color color, Options options = default,
         [CallerMemberName] string? memberName = null,
         [CallerFilePath] string? filePath = null,
         [CallerLineNumber] int lineNumber = 0)

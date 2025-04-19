@@ -1,8 +1,8 @@
-﻿using ProtoBuf;
+﻿using System.Numerics;
+using ProtoBuf;
 using Tyr.Common.Math;
-using System.Numerics;
 
-namespace Tyr.Common.Shape;
+namespace Tyr.Common.Shapes;
 
 [ProtoContract]
 public struct Robot(Vector2 center, float radius, Angle angle) : IShape

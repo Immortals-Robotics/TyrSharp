@@ -1,6 +1,6 @@
 ﻿using System.Numerics;
 using Tyr.Common.Math;
-using Tyr.Common.Shape;
+using Tyr.Common.Shapes;
 
 namespace Tyr.Gui;
 

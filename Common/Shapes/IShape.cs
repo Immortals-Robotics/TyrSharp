@@ -1,6 +1,6 @@
 ﻿using System.Numerics;
 
-namespace Tyr.Common.Shape;
+namespace Tyr.Common.Shapes;
 
 public interface IShape
 {

@@ -1,8 +1,8 @@
-﻿using ProtoBuf;
+﻿using System.Numerics;
+using ProtoBuf;
 using Tyr.Common.Math;
-using System.Numerics;
 
-namespace Tyr.Common.Shape;
+namespace Tyr.Common.Shapes;
 
 [ProtoContract]
 public struct Rect(Vector2 p1, Vector2 p2) : IShape

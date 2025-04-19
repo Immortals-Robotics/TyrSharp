@@ -1,7 +1,7 @@
-﻿using ProtoBuf;
-using System.Numerics;
+﻿using System.Numerics;
+using ProtoBuf;
 
-namespace Tyr.Common.Shape;
+namespace Tyr.Common.Shapes;
 
 [ProtoContract]
 public struct Circle(Vector2 center, float radius) : IShape

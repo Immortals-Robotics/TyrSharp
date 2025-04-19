@@ -119,7 +119,7 @@ internal class DrawableRenderer
 
     private void DrawPath(Path path, Color color, Options options)
     {
-        var points = new Vector2[path.Points.Length];
+        Span<Vector2> points = stackalloc Vector2[path.Points.Length];
         for (var i = 0; i < points.Length; ++i)
         {
             points[i] = Camera.WorldToScreen(path.Points[i]);
@@ -183,7 +183,7 @@ internal class DrawableRenderer
             var startAngle = angle + flatAngle;
             var endAngle = angle + 2 * MathF.PI - flatAngle;
 
-            var points = new Vector2[segments + 1];
+            Span<Vector2> points = stackalloc Vector2[segments + 1];
 
             for (var i = 0; i <= segments; i++)
             {
@@ -218,14 +218,14 @@ internal class DrawableRenderer
     {
         var posScreen = Camera.WorldToScreen(text.Position);
         var sizeScreen = Camera.WorldToScreenLength(text.Size);
-        
+
         if (text.Alignment == TextAlignment.Center)
         {
             var sizeMul = sizeScreen / ImGui.GetFontSize();
             var textSize = ImGui.CalcTextSize(text.Content) * sizeMul;
             posScreen -= textSize * 0.5f;
         }
-        
+
         unsafe
         {
             _drawList.AddText(ImGui.GetFont().Handle, sizeScreen, posScreen, color.U32, text.Content);
