@@ -37,7 +37,7 @@ public record struct Color(
 
     public static Color Random()
     {
-        Span<Color> colors = [White, Black, Red, Green, Blue, Yellow, Orange, Magenta];
-        return Math.Random.Get(colors);
+        ReadOnlySpan<Color> colors = [White, Black, Red, Green, Blue, Yellow, Orange, Magenta];
+        return Rand.Get(colors);
     }
 }

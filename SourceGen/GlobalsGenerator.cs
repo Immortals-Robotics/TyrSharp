@@ -42,26 +42,27 @@ public class GlobalsGenerator : ISourceGenerator
                          using System.Runtime.CompilerServices;
                          using System.Reflection;
                          using Microsoft.Extensions.Logging;
-                         using Tyr.Common.Debug;
-                         using Tyr.Common.Debug.Assertion;
-                         using Tyr.Common.Debug.Drawing;
 
                          namespace {{ns}}
                          {
                              internal static class Globals
                              {
+                                 internal static string ModuleName => "{{moduleName}}";
+                             
                                  internal static ILogger Logger { get; private set; }
-                                 internal static Assert Assert { get; private set; }
-                                 internal static Drawer Drawer { get; private set; }
+                                 internal static Common.Debug.Assertion.Assert Assert { get; private set; }
+                                 internal static Common.Debug.Drawing.Drawer Drawer { get; private set; }
+                                 internal static Common.Math.Random Rand { get; private set; }
 
                                  [ModuleInitializer]
                                  internal static void Init()
                                  {
-                                     Logger = Log.GetLogger("{{moduleName}}");
-                                     Assert = new Assert(Logger);
-                                     Drawer = new Drawer("{{moduleName}}");
+                                     Logger = Common.Debug.Log.GetLogger("{{moduleName}}");
+                                     Assert = new Common.Debug.Assertion.Assert(Logger);
+                                     Drawer = new Common.Debug.Drawing.Drawer("{{moduleName}}");
+                                     Rand = new Common.Math.Random();
                                      
-                                     Tyr.Common.Config.ConfigRegistry.RegisterAssembly(Assembly.GetExecutingAssembly());
+                                     Common.Config.ConfigRegistry.RegisterAssembly(Assembly.GetExecutingAssembly());
                                  }
                              }
                          }

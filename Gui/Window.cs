@@ -6,7 +6,6 @@ using Tyr.Common.Debug.Drawing.Drawables;
 using Tyr.Common.Math;
 using Color = Tyr.Common.Debug.Drawing.Color;
 using Path = Tyr.Common.Debug.Drawing.Drawables.Path;
-using Random = Tyr.Common.Math.Random;
 using Triangle = Tyr.Common.Debug.Drawing.Drawables.Triangle;
 
 namespace Tyr.Gui;
@@ -22,21 +21,21 @@ public class Window : ImWindow
 
     public Window()
     {
-        var circleDrawable = new Circle(new Vector2(Random.Get(-500f, 500f), Random.Get(-500f, 500f)),
-            Random.Get(10f, 100f));
-        var pointDrawable = new Point(new Vector2(Random.Get(-500f, 500f), Random.Get(-500f, 500f)));
-        var arrowDrawable = new Arrow(new Vector2(Random.Get(-500f, 500f), Random.Get(-500f, 500f)),
-            new Vector2(Random.Get(-500f, 500f), Random.Get(-500f, 500f)));
-        var lineDrawable = new Line(new Vector2(Random.Get(-500f, 500f), Random.Get(-500f, 500f)),
-            Angle.FromDeg(Random.Get(0f, 360f)));
+        var circleDrawable = new Circle(new Vector2(Rand.Get(-500f, 500f), Rand.Get(-500f, 500f)),
+            Rand.Get(10f, 100f));
+        var pointDrawable = new Point(new Vector2(Rand.Get(-500f, 500f), Rand.Get(-500f, 500f)));
+        var arrowDrawable = new Arrow(new Vector2(Rand.Get(-500f, 500f), Rand.Get(-500f, 500f)),
+            new Vector2(Rand.Get(-500f, 500f), Rand.Get(-500f, 500f)));
+        var lineDrawable = new Line(new Vector2(Rand.Get(-500f, 500f), Rand.Get(-500f, 500f)),
+            Angle.FromDeg(Rand.Get(0f, 360f)));
         var textDrawable = new Text("Have no fear,\nHippo is here",
-            new Vector2(Random.Get(-500f, 500f), Random.Get(-500f, 500f)), Random.Get(20f, 80f));
+            new Vector2(Rand.Get(-500f, 500f), Rand.Get(-500f, 500f)), Rand.Get(20f, 80f));
         var triangleDrawable = new Triangle(
-            new Vector2(Random.Get(-500f, 500f), Random.Get(-500f, 500f)),
-            new Vector2(Random.Get(-500f, 500f), Random.Get(-500f, 500f)),
-            new Vector2(Random.Get(-500f, 500f), Random.Get(-500f, 500f)));
-        var robotDrawable = new Robot(new Vector2(Random.Get(-500f, 500f), Random.Get(-500f, 500f)),
-            Angle.FromDeg(Random.Get(0f, 360f)), Random.Get(0, 15));
+            new Vector2(Rand.Get(-500f, 500f), Rand.Get(-500f, 500f)),
+            new Vector2(Rand.Get(-500f, 500f), Rand.Get(-500f, 500f)),
+            new Vector2(Rand.Get(-500f, 500f), Rand.Get(-500f, 500f)));
+        var robotDrawable = new Robot(new Vector2(Rand.Get(-500f, 500f), Rand.Get(-500f, 500f)),
+            Angle.FromDeg(Rand.Get(0f, 360f)), Rand.Get(0, 16));
 
         var spiralPath = new Vector2[40];
         for (var pathIdx = 0; pathIdx < spiralPath.Length; pathIdx++)
@@ -53,7 +52,7 @@ public class Window : ImWindow
 
         var pathDrawable = new Path(spiralPath);
 
-        var options = new Options(Filled: Random.Get(0f, 1f) > 0.5f, Thickness: Random.Get(1f, 10f));
+        var options = new Options(Filled: Rand.Get(0f, 1f) > 0.5f, Thickness: Rand.Get(1f, 10f));
         var meta = new Meta("Gui", DateTime.UtcNow, 0, null, null, 0);
 
         _commands.Add(new Command(circleDrawable, Color.Random(), options, meta));
