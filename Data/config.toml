@@ -1,23 +1,12 @@
-[Vision]
-[Vision.SslVisionDataPublisher]
-VisionAddress = { Ip = "224.5.23.2", Port = 10006 } # default: 224.5.23.2:10006
-VisionSimAddress = { Ip = "224.5.23.2", Port = 10025 } # default: 224.5.23.2:10025
-
-
-[Referee]
-[Referee.GcDataPublisher]
-GcAddress = { Ip = "224.5.23.1", Port = 10003 } # default: 224.5.23.1:10003
-
-
 [Common]
 [Common.Debug]
-[Common.Debug.Log]
-Level = "Trace" # default: Trace
-
 [Common.Debug.Assertion]
 [Common.Debug.Assertion.Assert]
 Enabled = true # default: True
 
+
+[Common.Debug.Log]
+Level = "Trace" # default: Trace
 
 
 [Common.Config]
@@ -29,5 +18,16 @@ ImmortalsIsTheBestTeam = true # default: True
 OurColor = "Unknown" # default: Unknown
 EnableDebug = false # default: False
 
+
+
+[Referee]
+[Referee.GcDataPublisher]
+GcAddress = { Ip = "224.5.23.1", Port = 10003 } # default: 224.5.23.1:10003
+
+
+[Vision]
+[Vision.SslVisionDataPublisher]
+VisionAddress = { Ip = "224.5.23.2", Port = 10006 } # default: 224.5.23.2:10006
+VisionSimAddress = { Ip = "224.5.23.2", Port = 10025 } # default: 224.5.23.2:10025
 
 

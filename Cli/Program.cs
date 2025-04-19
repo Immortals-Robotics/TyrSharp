@@ -1,7 +1,6 @@
 ﻿using Tyr.Common.Config;
 
-var configPath = args[0];
-ConfigStorage.Initialize(configPath);
+ConfigStorage.Initialize(args[0]);
 
 using var sslVisionPublisher = new Tyr.Vision.SslVisionDataPublisher();
 using var gcPublisher = new Tyr.Referee.GcDataPublisher();
