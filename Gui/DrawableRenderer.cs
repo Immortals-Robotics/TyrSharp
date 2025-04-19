@@ -15,42 +15,45 @@ internal class DrawableRenderer
 
     private ImDrawListPtr _drawList;
 
-    internal void Draw(Command command)
+    internal void Draw(IReadOnlyList<Command> commands)
     {
         _drawList = ImGui.GetWindowDrawList();
 
-        switch (command.Drawable)
+        foreach (var command in commands)
         {
-            case Arrow arrow:
-                DrawArrow(arrow, command.Color, command.Options);
-                break;
-            case Circle circle:
-                DrawCircle(circle, command.Color, command.Options);
-                break;
-            case Line line:
-                DrawLine(line, command.Color, command.Options);
-                break;
-            case LineSegment segment:
-                DrawLineSegment(segment, command.Color, command.Options);
-                break;
-            case Path path:
-                DrawPath(path, command.Color, command.Options);
-                break;
-            case Point point:
-                DrawPoint(point, command.Color, command.Options);
-                break;
-            case Rectangle rectangle:
-                DrawRectangle(rectangle, command.Color, command.Options);
-                break;
-            case Robot robot:
-                DrawRobot(robot, command.Color, command.Options);
-                break;
-            case Text text:
-                DrawText(text, command.Color, command.Options);
-                break;
-            case Triangle triangle:
-                DrawTriangle(triangle, command.Color, command.Options);
-                break;
+            switch (command.Drawable)
+            {
+                case Arrow arrow:
+                    DrawArrow(arrow, command.Color, command.Options);
+                    break;
+                case Circle circle:
+                    DrawCircle(circle, command.Color, command.Options);
+                    break;
+                case Line line:
+                    DrawLine(line, command.Color, command.Options);
+                    break;
+                case LineSegment segment:
+                    DrawLineSegment(segment, command.Color, command.Options);
+                    break;
+                case Path path:
+                    DrawPath(path, command.Color, command.Options);
+                    break;
+                case Point point:
+                    DrawPoint(point, command.Color, command.Options);
+                    break;
+                case Rectangle rectangle:
+                    DrawRectangle(rectangle, command.Color, command.Options);
+                    break;
+                case Robot robot:
+                    DrawRobot(robot, command.Color);
+                    break;
+                case Text text:
+                    DrawText(text, command.Color);
+                    break;
+                case Triangle triangle:
+                    DrawTriangle(triangle, command.Color, command.Options);
+                    break;
+            }
         }
     }
 
@@ -166,7 +169,7 @@ internal class DrawableRenderer
             _drawList.AddRect(min, max, color.U32, ImDrawFlags.None, thickness);
     }
 
-    private void DrawRobot(Robot robot, Color color, Options options)
+    private void DrawRobot(Robot robot, Color color)
     {
         const float robotRadius = 90f;
         const int segments = 20; // circle detail
@@ -210,11 +213,11 @@ internal class DrawableRenderer
         if (robot.Id.HasValue)
         {
             var text = new Text(robot.Id.Value.ToString(), robot.Position, 80f, TextAlignment.Center);
-            DrawText(text, Color.Black, new Options());
+            DrawText(text, Color.Black);
         }
     }
 
-    private void DrawText(Text text, Color color, Options options)
+    private void DrawText(Text text, Color color)
     {
         var posScreen = Camera.WorldToScreen(text.Position);
         var sizeScreen = Camera.WorldToScreenLength(text.Size);
