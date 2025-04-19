@@ -14,6 +14,9 @@ public class Timer
     public float DeltaTime { get; private set; }
     public float DeltaTimeSmooth { get; private set; }
 
+    public float Fps => 1f / DeltaTime;
+    public float FpsSmooth => 1f / DeltaTimeSmooth;
+
     public bool Running => _stopwatch.IsRunning;
 
     public float Time => (float)((_stopwatch.ElapsedTicks + _timeOffsetTicks) / (double)Stopwatch.Frequency);

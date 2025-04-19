@@ -34,4 +34,10 @@ public record struct Color(
     public static readonly Color Yellow = new(0.9922f, 0.9765f, 0.0f);
     public static readonly Color Orange = new(1f, 0.6314f, 0f);
     public static readonly Color Magenta = new(1f, 0f, 1f);
+
+    public static Color Random()
+    {
+        Span<Color> colors = [White, Black, Red, Green, Blue, Yellow, Orange, Magenta];
+        return Math.Random.Get(colors);
+    }
 }
