@@ -1,4 +1,5 @@
-﻿using System.Numerics;
+﻿using System.Diagnostics.CodeAnalysis;
+using System.Numerics;
 using System.Runtime.CompilerServices;
 using Tyr.Common.Dataflow;
 using Tyr.Common.Debug.Drawing.Drawables;
@@ -12,6 +13,7 @@ using Triangle = Tyr.Common.Debug.Drawing.Drawables.Triangle;
 
 namespace Tyr.Common.Debug.Drawing;
 
+[SuppressMessage("ReSharper", "ExplicitCallerInfoArgument")]
 public class Drawer(string category)
 {
     private void Draw(IDrawable drawable, Color color, Options options,

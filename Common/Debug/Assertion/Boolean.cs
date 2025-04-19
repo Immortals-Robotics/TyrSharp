@@ -1,7 +1,9 @@
-﻿using System.Runtime.CompilerServices;
+﻿using System.Diagnostics.CodeAnalysis;
+using System.Runtime.CompilerServices;
 
 namespace Tyr.Common.Debug.Assertion;
 
+[SuppressMessage("ReSharper", "ExplicitCallerInfoArgument")]
 public partial class Assert
 {
     public void IsTrue(bool condition,
@@ -14,7 +16,6 @@ public partial class Assert
         if (!Enabled || condition) return;
         logger.ZLogError($"Expected true: {expr}", null, member, file, line);
     }
-
 
     public void IsFalse(bool condition,
         [CallerArgumentExpression("condition")]

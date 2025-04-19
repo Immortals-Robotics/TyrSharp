@@ -1,8 +1,10 @@
-﻿using System.Runtime.CompilerServices;
+﻿using System.Diagnostics.CodeAnalysis;
+using System.Runtime.CompilerServices;
 using Tyr.Common.Math;
 
 namespace Tyr.Common.Debug.Assertion;
 
+[SuppressMessage("ReSharper", "ExplicitCallerInfoArgument")]
 public partial class Assert
 {
     public void AreApproximatelyEqual(float expected, float actual, float tolerance = 0.001f,

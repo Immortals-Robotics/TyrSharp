@@ -81,8 +81,9 @@ public static class StateExtensions
             case Command.NormalStart:
             case Command.ForceStart:
                 return null;
-        }
 
-        return null;
+            default:
+                throw new ArgumentOutOfRangeException(nameof(command), command, null);
+        }
     }
 }

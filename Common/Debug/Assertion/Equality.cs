@@ -1,7 +1,9 @@
-﻿using System.Runtime.CompilerServices;
+﻿using System.Diagnostics.CodeAnalysis;
+using System.Runtime.CompilerServices;
 
 namespace Tyr.Common.Debug.Assertion;
 
+[SuppressMessage("ReSharper", "ExplicitCallerInfoArgument")]
 public partial class Assert
 {
     public void AreEqual<T>(T expected, T actual,

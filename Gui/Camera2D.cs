@@ -46,7 +46,7 @@ public class Camera2D
         }
     }
 
-    private bool _dirty = false;
+    private bool _dirty;
 
     private Vector2 _position = Vector2.Zero;
     private float _zoom = 1f;

@@ -1,6 +1,4 @@
-﻿using ProtoBuf;
-
-namespace Tyr.Common.Debug.Drawing;
+﻿namespace Tyr.Common.Debug.Drawing;
 
 public record struct Color(
     float R,
