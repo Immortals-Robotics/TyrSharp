@@ -1,6 +1,4 @@
-﻿using Tyr.Common.Debug.Drawing;
-
-namespace Tyr.Common.Dataflow;
+﻿namespace Tyr.Common.Dataflow;
 
 public static class Hub
 {
@@ -15,5 +13,5 @@ public static class Hub
     public static readonly BroadcastChannel<Data.Robot.Command[]> RobotCommands = new();
 
     // debug draws
-    public static readonly BroadcastChannel<Command> Draws = new();
+    public static readonly BroadcastChannel<Debug.Drawing.Command> Draws = new();
 }
