@@ -11,49 +11,21 @@ namespace Tyr.Common.Math;
 // mutually independent, white‑noise vectors whose covariances
 // are Q and R, respectively.
 
-public class KalmanFilter
+public class KalmanFilter(int numStates, int numMeasurements, int numControl)
 {
     // internal state
-    public Vector<double> StateEstimate { get; private set; } // x̂
-    public Matrix<double> ErrorCovariance { get; private set; } // P
-    public Vector<double> Innovation { get; private set; }
+    public Vector<double> StateEstimate { get; private set; } = Vector<double>.Build.Dense(numStates); // x̂
+    public Matrix<double> ErrorCovariance { get; set; } = Matrix<double>.Build.Dense(numStates, numStates); // P
+    public Vector<double> Innovation { get; private set; } = Vector<double>.Build.Dense(numMeasurements);
 
     // model matrices
-    public Matrix<double> TransitionMatrix { get; set; } // A
-    public Matrix<double> ControlMatrix { get; set; } // B
-    public Matrix<double> ProcessNoiseCovariance { get; set; } // Q
-    public Matrix<double> MeasurementMatrix { get; set; } // H
-    public Matrix<double> MeasurementNoiseCovariance { get; set; } // R
+    public Matrix<double> TransitionMatrix { get; set; } = Matrix<double>.Build.Dense(numStates, numStates); // A
+    public Matrix<double> ControlMatrix { get; set; } = Matrix<double>.Build.Dense(numStates, numControl); // B
+    public Matrix<double> ProcessNoiseCovariance { get; set; } = Matrix<double>.Build.Dense(numStates, numStates); // Q
+    public Matrix<double> MeasurementMatrix { get; set; } = Matrix<double>.Build.Dense(numMeasurements, numStates); // H
 
-    public KalmanFilter(int numStates, int numMeasurements, int numControl)
-    {
-        StateEstimate = Vector<double>.Build.Dense(numStates);
-        Innovation = Vector<double>.Build.Dense(numMeasurements);
-
-        TransitionMatrix = Matrix<double>.Build.Dense(numStates, numStates);
-        ErrorCovariance = Matrix<double>.Build.Dense(numStates, numStates);
-        ProcessNoiseCovariance = Matrix<double>.Build.Dense(numStates, numStates);
-
-        ControlMatrix = Matrix<double>.Build.Dense(numStates, numControl);
-
-        MeasurementMatrix = Matrix<double>.Build.Dense(numMeasurements, numStates);
-        MeasurementNoiseCovariance = Matrix<double>.Build.Dense(numMeasurements, numMeasurements);
-    }
-
-    public KalmanFilter(KalmanFilter source)
-    {
-        StateEstimate = source.StateEstimate.Clone();
-        Innovation = source.Innovation.Clone();
-
-        TransitionMatrix = source.TransitionMatrix.Clone();
-        ErrorCovariance = source.ErrorCovariance.Clone();
-        ProcessNoiseCovariance = source.ProcessNoiseCovariance.Clone();
-
-        ControlMatrix = source.ControlMatrix.Clone();
-
-        MeasurementMatrix = source.MeasurementMatrix.Clone();
-        MeasurementNoiseCovariance = source.MeasurementNoiseCovariance.Clone();
-    }
+    public Matrix<double> MeasurementNoiseCovariance { get; set; } =
+        Matrix<double>.Build.Dense(numMeasurements, numMeasurements); // R
 
     // Projects the state estimate one step ahead.
     public void Predict() => Predict(control: null);
