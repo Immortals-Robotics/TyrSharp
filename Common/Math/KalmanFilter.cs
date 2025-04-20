@@ -79,8 +79,10 @@ public class KalmanFilter
         // ν = z - H·x̂
         Innovation = measurement - MeasurementMatrix * StateEstimate;
 
-        // K = P·Hᵀ·S⁻¹   (solve instead of explicit inverse)
-        var K = ErrorCovariance * MeasurementMatrix.Transpose() * S.Inverse(); // S is small, so inverse is fine
+        // K = P·Hᵀ·S⁻¹   computed without forming S⁻¹
+        var K = S.QR()
+            .Solve(MeasurementMatrix * ErrorCovariance.Transpose())
+            .Transpose();
 
         // x̂ = x̂ + K·ν
         StateEstimate += K * Innovation;
