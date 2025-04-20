@@ -20,7 +20,7 @@ public class MedianFilter<T>(int size = 10) where T : unmanaged, IComparable<T>
         Current = sortBuffer[sortBuffer.Length / 2];
     }
 
-    public T Current { get; private set; } = default;
+    public T Current { get; private set; }
 
     public void Reset()
     {

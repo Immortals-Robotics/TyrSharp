@@ -39,6 +39,7 @@ public class GlobalsGenerator : ISourceGenerator
             var code = $$"""
                          global using static Tyr.{{moduleName}}.Globals;
                          global using ZLogger;
+                         global using Tyr.Common.Math.Extensions;
                          using System.Runtime.CompilerServices;
                          using System.Reflection;
                          using Microsoft.Extensions.Logging;
@@ -52,7 +53,7 @@ public class GlobalsGenerator : ISourceGenerator
                                  internal static ILogger Logger { get; private set; }
                                  internal static Common.Debug.Assertion.Assert Assert { get; private set; }
                                  internal static Common.Debug.Drawing.Drawer Drawer { get; private set; }
-                                 internal static Common.Math.Random Rand { get; private set; }
+                                 internal static Random Rand { get; private set; }
 
                                  [ModuleInitializer]
                                  internal static void Init()
@@ -60,7 +61,7 @@ public class GlobalsGenerator : ISourceGenerator
                                      Logger = Common.Debug.Log.GetLogger("{{moduleName}}");
                                      Assert = new Common.Debug.Assertion.Assert(Logger);
                                      Drawer = new Common.Debug.Drawing.Drawer("{{moduleName}}");
-                                     Rand = new Common.Math.Random();
+                                     Rand = new Random();
                                      
                                      Common.Config.ConfigRegistry.RegisterAssembly(Assembly.GetExecutingAssembly());
                                  }
