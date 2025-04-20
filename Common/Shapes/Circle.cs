@@ -1,13 +1,12 @@
 ﻿using System.Numerics;
-using ProtoBuf;
+using Tyr.Common.Math;
 
 namespace Tyr.Common.Shapes;
 
-[ProtoContract]
-public struct Circle(Vector2 center, float radius) : IShape
+public struct Circle(Vector2 center, float radius)
 {
-    [ProtoMember(1)] public Vector2 Center { get; set; } = center;
-    [ProtoMember(2)] public float Radius { get; set; } = radius;
+    public Vector2 Center { get; set; } = center;
+    public float Radius { get; set; } = radius;
 
     public readonly float Circumference => 2f * MathF.PI * Radius;
 
@@ -15,7 +14,7 @@ public struct Circle(Vector2 center, float radius) : IShape
 
     public readonly float Distance(Vector2 point)
     {
-        return (Center - point).Length() - Radius;
+        return Vector2.Distance(Center, point) - Radius;
     }
 
     public readonly bool Inside(Vector2 point, float margin = 0f)
@@ -23,13 +22,15 @@ public struct Circle(Vector2 center, float radius) : IShape
         return Distance(point) < margin;
     }
 
-    public readonly Vector2 NearestOutside(Vector2 point, float extraRadius = 0f)
+    public readonly Vector2 NearestOutside(Vector2 point, float margin = 0f)
     {
         var direction = point - Center;
-        if (direction == Vector2.Zero)
-            return Center + new Vector2(Radius + extraRadius, 0f);
 
-        return Center + Vector2.Normalize(direction) * (Radius + extraRadius);
+        direction = Utils.ApproximatelyZero(direction.LengthSquared())
+            ? Vector2.UnitX
+            : Vector2.Normalize(direction);
+
+        return Center + direction * (Radius + margin);
     }
 
     public readonly List<Vector2> Intersect(Circle other)

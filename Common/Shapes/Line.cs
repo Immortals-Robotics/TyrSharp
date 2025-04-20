@@ -1,16 +1,14 @@
 ﻿using System.Numerics;
-using ProtoBuf;
 using Tyr.Common.Math;
 
 namespace Tyr.Common.Shapes;
 
-[ProtoContract]
-public struct Line(float a, float b, float c) : IShape
+public struct Line(float a, float b, float c)
 {
     // ay + bx + c = 0
-    [ProtoMember(1)] public float A { get; init; } = a;
-    [ProtoMember(2)] public float B { get; init; } = b;
-    [ProtoMember(3)] public float C { get; init; } = c;
+    public float A { get; init; } = a;
+    public float B { get; init; } = b;
+    public float C { get; init; } = c;
 
     public static Line FromTwoPoints(Vector2 a, Vector2 b)
     {
@@ -52,7 +50,7 @@ public struct Line(float a, float b, float c) : IShape
     public readonly float Slope => Utils.ApproximatelyZero(A) ? float.PositiveInfinity : -B / A;
     public readonly Vector2 Direction => new(-B, A);
     public readonly Angle Angle => Angle.FromVector(Direction);
-    
+
     public readonly float Intercept => Utils.ApproximatelyZero(A) ? float.NaN : -C / A;
 
     // a point that is guaranteed to be on the line
@@ -195,22 +193,9 @@ public struct Line(float a, float b, float c) : IShape
         return TangentLine(point).Intersect(this)!.Value;
     }
 
-    public float Circumference => float.PositiveInfinity;
-    public float Area => 0f;
-
     public float Distance(Vector2 point)
     {
         var closest = ClosestPoint(point);
         return Vector2.Distance(point, closest);
-    }
-
-    public bool Inside(Vector2 point, float margin = 0)
-    {
-        return false;
-    }
-
-    public Vector2 NearestOutside(Vector2 point, float margin = 0)
-    {
-        return point;
     }
 }

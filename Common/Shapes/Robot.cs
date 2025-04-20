@@ -1,31 +1,25 @@
 ﻿using System.Numerics;
-using ProtoBuf;
 using Tyr.Common.Math;
 
 namespace Tyr.Common.Shapes;
 
-[ProtoContract]
-public struct Robot(Vector2 center, float radius, Angle angle) : IShape
+public struct Robot(Vector2 center, float radius, Angle angle)
 {
-    [ProtoMember(1)] public Vector2 Center { get; } = center;
-    [ProtoMember(2)] public float Radius { get; } = radius;
-    [ProtoMember(3)] public Angle Angle { get; } = angle;
+    public Vector2 Center { get; } = center;
+    public float Radius { get; } = radius;
+    public Angle Angle { get; } = angle;
 
     private static readonly Angle HalfArcAngle = Angle.FromDeg(50f);
     private const float KickerDepth = 150f;
 
-    public readonly float FrontDistance() => Radius * HalfArcAngle.Cos();
+    public readonly float FrontDistance => Radius * HalfArcAngle.Cos();
 
     public readonly bool CanKick(Vector2 point, float kickerDepth = KickerDepth)
     {
-        var a = Angle;
-        var ah = HalfArcAngle;
-        var r = Radius;
-
-        var p1 = Center + (a + ah).ToUnitVec() * r - a.ToUnitVec() * kickerDepth * 0.5f;
-        var p2 = Center + (a - ah).ToUnitVec() * r - a.ToUnitVec() * kickerDepth * 0.5f;
-        var p3 = Center + (a - ah).ToUnitVec() * r + a.ToUnitVec() * kickerDepth;
-        var p4 = Center + (a + ah).ToUnitVec() * r + a.ToUnitVec() * kickerDepth;
+        var p1 = Center + (Angle + HalfArcAngle).ToUnitVec() * Radius - Angle.ToUnitVec() * kickerDepth * 0.5f;
+        var p2 = Center + (Angle - HalfArcAngle).ToUnitVec() * Radius - Angle.ToUnitVec() * kickerDepth * 0.5f;
+        var p3 = Center + (Angle - HalfArcAngle).ToUnitVec() * Radius + Angle.ToUnitVec() * kickerDepth;
+        var p4 = Center + (Angle + HalfArcAngle).ToUnitVec() * Radius + Angle.ToUnitVec() * kickerDepth;
 
         var v1 = point - p1;
         var v2 = point - p2;
@@ -45,19 +39,6 @@ public struct Robot(Vector2 center, float radius, Angle angle) : IShape
         return s1 == s2 && s2 == s3 && s3 == s4;
     }
 
-    public readonly void GetFrontPoints(out Vector2 p1, out Vector2 p2, out Vector2 p3, out Vector2 p4,
-        float kickerDepth = KickerDepth)
-    {
-        var a = Angle;
-        var ah = HalfArcAngle;
-        var r = Radius;
-
-        p1 = Center + (a + ah).ToUnitVec() * r - a.ToUnitVec() * kickerDepth * 0.5f;
-        p2 = Center + (a - ah).ToUnitVec() * r - a.ToUnitVec() * kickerDepth * 0.5f;
-        p3 = Center + (a - ah).ToUnitVec() * r + a.ToUnitVec() * kickerDepth;
-        p4 = Center + (a + ah).ToUnitVec() * r + a.ToUnitVec() * kickerDepth;
-    }
-
     public readonly LineSegment GetFrontLine()
     {
         var p1 = Center + (Angle + HalfArcAngle).ToUnitVec() * Radius;
@@ -65,27 +46,33 @@ public struct Robot(Vector2 center, float radius, Angle angle) : IShape
         return new LineSegment(p1, p2);
     }
 
-    public float Circumference => 0f;
-    public float Area => 0f;
-
     public float Distance(Vector2 point)
-    {
-        throw new NotImplementedException();
-    }
-
-    public bool Inside(Vector2 point, float margin = 0)
     {
         var rel = point - Center;
         var dis = rel.Length();
 
         var start = Angle - HalfArcAngle;
         var end = Angle + HalfArcAngle;
+        var inFront = rel.ToAngle().IsBetween(start, end);
 
-        return dis < FrontDistance() || (dis <= Radius && rel.ToAngle().IsBetween(start, end));
+        return inFront
+            ? dis - FrontDistance
+            : dis - Radius;
     }
+
+    public bool Inside(Vector2 point, float margin = 0) => Distance(point) < margin;
 
     public Vector2 NearestOutside(Vector2 point, float margin = 0)
     {
-        throw new NotImplementedException();
+        var distance = Distance(point);
+
+        if (distance >= margin) return point;
+
+        var direction = point - Center;
+
+        var extra = margin - distance;
+        var newLength = direction.Length() + extra;
+
+        return Vector2.Normalize(direction) * newLength + Center;
     }
 }
