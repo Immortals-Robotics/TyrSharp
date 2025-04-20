@@ -1,7 +1,6 @@
 ﻿using System.Numerics;
-using Tyr.Common.Math;
 
-namespace Tyr.Common.Shapes;
+namespace Tyr.Common.Math.Shapes;
 
 public struct Robot(Vector2 center, float radius, Angle angle)
 {

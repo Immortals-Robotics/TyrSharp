@@ -1,6 +1,6 @@
 ﻿using MathNet.Numerics.LinearAlgebra;
 using MathNet.Numerics.LinearAlgebra.Double;
-using Tyr.Common.Shapes;
+using Tyr.Common.Math.Shapes;
 
 namespace Tyr.Common.Math;
 

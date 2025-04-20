@@ -1,5 +1,4 @@
 ﻿using ProtoBuf;
-using Tyr.Common.Shapes;
 
 namespace Tyr.Common.Data.Ssl.Vision.Geometry;
 
@@ -12,7 +11,6 @@ public struct FieldCircularArc
     public System.Numerics.Vector2 Center => CenterRaw;
 
     [ProtoMember(3, IsRequired = true)] public float Radius { get; set; }
-    public Circle Circle => new Circle(Center, Radius);
 
     [ProtoMember(4, IsRequired = true)] public float A1 { get; set; }
     [ProtoMember(5, IsRequired = true)] public float A2 { get; set; }

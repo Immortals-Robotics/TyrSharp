@@ -1,6 +1,6 @@
 ﻿using System.Numerics;
 
-namespace Tyr.Common.Shapes;
+namespace Tyr.Common.Math.Shapes;
 
 public struct Triangle
 {
@@ -39,10 +39,7 @@ public struct Triangle
         throw new NotImplementedException();
     }
 
-    public bool Inside(Vector2 point, float margin = 0)
-    {
-        throw new NotImplementedException();
-    }
+    public bool Inside(Vector2 point, float margin = 0) => Distance(point) < margin;
 
     public Vector2 NearestOutside(Vector2 point, float margin = 0)
     {

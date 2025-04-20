@@ -1,6 +1,6 @@
 ﻿using System.Numerics;
 
-namespace Tyr.Common.Shapes;
+namespace Tyr.Common.Math.Shapes;
 
 public struct LineSegment(Vector2 start, Vector2 end)
 {

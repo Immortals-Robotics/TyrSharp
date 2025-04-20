@@ -1,5 +1,5 @@
 ﻿using ProtoBuf;
-using Tyr.Common.Shapes;
+using Tyr.Common.Math.Shapes;
 
 namespace Tyr.Common.Data.Ssl.Vision.Geometry;
 
