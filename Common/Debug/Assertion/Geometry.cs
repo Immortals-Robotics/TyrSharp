@@ -47,7 +47,7 @@ public partial class Assert
         [CallerFilePath] string? file = null,
         [CallerLineNumber] int line = 0)
     {
-        var cross = Utils.Vector2Cross(a, b);
+        var cross = a.Cross(b);
         if (!Enabled || Utils.ApproximatelyEqual(cross, 0f)) return;
         logger.ZLogError($"Expected parallel vectors: {aExpr} × {bExpr} = {cross:0.###}", null, member, file, line);
     }

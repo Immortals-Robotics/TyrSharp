@@ -32,10 +32,10 @@ public struct Robot(Vector2 center, float radius, Angle angle) : IShape
         var v3 = point - p3;
         var v4 = point - p4;
 
-        var cross1 = Utils.Vector2Cross(p2 - p1, v1);
-        var cross2 = Utils.Vector2Cross(p3 - p2, v2);
-        var cross3 = Utils.Vector2Cross(p4 - p3, v3);
-        var cross4 = Utils.Vector2Cross(p1 - p4, v4);
+        var cross1 = (p2 - p1).Cross(v1);
+        var cross2 = (p3 - p2).Cross(v2);
+        var cross3 = (p4 - p3).Cross(v3);
+        var cross4 = (p1 - p4).Cross(v4);
 
         var s1 = Utils.SignInt(cross1);
         var s2 = Utils.SignInt(cross2);
