@@ -3,7 +3,7 @@ using Tyr.Common.Math;
 
 namespace Tyr.Vision.Filter;
 
-//  A position‑&‑velocity tracking filter:
+//  A 2D position‑&‑velocity tracking filter:
 //
 //      state  x = [ px  py  vx  vy ]ᵀ
 //      meas   z = [ px  py ]ᵀ
@@ -12,13 +12,14 @@ namespace Tyr.Vision.Filter;
 //  – white‑noise acceleration with tunable variance
 public class Filter2D
 {
-    private readonly float _modelError;
-
     public DateTime LastTimestamp { get; private set; }
 
+    private readonly float _modelError;
     private readonly KalmanFilter _kalman;
 
-    // Initialize with pos-only measurement (x, y), zero velocity.
+    /// <summary>
+    /// Initialize with pos-only measurement (x, y), zero velocity.
+    /// </summary>
     public Filter2D(Vector2 initialPosition,
         float covariance, float modelError, float measurementError,
         DateTime timestamp)
@@ -30,8 +31,8 @@ public class Filter2D
         // leave v_x, v_y = 0
 
         // -- initial covariance
-        PositionCovariance = covariance;
-        VelocityCovariance = covariance;
+        PositionErrorCovariance = new Vector2(covariance, covariance);
+        VelocityErrorCovariance = new Vector2(covariance, covariance);
 
         // -- measurement H = [1 0 0 0; 0 1 0 0]
         _kalman.MeasurementMatrix[0, 0] = 1.0;
@@ -43,7 +44,9 @@ public class Filter2D
         LastTimestamp = timestamp;
     }
 
-    // Initialize from full 4‑vector state.
+    /// <summary>
+    /// Initialize with both position and velocity specified
+    /// </summary>
     public Filter2D(Vector2 initialPosition, Vector2 initialVelocity,
         float covariance, float modelError, float measurementError,
         DateTime timestamp)
@@ -99,17 +102,6 @@ public class Filter2D
         return Position + Velocity * (float)dt;
     }
 
-    public Vector2 PositionUncertainty => new(
-        (float)Math.Sqrt(_kalman.ErrorCovariance[0, 0]),
-        (float)Math.Sqrt(_kalman.ErrorCovariance[1, 1]));
-
-    public Vector2 VelocityUncertainty => new(
-        (float)Math.Sqrt(_kalman.ErrorCovariance[2, 2]),
-        (float)Math.Sqrt(_kalman.ErrorCovariance[3, 3]));
-
-    // length‑2 innovation = z – Hx
-    public Vector2 PositionInnovation => _kalman.Innovation.ToVector2();
-
     private float MeasurementError
     {
         get => (float)_kalman.MeasurementNoiseCovariance[0, 0];
@@ -120,25 +112,35 @@ public class Filter2D
         }
     }
 
-    public float PositionCovariance
+    public Vector2 PositionErrorCovariance
     {
-        get => (float)_kalman.ErrorCovariance[0, 0];
+        get => new(
+            (float)_kalman.ErrorCovariance[0, 0],
+            (float)_kalman.ErrorCovariance[1, 1]);
         set
         {
-            _kalman.ErrorCovariance[0, 0] = value;
-            _kalman.ErrorCovariance[1, 1] = value;
+            _kalman.ErrorCovariance[0, 0] = value.X;
+            _kalman.ErrorCovariance[1, 1] = value.Y;
         }
     }
 
-    public float VelocityCovariance
+    public Vector2 VelocityErrorCovariance
     {
-        get => (float)_kalman.ErrorCovariance[2, 2];
+        get => new(
+            (float)_kalman.ErrorCovariance[2, 2],
+            (float)_kalman.ErrorCovariance[3, 3]);
         set
         {
-            _kalman.ErrorCovariance[2, 2] = value;
-            _kalman.ErrorCovariance[3, 3] = value;
+            _kalman.ErrorCovariance[2, 2] = value.X;
+            _kalman.ErrorCovariance[3, 3] = value.Y;
         }
     }
+
+    public Vector2 PositionUncertainty => Vector2.SquareRoot(PositionErrorCovariance);
+    public Vector2 VelocityUncertainty => Vector2.SquareRoot(VelocityErrorCovariance);
+
+    // length‑2 innovation = z – Hx
+    public Vector2 PositionInnovation => _kalman.Innovation.ToVector2();
 
     /// <summary>
     /// Build F and Q for constant‑vel model with white accel noise.

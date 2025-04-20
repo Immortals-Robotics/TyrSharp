@@ -1,30 +1,27 @@
-﻿using System.Numerics;
-using Tyr.Vision.Filter;
+﻿using Tyr.Vision.Filter;
 
 namespace Tyr.Tests.Vision.Filter;
 
-public class Filter2DTests
+public class Filter1DTests
 {
     [Fact]
     public void Initialize_WithPositionOnly_SetsCorrectValues()
     {
         // Arrange
-        var initialPosition = new Vector2(10, 20);
+        var initialPosition = 10.0f;
         var covariance = 5.0f;
         var modelError = 1.0f;
         var measurementError = 2.0f;
         var timestamp = new DateTime(2023, 1, 1);
 
         // Act
-        var filter = new Filter2D(initialPosition, covariance, modelError, measurementError, timestamp);
+        var filter = new Filter1D(initialPosition, covariance, modelError, measurementError, timestamp);
 
         // Assert
         Assert.Equal(initialPosition, filter.Position);
-        Assert.Equal(Vector2.Zero, filter.Velocity);
-        Assert.Equal(covariance, filter.PositionErrorCovariance.X);
-        Assert.Equal(covariance, filter.PositionErrorCovariance.Y);
-        Assert.Equal(covariance, filter.VelocityErrorCovariance.X);
-        Assert.Equal(covariance, filter.VelocityErrorCovariance.Y);
+        Assert.Equal(0.0f, filter.Velocity);
+        Assert.Equal(covariance, filter.PositionErrorCovariance);
+        Assert.Equal(covariance, filter.VelocityErrorCovariance);
         Assert.Equal(timestamp, filter.LastTimestamp);
     }
 
@@ -32,24 +29,22 @@ public class Filter2DTests
     public void Initialize_WithPositionAndVelocity_SetsCorrectValues()
     {
         // Arrange
-        var initialPosition = new Vector2(10, 20);
-        var initialVelocity = new Vector2(2, 3);
+        var initialPosition = 10.0f;
+        var initialVelocity = 2.0f;
         var covariance = 5.0f;
         var modelError = 1.0f;
         var measurementError = 2.0f;
         var timestamp = new DateTime(2023, 1, 1);
 
         // Act
-        var filter = new Filter2D(initialPosition, initialVelocity, covariance, modelError, measurementError,
+        var filter = new Filter1D(initialPosition, initialVelocity, covariance, modelError, measurementError,
             timestamp);
 
         // Assert
         Assert.Equal(initialPosition, filter.Position);
         Assert.Equal(initialVelocity, filter.Velocity);
-        Assert.Equal(covariance, filter.PositionErrorCovariance.X);
-        Assert.Equal(covariance, filter.PositionErrorCovariance.Y);
-        Assert.Equal(covariance, filter.VelocityErrorCovariance.X);
-        Assert.Equal(covariance, filter.VelocityErrorCovariance.Y);
+        Assert.Equal(covariance, filter.PositionErrorCovariance);
+        Assert.Equal(covariance, filter.VelocityErrorCovariance);
         Assert.Equal(timestamp, filter.LastTimestamp);
     }
 
@@ -57,13 +52,13 @@ public class Filter2DTests
     public void Predict_UpdatesStateCorrectly()
     {
         // Arrange
-        var initialPosition = new Vector2(10, 20);
-        var initialVelocity = new Vector2(2, 3);
+        var initialPosition = 10.0f;
+        var initialVelocity = 2.0f;
         var covariance = 5.0f;
         var modelError = 1.0f;
         var measurementError = 2.0f;
         var initialTimestamp = new DateTime(2023, 1, 1, 12, 0, 0);
-        var filter = new Filter2D(initialPosition, initialVelocity, covariance, modelError, measurementError,
+        var filter = new Filter1D(initialPosition, initialVelocity, covariance, modelError, measurementError,
             initialTimestamp);
 
         // Act
@@ -73,24 +68,22 @@ public class Filter2DTests
         // Assert
         Assert.Equal(newTimestamp, filter.LastTimestamp);
         // With constant velocity model, position should be initial + velocity*dt
-        Assert.Equal(initialPosition.X + initialVelocity.X * 2, filter.Position.X, 0.001);
-        Assert.Equal(initialPosition.Y + initialVelocity.Y * 2, filter.Position.Y, 0.001);
+        Assert.Equal(initialPosition + initialVelocity * 2, filter.Position, 0.001);
         // Velocity should remain the same
-        Assert.Equal(initialVelocity.X, filter.Velocity.X, 0.001);
-        Assert.Equal(initialVelocity.Y, filter.Velocity.Y, 0.001);
+        Assert.Equal(initialVelocity, filter.Velocity, 0.001);
     }
 
     [Fact]
     public void Predict_WithNegativeOrZeroTimeDifference_DoesNotUpdate()
     {
         // Arrange
-        var initialPosition = new Vector2(10, 20);
-        var initialVelocity = new Vector2(2, 3);
+        var initialPosition = 10.0f;
+        var initialVelocity = 2.0f;
         var covariance = 5.0f;
         var modelError = 1.0f;
         var measurementError = 2.0f;
         var initialTimestamp = new DateTime(2023, 1, 1, 12, 0, 0);
-        var filter = new Filter2D(initialPosition, initialVelocity, covariance, modelError, measurementError,
+        var filter = new Filter1D(initialPosition, initialVelocity, covariance, modelError, measurementError,
             initialTimestamp);
 
         // Act - same timestamp
@@ -114,13 +107,13 @@ public class Filter2DTests
     public void Correct_UpdatesStateBasedOnMeasurement()
     {
         // Arrange
-        var initialPosition = new Vector2(10, 20);
-        var initialVelocity = new Vector2(2, 3);
+        var initialPosition = 10.0f;
+        var initialVelocity = 2.0f;
         var covariance = 5.0f;
         var modelError = 1.0f;
         var measurementError = 2.0f;
         var initialTimestamp = new DateTime(2023, 1, 1, 12, 0, 0);
-        var filter = new Filter2D(initialPosition, initialVelocity, covariance, modelError, measurementError,
+        var filter = new Filter1D(initialPosition, initialVelocity, covariance, modelError, measurementError,
             initialTimestamp);
 
         // First predict forward
@@ -129,32 +122,30 @@ public class Filter2DTests
         var positionAfterPredict = filter.Position;
 
         // Act - measure at a slightly different position
-        var measurement = new Vector2(positionAfterPredict.X + 0.5f, positionAfterPredict.Y - 0.5f);
+        var measurement = positionAfterPredict + 0.5f;
         filter.Correct(measurement);
 
         // Assert
         // Position should move toward measurement
         Assert.NotEqual(positionAfterPredict, filter.Position);
         // The corrected position should be between the predicted and measured positions
-        Assert.True(IsBetween(filter.Position.X, positionAfterPredict.X, measurement.X));
-        Assert.True(IsBetween(filter.Position.Y, positionAfterPredict.Y, measurement.Y));
+        Assert.True(IsBetween(filter.Position, positionAfterPredict, measurement));
 
         // Innovation should be measurement - predicted position
-        Assert.Equal(measurement.X - positionAfterPredict.X, filter.PositionInnovation.X, 0.001);
-        Assert.Equal(measurement.Y - positionAfterPredict.Y, filter.PositionInnovation.Y, 0.001);
+        Assert.Equal(measurement - positionAfterPredict, filter.PositionInnovation, 0.001);
     }
 
     [Fact]
     public void GetPositionEstimate_ReturnsCorrectEstimateForFutureTime()
     {
         // Arrange
-        var initialPosition = new Vector2(10, 20);
-        var initialVelocity = new Vector2(2, 3);
+        var initialPosition = 10.0f;
+        var initialVelocity = 2.0f;
         var covariance = 5.0f;
         var modelError = 1.0f;
         var measurementError = 2.0f;
         var initialTimestamp = new DateTime(2023, 1, 1, 12, 0, 0);
-        var filter = new Filter2D(initialPosition, initialVelocity, covariance, modelError, measurementError,
+        var filter = new Filter1D(initialPosition, initialVelocity, covariance, modelError, measurementError,
             initialTimestamp);
 
         // Act
@@ -163,23 +154,21 @@ public class Filter2DTests
 
         // Assert
         // Position should be initial + velocity*dt
-        var expectedX = initialPosition.X + initialVelocity.X * 2.5f;
-        var expectedY = initialPosition.Y + initialVelocity.Y * 2.5f;
-        Assert.Equal(expectedX, estimatedPosition.X, 0.001);
-        Assert.Equal(expectedY, estimatedPosition.Y, 0.001);
+        var expected = initialPosition + initialVelocity * 2.5f;
+        Assert.Equal(expected, estimatedPosition, 0.001);
     }
 
     [Fact]
     public void Uncertainties_ReflectCovarianceMatrix()
     {
         // Arrange
-        var initialPosition = new Vector2(10, 20);
-        var initialVelocity = new Vector2(2, 3);
+        var initialPosition = 10.0f;
+        var initialVelocity = 2.0f;
         var covariance = 5.0f;
         var modelError = 1.0f;
         var measurementError = 2.0f;
         var initialTimestamp = new DateTime(2023, 1, 1, 12, 0, 0);
-        var filter = new Filter2D(initialPosition, initialVelocity, covariance, modelError, measurementError,
+        var filter = new Filter1D(initialPosition, initialVelocity, covariance, modelError, measurementError,
             initialTimestamp);
 
         // Act - perform prediction which should increase uncertainty
@@ -188,14 +177,11 @@ public class Filter2DTests
 
         // Assert
         // Uncertainties should be the square root of the covariance matrix diagonal elements
-        Assert.True(filter.PositionUncertainty.X > 0);
-        Assert.True(filter.PositionUncertainty.Y > 0);
-        Assert.True(filter.VelocityUncertainty.X > 0);
-        Assert.True(filter.VelocityUncertainty.Y > 0);
+        Assert.True(filter.PositionUncertainty > 0);
+        Assert.True(filter.VelocityUncertainty > 0);
 
         // After prediction, position uncertainty should increase
-        Assert.True(filter.PositionUncertainty.X > Math.Sqrt(covariance));
-        Assert.True(filter.PositionUncertainty.Y > Math.Sqrt(covariance));
+        Assert.True(filter.PositionUncertainty > Math.Sqrt(covariance));
     }
 
     // Helper to check if a value is between two other values
