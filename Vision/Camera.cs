@@ -12,10 +12,10 @@ public class Camera(uint id)
     public uint FrameId { get; private set; }
     public DateTime Time { get; private set; }
 
-    public float DeltaTime => (float)(_frameTimeEstimator.Estimate?.Slope ?? 0f);
+    public float DeltaTime => _frameTimeEstimator.Estimate?.Slope ?? 0f;
 
-    private Dictionary<RobotId, Tracker.Robot> _robots = [];
-    private List<Tracker.Ball> _balls = [];
+    private readonly Dictionary<RobotId, Tracker.Robot> _robots = [];
+    private readonly List<Tracker.Ball> _balls = [];
 
     private const int FrameEstimatorHistoryCount = 100;
     private const int FrameEstimatorStride = 10;
@@ -23,6 +23,7 @@ public class Camera(uint id)
 
     public void OnFrame(Frame frame)
     {
+        // frame id
         var expectedFrameId = FrameId == 0 ? frame.FrameNumber : FrameId + 1;
         if (frame.FrameNumber != expectedFrameId)
         {
@@ -34,6 +35,9 @@ public class Camera(uint id)
 
         FrameId = frame.FrameNumber;
 
+        // time
+        Time = frame.CaptureTime;
+
         if (!_frameTimeEstimator.IsFull || frame.FrameNumber % FrameEstimatorStride == 0)
         {
             _frameTimeEstimator.AddSample(frame.FrameNumber, frame.CaptureTime.ToUnixTimeSeconds());
@@ -41,6 +45,7 @@ public class Camera(uint id)
 
         Logger.ZLogTrace($"Camera {Id} Delta time: {DeltaTime}");
 
+        // detections
         ProcessRobots(frame);
         ProcessBalls(frame);
     }

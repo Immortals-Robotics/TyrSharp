@@ -34,6 +34,8 @@ public class Vision : IDisposable
 
     private void Tick()
     {
+        //Logger.ZLogTrace($"fps: requested: {_runner.TickRateHz}, actual: {1f / _runner.Timer.DeltaTime:F2}");
+
         ReceiveDetections();
     }
 
