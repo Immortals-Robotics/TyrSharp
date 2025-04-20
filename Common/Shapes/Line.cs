@@ -49,20 +49,20 @@ public struct Line(float a, float b, float c) : IShape
         return FromTwoPoints(segment.Start, segment.End);
     }
 
-    public readonly float Slope => Utils.ApproximatelyEqual(A, 0f) ? float.PositiveInfinity : -B / A;
+    public readonly float Slope => Utils.ApproximatelyZero(A) ? float.PositiveInfinity : -B / A;
     public readonly Vector2 Direction => new(-B, A);
     public readonly Angle Angle => Angle.FromVector(Direction);
     
-    public readonly float Intercept => Utils.ApproximatelyEqual(A, 0f) ? float.NaN : -C / A;
+    public readonly float Intercept => Utils.ApproximatelyZero(A) ? float.NaN : -C / A;
 
     // a point that is guaranteed to be on the line
     public Vector2 SomePoint
     {
         get
         {
-            if (!Utils.ApproximatelyEqual(A, 0f))
+            if (!Utils.ApproximatelyZero(A))
                 return new Vector2(0f, Y(0f));
-            if (!Utils.ApproximatelyEqual(B, 0f))
+            if (!Utils.ApproximatelyZero(B))
                 return new Vector2(X(0f), 0f);
 
             return Vector2.NaN;
@@ -71,7 +71,7 @@ public struct Line(float a, float b, float c) : IShape
 
     public readonly float Y(float x)
     {
-        if (Utils.ApproximatelyEqual(A, 0f))
+        if (Utils.ApproximatelyZero(A))
             return float.NaN;
 
         return -(B * x + C) / A;
@@ -79,7 +79,7 @@ public struct Line(float a, float b, float c) : IShape
 
     public readonly float X(float y)
     {
-        if (Utils.ApproximatelyEqual(B, 0f))
+        if (Utils.ApproximatelyZero(B))
             return float.NaN;
 
         return -(A * y + C) / B;

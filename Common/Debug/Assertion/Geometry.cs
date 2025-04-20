@@ -36,7 +36,7 @@ public partial class Assert
         [CallerLineNumber] int line = 0)
     {
         var dot = Vector2.Dot(a, b);
-        if (!Enabled || Utils.ApproximatelyEqual(dot, 0f)) return;
+        if (!Enabled || Utils.ApproximatelyZero(dot)) return;
         logger.ZLogError($"Expected orthogonal vectors: {aExpr} · {bExpr} = {dot:0.###}", null, member, file, line);
     }
 
@@ -48,7 +48,7 @@ public partial class Assert
         [CallerLineNumber] int line = 0)
     {
         var cross = a.Cross(b);
-        if (!Enabled || Utils.ApproximatelyEqual(cross, 0f)) return;
+        if (!Enabled || Utils.ApproximatelyZero(cross)) return;
         logger.ZLogError($"Expected parallel vectors: {aExpr} × {bExpr} = {cross:0.###}", null, member, file, line);
     }
 }

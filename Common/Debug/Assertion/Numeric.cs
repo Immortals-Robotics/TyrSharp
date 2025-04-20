@@ -49,7 +49,7 @@ public partial class Assert
         [CallerFilePath] string? file = null,
         [CallerLineNumber] int line = 0)
     {
-        if (!Enabled || Utils.ApproximatelyEqual(value, 0f, tolerance)) return;
+        if (!Enabled || Utils.ApproximatelyZero(value, tolerance)) return;
         logger.ZLogError($"Expected ~zero: {expr} ({value})  | tolerance: {tolerance}", null, member, file, line);
     }
 
