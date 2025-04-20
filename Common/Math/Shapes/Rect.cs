@@ -19,6 +19,21 @@ public readonly record struct Rect
     {
     }
 
+    public float Circumference => (Width + Height) * 2f;
+    public float Area => Width * Height;
+
+    public Vector2 Size => Max - Min;
+    public float Width => Max.X - Min.X;
+    public float Height => Max.Y - Min.Y;
+    public Vector2 Center => (Min + Max) / 2f;
+
+    public float Distance(Vector2 point)
+    {
+        var dx = MathF.Max(Min.X - point.X, point.X - Max.X);
+        var dy = MathF.Max(Min.Y - point.Y, point.Y - Max.Y);
+        return MathF.Max(dx, dy);
+    }
+
     public bool Inside(Vector2 point, float margin = 0f) => Distance(point) <= margin;
 
     public Vector2 NearestOutside(Vector2 point, float margin = 0)
@@ -42,27 +57,12 @@ public readonly record struct Rect
             return point with { Y = Max.Y + margin };
     }
 
-    public float Circumference => (Width + Height) * 2f;
-    public float Area => Width * Height;
-
-    public float Distance(Vector2 point)
-    {
-        var dx = MathF.Max(Min.X - point.X, point.X - Max.X);
-        var dy = MathF.Max(Min.Y - point.Y, point.Y - Max.Y);
-        return MathF.Max(dx, dy);
-    }
-
-    public Vector2 Size => Max - Min;
-    public float Width => Max.X - Min.X;
-    public float Height => Max.Y - Min.Y;
-    public Vector2 Center => (Min + Max) / 2f;
-
     public (LineSegment, LineSegment, LineSegment, LineSegment) Edges()
     {
         return (
-            new LineSegment(Min, new Vector2(Min.X, Max.Y)),
-            new LineSegment(Min, new Vector2(Max.X, Min.Y)),
-            new LineSegment(Max, new Vector2(Min.X, Max.Y)),
-            new LineSegment(Max, new Vector2(Max.X, Min.Y)));
+            new LineSegment { Start = Min, End = new Vector2(Min.X, Max.Y) },
+            new LineSegment { Start = Min, End = new Vector2(Max.X, Min.Y) },
+            new LineSegment { Start = Max, End = new Vector2(Min.X, Max.Y) },
+            new LineSegment { Start = Max, End = new Vector2(Max.X, Min.Y) });
     }
 }

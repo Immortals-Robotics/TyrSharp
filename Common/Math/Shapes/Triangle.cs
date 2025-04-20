@@ -2,11 +2,11 @@
 
 namespace Tyr.Common.Math.Shapes;
 
-public struct Triangle
+public readonly record struct Triangle
 {
-    public Vector2 Corner1;
-    public Vector2 Corner2;
-    public Vector2 Corner3;
+    public Vector2 Corner1 { get; }
+    public Vector2 Corner2 { get; }
+    public Vector2 Corner3 { get; }
 
     public Triangle(Vector2 corner1, Vector2 corner2, Vector2 corner3)
     {

@@ -2,10 +2,10 @@
 
 namespace Tyr.Common.Math.Shapes;
 
-public struct LineSegment(Vector2 start, Vector2 end)
+public readonly record struct LineSegment
 {
-    public Vector2 Start { get; set; } = start;
-    public Vector2 End { get; set; } = end;
+    public Vector2 Start { get; init; }
+    public Vector2 End { get; init; }
 
     public readonly float Length() => Vector2.Distance(Start, End);
 
@@ -15,30 +15,13 @@ public struct LineSegment(Vector2 start, Vector2 end)
         var toPoint = point - Start;
 
         var segDot = Vector2.Dot(seg, seg);
-        if (segDot < 1e-6f) return Start; // Degenerate
+        if (Utils.ApproximatelyZero(segDot)) return Start; // Degenerate (very short segment)
 
         var t = Vector2.Dot(toPoint, seg) / segDot;
+        t = System.Math.Clamp(t, 0f, 1f);
 
-        if (t < 0f) return Start;
-        else if (t > 1f) return End;
-        else return Start + seg * t;
+        return Start + seg * t;
     }
 
-    public float Distance(Vector2 point)
-    {
-        var seg = End - Start;
-        var toPoint = point - Start;
-
-        var segDot = Vector2.Dot(seg, seg);
-        if (segDot < 1e-6f) return Vector2.Distance(point, Start); // Degenerate
-
-        var t = Vector2.Distance(toPoint, seg) / segDot;
-
-        if (t < 0f)
-            return Vector2.Distance(point, Start);
-        else if (t > 1f)
-            return Vector2.Distance(point, End);
-        else
-            return Vector2.Distance(point, Start + seg * t);
-    }
+    public float Distance(Vector2 point) => Vector2.Distance(ClosestPoint(point), point);
 }

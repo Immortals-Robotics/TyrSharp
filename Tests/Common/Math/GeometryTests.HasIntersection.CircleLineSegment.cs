@@ -11,7 +11,7 @@ public partial class GeometryTests
     {
         // Arrange
         var circle = new Circle { Center = new Vector2(5, 5), Radius = 3 };
-        var segment = new LineSegment(new Vector2(0, 5), new Vector2(10, 5));
+        var segment = new LineSegment { Start = new Vector2(0, 5), End = new Vector2(10, 5) };
 
         // Act
         var result = Geometry.HasIntersection(circle, segment);
@@ -25,7 +25,7 @@ public partial class GeometryTests
     {
         // Arrange
         var circle = new Circle { Center = new Vector2(5, 5), Radius = 2 };
-        var segment = new LineSegment(new Vector2(8, 8), new Vector2(12, 12));
+        var segment = new LineSegment { Start = new Vector2(8, 8), End = new Vector2(12, 12) };
 
         // Act
         var result = Geometry.HasIntersection(circle, segment);
@@ -39,7 +39,7 @@ public partial class GeometryTests
     {
         // Arrange
         var circle = new Circle { Center = new Vector2(5, 5), Radius = 3 };
-        var segment = new LineSegment(new Vector2(2, 8), new Vector2(8, 8));
+        var segment = new LineSegment { Start = new Vector2(2, 8), End = new Vector2(8, 8) };
 
         // Act
         var result = Geometry.HasIntersection(circle, segment);
@@ -53,7 +53,7 @@ public partial class GeometryTests
     {
         // Arrange
         var circle = new Circle { Center = new Vector2(5, 5), Radius = 5 };
-        var segment = new LineSegment(new Vector2(4, 4), new Vector2(6, 6));
+        var segment = new LineSegment { Start = new Vector2(4, 4), End = new Vector2(6, 6) };
 
         // Act
         var result = Geometry.HasIntersection(circle, segment);
@@ -67,7 +67,7 @@ public partial class GeometryTests
     {
         // Arrange
         var circle = new Circle { Center = new Vector2(5, 5), Radius = 3 };
-        var segment = new LineSegment(new Vector2(4, 4), new Vector2(10, 10));
+        var segment = new LineSegment { Start = new Vector2(4, 4), End = new Vector2(10, 10) };
 
         // Act
         var result = Geometry.HasIntersection(circle, segment);
@@ -81,7 +81,7 @@ public partial class GeometryTests
     {
         // Arrange
         var circle = new Circle { Center = new Vector2(5, 5), Radius = 5 };
-        var segment = new LineSegment(new Vector2(3, 3), new Vector2(7, 7));
+        var segment = new LineSegment { Start = new Vector2(3, 3), End = new Vector2(7, 7) };
 
         // Act
         var result = Geometry.HasIntersection(circle, segment);
@@ -95,7 +95,7 @@ public partial class GeometryTests
     {
         // Arrange
         var circle = new Circle { Center = new Vector2(5, 5), Radius = 2 };
-        var segment = new LineSegment(new Vector2(0, 0), new Vector2(2, 2));
+        var segment = new LineSegment { Start = new Vector2(0, 0), End = new Vector2(2, 2) };
         // This segment is on a line that would eventually intersect the circle,
         // but the segment itself doesn't extend far enough
 
@@ -111,7 +111,7 @@ public partial class GeometryTests
     {
         // Arrange
         var circle = new Circle { Center = new Vector2(5, 5), Radius = 5 };
-        var segment = new LineSegment(new Vector2(10, 5), new Vector2(15, 5));
+        var segment = new LineSegment { Start = new Vector2(10, 5), End = new Vector2(15, 5) };
         // The endpoint is exactly on the circle boundary
 
         // Act
@@ -126,7 +126,7 @@ public partial class GeometryTests
     {
         // Arrange
         var circle = new Circle { Center = new Vector2(5, 5), Radius = 5 };
-        var segment = new LineSegment(new Vector2(0, 5), new Vector2(10, 5));
+        var segment = new LineSegment { Start = new Vector2(0, 5), End = new Vector2(10, 5) };
         // Segment goes along diameter of circle
 
         // Act
@@ -141,7 +141,7 @@ public partial class GeometryTests
     {
         // Arrange
         var circle = new Circle { Center = new Vector2(5, 5), Radius = 3 };
-        var segment = new LineSegment(new Vector2(5, 5), new Vector2(5, 5));
+        var segment = new LineSegment { Start = new Vector2(5, 5), End = new Vector2(5, 5) };
         // Point segment at center
 
         // Act
@@ -156,7 +156,7 @@ public partial class GeometryTests
     {
         // Arrange
         var circle = new Circle { Center = new Vector2(5, 5), Radius = 3 };
-        var segment = new LineSegment(new Vector2(10, 10), new Vector2(10, 10));
+        var segment = new LineSegment { Start = new Vector2(10, 10), End = new Vector2(10, 10) };
         // Point segment outside
 
         // Act

@@ -2,11 +2,11 @@
 
 namespace Tyr.Common.Math.Shapes;
 
-public struct Robot(Vector2 center, float radius, Angle angle)
+public readonly record struct Robot
 {
-    public Vector2 Center { get; } = center;
-    public float Radius { get; } = radius;
-    public Angle Angle { get; } = angle;
+    public Vector2 Center { get; init; }
+    public float Radius { get; init; }
+    public Angle Angle { get; init; }
 
     private static readonly Angle HalfArcAngle = Angle.FromDeg(50f);
     private const float KickerDepth = 150f;
@@ -42,7 +42,7 @@ public struct Robot(Vector2 center, float radius, Angle angle)
     {
         var p1 = Center + (Angle + HalfArcAngle).ToUnitVec() * Radius;
         var p2 = Center + (Angle - HalfArcAngle).ToUnitVec() * Radius;
-        return new LineSegment(p1, p2);
+        return new LineSegment { Start = p1, End = p2 };
     }
 
     public float Distance(Vector2 point)

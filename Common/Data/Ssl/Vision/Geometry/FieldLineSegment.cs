@@ -14,7 +14,7 @@ public struct FieldLineSegment
     [ProtoMember(3, IsRequired = true)] public Vector2 P2Raw { get; set; }
     public Vector2 P2 => P2Raw;
 
-    public LineSegment LineSegment => new(P1, P2);
+    public LineSegment LineSegment => new() { Start = P1, End = P2 };
 
     [ProtoMember(4, IsRequired = true)] public float Thickness { get; set; }
     [ProtoMember(5)] public FieldShapeType? Type { get; set; }

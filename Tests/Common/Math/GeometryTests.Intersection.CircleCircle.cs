@@ -40,7 +40,7 @@ public partial class GeometryTests
 
         Assert.NotNull(point1);
         Assert.Null(point2);
-        Assert.Equal(new Vector2(1f, 0f), point1!.Value);
+        Assert.Equal(new Vector2(1f, 0f), point1.Value);
     }
 
     [Fact]
@@ -56,9 +56,9 @@ public partial class GeometryTests
 
         // Expected intersection points at (1, ±√3)
         var expectedY = MathF.Sqrt(3f);
-        Assert.Equal(1f, point1!.Value.X);
+        Assert.Equal(1f, point1.Value.X);
         Assert.Equal(expectedY, MathF.Abs(point1.Value.Y), 0.0001f);
-        Assert.Equal(1f, point2!.Value.X);
+        Assert.Equal(1f, point2.Value.X);
         Assert.Equal(-expectedY, point2.Value.Y, 0.0001f);
     }
 
@@ -74,9 +74,9 @@ public partial class GeometryTests
         Assert.NotNull(point2);
 
         // Verify points are equidistant from both circle centers
-        Assert.Equal(1f, Vector2.Distance(point1!.Value, circle1.Center), 0.0001f);
+        Assert.Equal(1f, Vector2.Distance(point1.Value, circle1.Center), 0.0001f);
         Assert.Equal(1f, Vector2.Distance(point1.Value, circle2.Center), 0.0001f);
-        Assert.Equal(1f, Vector2.Distance(point2!.Value, circle1.Center), 0.0001f);
+        Assert.Equal(1f, Vector2.Distance(point2.Value, circle1.Center), 0.0001f);
         Assert.Equal(1f, Vector2.Distance(point2.Value, circle2.Center), 0.0001f);
     }
 

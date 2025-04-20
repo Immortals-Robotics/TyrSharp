@@ -1,15 +1,18 @@
-﻿using ProtoBuf;
-using System.Numerics;
+﻿using System.Numerics;
 
 namespace Tyr.Common.Math;
 
-[ProtoContract]
-public readonly struct Angle(float deg) : IEquatable<Angle>
+public readonly record struct Angle
 {
-    [ProtoMember(1)] private readonly float _deg = MathF.IEEERemainder(deg, 360f);
+    public float Deg { get; }
 
     private const float Deg2Rad = MathF.PI / 180f;
     private const float Rad2Deg = 180f / MathF.PI;
+
+    private Angle(float deg)
+    {
+        Deg = MathF.IEEERemainder(deg, 360f);
+    }
 
     public static Angle FromDeg(float deg) => new(deg);
 
@@ -21,8 +24,6 @@ public readonly struct Angle(float deg) : IEquatable<Angle>
         var angle = MathF.Atan2(v.Y, v.X);
         return FromRad(angle);
     }
-
-    public float Deg => _deg;
 
     public float Rad => Deg * Deg2Rad;
     public float Deg360 => (Deg + 360f) % 360f;
@@ -60,12 +61,8 @@ public readonly struct Angle(float deg) : IEquatable<Angle>
     public static bool operator <(Angle a, Angle b) => (b - a).Deg > 0;
     public static bool operator >(Angle a, Angle b) => (b - a).Deg < 0;
 
-    public static bool operator ==(Angle left, Angle right) => left.Equals(right);
-    public static bool operator !=(Angle left, Angle right) => !(left == right);
-
     public override string ToString() => $"{Deg:F2} deg";
 
-    public bool Equals(Angle other) => Utils.ApproximatelyEqual(_deg, other._deg);
-    public override bool Equals(object? obj) => obj is Angle other && Equals(other);
-    public override int GetHashCode() => _deg.GetHashCode();
+    public bool Equals(Angle other) => Utils.ApproximatelyEqual(Deg, other.Deg);
+    public override int GetHashCode() => Deg.GetHashCode();
 }

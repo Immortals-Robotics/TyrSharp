@@ -26,7 +26,7 @@ public partial class GeometryTests
         var intersection = Geometry.Intersection(line1, line2);
 
         Assert.NotNull(intersection);
-        Assert.Equal(3f, intersection!.Value.X);
+        Assert.Equal(3f, intersection.Value.X);
         Assert.Equal(2f, intersection.Value.Y);
     }
 
@@ -39,7 +39,7 @@ public partial class GeometryTests
         var intersection = Geometry.Intersection(horizontalLine, diagonalLine);
 
         Assert.NotNull(intersection);
-        Assert.Equal(2f, intersection!.Value.X);
+        Assert.Equal(2f, intersection.Value.X);
         Assert.Equal(4f, intersection.Value.Y);
     }
 
@@ -52,7 +52,7 @@ public partial class GeometryTests
         var intersection = Geometry.Intersection(diagonalLine, horizontalLine);
 
         Assert.NotNull(intersection);
-        Assert.Equal(2f, intersection!.Value.X);
+        Assert.Equal(2f, intersection.Value.X);
         Assert.Equal(4f, intersection.Value.Y);
     }
 
@@ -65,7 +65,7 @@ public partial class GeometryTests
         var intersection = Geometry.Intersection(verticalLine, diagonalLine);
 
         Assert.NotNull(intersection);
-        Assert.Equal(3f, intersection!.Value.X);
+        Assert.Equal(3f, intersection.Value.X);
         Assert.Equal(6f, intersection.Value.Y);
     }
 
@@ -78,7 +78,7 @@ public partial class GeometryTests
         var intersection = Geometry.Intersection(diagonalLine, verticalLine);
 
         Assert.NotNull(intersection);
-        Assert.Equal(3f, intersection!.Value.X);
+        Assert.Equal(3f, intersection.Value.X);
         Assert.Equal(6f, intersection.Value.Y);
     }
 
@@ -91,7 +91,7 @@ public partial class GeometryTests
         var intersection = Geometry.Intersection(line1, line2);
 
         Assert.NotNull(intersection);
-        Assert.Equal(1f, intersection!.Value.X);
+        Assert.Equal(1f, intersection.Value.X);
         Assert.Equal(3f, intersection.Value.Y);
     }
 
