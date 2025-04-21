@@ -52,7 +52,7 @@ public class Camera(uint id)
         _fieldSize = fieldSize;
     }
 
-    public void OnFrame(DetectionFrame frame)
+    public void OnFrame(DetectionFrame frame, FilteredFrame lastFilteredFrame)
     {
         // frame id
         var expectedFrameId = FrameId == 0 ? frame.FrameNumber : FrameId + 1;
@@ -77,8 +77,8 @@ public class Camera(uint id)
         Logger.ZLogTrace($"Camera {Id} Delta time: {DeltaTime}");
 
         // detections
-        ProcessRobots(frame);
-        ProcessBalls(frame);
+        ProcessRobots(frame, lastFilteredFrame.Robots);
+        ProcessBalls(frame, lastFilteredFrame.Ball);
     }
 
     private void Reset()
@@ -175,7 +175,7 @@ public class Camera(uint id)
         }
     }
 
-    private void ProcessBalls(DetectionFrame frame)
+    private void ProcessBalls(DetectionFrame frame, FilteredBall? lastFilteredBall)
     {
         // remove trackers of balls that have not been visible or were out of the field for too long
         _ballTrackers.RemoveAll(tracker =>
@@ -209,10 +209,12 @@ public class Camera(uint id)
             if (_fieldSize != null &&
                 !_fieldSize.FieldRectangleWithBoundary.Inside(raw.Detection.Position)) continue;
 
-            var tracker = new Tracker.Ball(raw)
-            {
-                MaxDistance = 500
-            };
+            var tracker = lastFilteredBall.HasValue
+                ? new Ball(raw, lastFilteredBall.Value)
+                : new Ball(raw)
+                {
+                    MaxDistance = 500
+                };
 
             _ballTrackers.Add(tracker);
         }

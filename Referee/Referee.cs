@@ -12,7 +12,7 @@ public class Referee
     private State _state = new();
     public State State => _state;
 
-    private Tracker.Ball _lastBall;
+    private Tracker.Ball? _lastBall;
     private int _moveHysteresis;
 
     public bool Process(Tracker.Frame? vision, Gc.Referee? gc)
@@ -68,10 +68,17 @@ public class Referee
             return true;
         }
 
+        _lastBall ??= _vision.Ball;
+
+        if (!_vision.Ball.HasValue || !_lastBall.HasValue)
+        {
+            return false;
+        }
+
         const int requiredHys = 5;
         var requiredDis = _state.Our() && _state.Restart() ? 150.0f : 50.0f;
 
-        var ballMoveDis = Vector3.Distance(_vision.Ball.Position, _lastBall.Position);
+        var ballMoveDis = Vector3.Distance(_vision.Ball.Value.Position, _lastBall.Value.Position);
 
         if (ballMoveDis > requiredDis)
         {

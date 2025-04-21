@@ -1,22 +1,30 @@
-﻿using Tyr.Common.Dataflow;
+﻿using Tyr.Common.Config;
+using Tyr.Common.Dataflow;
 using Tyr.Common.Runner;
 
 namespace Tyr.Vision;
 
+[Configurable]
 public class Vision : IDisposable
 {
+    [ConfigEntry] private static int TickRate { get; set; } = 100;
+
     private readonly Subscriber<DetectionFrame> _detectionSubscriber = Hub.RawDetection.Subscribe(Mode.All);
 
     private readonly Subscriber<FieldSize> _fieldSizeSubscriber = Hub.FieldSize.Subscribe(Mode.Latest);
     private readonly Subscriber<CameraCalibration> _calibrationSubscriber = Hub.CameraCalibration.Subscribe(Mode.All);
 
+    private readonly FilteredFrame _filteredFrame;
+    
     private readonly Dictionary<uint, Camera> _cameras = new();
 
     private readonly RunnerSync _runner;
 
     public Vision()
     {
-        _runner = new RunnerSync(Tick, 100);
+        _filteredFrame = new FilteredFrame();
+        
+        _runner = new RunnerSync(Tick, TickRate);
         _runner.Start();
     }
 
@@ -50,7 +58,7 @@ public class Vision : IDisposable
         while (_detectionSubscriber.Reader.TryRead(out var frame))
         {
             var camera = GetOrCreateCamera(frame.CameraId);
-            camera.OnFrame(frame);
+            camera.OnFrame(frame, _filteredFrame);
         }
     }
 
