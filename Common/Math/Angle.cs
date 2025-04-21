@@ -4,19 +4,17 @@ namespace Tyr.Common.Math;
 
 public readonly record struct Angle
 {
-    public float Deg { get; }
+    public float Rad { get; }
 
-    private const float Deg2Rad = MathF.PI / 180f;
-    private const float Rad2Deg = 180f / MathF.PI;
-
-    private Angle(float deg)
+    private Angle(float radians)
     {
-        Deg = MathF.IEEERemainder(deg, 360f);
+        // normalize to [-PI, PI]
+        Rad = MathF.IEEERemainder(radians, 2f * MathF.PI);
     }
 
-    public static Angle FromDeg(float deg) => new(deg);
+    public static Angle FromDeg(float deg) => new(float.DegreesToRadians(deg));
 
-    public static Angle FromRad(float rad) => new(rad * Rad2Deg);
+    public static Angle FromRad(float rad) => new(rad);
 
     public static Angle FromVector(Vector2 v)
     {
@@ -25,7 +23,7 @@ public readonly record struct Angle
         return FromRad(angle);
     }
 
-    public float Rad => Deg * Deg2Rad;
+    public float Deg => float.RadiansToDegrees(Rad);
     public float Deg360 => (Deg + 360f) % 360f;
 
     public float Sin() => MathF.Sin(Rad);
