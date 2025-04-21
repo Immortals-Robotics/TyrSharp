@@ -126,10 +126,10 @@ public class Robot
         switch (orientation)
         {
             case < -MathF.PI / 2f when lastOrientation > MathF.PI / 2f:
-                ++_orientationTurns;
+                _orientationTurns += 1;
                 break;
             case > MathF.PI / 2f when lastOrientation < -MathF.PI / 2f:
-                --_orientationTurns;
+                _orientationTurns -= 1;
                 break;
         }
 
@@ -182,7 +182,6 @@ public class Robot
         Assert.IsPositive(totalAngularVelocityUncertainty);
 
         var position = Vector2.Zero;
-        var positionRaw = Vector2.Zero;
         var velocity = Vector2.Zero;
         var orientation = 0f;
         var angularVelocity = 0f;
@@ -196,7 +195,6 @@ public class Robot
         foreach (var tracker in trackers)
         {
             var positionWeight = tracker.PositionUncertaintyWeight;
-            positionRaw += tracker.LastRawRobot.Detection.Position * positionWeight;
             position += tracker.GetPosition(time) * positionWeight;
 
             velocity += tracker.Velocity * tracker.VelocityUncertaintyWeight;
@@ -206,7 +204,6 @@ public class Robot
             angularVelocity += tracker.AngularVelocity.Rad * tracker.AngularVelocityUncertaintyWeight;
         }
 
-        positionRaw /= totalPositionUncertainty;
         position /= totalPositionUncertainty;
         velocity /= totalVelocityUncertainty;
         orientation /= totalOrientationUncertainty;
@@ -215,7 +212,6 @@ public class Robot
         return new FilteredRobot()
         {
             Id = trackers[0].Id, // TODO: verify that all trackers have the same ID
-            PositionRaw = positionRaw,
             Position = position,
             Velocity = velocity,
             Angle = orientationOffset + Angle.FromRad(orientation),

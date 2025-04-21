@@ -5,16 +5,16 @@ namespace Tyr.Common.Data.Ssl.Vision.Tracker;
 [ProtoContract]
 public struct Ball
 {
-    [ProtoMember(1, IsRequired = true)] public Vector3 PositionRaw { get; set; }
+    [ProtoMember(1, IsRequired = true)] public Vector3 PositionProto { get; set; }
 
     public System.Numerics.Vector3 Position
     {
-        get => PositionRaw;
-        set => PositionRaw = value;
+        get => PositionProto;
+        set => PositionProto = value;
     }
 
-    [ProtoMember(2)] public Vector3? VelocityRaw { get; set; }
-    public System.Numerics.Vector3? Velocity => VelocityRaw;
+    [ProtoMember(2)] public Vector3? VelocityProto { get; set; }
+    public System.Numerics.Vector3? Velocity => VelocityProto;
 
     [ProtoMember(3)] public float? Visibility { get; set; }
 }
