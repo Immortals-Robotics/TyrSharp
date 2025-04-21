@@ -1,5 +1,4 @@
 ﻿using System.Numerics;
-using RawBall = Tyr.Vision.RawDetection<Tyr.Common.Data.Ssl.Vision.Detection.Ball>;
 
 namespace Tyr.Vision.Tracker;
 

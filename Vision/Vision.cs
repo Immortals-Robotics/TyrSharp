@@ -1,8 +1,5 @@
 ﻿using Tyr.Common.Dataflow;
 using Tyr.Common.Runner;
-using FieldSize = Tyr.Common.Data.Ssl.Vision.Geometry.FieldSize;
-using CameraCalibration = Tyr.Common.Data.Ssl.Vision.Geometry.CameraCalibration;
-using DetectionFrame = Tyr.Common.Data.Ssl.Vision.Detection.Frame;
 
 namespace Tyr.Vision;
 

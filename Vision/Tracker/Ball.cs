@@ -5,9 +5,6 @@ using Tyr.Vision.Filter;
 
 namespace Tyr.Vision.Tracker;
 
-using RawBall = RawDetection<Tyr.Common.Data.Ssl.Vision.Detection.Ball>;
-using FilteredBall = Common.Data.Ssl.Vision.Tracker.Ball;
-
 [Configurable]
 public class Ball
 {
@@ -78,10 +75,7 @@ public class Ball
     {
         Filter.Predict(time);
 
-        if (_health > 1)
-        {
-            _health--;
-        }
+        _health = Math.Clamp(_health - 1, 1, MaxHealth);
     }
 
     // returns whether the ball was valid for updating the tracker
@@ -101,7 +95,7 @@ public class Ball
         if (distanceToPrediction > maxAllowedDistance) return false;
 
         // we have an update, increase health/certainty in this tracker
-        _health = Math.Clamp(_health + 2, 0, MaxHealth);
+        _health = Math.Clamp(_health + 2, 1, MaxHealth);
         _age = Math.Clamp(_age + 1, 0, GrownUpAge);
 
         // run correction on tracking filter
@@ -113,18 +107,18 @@ public class Ball
             LastInFieldTime = ball.CaptureTime;
         }
 
-        // store cam ball for next run
+        // store raw ball for next run
         LastRawBall = ball;
         Updated = true;
 
         return true;
     }
 
-    private static float GetPositionUncertaintyWeight(Ball tracker) =>
-        MathF.Pow(tracker.Filter.PositionUncertainty.Length() * tracker.Uncertainty, -MergePower);
+    private float PositionUncertaintyWeight =>
+        MathF.Pow(Filter.PositionUncertainty.Length() * Uncertainty, -MergePower);
 
-    private static float GetVelocityUncertaintyWeight(Ball tracker) =>
-        MathF.Pow(tracker.Filter.VelocityUncertainty.Length() * tracker.Uncertainty, -MergePower);
+    private float VelocityUncertaintyWeight =>
+        MathF.Pow(Filter.VelocityUncertainty.Length() * Uncertainty, -MergePower);
 
     // Merges multiple ball trackers into a single merged ball,
     // weighted by their state uncertainty (less certain = less influence).
@@ -132,16 +126,16 @@ public class Ball
     {
         Assert.IsNotEmpty(trackers);
 
-        float totalPositionUncertainty = 0f;
-        float totalVelocityUncertainty = 0f;
+        var totalPositionUncertainty = 0f;
+        var totalVelocityUncertainty = 0f;
 
         RawBall? lastRawBall = null;
 
         // calculate sum of all uncertainty weights
         foreach (var tracker in trackers)
         {
-            totalPositionUncertainty += GetPositionUncertaintyWeight(tracker);
-            totalVelocityUncertainty += GetVelocityUncertaintyWeight(tracker);
+            totalPositionUncertainty += tracker.PositionUncertaintyWeight;
+            totalVelocityUncertainty += tracker.VelocityUncertaintyWeight;
 
             if (tracker.Updated)
             {
@@ -161,16 +155,16 @@ public class Ball
         // Trackers with high uncertainty have less influence on the merged result.
         foreach (var tracker in trackers)
         {
-            var positionWeight = GetPositionUncertaintyWeight(tracker);
-            position += tracker.Filter.GetPosition(time) * positionWeight;
+            var positionWeight = tracker.PositionUncertaintyWeight;
             positionRaw += tracker.LastRawBall.Detection.Position * positionWeight;
+            position += tracker.GetPosition(time) * positionWeight;
 
-            var velocityWeight = GetVelocityUncertaintyWeight(tracker);
-            velocity += tracker.Filter.Velocity * velocityWeight;
+            var velocityWeight = tracker.VelocityUncertaintyWeight;
+            velocity += tracker.Velocity * velocityWeight;
         }
 
-        position /= totalPositionUncertainty;
         positionRaw /= totalPositionUncertainty;
+        position /= totalPositionUncertainty;
         velocity /= totalVelocityUncertainty;
 
         return new MergedBall

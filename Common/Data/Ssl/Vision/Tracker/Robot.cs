@@ -17,7 +17,12 @@ public struct Robot
     }
 
     [ProtoMember(3, IsRequired = true)] public float AngleRad { get; set; }
-    public Angle Angle => Angle.FromRad(AngleRad);
+
+    public Angle Angle
+    {
+        get => Angle.FromRad(AngleRad);
+        set => AngleRad = value.Rad;
+    }
 
     [ProtoMember(4)] public Vector2? VelocityRaw { get; set; }
 
@@ -27,7 +32,13 @@ public struct Robot
         set => VelocityRaw = value;
     }
 
-    [ProtoMember(5)] public float? AngularVelocity { get; set; }
+    [ProtoMember(5)] public float? AngularVelocityRad { get; set; }
+
+    public Angle? AngularVelocity
+    {
+        get => AngularVelocityRad.HasValue ? Angle.FromRad(AngularVelocityRad.Value) : null;
+        set => AngularVelocityRad = value?.Rad;
+    }
 
     [ProtoMember(6)] public float? Visibility { get; set; }
 }
