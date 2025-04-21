@@ -96,7 +96,7 @@ public class Camera(uint id)
     {
         // remove trackers of balls that have not been visible or were out of the field for too long
         _ballTrackers.RemoveAll(tracker =>
-            (frame.CaptureTime - tracker.LastUpDateTime).TotalSeconds > InvisibleLifetimeBall ||
+            (frame.CaptureTime - tracker.LastUpdateTime).TotalSeconds > InvisibleLifetimeBall ||
             (frame.CaptureTime - tracker.LastInFieldTime).TotalSeconds > InvisibleLifetimeBall);
 
         // do a prediction on all trackers

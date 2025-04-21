@@ -11,7 +11,7 @@ using FilteredBall = Common.Data.Ssl.Vision.Tracker.Ball;
 [Configurable]
 public class Ball
 {
-    [ConfigEntry] private static float InitialCovarianceXy { get; set; } = 1000f;
+    [ConfigEntry] private static float InitialCovariance { get; set; } = 1000f;
     [ConfigEntry] private static float ModelError { get; set; } = 0.1f;
     [ConfigEntry] private static float MeasurementError { get; set; } = 100.0f;
 
@@ -34,14 +34,15 @@ public class Ball
     private int _age;
 
     public RawBall LastRawBall { get; private set; }
-    private bool _updated = false;
+    public bool Updated { get; private set; }
 
     public float? MaxDistance { get; set; }
 
+    // Reciprocal health is used as uncertainty (low health = high uncertainty)
     public float Uncertainty => 1f / _health;
     public bool IsGrownUp => _age >= GrownUpAge;
 
-    public DateTime LastUpDateTime => LastRawBall.CaptureTime;
+    public DateTime LastUpdateTime => LastRawBall.CaptureTime;
     public DateTime LastInFieldTime { get; private set; }
 
     public uint CameraId => LastRawBall.CameraId;
@@ -53,7 +54,7 @@ public class Ball
     public Ball(RawBall ball)
     {
         Filter = new Filter2D(ball.Detection.Position,
-            InitialCovarianceXy, ModelError, MeasurementError,
+            InitialCovariance, ModelError, MeasurementError,
             ball.CaptureTime);
 
         LastInFieldTime = ball.CaptureTime;
@@ -66,7 +67,7 @@ public class Ball
             .ClampMagnitude(0f, MaxLinearVelocity);
 
         Filter = new Filter2D(rawBall.Detection.Position, velocity,
-            InitialCovarianceXy, ModelError, MeasurementError,
+            InitialCovariance, ModelError, MeasurementError,
             rawBall.CaptureTime);
 
         LastInFieldTime = rawBall.CaptureTime;
@@ -87,14 +88,15 @@ public class Ball
     public bool Update(RawBall ball, Rectangle? field)
     {
         // calculate delta time since last update
-        var dt = (ball.CaptureTime - LastRawBall.CaptureTime).TotalSeconds;
+        var dt = (float)(ball.CaptureTime - LastRawBall.CaptureTime).TotalSeconds;
+        Assert.IsPositive(dt);
 
         // calculate distance of this ball to our internal prediction
         var distanceToPrediction = Vector2.Distance(Filter.Position, ball.Detection.Position);
 
         // ignore the ball if it is too far away from our prediction...
         var maxAllowedDistance = Math.Min(
-            (float)(dt * MaxLinearVelocity), // distance based on the assumed max ball speed
+            dt * MaxLinearVelocity, // distance based on the assumed max ball speed
             MaxDistance.GetValueOrDefault(float.MaxValue)); // a hard limit
         if (distanceToPrediction > maxAllowedDistance) return false;
 
@@ -106,15 +108,78 @@ public class Ball
         Filter.Correct(ball.Detection.Position);
 
         // if we know the field size, check if the ball is inside it
-        if (!field.HasValue || field.Value.Inside(ball.Detection.Position))
+        if (field is not { } rectangle || rectangle.Inside(ball.Detection.Position))
         {
             LastInFieldTime = ball.CaptureTime;
         }
 
         // store cam ball for next run
         LastRawBall = ball;
-        _updated = true;
+        Updated = true;
 
         return true;
+    }
+
+    private static float GetPositionUncertaintyWeight(Ball tracker) =>
+        MathF.Pow(tracker.Filter.PositionUncertainty.Length() * tracker.Uncertainty, -MergePower);
+
+    private static float GetVelocityUncertaintyWeight(Ball tracker) =>
+        MathF.Pow(tracker.Filter.VelocityUncertainty.Length() * tracker.Uncertainty, -MergePower);
+
+    // Merges multiple ball trackers into a single merged ball,
+    // weighted by their state uncertainty (less certain = less influence).
+    public static MergedBall Merge(IReadOnlyList<Ball> trackers, DateTime time)
+    {
+        Assert.IsNotEmpty(trackers);
+
+        float totalPositionUncertainty = 0f;
+        float totalVelocityUncertainty = 0f;
+
+        RawBall? lastRawBall = null;
+
+        // calculate sum of all uncertainty weights
+        foreach (var tracker in trackers)
+        {
+            totalPositionUncertainty += GetPositionUncertaintyWeight(tracker);
+            totalVelocityUncertainty += GetVelocityUncertaintyWeight(tracker);
+
+            if (tracker.Updated)
+            {
+                tracker.Updated = false; // TODO: move this out of this function
+                lastRawBall = tracker.LastRawBall;
+            }
+        }
+
+        Assert.IsPositive(totalPositionUncertainty);
+        Assert.IsPositive(totalVelocityUncertainty);
+
+        var position = Vector2.Zero;
+        var positionRaw = Vector2.Zero;
+        var velocity = Vector2.Zero;
+
+        // take all trackers and calculate their pos/vel sum weighted by uncertainty.
+        // Trackers with high uncertainty have less influence on the merged result.
+        foreach (var tracker in trackers)
+        {
+            var positionWeight = GetPositionUncertaintyWeight(tracker);
+            position += tracker.Filter.GetPosition(time) * positionWeight;
+            positionRaw += tracker.LastRawBall.Detection.Position * positionWeight;
+
+            var velocityWeight = GetVelocityUncertaintyWeight(tracker);
+            velocity += tracker.Filter.Velocity * velocityWeight;
+        }
+
+        position /= totalPositionUncertainty;
+        positionRaw /= totalPositionUncertainty;
+        velocity /= totalVelocityUncertainty;
+
+        return new MergedBall
+        {
+            Position = position,
+            RawPosition = positionRaw,
+            Velocity = velocity,
+            Time = time,
+            LatestRawBall = lastRawBall,
+        };
     }
 }
