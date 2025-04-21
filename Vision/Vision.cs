@@ -1,14 +1,19 @@
-﻿using Tyr.Common.Data.Ssl.Vision.Detection;
-using Tyr.Common.Dataflow;
+﻿using Tyr.Common.Dataflow;
 using Tyr.Common.Runner;
+using FieldSize = Tyr.Common.Data.Ssl.Vision.Geometry.FieldSize;
+using CameraCalibration = Tyr.Common.Data.Ssl.Vision.Geometry.CameraCalibration;
+using DetectionFrame = Tyr.Common.Data.Ssl.Vision.Detection.Frame;
 
 namespace Tyr.Vision;
 
 public class Vision : IDisposable
 {
-    private readonly Subscriber<Frame> _subscriber = Hub.RawDetection.Subscribe(Mode.All);
+    private readonly Subscriber<DetectionFrame> _detectionSubscriber = Hub.RawDetection.Subscribe(Mode.All);
 
-    private Dictionary<uint, Camera> _cameras = new();
+    private readonly Subscriber<FieldSize> _fieldSizeSubscriber = Hub.FieldSize.Subscribe(Mode.Latest);
+    private readonly Subscriber<CameraCalibration> _calibrationSubscriber = Hub.CameraCalibration.Subscribe(Mode.All);
+
+    private readonly Dictionary<uint, Camera> _cameras = new();
 
     private readonly RunnerSync _runner;
 
@@ -18,24 +23,43 @@ public class Vision : IDisposable
         _runner.Start();
     }
 
+    private Camera GetOrCreateCamera(uint id)
+    {
+        if (_cameras.TryGetValue(id, out var camera)) return camera;
+
+        camera = new Camera(id);
+        _cameras.Add(id, camera);
+
+        return camera;
+    }
+
+    private void ReceiveGeometry()
+    {
+        while (_calibrationSubscriber.Reader.TryRead(out var calibration))
+        {
+            var camera = GetOrCreateCamera(calibration.CameraId);
+            camera.OnCalibration(calibration);
+        }
+
+        while (_fieldSizeSubscriber.Reader.TryRead(out var fieldSize))
+        {
+            foreach (var camera in _cameras.Values)
+                camera.OnFieldSize(fieldSize);
+        }
+    }
+
     private void ReceiveDetections()
     {
-        while (_subscriber.Reader.TryRead(out var frame))
+        while (_detectionSubscriber.Reader.TryRead(out var frame))
         {
-            if (!_cameras.TryGetValue(frame.CameraId, out var camera))
-            {
-                camera = new Camera(frame.CameraId);
-                _cameras.Add(frame.CameraId, camera);
-            }
-
+            var camera = GetOrCreateCamera(frame.CameraId);
             camera.OnFrame(frame);
         }
     }
 
     private void Tick()
     {
-        //Logger.ZLogTrace($"fps: requested: {_runner.TickRateHz}, actual: {1f / _runner.Timer.DeltaTime:F2}");
-
+        ReceiveGeometry();
         ReceiveDetections();
     }
 

@@ -14,10 +14,15 @@ public readonly record struct Rect
         Max = Vector2.Max(p1, p2);
     }
 
-    public Rect(Vector2 position, float width, float height)
-        : this(position, position + new Vector2(width, height))
-    {
-    }
+    public static Rect FromCornerAndSize(Vector2 corner, Vector2 size) => new(corner, corner + size);
+
+    public static Rect FromCornerAndSize(Vector2 corner, float width, float height) =>
+        FromCornerAndSize(corner, new Vector2(width, height));
+
+    public static Rect FromCenterAndSize(Vector2 center, Vector2 size) => new(center - size / 2f, center + size / 2f);
+
+    public static Rect FromCenterAndSize(Vector2 center, float width, float height) =>
+        FromCenterAndSize(center, new Vector2(width, height));
 
     public float Circumference => (Width + Height) * 2f;
     public float Area => Width * Height;

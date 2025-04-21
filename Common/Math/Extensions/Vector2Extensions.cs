@@ -12,6 +12,15 @@ public static class Vector2Extensions
         return v.X * other.Y - v.Y * other.X;
     }
 
+    public static Vector2 ClampMagnitude(this Vector2 v, float min, float max)
+    {
+        var length = v.Length();
+        if (Utils.ApproximatelyZero(length)) return v;
+
+        var clampedLength = System.Math.Clamp(length, min, max);
+        return Vector2.Normalize(v) * clampedLength;
+    }
+
     public static MathNet.Numerics.LinearAlgebra.Vector<double> AsMathNetVector(this Vector2 v)
     {
         var mathNetVector = MathNet.Numerics.LinearAlgebra.Vector<double>.Build.Dense(2);

@@ -84,7 +84,7 @@ public class Filter1D
         private set => _kalman.StateEstimate[1] = value;
     }
 
-    public float GetPositionEstimate(DateTime timestamp)
+    public float GetPosition(DateTime timestamp)
     {
         var dt = (timestamp - LastTimestamp).TotalSeconds;
         return Position + Velocity * (float)dt;

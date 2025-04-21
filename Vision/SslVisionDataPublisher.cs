@@ -6,7 +6,7 @@ using Tyr.Common.Network;
 namespace Tyr.Vision;
 
 [Configurable]
-public class SslVisionDataPublisher : IDisposable
+public sealed class SslVisionDataPublisher : IDisposable
 {
     [ConfigEntry] public static Address VisionAddress { get; set; } = new() { Ip = "224.5.23.2", Port = 10006 };
     [ConfigEntry] public static Address VisionSimAddress { get; set; } = new() { Ip = "224.5.23.2", Port = 10025 };
@@ -24,7 +24,15 @@ public class SslVisionDataPublisher : IDisposable
             Hub.RawDetection.Publish(data.Detection);
 
         if (data.Geometry != null)
-            Hub.RawGeometry.Publish(data.Geometry);
+        {
+            Hub.FieldSize.Publish(data.Geometry.Field);
+
+            foreach (var calibration in data.Geometry.Calibrations)
+                Hub.CameraCalibration.Publish(calibration);
+
+            if (data.Geometry.BallModels.HasValue)
+                Hub.BallModels.Publish(data.Geometry.BallModels.Value);
+        }
     }
 
     public void Dispose()

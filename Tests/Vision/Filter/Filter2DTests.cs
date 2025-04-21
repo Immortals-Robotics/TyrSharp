@@ -159,7 +159,7 @@ public class Filter2DTests
 
         // Act
         var futureTimestamp = initialTimestamp.AddSeconds(2.5);
-        var estimatedPosition = filter.GetPositionEstimate(futureTimestamp);
+        var estimatedPosition = filter.GetPosition(futureTimestamp);
 
         // Assert
         // Position should be initial + velocity*dt

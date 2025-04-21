@@ -96,7 +96,7 @@ public class Filter2D
         }
     }
 
-    public Vector2 GetPositionEstimate(DateTime timestamp)
+    public Vector2 GetPosition(DateTime timestamp)
     {
         var dt = (timestamp - LastTimestamp).TotalSeconds;
         return Position + Velocity * (float)dt;
