@@ -84,7 +84,7 @@ public class Ball
     }
 
     // returns whether the ball was valid for updating the tracker
-    public bool Update(RawBall ball, Rect? field)
+    public bool Update(RawBall ball, Rectangle? field)
     {
         // calculate delta time since last update
         var dt = (ball.CaptureTime - LastRawBall.CaptureTime).TotalSeconds;

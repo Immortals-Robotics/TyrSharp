@@ -11,9 +11,9 @@ public class FieldSize
 
     [ProtoMember(5, IsRequired = true)] public int BoundaryWidth { get; set; }
 
-    public Rect FieldRect => Rect.FromCenterAndSize(System.Numerics.Vector2.Zero, FieldWidth, FieldLength);
+    public Rectangle FieldRectangle => Rectangle.FromCenterAndSize(System.Numerics.Vector2.Zero, FieldWidth, FieldLength);
 
-    public Rect FieldRectWithBoundary => Rect.FromCenterAndSize(System.Numerics.Vector2.Zero,
+    public Rectangle FieldRectangleWithBoundary => Rectangle.FromCenterAndSize(System.Numerics.Vector2.Zero,
         FieldWidth + BoundaryWidth, FieldLength + BoundaryWidth);
 
     [ProtoMember(3, IsRequired = true)] public int GoalWidth { get; set; }

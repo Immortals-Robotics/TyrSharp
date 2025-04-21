@@ -95,12 +95,12 @@ public class Drawer(string category)
         Draw(rect, color, options, memberName, filePath, lineNumber);
     }
 
-    public void DrawRectangle(Math.Shapes.Rect rect, Color color, Options options = default,
+    public void DrawRectangle(Math.Shapes.Rectangle rectangle, Color color, Options options = default,
         [CallerMemberName] string? memberName = null,
         [CallerFilePath] string? filePath = null,
         [CallerLineNumber] int lineNumber = 0)
     {
-        DrawRectangle(rect.Min, rect.Max, color, options, memberName, filePath, lineNumber);
+        DrawRectangle(rectangle.Min, rectangle.Max, color, options, memberName, filePath, lineNumber);
     }
 
     public void DrawTriangle(Vector2 v1, Vector2 v2, Vector2 v3, Color color, Options options = default,

@@ -115,9 +115,9 @@ public static class Geometry
         }
     }
 
-    public static (Vector2?, Vector2?) Intersection(Rect rect, Line line)
+    public static (Vector2?, Vector2?) Intersection(Rectangle rectangle, Line line)
     {
-        var (e1, e2, e3, e4) = rect.Edges();
+        var (e1, e2, e3, e4) = rectangle.Edges();
 
         // at most two of these are valid
         var p1 = Intersection(line, e1);
@@ -171,7 +171,7 @@ public static class Geometry
         return area1 + area2;
     }
 
-    public static bool HasIntersection(Rect rect1, Rect rect2)
+    public static bool HasIntersection(Rectangle rect1, Rectangle rect2)
     {
         return rect1.Min.X <= rect2.Max.X && rect1.Max.X >= rect2.Min.X &&
                rect1.Min.Y <= rect2.Max.Y && rect1.Max.Y >= rect2.Min.Y;

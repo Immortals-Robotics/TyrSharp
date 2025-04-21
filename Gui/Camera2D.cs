@@ -107,7 +107,7 @@ public class Camera2D
         return Vector2.TransformNormal(new Vector2(screenLength, 0), _inverse).Length();
     }
 
-    public Rect GetVisibleWorldBounds()
+    public Rectangle GetVisibleWorldBounds()
     {
         if (_dirty) UpdateMatrix();
         
@@ -124,6 +124,6 @@ public class Camera2D
             Vector2.Max(corner1, corner2),
             Vector2.Max(corner3, corner4));
 
-        return new Rect(min, max);
+        return new Rectangle(min, max);
     }
 }

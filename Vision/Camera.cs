@@ -107,7 +107,7 @@ public class Camera(uint id)
         // iterate over all balls on the camera
         foreach (var rawBall in frame.Balls.Select(detection => new RawBall(detection, frame)))
         {
-            var consumed = _ballTrackers.Any(t => t.Update(rawBall, _fieldSize?.FieldRect));
+            var consumed = _ballTrackers.Any(t => t.Update(rawBall, _fieldSize?.FieldRectangle));
             if (consumed) continue;
 
             // This is a new ball, we need to create a new tracker for it
@@ -122,7 +122,7 @@ public class Camera(uint id)
 
             // Skip the balls that are outside the field
             if (_fieldSize != null &&
-                !_fieldSize.FieldRectWithBoundary.Inside(rawBall.Detection.Position)) continue;
+                !_fieldSize.FieldRectangleWithBoundary.Inside(rawBall.Detection.Position)) continue;
 
             var tracker = new Tracker.Ball(rawBall)
             {
