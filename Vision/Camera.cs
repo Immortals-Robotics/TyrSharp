@@ -2,7 +2,6 @@
 using Tyr.Common.Config;
 using Tyr.Common.Math;
 using Tyr.Common.Time;
-using Tyr.Vision.Tracker;
 
 namespace Tyr.Vision;
 
@@ -24,11 +23,12 @@ public class Camera(uint id)
     public uint Id { get; } = id;
 
     public uint FrameId { get; private set; }
-    public DateTime Time { get; private set; }
-    public DateTime LastBallOnCamTime { get; private set; }
+    public Timestamp Timestamp { get; private set; }
+    public Timestamp LastBallOnCamTimestamp { get; private set; }
 
     // average delta time in seconds
-    public float DeltaTime => _frameTimeEstimator.Estimate?.Slope ?? 0f;
+    public DeltaTime DeltaTime => DeltaTime.FromSeconds(_frameTimeEstimator.Estimate?.Slope ?? 0f);
+    public float Fps => (float)(1 / DeltaTime.Seconds);
 
     private readonly Dictionary<RobotId, Tracker.Robot> _robots = [];
     private readonly List<Tracker.Ball> _ballTrackers = [];
@@ -67,14 +67,14 @@ public class Camera(uint id)
         FrameId = frame.FrameNumber;
 
         // time
-        Time = frame.CaptureTime;
+        Timestamp = frame.CaptureTime;
 
         if (!_frameTimeEstimator.IsFull || frame.FrameNumber % FrameEstimatorStride == 0)
         {
-            _frameTimeEstimator.AddSample(frame.FrameNumber, frame.CaptureTime.ToUnixTimeSeconds());
+            _frameTimeEstimator.AddSample(frame.FrameNumber, frame.CaptureTime.Seconds);
         }
 
-        Logger.ZLogTrace($"Camera {Id} Delta time: {DeltaTime}");
+        Logger.ZLogTrace($"Camera {Id} FPS: {Fps:F2}");
 
         // detections
         ProcessRobots(frame, lastFilteredFrame.Robots);
@@ -88,29 +88,24 @@ public class Camera(uint id)
         _ballTrackers.Clear();
     }
 
+    private bool IsOutside(Vector2 position)
+    {
+        return _fieldSize.HasValue && !_fieldSize.Value.FieldRectangleWithBoundary.Inside(position);
+    }
+
     private void ProcessRobots(DetectionFrame frame, IReadOnlyList<FilteredRobot> filteredRobots)
     {
         // Remove trackers that are either too old or outside the field
         // can't directly remove from the dictionary while iterating over it, so we do it in two steps
-        var toRemove = new List<RobotId>();
-        foreach (var (id, tracker) in _robots)
+        _robots.RemoveAll((_, tracker) =>
         {
-            var tooOld = frame.CaptureTime - tracker.LastUpdateTime >
-                         TimeSpan.FromSeconds(InvisibleLifetimeRobot);
+            var tooOld = frame.CaptureTime - tracker.LastUpdateTimestamp >
+                         DeltaTime.FromSeconds(InvisibleLifetimeRobot);
 
-            var outsideField = _fieldSize is not null &&
-                               !_fieldSize.FieldRectangleWithBoundary.Inside(tracker.GetPosition(frame.CaptureTime));
+            var outsideField = IsOutside(tracker.GetPosition(frame.CaptureTime));
 
-            if (tooOld || outsideField)
-            {
-                toRemove.Add(id);
-            }
-        }
-
-        foreach (var id in toRemove)
-        {
-            _robots.Remove(id);
-        }
+            return tooOld || outsideField;
+        });
 
         // do a prediction on all trackers
         foreach (var r in _robots.Values)
@@ -159,15 +154,15 @@ public class Camera(uint id)
                 {
                     if (filtered.Id != id) return false;
 
-                    var inside = _fieldSize == null || _fieldSize.FieldRectangleWithBoundary.Inside(filtered.Position);
+                    var inside = !IsOutside(filtered.Position);
                     var close = Vector2.Distance(filtered.Position, robot.Detection.Position) < CopyTrackerMaxDistance;
 
                     return inside && close;
                 });
 
                 tracker = filteredRobot != null
-                    ? new Robot(robot, filteredRobot.Value, color) // on a different camera already 
-                    : new Robot(robot, color); // completely new robot on the field
+                    ? new Tracker.Robot(robot, filteredRobot.Value, color) // on a different camera already 
+                    : new Tracker.Robot(robot, color); // completely new robot on the field
 
 
                 _robots.Add(id, tracker);
@@ -179,13 +174,13 @@ public class Camera(uint id)
     {
         // remove trackers of balls that have not been visible or were out of the field for too long
         _ballTrackers.RemoveAll(tracker =>
-            (frame.CaptureTime - tracker.LastUpdateTime).TotalSeconds > InvisibleLifetimeBall ||
-            (frame.CaptureTime - tracker.LastInFieldTime).TotalSeconds > InvisibleLifetimeBall);
+            frame.CaptureTime - tracker.LastUpdateTimestamp > DeltaTime.FromSeconds(InvisibleLifetimeBall) ||
+            frame.CaptureTime - tracker.LastInFieldTimestamp > DeltaTime.FromSeconds(InvisibleLifetimeBall));
 
         // do a prediction on all trackers
         foreach (var ball in _ballTrackers) ball.Predict(frame.CaptureTime);
 
-        if (frame.Balls.Count > 0) LastBallOnCamTime = Time;
+        if (frame.Balls.Count > 0) LastBallOnCamTimestamp = Timestamp;
 
         // iterate over all balls on the camera
         foreach (var detection in frame.Balls)
@@ -206,12 +201,11 @@ public class Camera(uint id)
             }
 
             // Skip the balls that are outside the field
-            if (_fieldSize != null &&
-                !_fieldSize.FieldRectangleWithBoundary.Inside(raw.Detection.Position)) continue;
+            if (IsOutside(raw.Detection.Position)) continue;
 
             var tracker = lastFilteredBall.HasValue
-                ? new Ball(raw, lastFilteredBall.Value)
-                : new Ball(raw)
+                ? new Tracker.Ball(raw, lastFilteredBall.Value)
+                : new Tracker.Ball(raw)
                 {
                     MaxDistance = 500
                 };

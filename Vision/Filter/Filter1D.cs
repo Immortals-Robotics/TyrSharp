@@ -1,4 +1,5 @@
 ﻿using Tyr.Common.Math;
+using Tyr.Common.Time;
 
 namespace Tyr.Vision.Filter;
 
@@ -11,7 +12,7 @@ namespace Tyr.Vision.Filter;
 //  – white‑noise acceleration with tunable variance
 public class Filter1D
 {
-    public DateTime LastTimestamp { get; private set; }
+    public Timestamp LastTimestamp { get; private set; }
 
     private readonly float _modelError;
     private readonly KalmanFilter _kalman;
@@ -21,7 +22,7 @@ public class Filter1D
     /// </summary>
     public Filter1D(float initialPosition,
         float covariance, float modelError, float measurementError,
-        DateTime timestamp)
+        Timestamp timestamp)
     {
         _kalman = new KalmanFilter(2, 1, 1);
 
@@ -43,7 +44,7 @@ public class Filter1D
     /// </summary>
     public Filter1D(float initialPosition, float initialVelocity,
         float covariance, float modelError, float measurementError,
-        DateTime timestamp)
+        Timestamp timestamp)
         : this(initialPosition, covariance, modelError, measurementError, timestamp)
     {
         Velocity = initialVelocity;
@@ -52,10 +53,10 @@ public class Filter1D
     /// <summary>
     /// Predict forward to a new timestamp.
     /// </summary>
-    public void Predict(DateTime timestamp)
+    public void Predict(Timestamp timestamp)
     {
-        var dt = (timestamp - LastTimestamp).TotalSeconds;
-        if (dt <= 0) return;
+        var dt = timestamp - LastTimestamp;
+        if (dt.Nanoseconds <= 0) return;
 
         LastTimestamp = timestamp;
         UpdateMatrices(dt);
@@ -84,10 +85,10 @@ public class Filter1D
         private set => _kalman.StateEstimate[1] = value;
     }
 
-    public float GetPosition(DateTime timestamp)
+    public float GetPosition(Timestamp timestamp)
     {
-        var dt = (timestamp - LastTimestamp).TotalSeconds;
-        return Position + Velocity * (float)dt;
+        var dt = timestamp - LastTimestamp;
+        return Position + Velocity * (float)dt.Seconds;
     }
 
 
@@ -117,22 +118,24 @@ public class Filter1D
     /// <summary>
     /// Build F and Q for constant‑vel model with white accel noise.
     /// </summary>
-    private void UpdateMatrices(double dt)
+    private void UpdateMatrices(DeltaTime dt)
     {
+        var dtSeconds = dt.Seconds;
+
         _kalman.TransitionMatrix[0, 0] = 1;
-        _kalman.TransitionMatrix[0, 1] = dt;
+        _kalman.TransitionMatrix[0, 1] = dtSeconds;
         _kalman.TransitionMatrix[1, 0] = 0;
         _kalman.TransitionMatrix[1, 1] = 1;
 
         // set optimal process noise σ² Q for white‑noise accel: see Simon, “Optimal State Estimation.”
         // here error = E[a²] * dt
-        var sigma = Math.Sqrt(3.0 * _modelError / dt) / dt;
-        var dt3 = (1.0 / 3.0) * dt * dt * dt * sigma * sigma;
-        var dt2 = (1.0 / 2.0) * dt * dt * sigma * sigma;
+        var sigma = Math.Sqrt(3.0 * _modelError / dtSeconds) / dtSeconds;
+        var dt3 = (1.0 / 3.0) * dtSeconds * dtSeconds * dtSeconds * sigma * sigma;
+        var dt2 = (1.0 / 2.0) * dtSeconds * dtSeconds * sigma * sigma;
 
         _kalman.ProcessNoiseCovariance[0, 0] = dt3;
         _kalman.ProcessNoiseCovariance[0, 1] = dt2;
         _kalman.ProcessNoiseCovariance[1, 0] = dt2;
-        _kalman.ProcessNoiseCovariance[1, 1] = dt * sigma * sigma;
+        _kalman.ProcessNoiseCovariance[1, 1] = dtSeconds * sigma * sigma;
     }
 }

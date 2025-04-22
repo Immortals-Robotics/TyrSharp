@@ -46,7 +46,7 @@ public class Referee
         {
             Logger.ZLogInformation($"state transition: {oldState} -> {_state}");
 
-            _state.Time = DateTime.UtcNow;
+            _state.Timestamp = _state.Gc.PacketTimestamp;
             _lastBall = _vision.Ball;
             _moveHysteresis = 0;
 
@@ -63,7 +63,7 @@ public class Referee
             return false;
         }
 
-        if (_state.Gc.CurrentActionTimeRemaining < 0f)
+        if (_state.Gc.CurrentActionTimeRemaining.Nanoseconds <= 0)
         {
             return true;
         }

@@ -1,6 +1,7 @@
 ﻿using System.Numerics;
 using Tyr.Common.Config;
 using Tyr.Common.Math;
+using Tyr.Common.Time;
 using Tyr.Vision.Filter;
 
 namespace Tyr.Vision.Tracker;
@@ -32,7 +33,7 @@ public class Robot
     private readonly Filter2D _filterXy;
     private readonly Filter1D _filterW;
 
-    private readonly List<DateTime> _updateTimes = [];
+    private readonly List<Timestamp> _updateTimestamps = [];
 
     private int _health = 2;
     private float _visionQuality;
@@ -44,16 +45,16 @@ public class Robot
 
     public uint CameraId => LastRawRobot.CameraId;
 
-    public DateTime LastUpdateTime => LastRawRobot.CaptureTime;
+    public Timestamp LastUpdateTimestamp => LastRawRobot.CaptureTimestamp;
 
     // Reciprocal health is used as uncertainty (low health = high uncertainty)
     public float Uncertainty => 1f / _health;
 
-    public Vector2 GetPosition(DateTime time) => _filterXy.GetPosition(time);
+    public Vector2 GetPosition(Timestamp timestamp) => _filterXy.GetPosition(timestamp);
     public Vector2 Position => _filterXy.Position;
     public Vector2 Velocity => _filterXy.Velocity;
 
-    public Angle GetAngle(DateTime time) => Angle.FromRad(_filterW.GetPosition(time));
+    public Angle GetAngle(Timestamp timestamp) => Angle.FromRad(_filterW.GetPosition(timestamp));
     public Angle Angle => Angle.FromRad(_filterW.Position);
     public Angle AngularVelocity => Angle.FromRad(_filterW.Velocity);
 
@@ -61,11 +62,11 @@ public class Robot
     {
         _filterXy = new Filter2D(raw.Detection.Position,
             InitialCovarianceXy, ModelErrorXy, MeasurementErrorXy,
-            raw.CaptureTime);
+            raw.CaptureTimestamp);
 
         _filterW = new Filter1D(raw.Detection.OrientationRad.GetValueOrDefault(),
             InitialCovarianceW, ModelErrorW, MeasurementErrorW,
-            raw.CaptureTime);
+            raw.CaptureTimestamp);
 
         Id = new RobotId { Id = raw.Detection.RobotId, Team = color };
         LastRawRobot = raw;
@@ -75,31 +76,31 @@ public class Robot
     {
         _filterXy = new Filter2D(filtered.Position, filtered.Velocity.GetValueOrDefault(),
             InitialCovarianceXy, ModelErrorXy, MeasurementErrorXy,
-            raw.CaptureTime);
+            raw.CaptureTimestamp);
 
         _filterW = new Filter1D(filtered.AngleRad, filtered.AngularVelocityRad.GetValueOrDefault(),
             InitialCovarianceW, ModelErrorW, MeasurementErrorW,
-            raw.CaptureTime);
+            raw.CaptureTimestamp);
 
         Id = new RobotId { Id = raw.Detection.RobotId, Team = color };
         LastRawRobot = raw;
     }
 
-    public void Predict(DateTime time, float averageDt)
+    public void Predict(Timestamp timestamp, DeltaTime averageDt)
     {
-        _filterXy.Predict(time);
-        _filterW.Predict(time);
+        _filterXy.Predict(timestamp);
+        _filterW.Predict(timestamp);
 
         _health = Math.Clamp(_health - 1, 1, MaxHealth);
 
-        _updateTimes.RemoveAll(t => (time - t).TotalSeconds > 1.0);
-        _visionQuality = Math.Clamp(_updateTimes.Count * averageDt, 0.01f, 1f);
+        _updateTimestamps.RemoveAll(t => timestamp - t > DeltaTime.FromSeconds(1));
+        _visionQuality = (float)Math.Clamp(_updateTimestamps.Count * averageDt.Seconds, 0.01, 1);
     }
 
     // returns whether the robot was valid for updating the tracker
     public bool Update(RawRobot robot)
     {
-        var dtInSec = (float)(robot.CaptureTime - LastRawRobot.CaptureTime).TotalSeconds;
+        var dtInSec = (float)(robot.CaptureTimestamp - LastRawRobot.CaptureTimestamp).Seconds;
         var distanceToPrediction = Vector2.Distance(_filterXy.Position, robot.Detection.Position);
         if (distanceToPrediction > dtInSec * MaxLinearVelocity)
         {
@@ -136,7 +137,7 @@ public class Robot
         orientation += _orientationTurns * 2f * MathF.PI;
         _filterW.Correct(orientation);
 
-        _updateTimes.Add(robot.CaptureTime);
+        _updateTimestamps.Add(robot.CaptureTimestamp);
         LastRawRobot = robot;
 
         return true;
@@ -154,7 +155,7 @@ public class Robot
     private float AngularVelocityUncertaintyWeight =>
         MathF.Pow(_filterW.VelocityUncertainty * Uncertainty, -MergePower);
 
-    static FilteredRobot Merge(IReadOnlyList<Robot> trackers, DateTime time)
+    static FilteredRobot Merge(IReadOnlyList<Robot> trackers, Timestamp timestamp)
     {
         Assert.IsNotEmpty(trackers);
 
@@ -188,18 +189,18 @@ public class Robot
 
         // cyclic coordinates don't like mean calculations, we will work with offsets though
         // TODO: probably better to use the median as the offset
-        var orientationOffset = trackers[0].GetAngle(time);
+        var orientationOffset = trackers[0].GetAngle(timestamp);
 
         // take all trackers and calculate their pos/vel sum weighted by uncertainty.
         // Trackers with high uncertainty have less influence on the merged result.
         foreach (var tracker in trackers)
         {
             var positionWeight = tracker.PositionUncertaintyWeight;
-            position += tracker.GetPosition(time) * positionWeight;
+            position += tracker.GetPosition(timestamp) * positionWeight;
 
             velocity += tracker.Velocity * tracker.VelocityUncertaintyWeight;
 
-            orientation += (tracker.GetAngle(time) - orientationOffset).Rad * tracker.OrientationUncertaintyWeight;
+            orientation += (tracker.GetAngle(timestamp) - orientationOffset).Rad * tracker.OrientationUncertaintyWeight;
 
             angularVelocity += tracker.AngularVelocity.Rad * tracker.AngularVelocityUncertaintyWeight;
         }

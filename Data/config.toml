@@ -1,34 +1,29 @@
-[Common]
-[Common.Debug]
-[Common.Debug.Assertion]
-[Common.Debug.Assertion.Assert]
-Enabled = true # default: True
-
-
-[Common.Debug.Log]
-Level = "Trace" # default: Trace
-
-
-[Common.Config]
-[Common.Config.Common]
-# The variety of standard patterns that we can have is 16
-MaxRobots = 16 # default: 16
-# Hope it lasts
-ImmortalsIsTheBestTeam = true # default: True
-OurColor = "Unknown" # default: Unknown
-EnableDebug = false # default: False
-
-
-
-[Referee]
-[Referee.GcDataPublisher]
-GcAddress = { Ip = "224.5.23.1", Port = 10003 } # default: 224.5.23.1:10003
-
-
 [Vision]
+[Vision.Runner]
+TickRateHz = 100 # default: 100
+
+[Vision.Vision]
+CameraTooOldTime = 1.0 # default: 1
+
 [Vision.Tracker]
+[Vision.Tracker.Robot]
+InitialCovarianceXy = 100.0 # default: 100
+ModelErrorXy = 0.10000000149011612 # default: 0.1
+MeasurementErrorXy = 20.0 # default: 20
+InitialCovarianceW = 100.0 # default: 100
+ModelErrorW = 0.10000000149011612 # default: 0.1
+MeasurementErrorW = 2.0 # default: 2
+# Factor to weight stdDeviation during tracker merging, reasonable range: 1.0 - 2.0. High values lead to more jitter
+MergePower = 1.5 # default: 1.5
+# Maximum assumed robot speed in [mm/s] to filter outliers
+MaxLinearVelocity = 6000.0 # default: 6000
+# Maximum assumed angular robot speed in [deg/s] to filter outliers
+MaxAngularVelocity = 1700.0 # default: 1700
+# Reciprocal health is used as uncertainty, increased on update, decreased on prediction
+MaxHealth = 20 # default: 20
+
 [Vision.Tracker.Ball]
-InitialCovarianceXy = 1000.0 # default: 1000
+InitialCovariance = 1000.0 # default: 1000
 ModelError = 0.10000000149011612 # default: 0.1
 MeasurementError = 100.0 # default: 100
 # Maximum assumed ball speed in [mm/s] to filter outliers
@@ -54,5 +49,32 @@ InvisibleLifetimeRobot = 2.0 # default: 2
 MaxBallTrackers = 10 # default: 10
 # Max. distance to copy state from filtered bot to new trackers
 CopyTrackerMaxDistance = 200.0 # default: 200
+
+
+[Common]
+[Common.Debug]
+[Common.Debug.Assertion]
+[Common.Debug.Assertion.Assert]
+Enabled = true # default: True
+
+
+[Common.Debug.Log]
+Level = "Trace" # default: Trace
+
+
+[Common.Config]
+[Common.Config.Common]
+# The variety of standard patterns that we can have is 16
+MaxRobots = 16 # default: 16
+# Hope it lasts
+ImmortalsIsTheBestTeam = true # default: True
+OurColor = "Unknown" # default: Unknown
+EnableDebug = false # default: False
+
+
+
+[Referee]
+[Referee.GcDataPublisher]
+GcAddress = { Ip = "224.5.23.1", Port = 10003 } # default: 224.5.23.1:10003
 
 

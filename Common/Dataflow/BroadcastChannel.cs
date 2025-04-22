@@ -24,7 +24,12 @@ public class BroadcastChannel<T>
 
         _subscribers.Add(channel);
 
-        return new Subscriber<T>(this, channel);
+        return new Subscriber<T>
+        {
+            BroadcastChannel = this,
+            Channel = channel,
+            Mode = mode
+        };
     }
 
     // This is not thread-safe

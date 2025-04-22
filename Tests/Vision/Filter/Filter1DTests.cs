@@ -1,4 +1,5 @@
-﻿using Tyr.Vision.Filter;
+﻿using Tyr.Common.Time;
+using Tyr.Vision.Filter;
 
 namespace Tyr.Tests.Vision.Filter;
 
@@ -12,7 +13,7 @@ public class Filter1DTests
         var covariance = 5.0f;
         var modelError = 1.0f;
         var measurementError = 2.0f;
-        var timestamp = new DateTime(2023, 1, 1);
+        var timestamp = Timestamp.FromDateTime(new DateTime(2023, 1, 1));
 
         // Act
         var filter = new Filter1D(initialPosition, covariance, modelError, measurementError, timestamp);
@@ -34,7 +35,7 @@ public class Filter1DTests
         var covariance = 5.0f;
         var modelError = 1.0f;
         var measurementError = 2.0f;
-        var timestamp = new DateTime(2023, 1, 1);
+        var timestamp = Timestamp.FromDateTime(new DateTime(2023, 1, 1));
 
         // Act
         var filter = new Filter1D(initialPosition, initialVelocity, covariance, modelError, measurementError,
@@ -57,12 +58,12 @@ public class Filter1DTests
         var covariance = 5.0f;
         var modelError = 1.0f;
         var measurementError = 2.0f;
-        var initialTimestamp = new DateTime(2023, 1, 1, 12, 0, 0);
+        var initialTimestamp = Timestamp.FromDateTime(new DateTime(2023, 1, 1, 12, 0, 0));
         var filter = new Filter1D(initialPosition, initialVelocity, covariance, modelError, measurementError,
             initialTimestamp);
 
         // Act
-        var newTimestamp = initialTimestamp.AddSeconds(2);
+        var newTimestamp = initialTimestamp + DeltaTime.FromSeconds(2);
         filter.Predict(newTimestamp);
 
         // Assert
@@ -82,7 +83,7 @@ public class Filter1DTests
         var covariance = 5.0f;
         var modelError = 1.0f;
         var measurementError = 2.0f;
-        var initialTimestamp = new DateTime(2023, 1, 1, 12, 0, 0);
+        var initialTimestamp = Timestamp.FromDateTime(new DateTime(2023, 1, 1, 12, 0, 0));
         var filter = new Filter1D(initialPosition, initialVelocity, covariance, modelError, measurementError,
             initialTimestamp);
 
@@ -95,7 +96,7 @@ public class Filter1DTests
         Assert.Equal(initialTimestamp, filter.LastTimestamp);
 
         // Act - earlier timestamp
-        filter.Predict(initialTimestamp.AddSeconds(-1));
+        filter.Predict(initialTimestamp + DeltaTime.FromSeconds(-1));
 
         // Assert - nothing changed
         Assert.Equal(initialPosition, filter.Position);
@@ -112,12 +113,12 @@ public class Filter1DTests
         var covariance = 5.0f;
         var modelError = 1.0f;
         var measurementError = 2.0f;
-        var initialTimestamp = new DateTime(2023, 1, 1, 12, 0, 0);
+        var initialTimestamp = Timestamp.FromDateTime(new DateTime(2023, 1, 1, 12, 0, 0));
         var filter = new Filter1D(initialPosition, initialVelocity, covariance, modelError, measurementError,
             initialTimestamp);
 
         // First predict forward
-        var newTimestamp = initialTimestamp.AddSeconds(1);
+        var newTimestamp = initialTimestamp + DeltaTime.FromSeconds(1);
         filter.Predict(newTimestamp);
         var positionAfterPredict = filter.Position;
 
@@ -144,12 +145,12 @@ public class Filter1DTests
         var covariance = 5.0f;
         var modelError = 1.0f;
         var measurementError = 2.0f;
-        var initialTimestamp = new DateTime(2023, 1, 1, 12, 0, 0);
+        var initialTimestamp = Timestamp.FromDateTime(new DateTime(2023, 1, 1, 12, 0, 0));
         var filter = new Filter1D(initialPosition, initialVelocity, covariance, modelError, measurementError,
             initialTimestamp);
 
         // Act
-        var futureTimestamp = initialTimestamp.AddSeconds(2.5);
+        var futureTimestamp = initialTimestamp + DeltaTime.FromSeconds(2.5);
         var estimatedPosition = filter.GetPosition(futureTimestamp);
 
         // Assert
@@ -167,12 +168,12 @@ public class Filter1DTests
         var covariance = 5.0f;
         var modelError = 1.0f;
         var measurementError = 2.0f;
-        var initialTimestamp = new DateTime(2023, 1, 1, 12, 0, 0);
+        var initialTimestamp = Timestamp.FromDateTime(new DateTime(2023, 1, 1, 12, 0, 0));
         var filter = new Filter1D(initialPosition, initialVelocity, covariance, modelError, measurementError,
             initialTimestamp);
 
         // Act - perform prediction which should increase uncertainty
-        var newTimestamp = initialTimestamp.AddSeconds(1);
+        var newTimestamp = initialTimestamp + DeltaTime.FromSeconds(1);
         filter.Predict(newTimestamp);
 
         // Assert

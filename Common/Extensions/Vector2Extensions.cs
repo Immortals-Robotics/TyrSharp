@@ -1,6 +1,7 @@
 ﻿using System.Numerics;
+using Tyr.Common.Math;
 
-namespace Tyr.Common.Math.Extensions;
+namespace Tyr.Common.Extensions;
 
 public static class Vector2Extensions
 {

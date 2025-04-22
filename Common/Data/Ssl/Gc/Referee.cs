@@ -11,20 +11,19 @@ public class Referee
     [ProtoMember(19)] public MatchType MatchType { get; set; } = MatchType.Unknown;
 
     [ProtoMember(1)] public ulong PacketTimestampMicroseconds { get; set; }
-    public DateTime PacketTimestamp => UnixTime.FromMicroseconds((long)PacketTimestampMicroseconds);
+    public Timestamp PacketTimestamp => Timestamp.FromMicroseconds((long)PacketTimestampMicroseconds);
 
     [ProtoMember(2)] public Stage Stage { get; set; }
 
-    // in micro-seconds
     [ProtoMember(3)] public long? StageTimeLeftMicroseconds { get; set; }
-    public float StageTimeLeft => Duration.FromMicroseconds(StageTimeLeftMicroseconds.GetValueOrDefault());
+    public DeltaTime StageTimeLeft => DeltaTime.FromMicroseconds(StageTimeLeftMicroseconds.GetValueOrDefault());
 
     [ProtoMember(4)] public Command Command { get; set; }
 
     [ProtoMember(5)] public uint CommandCounter { get; set; } = uint.MaxValue;
 
     [ProtoMember(6)] public ulong CommandTimestampMicroseconds { get; set; }
-    public DateTime CommandTimestamp => UnixTime.FromMicroseconds((long)CommandTimestampMicroseconds);
+    public Timestamp CommandTimestamp => Timestamp.FromMicroseconds((long)CommandTimestampMicroseconds);
 
     [ProtoMember(7)] public TeamInfo Yellow { get; set; }
 
@@ -50,8 +49,8 @@ public class Referee
 
     [ProtoMember(15)] public long? CurrentActionTimeRemainingMicroseconds { get; set; }
 
-    public float CurrentActionTimeRemaining =>
-        Duration.FromMicroseconds(CurrentActionTimeRemainingMicroseconds.GetValueOrDefault());
+    public DeltaTime CurrentActionTimeRemaining =>
+        DeltaTime.FromMicroseconds(CurrentActionTimeRemainingMicroseconds.GetValueOrDefault());
 
     [ProtoMember(20)] public string StatusMessage { get; set; } = "";
 }

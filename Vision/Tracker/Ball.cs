@@ -25,7 +25,7 @@ public class Ball
     [ConfigEntry("How many updates are required until this tracker is grown up?")]
     private static int GrownUpAge { get; set; } = 3;
 
-    public Filter2D Filter { get; }
+    private Filter2D _filter;
 
     private int _health = 2;
     private int _age;
@@ -39,22 +39,22 @@ public class Ball
     public float Uncertainty => 1f / _health;
     public bool IsGrownUp => _age >= GrownUpAge;
 
-    public DateTime LastUpdateTime => LastRawBall.CaptureTime;
-    public DateTime LastInFieldTime { get; private set; }
+    public Timestamp LastUpdateTimestamp => LastRawBall.CaptureTimestamp;
+    public Timestamp LastInFieldTimestamp { get; private set; }
 
     public uint CameraId => LastRawBall.CameraId;
 
-    public Vector2 GetPosition(DateTime time) => Filter.GetPosition(time);
-    public Vector2 Position => Filter.Position;
-    public Vector2 Velocity => Filter.Velocity;
+    public Vector2 GetPosition(Timestamp timestamp) => _filter.GetPosition(timestamp);
+    public Vector2 Position => _filter.Position;
+    public Vector2 Velocity => _filter.Velocity;
 
     public Ball(RawBall ball)
     {
-        Filter = new Filter2D(ball.Detection.Position,
+        _filter = new Filter2D(ball.Detection.Position,
             InitialCovariance, ModelError, MeasurementError,
-            ball.CaptureTime);
+            ball.CaptureTimestamp);
 
-        LastInFieldTime = ball.CaptureTime;
+        LastInFieldTimestamp = ball.CaptureTimestamp;
         LastRawBall = ball;
     }
 
@@ -63,17 +63,17 @@ public class Ball
         var velocity = filteredBall.Velocity.GetValueOrDefault().Xy()
             .ClampMagnitude(0f, MaxLinearVelocity);
 
-        Filter = new Filter2D(rawBall.Detection.Position, velocity,
+        _filter = new Filter2D(rawBall.Detection.Position, velocity,
             InitialCovariance, ModelError, MeasurementError,
-            rawBall.CaptureTime);
+            rawBall.CaptureTimestamp);
 
-        LastInFieldTime = rawBall.CaptureTime;
+        LastInFieldTimestamp = rawBall.CaptureTimestamp;
         LastRawBall = rawBall;
     }
 
-    public void Predict(DateTime time)
+    public void Predict(Timestamp timestamp)
     {
-        Filter.Predict(time);
+        _filter.Predict(timestamp);
 
         _health = Math.Clamp(_health - 1, 1, MaxHealth);
     }
@@ -82,15 +82,15 @@ public class Ball
     public bool Update(RawBall ball, Rectangle? field)
     {
         // calculate delta time since last update
-        var dt = (float)(ball.CaptureTime - LastRawBall.CaptureTime).TotalSeconds;
-        Assert.IsPositive(dt);
+        var dt = ball.CaptureTimestamp - LastRawBall.CaptureTimestamp;
+        Assert.IsPositive(dt.Nanoseconds);
 
         // calculate distance of this ball to our internal prediction
-        var distanceToPrediction = Vector2.Distance(Filter.Position, ball.Detection.Position);
+        var distanceToPrediction = Vector2.Distance(_filter.Position, ball.Detection.Position);
 
         // ignore the ball if it is too far away from our prediction...
         var maxAllowedDistance = Math.Min(
-            dt * MaxLinearVelocity, // distance based on the assumed max ball speed
+            dt.Seconds * MaxLinearVelocity, // distance based on the assumed max ball speed
             MaxDistance.GetValueOrDefault(float.MaxValue)); // a hard limit
         if (distanceToPrediction > maxAllowedDistance) return false;
 
@@ -99,12 +99,12 @@ public class Ball
         _age = Math.Clamp(_age + 1, 0, GrownUpAge);
 
         // run correction on tracking filter
-        Filter.Correct(ball.Detection.Position);
+        _filter.Correct(ball.Detection.Position);
 
         // if we know the field size, check if the ball is inside it
         if (field is not { } rectangle || rectangle.Inside(ball.Detection.Position))
         {
-            LastInFieldTime = ball.CaptureTime;
+            LastInFieldTimestamp = ball.CaptureTimestamp;
         }
 
         // store raw ball for next run
@@ -115,14 +115,14 @@ public class Ball
     }
 
     private float PositionUncertaintyWeight =>
-        MathF.Pow(Filter.PositionUncertainty.Length() * Uncertainty, -MergePower);
+        MathF.Pow(_filter.PositionUncertainty.Length() * Uncertainty, -MergePower);
 
     private float VelocityUncertaintyWeight =>
-        MathF.Pow(Filter.VelocityUncertainty.Length() * Uncertainty, -MergePower);
+        MathF.Pow(_filter.VelocityUncertainty.Length() * Uncertainty, -MergePower);
 
     // Merges multiple ball trackers into a single merged ball,
     // weighted by their state uncertainty (less certain = less influence).
-    public static MergedBall Merge(IReadOnlyList<Ball> trackers, DateTime time)
+    public static MergedBall Merge(IReadOnlyList<Ball> trackers, Timestamp timestamp)
     {
         Assert.IsNotEmpty(trackers);
 
@@ -157,7 +157,7 @@ public class Ball
         {
             var positionWeight = tracker.PositionUncertaintyWeight;
             positionRaw += tracker.LastRawBall.Detection.Position * positionWeight;
-            position += tracker.GetPosition(time) * positionWeight;
+            position += tracker.GetPosition(timestamp) * positionWeight;
 
             var velocityWeight = tracker.VelocityUncertaintyWeight;
             velocity += tracker.Velocity * velocityWeight;
@@ -172,7 +172,7 @@ public class Ball
             Position = position,
             RawPosition = positionRaw,
             Velocity = velocity,
-            Time = time,
+            Timestamp = timestamp,
             LatestRawBall = lastRawBall,
         };
     }

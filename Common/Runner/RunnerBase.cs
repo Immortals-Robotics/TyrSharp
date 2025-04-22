@@ -1,29 +1,31 @@
-﻿namespace Tyr.Common.Runner;
+﻿using Tyr.Common.Time;
+
+namespace Tyr.Common.Runner;
 
 public abstract class RunnerBase(int tickRateHz)
 {
     public abstract bool IsRunning { get; }
 
-    public Common.Time.Timer Timer { get; } = new();
+    public Time.Timer Timer { get; } = new();
 
     public int TickRateHz { get; } = tickRateHz;
 
-    protected float TickDuration => 1f / TickRateHz;
+    protected DeltaTime TickDuration => DeltaTime.FromSeconds(1.0 / TickRateHz);
 
     static RunnerBase()
     {
-        TimerResolution.Set(1);
+        TimerResolution.Set(DeltaTime.FromMilliseconds(1));
     }
 
     public abstract void Start();
     public abstract void Stop();
 
-    protected void SleepUntil(float nextTick)
+    protected void SleepUntil(Timestamp nextTick)
     {
         var remaining = nextTick - Timer.Time;
-        if (remaining > 2f * TimerResolution.CurrentSeconds)
+        if (remaining > 2 * TimerResolution.Current)
         {
-            var sleepTime = (int)(1000f * (remaining - TimerResolution.CurrentSeconds));
+            var sleepTime = (remaining - TimerResolution.Current).ToTimeSpan();
             Thread.Sleep(sleepTime);
         }
 

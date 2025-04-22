@@ -1,32 +1,16 @@
 ﻿using Tyr.Common.Config;
-using Tyr.Common.Dataflow;
-using Tyr.Common.Runner;
+using Tyr.Common.Time;
 
 namespace Tyr.Vision;
 
 [Configurable]
-public class Vision : IDisposable
+public sealed class Vision
 {
-    [ConfigEntry] private static int TickRate { get; set; } = 100;
+    [ConfigEntry] private static float CameraTooOldTime { get; set; } = 1f;
 
-    private readonly Subscriber<DetectionFrame> _detectionSubscriber = Hub.RawDetection.Subscribe(Mode.All);
+    private readonly FilteredFrame _filteredFrame = new();
 
-    private readonly Subscriber<FieldSize> _fieldSizeSubscriber = Hub.FieldSize.Subscribe(Mode.Latest);
-    private readonly Subscriber<CameraCalibration> _calibrationSubscriber = Hub.CameraCalibration.Subscribe(Mode.All);
-
-    private readonly FilteredFrame _filteredFrame;
-    
-    private readonly Dictionary<uint, Camera> _cameras = new();
-
-    private readonly RunnerSync _runner;
-
-    public Vision()
-    {
-        _filteredFrame = new FilteredFrame();
-        
-        _runner = new RunnerSync(Tick, TickRate);
-        _runner.Start();
-    }
+    private readonly Dictionary<uint, Camera> _cameras = [];
 
     private Camera GetOrCreateCamera(uint id)
     {
@@ -38,38 +22,38 @@ public class Vision : IDisposable
         return camera;
     }
 
-    private void ReceiveGeometry()
+    /// Processes the latest batch of detection frames, calibrations, and field size.
+    /// This method should be called once per tick.
+    internal void Process(
+        IEnumerable<DetectionFrame> frames,
+        IEnumerable<CameraCalibration> calibrations,
+        FieldSize? fieldSize)
     {
-        while (_calibrationSubscriber.Reader.TryRead(out var calibration))
+        foreach (var calibration in calibrations)
         {
             var camera = GetOrCreateCamera(calibration.CameraId);
             camera.OnCalibration(calibration);
         }
 
-        while (_fieldSizeSubscriber.Reader.TryRead(out var fieldSize))
+        if (fieldSize.HasValue)
         {
             foreach (var camera in _cameras.Values)
-                camera.OnFieldSize(fieldSize);
+                camera.OnFieldSize(fieldSize.Value);
         }
-    }
 
-    private void ReceiveDetections()
-    {
-        while (_detectionSubscriber.Reader.TryRead(out var frame))
+        foreach (var frame in frames)
         {
             var camera = GetOrCreateCamera(frame.CameraId);
             camera.OnFrame(frame, _filteredFrame);
         }
-    }
 
-    private void Tick()
-    {
-        ReceiveGeometry();
-        ReceiveDetections();
-    }
-
-    public void Dispose()
-    {
-        _runner.Stop();
+        // remove old cameras
+        if (_cameras.Count > 0)
+        {
+            var averageTimestamp = Timestamp.FromSeconds(
+                _cameras.Values.Average(camera => camera.Timestamp.Seconds));
+            _cameras.RemoveAll((_, camera) =>
+                camera.Timestamp - averageTimestamp > DeltaTime.FromSeconds(CameraTooOldTime));
+        }
     }
 }

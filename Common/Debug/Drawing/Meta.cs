@@ -2,7 +2,7 @@
 
 public record Meta(
     string Category,
-    DateTime Time,
+    Timestamp Timestamp,
     int FrameId,
     string? MemberName,
     string? FilePath,

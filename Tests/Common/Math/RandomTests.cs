@@ -1,4 +1,4 @@
-using Tyr.Common.Math.Extensions;
+using Tyr.Common.Extensions;
 
 namespace Tyr.Tests.Common.Math;
 

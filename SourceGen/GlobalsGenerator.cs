@@ -39,7 +39,8 @@ public class GlobalsGenerator : ISourceGenerator
             var code = $$"""
                          global using static Tyr.{{moduleName}}.Globals;
                          global using ZLogger;
-                         global using Tyr.Common.Math.Extensions;
+                         global using Tyr.Common.Extensions;
+                         global using Timestamp = Tyr.Common.Time.Timestamp;
                          using System.Runtime.CompilerServices;
                          using System.Reflection;
                          using Microsoft.Extensions.Logging;

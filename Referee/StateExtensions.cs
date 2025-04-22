@@ -1,13 +1,13 @@
 ﻿using Tyr.Common.Data;
 using Tyr.Common.Data.Referee;
 using Tyr.Common.Data.Ssl.Gc;
+using Tyr.Common.Time;
 
 namespace Tyr.Referee;
 
 public static class StateExtensions
 {
-    public static float Elapsed(this State state) => (float)(DateTime.UtcNow - state.Time).TotalSeconds;
-
+    public static DeltaTime Elapsed(this State state, Timestamp now) => now - state.Timestamp;
     public static bool Our(this State state) => state.Color == Common.Config.Common.OurColor;
     public static bool Halt(this State state) => state.GameState == GameState.Halt;
     public static bool Stop(this State state) => state.GameState == GameState.Stop;

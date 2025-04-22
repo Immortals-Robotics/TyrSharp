@@ -3,7 +3,7 @@
 public struct State
 {
     // when transitioned to this state
-    public DateTime Time = default;
+    public Timestamp Timestamp = default;
     public GameState GameState = GameState.None;
     public bool Ready = false;
     public TeamColor Color = TeamColor.Blue;

@@ -1,4 +1,4 @@
-﻿namespace Tyr.Common.Math.Extensions;
+﻿namespace Tyr.Common.Extensions;
 
 public static class RandomExtensions
 {

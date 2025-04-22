@@ -53,7 +53,7 @@ public class Window : ImWindow
         var pathDrawable = new Path(spiralPath);
 
         var options = new Options(Filled: Rand.Get(0f, 1f) > 0.5f, Thickness: Rand.Get(1f, 10f));
-        var meta = new Meta("Gui", DateTime.UtcNow, 0, null, null, 0);
+        var meta = new Meta("Gui", Timestamp.FromDateTime(DateTime.UtcNow), 0, null, null, 0);
 
         _commands.Add(new Command(circleDrawable, Color.Random(), options, meta));
         _commands.Add(new Command(pointDrawable, Color.Random(), options, meta));

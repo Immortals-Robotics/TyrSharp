@@ -8,33 +8,33 @@ namespace Tyr.Vision;
 /// </summary>
 public readonly record struct RawDetection<T> where T : IObject
 {
-    public T Detection { get; init; }
+    public T Detection { get; }
 
-    public uint CameraId { get; init; }
-    public uint FrameNumber { get; init; }
+    public uint CameraId { get; }
+    public uint FrameNumber { get; }
 
-    public DateTime CaptureTime { get; init; }
-    public DateTime SentTime { get; init; }
-    public DateTime? CameraCaptureTime { get; init; }
+    public Timestamp CaptureTimestamp { get; }
+    public Timestamp SentTimestamp { get; }
+    public Timestamp? CameraCaptureTimestamp { get; }
 
-    public bool IsBall => typeof(T) == typeof(Ball);
-    public bool IsRobot => typeof(T) == typeof(Robot);
+    public bool IsBall => typeof(T) == typeof(DetectionBall);
+    public bool IsRobot => typeof(T) == typeof(DetectionRobot);
 
-    public RawDetection(T detection, Frame frame)
+    public RawDetection(T detection, DetectionFrame frame)
     {
         Detection = detection;
 
         CameraId = frame.CameraId;
         FrameNumber = frame.FrameNumber;
 
-        CaptureTime = frame.CaptureTime;
-        SentTime = frame.SentTime;
-        CameraCaptureTime = frame.CameraCaptureTime;
+        CaptureTimestamp = frame.CaptureTime;
+        SentTimestamp = frame.SentTime;
+        CameraCaptureTimestamp = frame.CameraCaptureTime;
     }
 
     public override string ToString()
     {
         var type = IsBall ? "Ball" : IsRobot ? "Robot" : typeof(T).Name;
-        return $"{type} from cam {CameraId} frame {FrameNumber} at {CaptureTime:HH:mm:ss.fff}";
+        return $"{type} from cam {CameraId} frame {FrameNumber} at {CaptureTimestamp}";
     }
 }

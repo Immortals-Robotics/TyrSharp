@@ -30,7 +30,13 @@ public class RefereeTests
 
         referee.Process(FrameAt(Vector3.Zero),
             new Gc.Referee { Command = Gc.Command.PrepareKickoffBlue, CommandCounter = 1 });
-        referee.Process(null, new Gc.Referee { Command = Gc.Command.NormalStart, CommandCounter = 2 });
+        referee.Process(null,
+            new Gc.Referee
+            {
+                Command = Gc.Command.NormalStart, 
+                CommandCounter = 2,
+                CurrentActionTimeRemainingMicroseconds = (long)(10 * 1e6)
+            });
 
         SimulateBallMovement(ref referee, distance, frames);
 
