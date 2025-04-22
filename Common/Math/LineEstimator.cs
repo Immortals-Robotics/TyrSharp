@@ -1,95 +1,124 @@
 ﻿using MathNet.Numerics.LinearAlgebra;
 using MathNet.Numerics.LinearAlgebra.Double;
+using MathNet.Numerics.LinearRegression;
 using Tyr.Common.Math.Shapes;
 
 namespace Tyr.Common.Math;
 
+/// <summary>
+/// Estimates a line using least-squares regression over a rolling window of samples.
+/// </summary>
 public class LineEstimator
 {
-    public Line? Estimate { get; private set; }
-
+    /// <summary>
+    /// Maximum number of samples stored in the estimator.
+    /// </summary>
     public int Capacity { get; }
+
+    /// <summary>
+    /// Current number of samples in the estimator.
+    /// </summary>
     public int Count { get; private set; }
+
+    /// <summary>
+    /// True if the sample buffer is full.
+    /// </summary>
     public bool IsFull => Count == Capacity;
 
-    private int _index;
+    /// <summary>
+    /// True if the estimator has enough samples to compute an estimate.
+    /// </summary>
+    public bool IsReady => Count >= MinSamples;
 
-    private readonly Matrix<double> _x;
-    private readonly Vector<double> _y;
-
-    public LineEstimator(int capacity)
+    /// <summary>
+    /// Returns the current line estimate, or null if not enough samples.
+    /// Automatically recomputes when new data has been added.
+    /// </summary>
+    public Line? Estimate
     {
-        if (capacity <= 0) throw new ArgumentException("Capacity must be positive", nameof(capacity));
-        Capacity = capacity;
-
-        _x = Matrix.Build.Dense(capacity, 2,
-            (_, j) => j == 0 ? 1.0 : 0.0);
-
-        _y = Vector.Build.Dense(capacity, 0.0);
+        get
+        {
+            if (_dirty) Compute();
+            return _estimate;
+        }
     }
 
+    private const int MinSamples = 2;
+
+    private int _index;
+    private bool _dirty;
+
+    private readonly Vector<double> _yVector;
+    private readonly Matrix<double> _xMatrix;
+    private Line? _estimate;
+
+    /// <summary>
+    /// Creates a new line estimator with a given sample capacity.
+    /// </summary>
+    /// <param name="capacity">Maximum number of samples to keep.</param>
+    public LineEstimator(int capacity)
+    {
+        if (capacity < MinSamples) throw new ArgumentException($"Capacity must be >= {MinSamples}", nameof(capacity));
+        Capacity = capacity;
+
+        _yVector = Vector.Build.Dense(capacity, 0.0);
+        _xMatrix = Matrix.Build.Dense(capacity, 2,
+            (_, j) => j == 0 ? 1.0 : 0.0);
+    }
+
+    /// <summary>
+    /// Adds a new (x, y) sample to the estimator.
+    /// Older samples are overwritten in circular order when capacity is reached.
+    /// </summary>
     public void AddSample(double x, double y)
     {
-        _x[_index, 1] = x;
-        _y[_index] = y;
+        _xMatrix[_index, 1] = x;
+        _yVector[_index] = y;
 
         _index = (_index + 1) % Capacity;
         Count = System.Math.Min(Count + 1, Capacity);
 
-        Compute();
+        _dirty = true;
     }
 
+    /// <summary>
+    /// Clears all stored samples and resets the estimate.
+    /// </summary>
     public void Reset()
     {
         Count = 0;
         _index = 0;
-        Estimate = null;
+        _estimate = null;
+        _dirty = false;
     }
 
     private void Compute()
     {
-        if (Count < 2)
+        // This ensures even failed computations don’t re-run unnecessarily unless new data is added.
+        _dirty = false;
+
+        if (!IsReady)
         {
-            Estimate = null;
+            _estimate = null;
             return;
         }
 
-        var xMatrix = IsFull ? _x : _x.SubMatrix(0, Count, 0, 2);
-        var yVector = IsFull ? _y : _y.SubVector(0, Count);
+        // These lines do not allocate when IsFull is true.
+        var xMatrix = IsFull ? _xMatrix : _xMatrix.SubMatrix(0, Count, 0, 2);
+        var yVector = IsFull ? _yVector : _yVector.SubVector(0, Count);
 
         try
         {
-            // Extract x values (second column)
-            var xVector = xMatrix.Column(1);
+            var beta = MultipleRegression.QR(xMatrix, yVector);
 
-            // Compute means
-            var meanX = xVector.Average();
-            var meanY = yVector.Average();
-
-            // Center x and y
-            var xCentered = xVector - meanX;
-            var yCentered = yVector - meanY;
-
-            // Build design matrix: column of 1s + x'
-            var ones = Vector<double>.Build.Dense(Count, 1.0);
-            var design = Matrix.Build.DenseOfColumnVectors(ones, xCentered);
-
-            var qr = design.QR();
-
-            var qTy = qr.Q.TransposeThisAndMultiply(yCentered);
-            var beta = qr.R.UpperTriangle().Solve(qTy);
-
-            var slope = beta[1];
-            var intercept = meanY + beta[0] - slope * meanX;
-
-            Estimate = Line.FromSlopeAndIntercept(
-                slope: (float)slope,
-                intercept: (float)intercept);
+            _estimate = Line.FromSlopeAndIntercept(
+                slope: (float)beta[1],
+                intercept: (float)beta[0]);
         }
         catch (Exception exception)
         {
             Logger.ZLogError(exception, $"Failed to compute line estimate: {exception.Message}");
-            Estimate = null;
+            _estimate = null;
         }
     }
 }

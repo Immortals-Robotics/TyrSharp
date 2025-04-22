@@ -1,4 +1,5 @@
-﻿using MathNet.Numerics.LinearAlgebra;
+﻿using System.Diagnostics.CodeAnalysis;
+using MathNet.Numerics.LinearAlgebra;
 
 namespace Tyr.Common.Math;
 
@@ -11,6 +12,7 @@ namespace Tyr.Common.Math;
 // mutually independent, white‑noise vectors whose covariances
 // are Q and R, respectively.
 
+[SuppressMessage("ReSharper", "InconsistentNaming")]
 public class KalmanFilter(int numStates, int numMeasurements, int numControl)
 {
     // internal state

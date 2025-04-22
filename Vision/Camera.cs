@@ -1,6 +1,5 @@
 ﻿using System.Numerics;
 using Tyr.Common.Config;
-using Tyr.Common.Math;
 using Tyr.Common.Time;
 
 namespace Tyr.Vision;
@@ -27,15 +26,13 @@ public class Camera(uint id)
     public Timestamp LastBallOnCamTimestamp { get; private set; }
 
     // average delta time in seconds
-    public DeltaTime DeltaTime => DeltaTime.FromSeconds(_frameTimeEstimator.Estimate?.Slope ?? 0f);
+    public DeltaTime DeltaTime => _frameTimeEstimator.DeltaTime ?? DeltaTime.Zero;
     public float Fps => (float)(1 / DeltaTime.Seconds);
 
     private readonly Dictionary<RobotId, Tracker.Robot> _robots = [];
     private readonly List<Tracker.Ball> _ballTrackers = [];
 
-    private const int FrameEstimatorHistoryCount = 100;
-    private const int FrameEstimatorStride = 10;
-    private readonly LineEstimator _frameTimeEstimator = new(FrameEstimatorHistoryCount);
+    private readonly DeltaTimeEstimator _frameTimeEstimator = new();
 
     private CameraCalibration? _calibration;
     private FieldSize? _fieldSize;
@@ -69,10 +66,7 @@ public class Camera(uint id)
         // time
         Timestamp = frame.CaptureTime;
 
-        if (!_frameTimeEstimator.IsFull || frame.FrameNumber % FrameEstimatorStride == 0)
-        {
-            _frameTimeEstimator.AddSample(frame.FrameNumber, frame.CaptureTime.Seconds);
-        }
+        _frameTimeEstimator.AddSample(frame.FrameNumber, frame.CaptureTime);
 
         Logger.ZLogTrace($"Camera {Id} FPS: {Fps:F2}");
 
