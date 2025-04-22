@@ -54,19 +54,37 @@ public class LineEstimator
             return;
         }
 
-        var x = IsFull ? _x : _x.SubMatrix(0, Count, 0, 2);
-        var y = IsFull ? _y : _y.SubVector(0, Count);
+        var xMatrix = IsFull ? _x : _x.SubMatrix(0, Count, 0, 2);
+        var yVector = IsFull ? _y : _y.SubVector(0, Count);
 
         try
         {
-            var qr = x.QR();
-            
-            var qTy = qr.Q.TransposeThisAndMultiply(y);
+            // Extract x values (second column)
+            var xVector = xMatrix.Column(1);
+
+            // Compute means
+            var meanX = xVector.Average();
+            var meanY = yVector.Average();
+
+            // Center x and y
+            var xCentered = xVector - meanX;
+            var yCentered = yVector - meanY;
+
+            // Build design matrix: column of 1s + x'
+            var ones = Vector<double>.Build.Dense(Count, 1.0);
+            var design = Matrix.Build.DenseOfColumnVectors(ones, xCentered);
+
+            var qr = design.QR();
+
+            var qTy = qr.Q.TransposeThisAndMultiply(yCentered);
             var beta = qr.R.UpperTriangle().Solve(qTy);
 
+            var slope = beta[1];
+            var intercept = meanY + beta[0] - slope * meanX;
+
             Estimate = Line.FromSlopeAndIntercept(
-                slope: (float)beta[1],
-                intercept: (float)beta[0]);
+                slope: (float)slope,
+                intercept: (float)intercept);
         }
         catch (Exception exception)
         {
