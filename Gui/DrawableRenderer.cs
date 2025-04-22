@@ -67,7 +67,7 @@ internal class DrawableRenderer
         var thickness = Camera.WorldToScreenLength(options.Thickness);
 
         // Line part
-        _drawList.AddLine(start, end, color.U32, thickness);
+        _drawList.AddLine(start, end, color.ToABGR32(), thickness);
 
         // Arrowhead (simple triangle)
         const float headSize = 20f;
@@ -79,7 +79,7 @@ internal class DrawableRenderer
         var left = end - dir * headSizeScreen + perp * (headSizeScreen * 0.5f);
         var right = end - dir * headSizeScreen - perp * (headSizeScreen * 0.5f);
 
-        _drawList.AddTriangleFilled(tip, left, right, color.U32);
+        _drawList.AddTriangleFilled(tip, left, right, color.ToABGR32());
     }
 
     private void DrawCircle(Circle circle, Color color, Options options)
@@ -90,9 +90,9 @@ internal class DrawableRenderer
         var thickness = Camera.WorldToScreenLength(options.Thickness);
 
         if (options.Filled)
-            _drawList.AddCircleFilled(center, radius, color.U32, 40);
+            _drawList.AddCircleFilled(center, radius, color.ToABGR32(), 40);
         else
-            _drawList.AddCircle(center, radius, color.U32, 40, thickness);
+            _drawList.AddCircle(center, radius, color.ToABGR32(), 40, thickness);
     }
 
     private void DrawLine(Line line, Color color, Options options)
@@ -109,7 +109,7 @@ internal class DrawableRenderer
 
         var thickness = Camera.WorldToScreenLength(options.Thickness);
 
-        _drawList.AddLine(start, end, color.U32, thickness);
+        _drawList.AddLine(start, end, color.ToABGR32(), thickness);
     }
 
     private void DrawLineSegment(LineSegment lineSegment, Color color, Options options)
@@ -119,7 +119,7 @@ internal class DrawableRenderer
 
         var thickness = Camera.WorldToScreenLength(options.Thickness);
 
-        _drawList.AddLine(start, end, color.U32, thickness);
+        _drawList.AddLine(start, end, color.ToABGR32(), thickness);
     }
 
     private void DrawPath(Path path, Color color, Options options)
@@ -136,7 +136,7 @@ internal class DrawableRenderer
         {
             fixed (Vector2* ptr = points)
             {
-                _drawList.AddPolyline(ptr, points.Length, color.U32, ImDrawFlags.None, thickness);
+                _drawList.AddPolyline(ptr, points.Length, color.ToABGR32(), ImDrawFlags.None, thickness);
             }
         }
     }
@@ -154,8 +154,8 @@ internal class DrawableRenderer
 
         var thickness = Camera.WorldToScreenLength(options.Thickness);
 
-        _drawList.AddLine(l1Start, l1End, color.U32, thickness);
-        _drawList.AddLine(l2Start, l2End, color.U32, thickness);
+        _drawList.AddLine(l1Start, l1End, color.ToABGR32(), thickness);
+        _drawList.AddLine(l2Start, l2End, color.ToABGR32(), thickness);
     }
 
     private void DrawRectangle(Rectangle rectangle, Color color, Options options)
@@ -166,9 +166,9 @@ internal class DrawableRenderer
         var thickness = Camera.WorldToScreenLength(options.Thickness);
 
         if (options.Filled)
-            _drawList.AddRectFilled(min, max, color.U32);
+            _drawList.AddRectFilled(min, max, color.ToABGR32());
         else
-            _drawList.AddRect(min, max, color.U32, ImDrawFlags.None, thickness);
+            _drawList.AddRect(min, max, color.ToABGR32(), ImDrawFlags.None, thickness);
     }
 
     private void DrawRobot(Robot robot, Color color)
@@ -203,13 +203,13 @@ internal class DrawableRenderer
             {
                 fixed (Vector2* ptr = points)
                 {
-                    _drawList.AddConvexPolyFilled(ptr, points.Length, color.U32);
+                    _drawList.AddConvexPolyFilled(ptr, points.Length, color.ToABGR32());
                 }
             }
         }
         else
         {
-            _drawList.AddCircleFilled(center, radius, color.U32, segments);
+            _drawList.AddCircleFilled(center, radius, color.ToABGR32(), segments);
         }
 
         if (robot.Id.HasValue)
@@ -233,7 +233,7 @@ internal class DrawableRenderer
 
         unsafe
         {
-            _drawList.AddText(ImGui.GetFont().Handle, sizeScreen, posScreen, color.U32, text.Content);
+            _drawList.AddText(ImGui.GetFont().Handle, sizeScreen, posScreen, color.ToABGR32(), text.Content);
         }
     }
 
@@ -246,8 +246,8 @@ internal class DrawableRenderer
         var thickness = Camera.WorldToScreenLength(options.Thickness);
 
         if (options.Filled)
-            _drawList.AddTriangleFilled(a, b, c, color.U32);
+            _drawList.AddTriangleFilled(a, b, c, color.ToABGR32());
         else
-            _drawList.AddTriangle(a, b, c, color.U32, thickness);
+            _drawList.AddTriangle(a, b, c, color.ToABGR32(), thickness);
     }
 }
