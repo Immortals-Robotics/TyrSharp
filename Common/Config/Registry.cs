@@ -5,7 +5,7 @@ using Tomlet.Models;
 
 namespace Tyr.Common.Config;
 
-public static class ConfigRegistry
+public static class Registry
 {
     internal static string ConvertName(string s) => s;
 

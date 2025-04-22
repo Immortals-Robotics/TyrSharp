@@ -1,8 +1,11 @@
 ﻿using Tomlet;
+using Tyr.Common.Runner;
+using Tyr.Common.Time;
 
 namespace Tyr.Common.Config;
 
-public static class ConfigStorage
+[Configurable]
+public static class Storage
 {
     public static string Path { get; private set; } = string.Empty;
 
@@ -11,13 +14,14 @@ public static class ConfigStorage
     private static FileSystemWatcher? _watcher;
     private static DateTime _lastReadTime;
 
-    private static Debouncer _loadDebouncer = new(500, Load);
-    private static Debouncer _saveDebouncer = new(500, Save);
+    [ConfigEntry] private static float DebounceDelayS { get; set; } = 0.5f;
+    private static Debouncer _loadDebouncer = new(DeltaTime.FromSeconds(DebounceDelayS), Load);
+    private static Debouncer _saveDebouncer = new(DeltaTime.FromSeconds(DebounceDelayS), Save);
 
     public static void Initialize(string path)
     {
         Path = path;
-        ConfigRegistry.OnAnyUpdated += OnOnAnyConfigUpdated;
+        Registry.OnAnyUpdated += OnOnAnyConfigUpdated;
 
         // setup the file watcher
         var fullPath = System.IO.Path.GetFullPath(Path);
@@ -60,7 +64,7 @@ public static class ConfigStorage
                 var toml = TomlParser.ParseFile(Path);
 
                 _loading = true;
-                ConfigRegistry.FromToml(toml);
+                Registry.FromToml(toml);
                 _loading = false;
 
                 _lastReadTime = File.GetLastWriteTimeUtc(Path);
@@ -86,7 +90,7 @@ public static class ConfigStorage
     {
         try
         {
-            var toml = ConfigRegistry.ToToml();
+            var toml = Registry.ToToml();
             File.WriteAllText(Path, toml.SerializedValue);
 
             _lastReadTime = File.GetLastWriteTimeUtc(Path);

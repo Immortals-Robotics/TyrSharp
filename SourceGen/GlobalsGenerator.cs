@@ -64,7 +64,7 @@ public class GlobalsGenerator : ISourceGenerator
                                      Drawer = new Common.Debug.Drawing.Drawer("{{moduleName}}");
                                      Rand = new Random();
                                      
-                                     Common.Config.ConfigRegistry.RegisterAssembly(Assembly.GetExecutingAssembly());
+                                     Common.Config.Registry.RegisterAssembly(Assembly.GetExecutingAssembly());
                                  }
                              }
                          }

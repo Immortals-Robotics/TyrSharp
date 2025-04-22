@@ -63,7 +63,12 @@ Level = "Trace" # default: Trace
 
 
 [Common.Config]
-[Common.Config.Common]
+[Common.Config.Storage]
+DebounceDelayS = 0.5 # default: 0.5
+
+
+[Common.Data]
+[Common.Data.CommonConfigs]
 # The variety of standard patterns that we can have is 16
 MaxRobots = 16 # default: 16
 # Hope it lasts

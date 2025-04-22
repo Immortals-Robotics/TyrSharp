@@ -1,6 +1,4 @@
-﻿using Tyr.Common.Config;
-
-ConfigStorage.Initialize(args[0]);
+﻿Tyr.Common.Config.Storage.Initialize(args[0]);
 
 using var sslVisionPublisher = new Tyr.Vision.SslVisionDataPublisher();
 using var gcPublisher = new Tyr.Referee.GcDataPublisher();
