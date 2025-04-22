@@ -10,17 +10,19 @@ public sealed record Subscriber<T> : IDisposable
 
     public ChannelReader<T> Reader => Channel.Reader;
 
-    public List<T> All()
+    private readonly List<T> _list = [];
+
+    public IReadOnlyList<T> All()
     {
         Assert.AreEqual(Mode.All, Mode);
 
-        var list = new List<T>();
+        _list.Clear();
         while (Reader.TryRead(out var item))
         {
-            list.Add(item);
+            _list.Add(item);
         }
 
-        return list;
+        return _list;
     }
 
     public T? Latest()
