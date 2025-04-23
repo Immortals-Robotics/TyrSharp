@@ -1,49 +1,121 @@
-﻿using Debug = Tyr.Common.Debug;
+﻿using Tyr.Common.Time;
+using Debug = Tyr.Common.Debug;
 
 namespace Tyr.Gui;
 
 public class ModuleDebugFramer
 {
     private readonly LinkedList<FrameData> _frames = [];
+    private readonly Queue<Debug.Drawing.Command> _unassignedDraws = [];
+
+    private Timestamp? _latestAssignedDrawTimestamp;
+    private LinkedListNode<FrameData>? _latestSealedFrame;
 
     public int FrameCount => _frames.Count;
 
-    public FrameData? LatestDisplayableFrame => _frames.Count > 1 ? _frames.Last!.Previous!.Value : null;
+    public FrameData? LatestDisplayableFrame => _latestSealedFrame?.Value;
 
-    public FrameData? GetClosestFrame(Timestamp time)
+    public void OnFrame(Debug.Frame frame)
     {
-        return _frames
-            .OrderBy(f => Math.Abs((f.Frame.StartTimestamp - time).Seconds))
-            .FirstOrDefault();
+        if (_frames.Last is not null)
+        {
+            _frames.Last.ValueRef.EndTimestamp = frame.StartTimestamp - DeltaTime.FromNanoseconds(1);
+        }
+        _frames.AddLast(new FrameData
+        {
+            StartTimestamp = frame.StartTimestamp
+        });
+
+        while (_unassignedDraws.Count > 0)
+        {
+            var draw = _unassignedDraws.Peek();
+
+            // drop the draw if it never could be assigned
+            if (IsDrawUnassignable(draw))
+            {
+                _unassignedDraws.Dequeue();
+                continue;
+            }
+
+            var drawFrame = GetFillFrame(draw.Meta.Timestamp);
+
+            // draws are in order, if the current one is not assignable,
+            // then the next ones are also guaranteed not to be assignable
+            if (drawFrame is null) break;
+
+            // assignable, let's remove it from the queue
+            _unassignedDraws.Dequeue();
+
+            drawFrame.Draws.Add(draw);
+            _latestAssignedDrawTimestamp = draw.Meta.Timestamp;
+        }
+
+        SealFrames();
     }
 
-    private FrameData? GetDrawFrame(Timestamp time)
+    public void OnDraw(Debug.Drawing.Command draw)
     {
-        var frame = _frames.Last;
-        while (frame is not null)
-        {
-            if (frame.Value.Frame.StartTimestamp <= time)
-                return frame.Value;
+        // drop the draw if it never could be assigned
+        if (IsDrawUnassignable(draw)) return;
 
-            frame = frame.Previous;
+        // check if we can already assign it to a frame
+        var frame = GetFillFrame(draw.Meta.Timestamp);
+        if (frame is not null)
+        {
+            frame.Draws.Add(draw); // already assignable to its frame
+            _latestAssignedDrawTimestamp = draw.Meta.Timestamp;
+            SealFrames();
+        }
+        else
+        {
+            _unassignedDraws.Enqueue(draw); // queue it for later
+        }
+    }
+
+    private bool IsDrawUnassignable(Debug.Drawing.Command draw)
+    {
+        // handle the edge case where we've missed the frame this draw corresponds to
+        // this should only happen for the first frame
+        return _frames.First is not null &&
+               draw.Meta.Timestamp < _frames.First.Value.StartTimestamp;
+    }
+
+    private FrameData? GetFillFrame(Timestamp time)
+    {
+        if (_frames.Count == 0) return null;
+
+        var current = _latestSealedFrame?.Next ?? _frames.First;
+        while (current is not null)
+        {
+            Assert.IsFalse(current.Value.IsSealed);
+
+            // we don't know the time range of this frame yet, so we can't assign it
+            if (!current.Value.IsDefined) break;
+
+            if (current.Value.StartTimestamp <= time && time <= current.Value.EndTimestamp)
+                return current.Value;
+
+            current = current.Next;
         }
 
         return null;
     }
 
-    public void OnFrame(Debug.Frame frame)
+    // seal the frames up to the latest assigned draw timestamp
+    private void SealFrames()
     {
-        _frames.AddLast(new FrameData
-        {
-            Frame = frame,
-            Draws = []
-        });
-    }
+        if (_latestAssignedDrawTimestamp is null) return;
 
-    public void OnDraw(Debug.Drawing.Command draw)
-    {
-        // TODO: handle data arrived before the frame
-        var frame = GetDrawFrame(draw.Meta.Timestamp);
-        frame?.Draws.Add(draw);
+        for (var current = _latestSealedFrame ?? _frames.First; current is not null; current = current.Next)
+        {
+            var sealable =
+                current.Value.IsDefined &&
+                current.Value.EndTimestamp <= _latestAssignedDrawTimestamp;
+
+            if (!sealable) break;
+
+            current.ValueRef.IsSealed = true;
+            _latestSealedFrame = current;
+        }
     }
 }

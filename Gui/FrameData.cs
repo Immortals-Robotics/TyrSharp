@@ -4,6 +4,11 @@ namespace Tyr.Gui;
 
 public class FrameData
 {
-    public Debug.Frame Frame { get; set; }
-    public List<Debug.Drawing.Command> Draws { get; set; } = [];
+    public Timestamp StartTimestamp { get; init; }
+    public Timestamp? EndTimestamp { get; set; }
+
+    public bool IsDefined => EndTimestamp.HasValue;
+    public bool IsSealed { get; set; }
+
+    public List<Debug.Drawing.Command> Draws { get; } = [];
 }
