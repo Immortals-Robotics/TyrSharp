@@ -12,6 +12,8 @@ public abstract class RunnerBase(int tickRateHz)
 
     protected DeltaTime TickDuration => DeltaTime.FromSeconds(1.0 / TickRateHz);
 
+    public Timestamp CurrentTickStartTimestamp { get; protected set; }
+
     static RunnerBase()
     {
         TimerResolution.Set(DeltaTime.FromMilliseconds(1));

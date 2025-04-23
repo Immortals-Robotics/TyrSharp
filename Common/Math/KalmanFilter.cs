@@ -29,6 +29,13 @@ public class KalmanFilter(int numStates, int numMeasurements, int numControl)
     public Matrix<double> MeasurementNoiseCovariance { get; set; } =
         Matrix<double>.Build.Dense(numMeasurements, numMeasurements); // R
 
+    static KalmanFilter()
+    {
+        // Math.NET's default Qr solver uses parallel for,
+        // which for small matrices has a negative performance impact.
+        MathNet.Numerics.Control.UseSingleThread();
+    }
+
     // Projects the state estimate one step ahead.
     public void Predict() => Predict(control: null);
 

@@ -13,14 +13,13 @@ using Triangle = Tyr.Common.Debug.Drawing.Drawables.Triangle;
 namespace Tyr.Common.Debug.Drawing;
 
 [SuppressMessage("ReSharper", "ExplicitCallerInfoArgument")]
-public class Drawer(string category)
+public class Drawer(string moduleName)
 {
     private void Draw(IDrawable drawable, Color color, Options options,
         string? memberName, string? filePath, int lineNumber)
     {
         var timestamp = Timestamp.FromDateTime(DateTime.UtcNow);
-        var frameId = 0;
-        var meta = new Meta(category, timestamp, frameId, memberName, filePath, lineNumber);
+        var meta = new Meta(moduleName, timestamp, memberName, filePath, lineNumber);
         var command = new Command(drawable, color, options, meta);
 
         Hub.Draws.Publish(command);

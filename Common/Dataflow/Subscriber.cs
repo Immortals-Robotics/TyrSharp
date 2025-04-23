@@ -25,11 +25,10 @@ public sealed record Subscriber<T> : IDisposable
         return _list;
     }
 
-    public T? Latest()
+    public bool TryGetLatest(out T? item)
     {
         Assert.AreEqual(Mode.Latest, Mode);
-
-        return Reader.TryRead(out var item) ? item : default;
+        return Reader.TryRead(out item);
     }
 
     public void Dispose()

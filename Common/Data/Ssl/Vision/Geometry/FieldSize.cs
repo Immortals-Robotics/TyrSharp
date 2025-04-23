@@ -12,10 +12,10 @@ public struct FieldSize
     [ProtoMember(5, IsRequired = true)] public int BoundaryWidth { get; set; }
 
     public Rectangle FieldRectangle =>
-        Rectangle.FromCenterAndSize(System.Numerics.Vector2.Zero, FieldWidth, FieldLength);
+        Rectangle.FromCenterAndSize(System.Numerics.Vector2.Zero, FieldLength, FieldWidth);
 
     public Rectangle FieldRectangleWithBoundary => Rectangle.FromCenterAndSize(System.Numerics.Vector2.Zero,
-        FieldWidth + BoundaryWidth, FieldLength + BoundaryWidth);
+        FieldLength + BoundaryWidth, FieldWidth + BoundaryWidth);
 
     [ProtoMember(3, IsRequired = true)] public int GoalWidth { get; set; }
     [ProtoMember(4, IsRequired = true)] public int GoalDepth { get; set; }

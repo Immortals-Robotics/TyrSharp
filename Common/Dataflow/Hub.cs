@@ -7,7 +7,7 @@ public static class Hub
     public static readonly BroadcastChannel<Data.Ssl.Vision.Geometry.FieldSize> FieldSize = new();
     public static readonly BroadcastChannel<Data.Ssl.Vision.Geometry.CameraCalibration> CameraCalibration = new();
     public static readonly BroadcastChannel<Data.Ssl.Vision.Geometry.BallModels> BallModels = new();
-    
+
     // game-controller data
     public static readonly BroadcastChannel<Data.Ssl.Gc.Referee> RawReferee = new();
 
@@ -16,6 +16,7 @@ public static class Hub
     public static readonly BroadcastChannel<Data.Referee.State> Referee = new();
     public static readonly BroadcastChannel<Data.Robot.Command[]> RobotCommands = new();
 
-    // debug draws
+    // debug
+    public static readonly BroadcastChannel<Debug.Frame> Frames = new();
     public static readonly BroadcastChannel<Debug.Drawing.Command> Draws = new();
 }

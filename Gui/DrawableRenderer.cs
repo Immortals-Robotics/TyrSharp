@@ -214,7 +214,8 @@ internal class DrawableRenderer
 
         if (robot.Id.HasValue)
         {
-            var text = new Text(robot.Id.Value.ToString(), robot.Position, 80f, TextAlignment.Center);
+            var text = new Text(robot.Id.Value.ToString(), robot.Position, 120f, TextAlignment.Center);
+            // TODO: choose text color based on team color
             DrawText(text, Color.Black);
         }
     }

@@ -26,10 +26,19 @@ public sealed class Runner : IDisposable
 
     private void Tick()
     {
+        var frame = new Common.Debug.Frame
+        {
+            ModuleName = ModuleName,
+            StartTimestamp = _runner.CurrentTickStartTimestamp,
+        };
+        Hub.Frames.Publish(frame);
+
+        FieldSize? fieldSize = _fieldSizeSubscriber.TryGetLatest(out var f) ? f : null;
+
         _vision.Process(
             _detectionSubscriber.All(),
             _calibrationSubscriber.All(),
-            _fieldSizeSubscriber.Latest());
+            fieldSize);
     }
 
     public void Dispose()

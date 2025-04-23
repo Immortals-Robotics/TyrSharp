@@ -1,4 +1,6 @@
-﻿using Tyr.Common.Config;
+﻿using System.Numerics;
+using Tyr.Common.Config;
+using Tyr.Common.Debug.Drawing;
 using Tyr.Common.Time;
 
 namespace Tyr.Vision;
@@ -11,6 +13,8 @@ public sealed class Vision
     private readonly FilteredFrame _filteredFrame = new();
 
     private readonly Dictionary<uint, Camera> _cameras = [];
+
+    private FieldSize? _fieldSize;
 
     private Camera GetOrCreateCamera(uint id)
     {
@@ -37,6 +41,7 @@ public sealed class Vision
 
         if (fieldSize.HasValue)
         {
+            _fieldSize = fieldSize;
             foreach (var camera in _cameras.Values)
                 camera.OnFieldSize(fieldSize.Value);
         }
@@ -54,6 +59,37 @@ public sealed class Vision
                 _cameras.Values.Average(camera => camera.Timestamp.Seconds));
             _cameras.RemoveAll((_, camera) =>
                 camera.Timestamp - averageTimestamp > DeltaTime.FromSeconds(CameraTooOldTime));
+        }
+
+        if (_fieldSize.HasValue)
+        {
+            Globals.Drawer.DrawRectangle(_fieldSize.Value.FieldRectangleWithBoundary,
+                Color.Green, new Options { Filled = true });
+
+            foreach (var line in _fieldSize.Value.FieldLines)
+            {
+                Globals.Drawer.DrawLineSegment(line.LineSegment, Color.White,
+                    new Options { Thickness = line.Thickness });
+            }
+
+            var lineThickness = _fieldSize.Value.LineThickness.GetValueOrDefault();
+            Globals.Drawer.DrawCircle(_fieldSize.Value.CenterCircle, Color.White,
+                new Options { Thickness = lineThickness });
+        }
+
+        foreach (var camera in _cameras.Values)
+        {
+            foreach (var (id, tracker) in camera.Robots)
+            {
+                var color = id.Team == TeamColor.Blue ? Color.Blue : Color.Yellow;
+                Globals.Drawer.DrawRobot(tracker.Position, tracker.Angle, (int?)id.Id, color,
+                    new Options { Filled = true });
+            }
+
+            foreach (var tracker in camera.Balls)
+            {
+                Globals.Drawer.DrawCircle(tracker.Position, 25f, Color.Orange, new Options { Filled = true });
+            }
         }
     }
 }

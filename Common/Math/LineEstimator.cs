@@ -52,6 +52,13 @@ public class LineEstimator
     private readonly Matrix<double> _xMatrix;
     private Line? _estimate;
 
+    static LineEstimator()
+    {
+        // Math.NET's default Qr solver uses parallel for,
+        // which for small matrices has a negative performance impact.
+        //MathNet.Numerics.Control.UseSingleThread();
+    }
+
     /// <summary>
     /// Creates a new line estimator with a given sample capacity.
     /// </summary>

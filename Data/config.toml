@@ -59,7 +59,7 @@ Enabled = true # default: True
 
 
 [Common.Debug.Log]
-Level = "Trace" # default: Trace
+Level = "Debug" # default: Trace
 
 
 [Common.Config]

@@ -36,5 +36,5 @@ public static class Log
         });
     });
 
-    public static ILogger GetLogger(string name) => Factory.CreateLogger(name);
+    public static ILogger GetLogger(string moduleName) => Factory.CreateLogger(moduleName);
 }

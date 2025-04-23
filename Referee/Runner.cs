@@ -30,6 +30,13 @@ public sealed class Runner : IDisposable
     {
         await Task.WhenAny(ReceiveGc(token), ReceiveVision(token));
 
+        var frame = new Common.Debug.Frame
+        {
+            ModuleName = ModuleName,
+            StartTimestamp = _runner.CurrentTickStartTimestamp,
+        };
+        Hub.Frames.Publish(frame);
+
         if (_referee.Process(_vision, _gc))
         {
             Hub.Referee.Publish(_referee.State);
