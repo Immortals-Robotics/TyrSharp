@@ -9,12 +9,12 @@ public class UdpReceiver<T> : IDisposable where T : class
     private readonly UdpClient _client;
     private readonly RunnerAsync _runner;
 
-    public UdpReceiver(Address address, Action<T> onData)
+    public UdpReceiver(Address address, Action<T> onData, string? callingModule = null)
     {
         _onData = onData;
         _client = new UdpClient(address);
 
-        _runner = new RunnerAsync(Tick);
+        _runner = new RunnerAsync(Tick, 0, callingModule);
         _runner.Start();
     }
 

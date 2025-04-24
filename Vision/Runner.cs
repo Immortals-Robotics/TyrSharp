@@ -20,7 +20,7 @@ public sealed class Runner : IDisposable
 
     public Runner()
     {
-        _runner = new RunnerSync(Tick, TickRateHz);
+        _runner = new RunnerSync(Tick, TickRateHz, ModuleName);
         _runner.Start();
     }
 

@@ -37,6 +37,7 @@ public class GlobalsGenerator : ISourceGenerator
             var moduleName = nsParts.LastOrDefault() ?? "Unknown";
 
             var code = $$"""
+                         #nullable enable
                          global using static Tyr.{{moduleName}}.Globals;
                          global using ZLogger;
                          global using Tyr.Common.Extensions;
@@ -50,18 +51,25 @@ public class GlobalsGenerator : ISourceGenerator
                              internal static class Globals
                              {
                                  internal static string ModuleName => "{{moduleName}}";
+                                 internal static string? CallingModuleName => Common.Debug.ModuleContext.Current.Value;
                              
-                                 internal static ILogger Logger { get; private set; }
-                                 internal static Common.Debug.Assertion.Assert Assert { get; private set; }
-                                 internal static Common.Debug.Drawing.Drawer Drawer { get; private set; }
-                                 internal static Random Rand { get; private set; }
+                                 internal static ILogger Logger => CallingModuleName == null ? _logger : Common.Debug.Registry.GetLogger(CallingModuleName);
+                                 internal static Common.Debug.Assertion.Assert Assert => CallingModuleName == null ? _assert : Common.Debug.Registry.GetAssert(CallingModuleName);
+                                 internal static Common.Debug.Drawing.Drawer Drawer => CallingModuleName == null ? _drawer : Common.Debug.Registry.GetDrawer(CallingModuleName);
+                                 internal static Random Rand { get; private set; } = null!;
+                                 
+                                 // cached owned instances to avoid registry lookups
+                                 private static ILogger _logger = null!;
+                                 private static Common.Debug.Assertion.Assert _assert = null!;
+                                 private static Common.Debug.Drawing.Drawer _drawer = null!;
 
                                  [ModuleInitializer]
                                  internal static void Init()
                                  {
-                                     Logger = Common.Debug.Log.GetLogger("{{moduleName}}");
-                                     Assert = new Common.Debug.Assertion.Assert(Logger);
-                                     Drawer = new Common.Debug.Drawing.Drawer("{{moduleName}}");
+                                     _logger = Common.Debug.Registry.GetLogger(ModuleName);
+                                     _assert = Common.Debug.Registry.GetAssert(ModuleName);
+                                     _drawer = Common.Debug.Registry.GetDrawer(ModuleName);
+
                                      Rand = new Random();
                                      
                                      Common.Config.Registry.RegisterAssembly(Assembly.GetExecutingAssembly());

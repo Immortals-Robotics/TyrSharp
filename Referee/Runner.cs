@@ -22,7 +22,7 @@ public sealed class Runner : IDisposable
         _gcSubscriber = Hub.RawReferee.Subscribe(Mode.All);
         _visionSubscriber = Hub.Vision.Subscribe(Mode.Latest);
 
-        _runner = new RunnerAsync(Tick);
+        _runner = new RunnerAsync(Tick, 0, ModuleName);
         _runner.Start();
     }
 

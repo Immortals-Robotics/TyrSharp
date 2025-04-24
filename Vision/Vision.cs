@@ -1,5 +1,4 @@
-﻿using System.Numerics;
-using Tyr.Common.Config;
+﻿using Tyr.Common.Config;
 using Tyr.Common.Debug.Drawing;
 using Tyr.Common.Time;
 

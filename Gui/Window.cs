@@ -1,6 +1,7 @@
 ﻿using System.Numerics;
 using Hexa.NET.ImGui;
 using Hexa.NET.ImGui.Widgets;
+using Tyr.Common.Debug;
 using Tyr.Common.Math;
 using Tyr.Common.Time;
 
@@ -16,12 +17,15 @@ public class Window : ImWindow
 
     private readonly DebugFramer _framer = new();
 
-    private float _time = 0f;
+    private float _time;
     private bool _live = true;
 
     public override void Init()
     {
         base.Init();
+
+        ModuleContext.Current.Value = ModuleName;
+
         _timer.Start();
 
         _renderer.Camera.Position = Vector2.Zero;
@@ -83,7 +87,7 @@ public class Window : ImWindow
             _renderer.Camera.Position -= _renderer.Camera.ScreenToWorldDirection(mouseDelta);
         }
 
-        foreach (var (module, framer) in _framer.Modules)
+        foreach (var framer in _framer.Modules.Values)
         {
             var frame = _live ? framer.LatestFrame : framer.GetFrame(start + DeltaTime.FromSeconds(_time));
 

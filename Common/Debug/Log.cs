@@ -16,7 +16,7 @@ public static class Log
         CultureInfo.DefaultThreadCurrentUICulture = CultureInfo.InvariantCulture;
     }
 
-    private static ILoggerFactory Factory { get; set; } = LoggerFactory.Create(logging =>
+    internal static ILoggerFactory Factory { get; set; } = LoggerFactory.Create(logging =>
     {
         logging.SetMinimumLevel(LogLevel.Trace);
         logging.AddFilter(level => level >= Level);
@@ -35,6 +35,4 @@ public static class Log
             });
         });
     });
-
-    public static ILogger GetLogger(string moduleName) => Factory.CreateLogger(moduleName);
 }

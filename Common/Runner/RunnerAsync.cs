@@ -1,6 +1,8 @@
-﻿namespace Tyr.Common.Runner;
+﻿using Tyr.Common.Debug;
 
-public class RunnerAsync(Func<CancellationToken, Task> tick, int tickRateHz = 0)
+namespace Tyr.Common.Runner;
+
+public class RunnerAsync(Func<CancellationToken, Task> tick, int tickRateHz = 0, string? callingModule = null)
     : RunnerBase(tickRateHz)
 {
     private Task? _task;
@@ -51,6 +53,8 @@ public class RunnerAsync(Func<CancellationToken, Task> tick, int tickRateHz = 0)
 
     private async Task Loop(CancellationToken token)
     {
+        ModuleContext.Current.Value = callingModule;
+
         while (!token.IsCancellationRequested)
         {
             var tickStart = Timer.Time;

@@ -1,6 +1,8 @@
-﻿namespace Tyr.Common.Runner;
+﻿using Tyr.Common.Debug;
 
-public class RunnerSync(Action tick, int tickRateHz = 0) : RunnerBase(tickRateHz)
+namespace Tyr.Common.Runner;
+
+public class RunnerSync(Action tick, int tickRateHz = 0, string? callingModule = null) : RunnerBase(tickRateHz)
 {
     private Thread? _thread;
     private volatile bool _running;
@@ -35,6 +37,8 @@ public class RunnerSync(Action tick, int tickRateHz = 0) : RunnerBase(tickRateHz
 
     private void Loop()
     {
+        ModuleContext.Current.Value = callingModule;
+
         while (_running)
         {
             var tickStart = Timer.Time;

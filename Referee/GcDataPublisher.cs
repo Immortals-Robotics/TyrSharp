@@ -10,7 +10,7 @@ public class GcDataPublisher : IDisposable
 {
     [ConfigEntry] private static Address GcAddress { get; set; } = new() { Ip = "224.5.23.1", Port = 10003 };
 
-    private readonly UdpReceiver<Gc.Referee> _udpReceiver = new(GcAddress, OnData);
+    private readonly UdpReceiver<Gc.Referee> _udpReceiver = new(GcAddress, OnData, ModuleName);
 
     private static void OnData(Gc.Referee data)
     {
