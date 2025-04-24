@@ -1,6 +1,6 @@
 ﻿using Hexa.NET.GLFW;
 
-namespace ConsoleApp1;
+namespace Tyr.Gui;
 
 internal unsafe class BindingsContext(GLFWwindowPtr window) : HexaGen.Runtime.IGLContext
 {

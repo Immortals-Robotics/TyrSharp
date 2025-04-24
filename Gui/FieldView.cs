@@ -1,29 +1,27 @@
 ﻿using System.Numerics;
 using Hexa.NET.ImGui;
-using Hexa.NET.ImGui.Widgets;
+//using Hexa.NET.ImGui.Widgets;
 using Tyr.Common.Debug;
 using Tyr.Common.Math;
 using Tyr.Common.Time;
 
 namespace Tyr.Gui;
 
-public class Window : ImWindow
+public class FieldView
 {
-    public override string Name => "Window";
-
     private readonly DrawableRenderer _renderer = new();
 
     private readonly Common.Time.Timer _timer = new();
 
     private readonly DebugFramer _framer = new();
 
+    private readonly DebugFilter _filter = new();
+
     private float _time;
     private bool _live = true;
 
-    public override void Init()
+    public FieldView()
     {
-        base.Init();
-
         ModuleContext.Current.Value = ModuleName;
 
         _timer.Start();
@@ -32,14 +30,21 @@ public class Window : ImWindow
         _renderer.Camera.Zoom = 0.1f;
     }
 
-    public override void DrawContent()
+    public void Draw()
     {
+        ImGui.Begin("Field");
+
         _timer.Update();
         _framer.Tick();
 
         ImGui.Text($"FPS: {_timer.FpsSmooth:F1}");
 
-        ImGui.Begin("Field");
+        foreach (var module in _framer.Modules.Keys)
+        {
+            _filter.Register(module);
+        }
+
+        _filter.Draw();
 
         var start = Timestamp.MaxValue;
         var end = Timestamp.Zero;
@@ -51,6 +56,8 @@ public class Window : ImWindow
             start = Timestamp.Min(start, framer.StartTime.Value);
             end = Timestamp.Max(end, framer.EndTime.Value);
         }
+
+        start = Timestamp.Clamp(start, Timestamp.Zero, end);
 
         var endDelta = (float)(end - start).Seconds;
         if (_live) _time = endDelta;
@@ -87,8 +94,10 @@ public class Window : ImWindow
             _renderer.Camera.Position -= _renderer.Camera.ScreenToWorldDirection(mouseDelta);
         }
 
-        foreach (var framer in _framer.Modules.Values)
+        foreach (var (module, framer) in _framer.Modules)
         {
+            if (!_filter.IsEnabled(module)) continue;
+
             var frame = _live ? framer.LatestFrame : framer.GetFrame(start + DeltaTime.FromSeconds(_time));
 
             if (frame != null)

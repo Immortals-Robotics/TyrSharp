@@ -18,8 +18,6 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SourceGen", "SourceGen\Sour
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Sender", "Sender\Sender.csproj", "{4C90D4D3-C2C0-4B84-AA4A-1054E66467C5}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ConsoleApp1", "ConsoleApp1\ConsoleApp1.csproj", "{1DA74C4A-D56C-41A6-B53E-06842CBAFAE1}"
-EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -62,9 +60,5 @@ Global
 		{4C90D4D3-C2C0-4B84-AA4A-1054E66467C5}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{4C90D4D3-C2C0-4B84-AA4A-1054E66467C5}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{4C90D4D3-C2C0-4B84-AA4A-1054E66467C5}.Release|Any CPU.Build.0 = Release|Any CPU
-		{1DA74C4A-D56C-41A6-B53E-06842CBAFAE1}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{1DA74C4A-D56C-41A6-B53E-06842CBAFAE1}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{1DA74C4A-D56C-41A6-B53E-06842CBAFAE1}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{1DA74C4A-D56C-41A6-B53E-06842CBAFAE1}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal

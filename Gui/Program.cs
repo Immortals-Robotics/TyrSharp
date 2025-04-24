@@ -1,4 +1,5 @@
-﻿using Hexa.NET.KittyUI;
+﻿using Hexa.NET.ImGui;
+using Tyr.Gui;
 
 Tyr.Common.Config.Storage.Initialize(args[0]);
 
@@ -8,12 +9,21 @@ using var gcPublisher = new Tyr.Referee.GcDataPublisher();
 using var referee = new Tyr.Referee.Runner();
 using var vision = new Tyr.Vision.Runner();
 
-var builder = AppBuilder.Create();
-builder.EnableLogging(true);
-builder.EnableDebugTools(true);
-builder.SetTitle("Tyr");
-builder.StyleColorsClassic();
+var fieldView = new FieldView();
 
-builder.AddWindow<Tyr.Gui.Window>();
+using var window = new GlfwWindow(1280, 720, "Tyr");
+using var imgui = new ImGuiController(window);
 
-builder.Run();
+while (window.ShouldClose == false)
+{
+    window.PollEvents();
+
+    window.Clear(1f, .8f, .75f);
+    imgui.NewFrame();
+
+    ImGui.ShowDemoWindow();
+    fieldView.Draw();
+
+    imgui.Render();
+    window.SwapBuffers();
+}

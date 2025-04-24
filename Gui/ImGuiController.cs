@@ -2,10 +2,9 @@
 using Hexa.NET.ImGui;
 using Hexa.NET.ImGui.Backends.GLFW;
 using Hexa.NET.ImGui.Backends.OpenGL3;
-using Hexa.NET.GLFW;
 using Hexa.NET.ImGui.Utilities;
 
-namespace ConsoleApp1;
+namespace Tyr.Gui;
 
 internal class ImGuiController : IDisposable
 {
@@ -28,6 +27,7 @@ internal class ImGuiController : IDisposable
         io.ConfigViewportsNoAutoMerge = false;
         io.ConfigViewportsNoTaskBarIcon = false;
 
+        _fontBuilder = new ImGuiFontBuilder();
         InitializeImGuiFonts();
 
         ImGuiImplGLFW.SetCurrentContext(_ctx);
@@ -45,7 +45,6 @@ internal class ImGuiController : IDisposable
 
     private void InitializeImGuiFonts(params string[] fontFiles)
     {
-        _fontBuilder = new ImGuiFontBuilder();
         _fontBuilder.AddDefaultFont();
         _fontBuilder.SetOption(config => { config.FontBuilderFlags |= (uint)ImGuiFreeTypeBuilderFlags.LoadColor; });
 
