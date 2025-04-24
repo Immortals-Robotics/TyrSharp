@@ -18,7 +18,7 @@ public class Drawer(string moduleName)
     private void Draw(IDrawable drawable, Color color, Options options,
         string? memberName, string? filePath, int lineNumber)
     {
-        var timestamp = Timestamp.FromDateTime(DateTime.UtcNow);
+        var timestamp = Timestamp.Now;
         var meta = new Meta(moduleName, timestamp, memberName, filePath, lineNumber);
         var command = new Command(drawable, color, options, meta);
 

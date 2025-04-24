@@ -21,6 +21,9 @@ internal class DrawableRenderer
 
         _drawList = ImGui.GetWindowDrawList();
 
+        // restrict the renderings to the camera viewport
+        ImGui.PushClipRect(Camera.Viewport.Offset, Camera.Viewport.Offset + Camera.Viewport.Size, true);
+
         foreach (var command in commands)
         {
             switch (command.Drawable)
@@ -57,6 +60,8 @@ internal class DrawableRenderer
                     break;
             }
         }
+
+        ImGui.PopClipRect();
     }
 
     private void DrawArrow(Arrow arrow, Color color, Options options)

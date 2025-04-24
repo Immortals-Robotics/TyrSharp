@@ -54,7 +54,7 @@ public class RunnerAsync(Func<CancellationToken, Task> tick, int tickRateHz = 0)
         while (!token.IsCancellationRequested)
         {
             var tickStart = Timer.Time;
-            CurrentTickStartTimestamp = Timestamp.FromDateTime(DateTime.UtcNow);
+            CurrentTickStartTimestamp = Timestamp.Now;
 
             Timer.Update();
 

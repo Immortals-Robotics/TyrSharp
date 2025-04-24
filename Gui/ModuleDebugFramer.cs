@@ -5,23 +5,58 @@ namespace Tyr.Gui;
 
 public class ModuleDebugFramer
 {
-    private readonly LinkedList<FrameData> _frames = [];
+    private readonly List<FrameData> _frames = [];
     private readonly Queue<Debug.Drawing.Command> _unassignedDraws = [];
 
     private Timestamp? _latestAssignedDrawTimestamp;
-    private LinkedListNode<FrameData>? _latestSealedFrame;
+    private int? _latestSealedFrameIndex;
+    private int FirstUnsealedFrameIndex => _latestSealedFrameIndex.GetValueOrDefault(-1) + 1;
 
     public int FrameCount => _frames.Count;
+    public Timestamp? StartTime => _frames.FirstOrDefault()?.StartTimestamp;
+    public Timestamp? EndTime => LatestFrame?.EndTimestamp;
 
-    public FrameData? LatestDisplayableFrame => _latestSealedFrame?.Value;
+    public FrameData? LatestFrame => _latestSealedFrameIndex.HasValue ? _frames[_latestSealedFrameIndex.Value] : null;
+
+    public FrameData? GetFrame(Timestamp time)
+    {
+        if (StartTime is null || EndTime is null) return null;
+
+        time = Timestamp.Clamp(time, StartTime.Value, EndTime.Value);
+
+        var left = 0;
+        var right = _latestSealedFrameIndex!.Value;
+
+        while (left <= right)
+        {
+            var mid = left + (right - left) / 2;
+            var frame = _frames[mid];
+
+            if (time < frame.StartTimestamp)
+            {
+                right = mid - 1;
+            }
+            else if (time > frame.EndTimestamp)
+            {
+                left = mid + 1;
+            }
+            else
+            {
+                return frame;
+            }
+        }
+
+        return null;
+    }
 
     public void OnFrame(Debug.Frame frame)
     {
-        if (_frames.Last is not null)
+        if (_frames.LastOrDefault() is { } lastFrame)
         {
-            _frames.Last.ValueRef.EndTimestamp = frame.StartTimestamp - DeltaTime.FromNanoseconds(1);
+            lastFrame.EndTimestamp = frame.StartTimestamp - DeltaTime.FromNanoseconds(1);
         }
-        _frames.AddLast(new FrameData
+
+        _frames.Add(new FrameData
         {
             StartTimestamp = frame.StartTimestamp
         });
@@ -76,26 +111,23 @@ public class ModuleDebugFramer
     {
         // handle the edge case where we've missed the frame this draw corresponds to
         // this should only happen for the first frame
-        return _frames.First is not null &&
-               draw.Meta.Timestamp < _frames.First.Value.StartTimestamp;
+        return _frames.Count > 0 &&
+               _frames[0].StartTimestamp > draw.Meta.Timestamp;
     }
 
     private FrameData? GetFillFrame(Timestamp time)
     {
         if (_frames.Count == 0) return null;
 
-        var current = _latestSealedFrame?.Next ?? _frames.First;
-        while (current is not null)
+        for (var index = FirstUnsealedFrameIndex; index < _frames.Count; index++)
         {
-            Assert.IsFalse(current.Value.IsSealed);
+            Assert.IsFalse(_frames[index].IsSealed);
 
             // we don't know the time range of this frame yet, so we can't assign it
-            if (!current.Value.IsDefined) break;
+            if (!_frames[index].IsDefined) break;
 
-            if (current.Value.StartTimestamp <= time && time <= current.Value.EndTimestamp)
-                return current.Value;
-
-            current = current.Next;
+            if (_frames[index].StartTimestamp <= time && time <= _frames[index].EndTimestamp)
+                return _frames[index];
         }
 
         return null;
@@ -106,16 +138,16 @@ public class ModuleDebugFramer
     {
         if (_latestAssignedDrawTimestamp is null) return;
 
-        for (var current = _latestSealedFrame ?? _frames.First; current is not null; current = current.Next)
+        for (var index = FirstUnsealedFrameIndex; index < _frames.Count; index++)
         {
             var sealable =
-                current.Value.IsDefined &&
-                current.Value.EndTimestamp <= _latestAssignedDrawTimestamp;
+                _frames[index].IsDefined &&
+                _frames[index].EndTimestamp <= _latestAssignedDrawTimestamp;
 
             if (!sealable) break;
 
-            current.ValueRef.IsSealed = true;
-            _latestSealedFrame = current;
+            _frames[index].IsSealed = true;
+            _latestSealedFrameIndex = index;
         }
     }
 }

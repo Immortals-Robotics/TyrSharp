@@ -38,7 +38,7 @@ public class RunnerSync(Action tick, int tickRateHz = 0) : RunnerBase(tickRateHz
         while (_running)
         {
             var tickStart = Timer.Time;
-            CurrentTickStartTimestamp = Timestamp.FromDateTime(DateTime.UtcNow);
+            CurrentTickStartTimestamp = Timestamp.Now;
 
             Timer.Update();
             tick();

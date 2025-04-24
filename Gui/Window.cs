@@ -1,6 +1,8 @@
 ﻿using System.Numerics;
 using Hexa.NET.ImGui;
 using Hexa.NET.ImGui.Widgets;
+using Tyr.Common.Math;
+using Tyr.Common.Time;
 
 namespace Tyr.Gui;
 
@@ -14,34 +16,82 @@ public class Window : ImWindow
 
     private readonly DebugFramer _framer = new();
 
+    private float _time = 0f;
+    private bool _live = true;
+
     public override void Init()
     {
         base.Init();
         _timer.Start();
+
+        _renderer.Camera.Position = Vector2.Zero;
+        _renderer.Camera.Zoom = 0.1f;
     }
 
     public override void DrawContent()
     {
+        _timer.Update();
         _framer.Tick();
 
-        ImGui.Begin("Hippos");
+        ImGui.Text($"FPS: {_timer.FpsSmooth:F1}");
 
-        _renderer.Camera.Position = Vector2.Zero;
-        _renderer.Camera.Zoom = 0.1f;
+        ImGui.Begin("Field");
+
+        var start = Timestamp.MaxValue;
+        var end = Timestamp.Zero;
+
+        foreach (var framer in _framer.Modules.Values)
+        {
+            if (!framer.StartTime.HasValue || !framer.EndTime.HasValue) continue;
+
+            start = Timestamp.Min(start, framer.StartTime.Value);
+            end = Timestamp.Max(end, framer.EndTime.Value);
+        }
+
+        var endDelta = (float)(end - start).Seconds;
+        if (_live) _time = endDelta;
+
+        ImGui.SliderFloat("Time", ref _time, 0f, endDelta);
+        ImGui.SameLine();
+        ImGui.Checkbox("Live", ref _live);
+
         _renderer.Camera.Viewport = new Viewport(
             Offset: ImGui.GetCursorScreenPos(),
             Size: ImGui.GetContentRegionAvail());
 
-        foreach (var module in _framer.Modules.Values)
+        // zooming
+        if (!Utils.ApproximatelyZero(ImGui.GetIO().MouseWheel))
         {
-            var frame = module.LatestDisplayableFrame;
-            if (frame == null) continue;
+            var zoomFactor = 1.1f; // Adjust as needed for smoother/quicker zooming
+            var newZoom = ImGui.GetIO().MouseWheel > 0
+                ? _renderer.Camera.Zoom * zoomFactor
+                : _renderer.Camera.Zoom / zoomFactor;
 
-            _renderer.Draw(frame.Draws);
+            var mouseScreen = ImGui.GetMousePos();
+            var mouseWorldBefore = _renderer.Camera.ScreenToWorld(mouseScreen);
+
+            _renderer.Camera.Zoom = newZoom;
+
+            var mouseWorldAfter = _renderer.Camera.ScreenToWorld(mouseScreen);
+            _renderer.Camera.Position -= mouseWorldAfter - mouseWorldBefore;
         }
 
-        _timer.Update();
-        Logger.ZLogTrace($"FPS: {_timer.FpsSmooth}");
+        // panning
+        if (ImGui.IsMouseDragging(ImGuiMouseButton.Middle))
+        {
+            var mouseDelta = ImGui.GetIO().MouseDelta;
+            _renderer.Camera.Position -= _renderer.Camera.ScreenToWorldDirection(mouseDelta);
+        }
+
+        foreach (var (module, framer) in _framer.Modules)
+        {
+            var frame = _live ? framer.LatestFrame : framer.GetFrame(start + DeltaTime.FromSeconds(_time));
+
+            if (frame != null)
+            {
+                _renderer.Draw(frame.Draws);
+            }
+        }
 
         ImGui.End();
     }
