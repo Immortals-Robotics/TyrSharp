@@ -163,12 +163,12 @@ public class Drawer(string moduleName)
         Draw(path, color, options, memberName, filePath, lineNumber);
     }
 
-    public void DrawText(string content, Vector2 position, Color color, float size, Options options = default,
+    public void DrawText(string content, Vector2 position, float size, Color color, Options options = default,
         [CallerMemberName] string? memberName = null,
         [CallerFilePath] string? filePath = null,
         [CallerLineNumber] int lineNumber = 0)
     {
-        var text = new Text(content, position);
+        var text = new Text(content, position, size);
         Draw(text, color, options, memberName, filePath, lineNumber);
     }
 }
