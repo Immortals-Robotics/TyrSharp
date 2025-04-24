@@ -29,7 +29,7 @@ public class Referee
 
         if (oldState.Gc.CommandCounter != _state.Gc.CommandCounter)
         {
-            Logger.ZLogInformation($"received GC command: [{_state.Gc.CommandCounter}] | {_state.Gc.Command}");
+            Log.ZLogInformation($"received GC command: [{_state.Gc.CommandCounter}] | {_state.Gc.Command}");
             OnNewCommand();
         }
 
@@ -44,7 +44,7 @@ public class Referee
 
         if (oldState.GameState != _state.GameState || oldState.Ready != _state.Ready)
         {
-            Logger.ZLogInformation($"state transition: {oldState} -> {_state}");
+            Log.ZLogInformation($"state transition: {oldState} -> {_state}");
 
             _state.Timestamp = _state.Gc.PacketTimestamp;
             _lastBall = _vision.Ball;

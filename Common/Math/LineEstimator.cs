@@ -124,7 +124,7 @@ public class LineEstimator
         }
         catch (Exception exception)
         {
-            Logger.ZLogError(exception, $"Failed to compute line estimate: {exception.Message}");
+            Log.ZLogError(exception, $"Failed to compute line estimate: {exception.Message}");
             _estimate = null;
         }
     }

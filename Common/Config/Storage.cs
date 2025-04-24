@@ -48,7 +48,7 @@ public static class Storage
         var newWriteTime = File.GetLastWriteTimeUtc(Path);
         if (newWriteTime <= _lastReadTime) return;
 
-        Logger.ZLogTrace($"Detected external changes to config file {Path}");
+        Log.ZLogTrace($"Detected external changes to config file {Path}");
         _loadDebouncer.Trigger();
     }
 
@@ -69,7 +69,7 @@ public static class Storage
 
                 _lastReadTime = File.GetLastWriteTimeUtc(Path);
 
-                Logger.ZLogTrace($"Loaded config file {Path}");
+                Log.ZLogTrace($"Loaded config file {Path}");
 
                 return;
             }
@@ -79,11 +79,11 @@ public static class Storage
             }
             catch (Exception e)
             {
-                Logger.ZLogError(e, $"Failed to load config file {Path}");
+                Log.ZLogError(e, $"Failed to load config file {Path}");
             }
         }
 
-        Logger.ZLogError($"Failed to load config file {Path} after {maxAttempts} attempts.");
+        Log.ZLogError($"Failed to load config file {Path} after {maxAttempts} attempts.");
     }
 
     public static void Save()
@@ -95,11 +95,11 @@ public static class Storage
 
             _lastReadTime = File.GetLastWriteTimeUtc(Path);
 
-            Logger.ZLogTrace($"Saved config file {Path}");
+            Log.ZLogTrace($"Saved config file {Path}");
         }
         catch (Exception e)
         {
-            Logger.ZLogError(e, $"Failed to save config file {Path}");
+            Log.ZLogError(e, $"Failed to save config file {Path}");
         }
     }
 
@@ -107,7 +107,7 @@ public static class Storage
     {
         if (_loading) return;
 
-        Logger.ZLogTrace($"Detected runtime changes to configs");
+        Log.ZLogTrace($"Detected runtime changes to configs");
 
         _saveDebouncer.Trigger();
     }

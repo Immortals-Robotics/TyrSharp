@@ -58,7 +58,7 @@ CopyTrackerMaxDistance = 200.0 # default: 200
 Enabled = true # default: True
 
 
-[Common.Debug.Log]
+[Common.Debug.Logging]
 Level = "Debug" # default: Trace
 
 

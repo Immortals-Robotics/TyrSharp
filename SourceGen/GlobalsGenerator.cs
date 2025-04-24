@@ -53,22 +53,22 @@ public class GlobalsGenerator : ISourceGenerator
                                  internal static string ModuleName => "{{moduleName}}";
                                  internal static string? CallingModuleName => Common.Debug.ModuleContext.Current.Value;
                              
-                                 internal static ILogger Logger => CallingModuleName == null ? _logger : Common.Debug.Registry.GetLogger(CallingModuleName);
+                                 internal static ILogger Log => CallingModuleName == null ? _log : Common.Debug.Registry.GetLogger(CallingModuleName);
                                  internal static Common.Debug.Assertion.Assert Assert => CallingModuleName == null ? _assert : Common.Debug.Registry.GetAssert(CallingModuleName);
-                                 internal static Common.Debug.Drawing.Drawer Drawer => CallingModuleName == null ? _drawer : Common.Debug.Registry.GetDrawer(CallingModuleName);
+                                 internal static Common.Debug.Drawing.Drawer Draw => CallingModuleName == null ? _draw : Common.Debug.Registry.GetDrawer(CallingModuleName);
                                  internal static Random Rand { get; private set; } = null!;
                                  
                                  // cached owned instances to avoid registry lookups
-                                 private static ILogger _logger = null!;
+                                 private static ILogger _log = null!;
                                  private static Common.Debug.Assertion.Assert _assert = null!;
-                                 private static Common.Debug.Drawing.Drawer _drawer = null!;
+                                 private static Common.Debug.Drawing.Drawer _draw = null!;
 
                                  [ModuleInitializer]
                                  internal static void Init()
                                  {
-                                     _logger = Common.Debug.Registry.GetLogger(ModuleName);
+                                     _log = Common.Debug.Registry.GetLogger(ModuleName);
                                      _assert = Common.Debug.Registry.GetAssert(ModuleName);
-                                     _drawer = Common.Debug.Registry.GetDrawer(ModuleName);
+                                     _draw = Common.Debug.Registry.GetDrawer(ModuleName);
 
                                      Rand = new Random();
                                      

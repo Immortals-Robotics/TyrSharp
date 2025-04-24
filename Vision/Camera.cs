@@ -55,7 +55,7 @@ public class Camera(uint id)
         var expectedFrameId = FrameId == 0 ? frame.FrameNumber : FrameId + 1;
         if (frame.FrameNumber != expectedFrameId)
         {
-            Logger.ZLogWarning($"Camera {Id} frame id mismatch, expected {expectedFrameId}, got {frame.FrameNumber}");
+            Log.ZLogWarning($"Camera {Id} frame id mismatch, expected {expectedFrameId}, got {frame.FrameNumber}");
 
             if (Math.Abs((int)expectedFrameId - (int)frame.FrameNumber) > 10)
                 Reset();
@@ -68,7 +68,7 @@ public class Camera(uint id)
 
         _frameTimeEstimator.AddSample(frame.FrameNumber, frame.CaptureTime);
 
-        Logger.ZLogTrace($"Camera {Id} FPS: {Fps:F2}");
+        Log.ZLogTrace($"Camera {Id} FPS: {Fps:F2}");
 
         // detections
         ProcessRobots(frame, lastFilteredFrame.Robots);
@@ -132,7 +132,7 @@ public class Camera(uint id)
 
         if (shouldIgnore)
         {
-            Logger.ZLogDebug($"Ignoring robot {id} on camera {Id}");
+            Log.ZLogDebug($"Ignoring robot {id} on camera {Id}");
         }
         else
         {
@@ -189,12 +189,12 @@ public class Camera(uint id)
             if (consumed) continue;
 
             // This is a new ball, we need to create a new tracker for it
-            Logger.ZLogTrace($"Creating a new tracker for {raw} at {raw.Detection.Position}");
+            Log.ZLogTrace($"Creating a new tracker for {raw} at {raw.Detection.Position}");
 
             // Skip if we already have too many trackers
             if (Balls.Count > MaxBallTrackers)
             {
-                Logger.ZLogWarning($"Skipping {raw} as we already have {Balls.Count} trackers");
+                Log.ZLogWarning($"Skipping {raw} as we already have {Balls.Count} trackers");
                 continue;
             }
 

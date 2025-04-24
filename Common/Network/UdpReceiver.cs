@@ -23,11 +23,11 @@ public class UdpReceiver<T> : IDisposable where T : class
         var packet = await _client.Receive<T>(token);
         if (packet == null)
         {
-            Logger.ZLogError($"Received null {typeof(T).Name} packet");
+            Log.ZLogError($"Received null {typeof(T).Name} packet");
             return;
         }
 
-        Logger.ZLogTrace($"Received {typeof(T).Name} packet from {_client.GetLastReceiveEndpoint()}");
+        Log.ZLogTrace($"Received {typeof(T).Name} packet from {_client.GetLastReceiveEndpoint()}");
 
         _onData(packet);
     }

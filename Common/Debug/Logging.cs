@@ -5,11 +5,11 @@ using Tyr.Common.Config;
 namespace Tyr.Common.Debug;
 
 [Configurable]
-public static class Log
+public static class Logging
 {
     [ConfigEntry] private static LogLevel Level { get; set; } = LogLevel.Trace;
 
-    static Log()
+    static Logging()
     {
         // some cultures especially in europe use ',' instead of '.' for the decimal point 
         CultureInfo.DefaultThreadCurrentCulture = CultureInfo.InvariantCulture;

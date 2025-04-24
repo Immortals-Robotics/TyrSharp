@@ -17,7 +17,7 @@ internal class DrawableRenderer
 
     internal void Draw(IReadOnlyList<Command> commands)
     {
-        Logger.ZLogTrace($"Drawing {commands.Count} items");
+        Log.ZLogTrace($"Drawing {commands.Count} items");
 
         _drawList = ImGui.GetWindowDrawList();
 

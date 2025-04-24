@@ -15,7 +15,7 @@ public sealed class SslVisionDataPublisher : IDisposable
 
     public SslVisionDataPublisher()
     {
-        Logger.ZLogInformation($"SSL Vision Data publisher initialized on {VisionSimAddress}.");
+        Log.ZLogInformation($"SSL Vision Data publisher initialized on {VisionSimAddress}.");
     }
 
     private static void OnData(WrapperPacket data)

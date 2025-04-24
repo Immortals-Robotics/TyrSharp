@@ -54,7 +54,7 @@ public class BroadcastChannel<T>
         foreach (var subscriber in _subscribers)
         {
             var result = subscriber.Writer.TryWrite(item);
-            if (!result) Logger.ZLogError($"Failed to publish item to channel");
+            if (!result) Log.ZLogError($"Failed to publish item to channel");
         }
     }
 }

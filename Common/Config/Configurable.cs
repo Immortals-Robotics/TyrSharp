@@ -37,7 +37,7 @@ public class Configurable
             .Select(info => new ConfigEntry(info, this))
             .ToArray();
 
-        OnUpdated += () => Logger.ZLogTrace($"Configurable of type {Type.FullName} was updated.");
+        OnUpdated += () => Log.ZLogTrace($"Configurable of type {Type.FullName} was updated.");
     }
 
     public void OnEntryChanged(ConfigEntry entry)
