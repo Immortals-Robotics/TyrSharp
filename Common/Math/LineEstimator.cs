@@ -56,7 +56,7 @@ public class LineEstimator
     {
         // Math.NET's default Qr solver uses parallel for,
         // which for small matrices has a negative performance impact.
-        //MathNet.Numerics.Control.UseSingleThread();
+        MathNet.Numerics.Control.UseSingleThread();
     }
 
     /// <summary>
