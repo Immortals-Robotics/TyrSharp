@@ -1,28 +1,33 @@
 ﻿namespace Tyr.Common.Debug.Drawing;
 
-public record struct Color(
+public readonly record struct Color(
     float R,
     float G,
     float B,
     float A = 1f)
 {
-    public Color Transparent => this with { A = A / 4f };
+    public Color Transparent() => this with { A = A / 4f };
 
-    public readonly uint U32 =>
-        ((uint)(A * 255.0f) << 24) |
-        ((uint)(B * 255.0f) << 16) |
-        ((uint)(G * 255.0f) << 8) |
-        ((uint)(R * 255.0f));
+    // ReSharper disable once InconsistentNaming
+    public uint ToABGR32()
+    {
+        var a = (uint)(A * 255.0f);
+        var b = (uint)(B * 255.0f);
+        var g = (uint)(G * 255.0f);
+        var r = (uint)(R * 255.0f);
 
-    public static Color Lerp(Color c1, Color c2, float t)
+        return (a << 24) | (b << 16) | (g << 8) | r;
+    }
+
+    public static Color Lerp(Color from, Color to, float t)
     {
         t = float.Clamp(t, 0f, 1f);
 
         return new Color(
-            c1.R * (1f - t) + c2.R * t,
-            c1.G * (1f - t) + c2.G * t,
-            c1.B * (1f - t) + c2.B * t,
-            c1.A * (1f - t) + c2.A * t);
+            from.R * (1f - t) + to.R * t,
+            from.G * (1f - t) + to.G * t,
+            from.B * (1f - t) + to.B * t,
+            from.A * (1f - t) + to.A * t);
     }
 
     // Common colors
@@ -40,4 +45,6 @@ public record struct Color(
         ReadOnlySpan<Color> colors = [White, Black, Red, Green, Blue, Yellow, Orange, Magenta];
         return Rand.Get(colors);
     }
+
+    public override string ToString() => $"(r: {R:0.##}, g:{G:0.##}, b:{B:0.##}, a:{A:0.##})";
 }

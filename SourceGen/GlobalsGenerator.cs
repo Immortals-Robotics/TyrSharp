@@ -37,9 +37,11 @@ public class GlobalsGenerator : ISourceGenerator
             var moduleName = nsParts.LastOrDefault() ?? "Unknown";
 
             var code = $$"""
+                         #nullable enable
                          global using static Tyr.{{moduleName}}.Globals;
                          global using ZLogger;
-                         global using Tyr.Common.Math.Extensions;
+                         global using Tyr.Common.Extensions;
+                         global using Timestamp = Tyr.Common.Time.Timestamp;
                          using System.Runtime.CompilerServices;
                          using System.Reflection;
                          using Microsoft.Extensions.Logging;
@@ -49,21 +51,28 @@ public class GlobalsGenerator : ISourceGenerator
                              internal static class Globals
                              {
                                  internal static string ModuleName => "{{moduleName}}";
+                                 internal static string? CallingModuleName => Common.Debug.ModuleContext.Current.Value;
                              
-                                 internal static ILogger Logger { get; private set; }
-                                 internal static Common.Debug.Assertion.Assert Assert { get; private set; }
-                                 internal static Common.Debug.Drawing.Drawer Drawer { get; private set; }
-                                 internal static Random Rand { get; private set; }
+                                 internal static ILogger Log => CallingModuleName == null ? _log : Common.Debug.Registry.GetLogger(CallingModuleName);
+                                 internal static Common.Debug.Assertion.Assert Assert => CallingModuleName == null ? _assert : Common.Debug.Registry.GetAssert(CallingModuleName);
+                                 internal static Common.Debug.Drawing.Drawer Draw => CallingModuleName == null ? _draw : Common.Debug.Registry.GetDrawer(CallingModuleName);
+                                 internal static Random Rand { get; private set; } = null!;
+                                 
+                                 // cached owned instances to avoid registry lookups
+                                 private static ILogger _log = null!;
+                                 private static Common.Debug.Assertion.Assert _assert = null!;
+                                 private static Common.Debug.Drawing.Drawer _draw = null!;
 
                                  [ModuleInitializer]
                                  internal static void Init()
                                  {
-                                     Logger = Common.Debug.Log.GetLogger("{{moduleName}}");
-                                     Assert = new Common.Debug.Assertion.Assert(Logger);
-                                     Drawer = new Common.Debug.Drawing.Drawer("{{moduleName}}");
+                                     _log = Common.Debug.Registry.GetLogger(ModuleName);
+                                     _assert = Common.Debug.Registry.GetAssert(ModuleName);
+                                     _draw = Common.Debug.Registry.GetDrawer(ModuleName);
+
                                      Rand = new Random();
                                      
-                                     Common.Config.ConfigRegistry.RegisterAssembly(Assembly.GetExecutingAssembly());
+                                     Common.Config.Registry.RegisterAssembly(Assembly.GetExecutingAssembly());
                                  }
                              }
                          }

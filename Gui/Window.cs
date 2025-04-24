@@ -1,12 +1,9 @@
 ﻿using System.Numerics;
 using Hexa.NET.ImGui;
 using Hexa.NET.ImGui.Widgets;
-using Tyr.Common.Debug.Drawing;
-using Tyr.Common.Debug.Drawing.Drawables;
+using Tyr.Common.Debug;
 using Tyr.Common.Math;
-using Color = Tyr.Common.Debug.Drawing.Color;
-using Path = Tyr.Common.Debug.Drawing.Drawables.Path;
-using Triangle = Tyr.Common.Debug.Drawing.Drawables.Triangle;
+using Tyr.Common.Time;
 
 namespace Tyr.Gui;
 
@@ -17,74 +14,88 @@ public class Window : ImWindow
     private readonly DrawableRenderer _renderer = new();
 
     private readonly Common.Time.Timer _timer = new();
-    private readonly List<Command> _commands = [];
 
-    public Window()
-    {
-        var circleDrawable = new Circle(new Vector2(Rand.Get(-500f, 500f), Rand.Get(-500f, 500f)),
-            Rand.Get(10f, 100f));
-        var pointDrawable = new Point(new Vector2(Rand.Get(-500f, 500f), Rand.Get(-500f, 500f)));
-        var arrowDrawable = new Arrow(new Vector2(Rand.Get(-500f, 500f), Rand.Get(-500f, 500f)),
-            new Vector2(Rand.Get(-500f, 500f), Rand.Get(-500f, 500f)));
-        var lineDrawable = new Line(new Vector2(Rand.Get(-500f, 500f), Rand.Get(-500f, 500f)),
-            Angle.FromDeg(Rand.Get(0f, 360f)));
-        var textDrawable = new Text("Have no fear,\nHippo is here",
-            new Vector2(Rand.Get(-500f, 500f), Rand.Get(-500f, 500f)), Rand.Get(20f, 80f));
-        var triangleDrawable = new Triangle(
-            new Vector2(Rand.Get(-500f, 500f), Rand.Get(-500f, 500f)),
-            new Vector2(Rand.Get(-500f, 500f), Rand.Get(-500f, 500f)),
-            new Vector2(Rand.Get(-500f, 500f), Rand.Get(-500f, 500f)));
-        var robotDrawable = new Robot(new Vector2(Rand.Get(-500f, 500f), Rand.Get(-500f, 500f)),
-            Angle.FromDeg(Rand.Get(0f, 360f)), Rand.Get(0, 16));
+    private readonly DebugFramer _framer = new();
 
-        var spiralPath = new Vector2[40];
-        for (var pathIdx = 0; pathIdx < spiralPath.Length; pathIdx++)
-        {
-            var t = pathIdx / 40f; // [0, 1]  
-            var angle = t * MathF.PI * 4; // 2 full turns
-            var radius = t * 1000f; // up to 1000 units
-
-            var x = MathF.Cos(angle) * radius;
-            var y = MathF.Sin(angle) * radius;
-
-            spiralPath[pathIdx] = new Vector2(x, y);
-        }
-
-        var pathDrawable = new Path(spiralPath);
-
-        var options = new Options(Filled: Rand.Get(0f, 1f) > 0.5f, Thickness: Rand.Get(1f, 10f));
-        var meta = new Meta("Gui", DateTime.UtcNow, 0, null, null, 0);
-
-        _commands.Add(new Command(circleDrawable, Color.Random(), options, meta));
-        _commands.Add(new Command(pointDrawable, Color.Random(), options, meta));
-        _commands.Add(new Command(arrowDrawable, Color.Random(), options, meta));
-        _commands.Add(new Command(lineDrawable, Color.Random(), options, meta));
-        _commands.Add(new Command(textDrawable, Color.Random(), options, meta));
-        _commands.Add(new Command(triangleDrawable, Color.Random(), options, meta));
-        _commands.Add(new Command(robotDrawable, Color.Random(), options, meta));
-        _commands.Add(new Command(pathDrawable, Color.Random(), options, meta));
-    }
+    private float _time;
+    private bool _live = true;
 
     public override void Init()
     {
         base.Init();
+
+        ModuleContext.Current.Value = ModuleName;
+
         _timer.Start();
+
+        _renderer.Camera.Position = Vector2.Zero;
+        _renderer.Camera.Zoom = 0.1f;
     }
 
     public override void DrawContent()
     {
-        ImGui.Begin("Hippos");
+        _timer.Update();
+        _framer.Tick();
 
-        _renderer.Camera.Position = Vector2.Zero;
-        _renderer.Camera.Zoom = 0.3f;
+        ImGui.Text($"FPS: {_timer.FpsSmooth:F1}");
+
+        ImGui.Begin("Field");
+
+        var start = Timestamp.MaxValue;
+        var end = Timestamp.Zero;
+
+        foreach (var framer in _framer.Modules.Values)
+        {
+            if (!framer.StartTime.HasValue || !framer.EndTime.HasValue) continue;
+
+            start = Timestamp.Min(start, framer.StartTime.Value);
+            end = Timestamp.Max(end, framer.EndTime.Value);
+        }
+
+        var endDelta = (float)(end - start).Seconds;
+        if (_live) _time = endDelta;
+
+        ImGui.SliderFloat("Time", ref _time, 0f, endDelta);
+        ImGui.SameLine();
+        ImGui.Checkbox("Live", ref _live);
+
         _renderer.Camera.Viewport = new Viewport(
             Offset: ImGui.GetCursorScreenPos(),
             Size: ImGui.GetContentRegionAvail());
 
-        _renderer.Draw(_commands);
+        // zooming
+        if (!Utils.ApproximatelyZero(ImGui.GetIO().MouseWheel))
+        {
+            var zoomFactor = 1.1f; // Adjust as needed for smoother/quicker zooming
+            var newZoom = ImGui.GetIO().MouseWheel > 0
+                ? _renderer.Camera.Zoom * zoomFactor
+                : _renderer.Camera.Zoom / zoomFactor;
 
-        _timer.Update();
-        Logger.ZLogTrace($"FPS: {_timer.FpsSmooth}");
+            var mouseScreen = ImGui.GetMousePos();
+            var mouseWorldBefore = _renderer.Camera.ScreenToWorld(mouseScreen);
+
+            _renderer.Camera.Zoom = newZoom;
+
+            var mouseWorldAfter = _renderer.Camera.ScreenToWorld(mouseScreen);
+            _renderer.Camera.Position -= mouseWorldAfter - mouseWorldBefore;
+        }
+
+        // panning
+        if (ImGui.IsMouseDragging(ImGuiMouseButton.Middle))
+        {
+            var mouseDelta = ImGui.GetIO().MouseDelta;
+            _renderer.Camera.Position -= _renderer.Camera.ScreenToWorldDirection(mouseDelta);
+        }
+
+        foreach (var framer in _framer.Modules.Values)
+        {
+            var frame = _live ? framer.LatestFrame : framer.GetFrame(start + DeltaTime.FromSeconds(_time));
+
+            if (frame != null)
+            {
+                _renderer.Draw(frame.Draws);
+            }
+        }
 
         ImGui.End();
     }

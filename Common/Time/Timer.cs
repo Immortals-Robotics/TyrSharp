@@ -9,17 +9,18 @@ public class Timer
     private long _timeOffsetTicks;
     private long _lastUpdateTicks;
 
-    private const float SmoothnessAlpha = 0.1f;
+    private const double SmoothnessAlpha = 0.1f;
 
-    public float DeltaTime { get; private set; }
-    public float DeltaTimeSmooth { get; private set; }
+    public DeltaTime DeltaTime { get; private set; }
+    public DeltaTime DeltaTimeSmooth { get; private set; }
 
-    public float Fps => 1f / DeltaTime;
-    public float FpsSmooth => 1f / DeltaTimeSmooth;
+    public float Fps => (float)(1 / DeltaTime.Seconds);
+    public float FpsSmooth => (float)(1 / DeltaTimeSmooth.Seconds);
 
     public bool Running => _stopwatch.IsRunning;
 
-    public float Time => (float)((_stopwatch.ElapsedTicks + _timeOffsetTicks) / (double)Stopwatch.Frequency);
+    public Timestamp Time =>
+        Timestamp.FromSeconds((_stopwatch.ElapsedTicks + _timeOffsetTicks) / (double)Stopwatch.Frequency);
 
     public void SetTime(float value)
     {
@@ -58,7 +59,7 @@ public class Timer
         var nowTicks = _stopwatch.ElapsedTicks;
         var deltaTicks = nowTicks - _lastUpdateTicks;
 
-        DeltaTime = (float)(deltaTicks / (double)Stopwatch.Frequency);
+        DeltaTime = DeltaTime.FromSeconds(deltaTicks / (double)Stopwatch.Frequency);
         DeltaTimeSmooth = SmoothnessAlpha * DeltaTime + (1f - SmoothnessAlpha) * DeltaTimeSmooth;
 
         _lastUpdateTicks = _stopwatch.ElapsedTicks;

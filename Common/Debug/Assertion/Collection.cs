@@ -50,6 +50,28 @@ public partial class Assert
         logger.ZLogError($"Expected {expr} to not contain item '{item}'", null, member, file, line);
     }
 
+    public void Contains<TKey, TValue>(IDictionary<TKey, TValue> dictionary, TKey key,
+        [CallerArgumentExpression("dictionary")]
+        string? expr = null,
+        [CallerMemberName] string? member = null,
+        [CallerFilePath] string? file = null,
+        [CallerLineNumber] int line = 0)
+    {
+        if (!Enabled || dictionary.ContainsKey(key)) return;
+        logger.ZLogError($"Expected {expr} to contain key '{key}'", null, member, file, line);
+    }
+
+    public void DoesNotContain<TKey, TValue>(IDictionary<TKey, TValue> dictionary, TKey key,
+        [CallerArgumentExpression("dictionary")]
+        string? expr = null,
+        [CallerMemberName] string? member = null,
+        [CallerFilePath] string? file = null,
+        [CallerLineNumber] int line = 0)
+    {
+        if (!Enabled || !dictionary.ContainsKey(key)) return;
+        logger.ZLogError($"Expected {expr} to not contain key '{key}'", null, member, file, line);
+    }
+
     public void All<T>(IEnumerable<T> collection, Func<T, bool> predicate,
         [CallerArgumentExpression("collection")]
         string? expr = null,

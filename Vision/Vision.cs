@@ -1,44 +1,94 @@
-﻿using Tyr.Common.Data.Ssl.Vision.Detection;
-using Tyr.Common.Dataflow;
-using Tyr.Common.Runner;
+﻿using Tyr.Common.Config;
+using Tyr.Common.Debug.Drawing;
+using Tyr.Common.Time;
 
 namespace Tyr.Vision;
 
-public class Vision : IDisposable
+[Configurable]
+public sealed class Vision
 {
-    private readonly Subscriber<Frame> _subscriber = Hub.RawDetection.Subscribe(Mode.All);
+    [ConfigEntry] private static float CameraTooOldTime { get; set; } = 1f;
 
-    private Dictionary<uint, Camera> _cameras = new();
+    private readonly FilteredFrame _filteredFrame = new();
 
-    private readonly RunnerSync _runner;
+    private readonly Dictionary<uint, Camera> _cameras = [];
 
-    public Vision()
+    private FieldSize? _fieldSize;
+
+    private Camera GetOrCreateCamera(uint id)
     {
-        _runner = new RunnerSync(Tick, 100);
-        _runner.Start();
+        if (_cameras.TryGetValue(id, out var camera)) return camera;
+
+        camera = new Camera(id);
+        _cameras.Add(id, camera);
+
+        return camera;
     }
 
-    private void ReceiveDetections()
+    /// Processes the latest batch of detection frames, calibrations, and field size.
+    /// This method should be called once per tick.
+    internal void Process(
+        IEnumerable<DetectionFrame> frames,
+        IEnumerable<CameraCalibration> calibrations,
+        FieldSize? fieldSize)
     {
-        while (_subscriber.Reader.TryRead(out var frame))
+        foreach (var calibration in calibrations)
         {
-            if (!_cameras.TryGetValue(frame.CameraId, out var camera))
+            var camera = GetOrCreateCamera(calibration.CameraId);
+            camera.OnCalibration(calibration);
+        }
+
+        if (fieldSize.HasValue)
+        {
+            _fieldSize = fieldSize;
+            foreach (var camera in _cameras.Values)
+                camera.OnFieldSize(fieldSize.Value);
+        }
+
+        foreach (var frame in frames)
+        {
+            var camera = GetOrCreateCamera(frame.CameraId);
+            camera.OnFrame(frame, _filteredFrame);
+        }
+
+        // remove old cameras
+        if (_cameras.Count > 0)
+        {
+            var averageTimestamp = Timestamp.FromSeconds(
+                _cameras.Values.Average(camera => camera.Timestamp.Seconds));
+            _cameras.RemoveAll((_, camera) =>
+                camera.Timestamp - averageTimestamp > DeltaTime.FromSeconds(CameraTooOldTime));
+        }
+
+        if (_fieldSize.HasValue)
+        {
+            Draw.DrawRectangle(_fieldSize.Value.FieldRectangleWithBoundary,
+                Color.Green, new Options { Filled = true });
+
+            foreach (var line in _fieldSize.Value.FieldLines)
             {
-                camera = new Camera(frame.CameraId);
-                _cameras.Add(frame.CameraId, camera);
+                Draw.DrawLineSegment(line.LineSegment, Color.White,
+                    new Options { Thickness = line.Thickness });
             }
 
-            camera.OnFrame(frame);
+            var lineThickness = _fieldSize.Value.LineThickness.GetValueOrDefault();
+            Draw.DrawCircle(_fieldSize.Value.CenterCircle, Color.White,
+                new Options { Thickness = lineThickness });
         }
-    }
 
-    private void Tick()
-    {
-        ReceiveDetections();
-    }
+        foreach (var camera in _cameras.Values)
+        {
+            foreach (var (id, tracker) in camera.Robots)
+            {
+                var color = id.Team == TeamColor.Blue ? Color.Blue : Color.Yellow;
+                Draw.DrawRobot(tracker.Position, tracker.Angle, (int?)id.Id, color,
+                    new Options { Filled = true });
+            }
 
-    public void Dispose()
-    {
-        _runner.Stop();
+            foreach (var tracker in camera.Balls)
+            {
+                Draw.DrawCircle(tracker.Position, 25f, Color.Orange, new Options { Filled = true });
+            }
+        }
     }
 }

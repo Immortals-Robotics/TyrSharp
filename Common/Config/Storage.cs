@@ -1,8 +1,11 @@
 ﻿using Tomlet;
+using Tyr.Common.Runner;
+using Tyr.Common.Time;
 
 namespace Tyr.Common.Config;
 
-public static class ConfigStorage
+[Configurable]
+public static class Storage
 {
     public static string Path { get; private set; } = string.Empty;
 
@@ -11,13 +14,14 @@ public static class ConfigStorage
     private static FileSystemWatcher? _watcher;
     private static DateTime _lastReadTime;
 
-    private static Debouncer _loadDebouncer = new(500, Load);
-    private static Debouncer _saveDebouncer = new(500, Save);
+    [ConfigEntry] private static float DebounceDelayS { get; set; } = 0.5f;
+    private static Debouncer _loadDebouncer = new(DeltaTime.FromSeconds(DebounceDelayS), Load);
+    private static Debouncer _saveDebouncer = new(DeltaTime.FromSeconds(DebounceDelayS), Save);
 
     public static void Initialize(string path)
     {
         Path = path;
-        ConfigRegistry.OnAnyUpdated += OnOnAnyConfigUpdated;
+        Registry.OnAnyUpdated += OnOnAnyConfigUpdated;
 
         // setup the file watcher
         var fullPath = System.IO.Path.GetFullPath(Path);
@@ -44,7 +48,7 @@ public static class ConfigStorage
         var newWriteTime = File.GetLastWriteTimeUtc(Path);
         if (newWriteTime <= _lastReadTime) return;
 
-        Logger.ZLogTrace($"Detected external changes to config file {Path}");
+        Log.ZLogTrace($"Detected external changes to config file {Path}");
         _loadDebouncer.Trigger();
     }
 
@@ -60,12 +64,12 @@ public static class ConfigStorage
                 var toml = TomlParser.ParseFile(Path);
 
                 _loading = true;
-                ConfigRegistry.FromToml(toml);
+                Registry.FromToml(toml);
                 _loading = false;
 
                 _lastReadTime = File.GetLastWriteTimeUtc(Path);
 
-                Logger.ZLogTrace($"Loaded config file {Path}");
+                Log.ZLogTrace($"Loaded config file {Path}");
 
                 return;
             }
@@ -75,27 +79,27 @@ public static class ConfigStorage
             }
             catch (Exception e)
             {
-                Logger.ZLogError(e, $"Failed to load config file {Path}");
+                Log.ZLogError(e, $"Failed to load config file {Path}");
             }
         }
 
-        Logger.ZLogError($"Failed to load config file {Path} after {maxAttempts} attempts.");
+        Log.ZLogError($"Failed to load config file {Path} after {maxAttempts} attempts.");
     }
 
     public static void Save()
     {
         try
         {
-            var toml = ConfigRegistry.ToToml();
+            var toml = Registry.ToToml();
             File.WriteAllText(Path, toml.SerializedValue);
 
             _lastReadTime = File.GetLastWriteTimeUtc(Path);
 
-            Logger.ZLogTrace($"Saved config file {Path}");
+            Log.ZLogTrace($"Saved config file {Path}");
         }
         catch (Exception e)
         {
-            Logger.ZLogError(e, $"Failed to save config file {Path}");
+            Log.ZLogError(e, $"Failed to save config file {Path}");
         }
     }
 
@@ -103,7 +107,7 @@ public static class ConfigStorage
     {
         if (_loading) return;
 
-        Logger.ZLogTrace($"Detected runtime changes to configs");
+        Log.ZLogTrace($"Detected runtime changes to configs");
 
         _saveDebouncer.Trigger();
     }

@@ -37,7 +37,7 @@ public class Configurable
             .Select(info => new ConfigEntry(info, this))
             .ToArray();
 
-        OnUpdated += () => Logger.ZLogTrace($"Configurable of type {Type.FullName} was updated.");
+        OnUpdated += () => Log.ZLogTrace($"Configurable of type {Type.FullName} was updated.");
     }
 
     public void OnEntryChanged(ConfigEntry entry)
@@ -60,7 +60,7 @@ public class Configurable
 
         foreach (var entry in Entries)
         {
-            table.Put(ConfigRegistry.ConvertName($"{entry.Name}"), entry);
+            table.Put(Registry.ConvertName($"{entry.Name}"), entry);
         }
 
         return table;
@@ -70,7 +70,7 @@ public class Configurable
     {
         foreach (var entry in Entries)
         {
-            var key = ConfigRegistry.ConvertName($"{entry.Name}");
+            var key = Registry.ConvertName($"{entry.Name}");
             if (!table.TryGetValue(key, out var value)) continue;
 
             entry.FromToml(value);

@@ -13,14 +13,13 @@ using Triangle = Tyr.Common.Debug.Drawing.Drawables.Triangle;
 namespace Tyr.Common.Debug.Drawing;
 
 [SuppressMessage("ReSharper", "ExplicitCallerInfoArgument")]
-public class Drawer(string category)
+public class Drawer(string moduleName)
 {
     private void Draw(IDrawable drawable, Color color, Options options,
         string? memberName, string? filePath, int lineNumber)
     {
-        var time = DateTime.UtcNow;
-        var frameId = 0;
-        var meta = new Meta(category, time, frameId, memberName, filePath, lineNumber);
+        var timestamp = Timestamp.Now;
+        var meta = new Meta(moduleName, timestamp, memberName, filePath, lineNumber);
         var command = new Command(drawable, color, options, meta);
 
         Hub.Draws.Publish(command);
@@ -95,12 +94,12 @@ public class Drawer(string category)
         Draw(rect, color, options, memberName, filePath, lineNumber);
     }
 
-    public void DrawRectangle(Math.Shapes.Rect rect, Color color, Options options = default,
+    public void DrawRectangle(Math.Shapes.Rectangle rectangle, Color color, Options options = default,
         [CallerMemberName] string? memberName = null,
         [CallerFilePath] string? filePath = null,
         [CallerLineNumber] int lineNumber = 0)
     {
-        DrawRectangle(rect.Min, rect.Max, color, options, memberName, filePath, lineNumber);
+        DrawRectangle(rectangle.Min, rectangle.Max, color, options, memberName, filePath, lineNumber);
     }
 
     public void DrawTriangle(Vector2 v1, Vector2 v2, Vector2 v3, Color color, Options options = default,
@@ -164,12 +163,12 @@ public class Drawer(string category)
         Draw(path, color, options, memberName, filePath, lineNumber);
     }
 
-    public void DrawText(string content, Vector2 position, Color color, float size, Options options = default,
+    public void DrawText(string content, Vector2 position, float size, Color color, Options options = default,
         [CallerMemberName] string? memberName = null,
         [CallerFilePath] string? filePath = null,
         [CallerLineNumber] int lineNumber = 0)
     {
-        var text = new Text(content, position);
+        var text = new Text(content, position, size);
         Draw(text, color, options, memberName, filePath, lineNumber);
     }
 }

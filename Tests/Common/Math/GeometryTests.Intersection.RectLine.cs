@@ -9,7 +9,7 @@ public partial class GeometryTests
     [Fact]
     public void Intersection_HorizontalLineThroughRectCenter_ReturnsTwoPoints()
     {
-        var rect = new Rect(new Vector2(0, 0), new Vector2(4, 4));
+        var rect = new Rectangle(new Vector2(0, 0), new Vector2(4, 4));
         var line = Line.FromSlopeAndIntercept(0, 2); // y = 2
 
         var (point1, point2) = Geometry.Intersection(rect, line);
@@ -27,7 +27,7 @@ public partial class GeometryTests
     [Fact]
     public void Intersection_VerticalLineThroughRectCenter_ReturnsTwoPoints()
     {
-        var rect = new Rect(new Vector2(0, 0), new Vector2(4, 4));
+        var rect = new Rectangle(new Vector2(0, 0), new Vector2(4, 4));
         var line = Line.FromTwoPoints(new Vector2(2, -1), new Vector2(2, 5)); // x = 2
 
         var (point1, point2) = Geometry.Intersection(rect, line);
@@ -47,7 +47,7 @@ public partial class GeometryTests
     [Fact]
     public void Intersection_DiagonalLineThroughRectCenter_ReturnsTwoPoints()
     {
-        var rect = new Rect(new Vector2(0, 0), new Vector2(4, 4));
+        var rect = new Rectangle(new Vector2(0, 0), new Vector2(4, 4));
         var line = Line.FromSlopeAndIntercept(1, 0); // y = x
 
         var (point1, point2) = Geometry.Intersection(rect, line);
@@ -67,7 +67,7 @@ public partial class GeometryTests
     [Fact]
     public void Intersection_DiagonalLineOppositeDirection_ReturnsTwoPoints()
     {
-        var rect = new Rect(new Vector2(0, 0), new Vector2(4, 4));
+        var rect = new Rectangle(new Vector2(0, 0), new Vector2(4, 4));
         var line = Line.FromSlopeAndIntercept(-1, 4); // y = -x + 4
 
         var (point1, point2) = Geometry.Intersection(rect, line);
@@ -87,7 +87,7 @@ public partial class GeometryTests
     [Fact]
     public void Intersection_LinePassesThroughRectCorner_ReturnsTwoPoints()
     {
-        var rect = new Rect(new Vector2(0, 0), new Vector2(4, 4));
+        var rect = new Rectangle(new Vector2(0, 0), new Vector2(4, 4));
         // Line passing through (0,0) and (2,2)
         var line = Line.FromTwoPoints(new Vector2(0, 0), new Vector2(2, 2));
 
@@ -108,7 +108,7 @@ public partial class GeometryTests
     [Fact]
     public void Intersection_LineDoesNotIntersectRect_ReturnsNull()
     {
-        var rect = new Rect(new Vector2(0, 0), new Vector2(4, 4));
+        var rect = new Rectangle(new Vector2(0, 0), new Vector2(4, 4));
         var line = Line.FromSlopeAndIntercept(0, 5); // y = 5, above the rect
 
         var (point1, point2) = Geometry.Intersection(rect, line);
@@ -120,7 +120,7 @@ public partial class GeometryTests
     [Fact]
     public void Intersection_LineCoincidentWithRectEdge_ReturnsTwoPoints()
     {
-        var rect = new Rect(new Vector2(0, 0), new Vector2(4, 4));
+        var rect = new Rectangle(new Vector2(0, 0), new Vector2(4, 4));
         var line = Line.FromTwoPoints(new Vector2(-1, 4), new Vector2(5, 4)); // y = 4, coincident with top edge
 
         var (point1, point2) = Geometry.Intersection(rect, line);
@@ -140,7 +140,7 @@ public partial class GeometryTests
     [Fact]
     public void Intersection_NonSquareRect_ReturnsTwoPoints()
     {
-        var rect = new Rect(new Vector2(1, 1), new Vector2(5, 3)); // rectangle 4x2
+        var rect = new Rectangle(new Vector2(1, 1), new Vector2(5, 3)); // rectangle 4x2
         var line = Line.FromSlopeAndIntercept(0.5f, 0); // y = 0.5x
 
         var (point1, point2) = Geometry.Intersection(rect, line);
@@ -160,7 +160,7 @@ public partial class GeometryTests
     [Fact]
     public void Intersection_OffsetRect_ReturnsTwoPoints()
     {
-        var rect = new Rect(new Vector2(-2, -2), new Vector2(2, 2)); // centered at origin
+        var rect = new Rectangle(new Vector2(-2, -2), new Vector2(2, 2)); // centered at origin
         var line = Line.FromSlopeAndIntercept(0, 0); // y = 0
 
         var (point1, point2) = Geometry.Intersection(rect, line);

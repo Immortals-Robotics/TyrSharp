@@ -1,5 +1,4 @@
 ﻿using ProtoBuf;
-using Tyr.Common.Time;
 
 namespace Tyr.Common.Data.Ssl.Vision.Detection;
 
@@ -9,15 +8,15 @@ public class Frame
     [ProtoMember(1, IsRequired = true)] public uint FrameNumber { get; set; }
 
     [ProtoMember(2, IsRequired = true)] public double CaptureTimeSeconds { get; set; }
-    public DateTime CaptureTime => UnixTime.FromSeconds(CaptureTimeSeconds);
+    public Timestamp CaptureTime => Timestamp.FromSeconds(CaptureTimeSeconds);
 
     [ProtoMember(3, IsRequired = true)] public double SentTimeSeconds { get; set; }
-    public DateTime SentTime => UnixTime.FromSeconds(SentTimeSeconds);
+    public Timestamp SentTime => Timestamp.FromSeconds(SentTimeSeconds);
 
     [ProtoMember(8)] public double? CameraCaptureTimeSeconds { get; set; }
 
-    public DateTime? CameraCaptureTime => CameraCaptureTimeSeconds.HasValue
-        ? UnixTime.FromSeconds(CameraCaptureTimeSeconds.Value)
+    public Timestamp? CameraCaptureTime => CameraCaptureTimeSeconds.HasValue
+        ? Timestamp.FromSeconds(CameraCaptureTimeSeconds.Value)
         : null;
 
     [ProtoMember(4, IsRequired = true)] public uint CameraId { get; set; }

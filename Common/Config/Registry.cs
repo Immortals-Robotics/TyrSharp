@@ -5,7 +5,7 @@ using Tomlet.Models;
 
 namespace Tyr.Common.Config;
 
-public static class ConfigRegistry
+public static class Registry
 {
     internal static string ConvertName(string s) => s;
 
@@ -28,10 +28,10 @@ public static class ConfigRegistry
             .ToDictionary(MapName, type => new Configurable(type));
 
         if (configurables.Count == 0) return;
-        Logger.ZLogTrace($"Found {configurables.Count} configurables in {assembly.GetName().Name}");
+        Log.ZLogTrace($"Found {configurables.Count} configurables in {assembly.GetName().Name}");
         foreach (var configurable in configurables.Values)
         {
-            Logger.ZLogTrace($" - {configurable.TypeName} @ {configurable.Namespace}");
+            Log.ZLogTrace($" - {configurable.TypeName} @ {configurable.Namespace}");
         }
 
         // Merge with existing configurables instead of replacing

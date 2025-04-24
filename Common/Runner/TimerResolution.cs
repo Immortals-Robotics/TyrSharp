@@ -1,15 +1,18 @@
-﻿namespace Tyr.Common.Runner;
+﻿using Tyr.Common.Time;
+
+namespace Tyr.Common.Runner;
 
 public static class TimerResolution
 {
-    public static int CurrentMs { get; private set; } = GetDefaultResolution;
-    public static float CurrentSeconds => CurrentMs / 1000f;
+    public static DeltaTime Current { get; private set; } = GetDefaultResolution;
 
-    public static void Set(int resolutionMs)
+    public static void Set(DeltaTime resolution)
     {
         if (OperatingSystem.IsWindows())
         {
-            CurrentMs = TimerResolutionWindows.Set(resolutionMs);
+            var resolutionMs = (int)System.Math.Round(resolution.Milliseconds);
+            var actualMs = TimerResolutionWindows.Set(resolutionMs);
+            Current = DeltaTime.FromMilliseconds(actualMs);
         }
     }
 
@@ -17,10 +20,11 @@ public static class TimerResolution
     {
         if (OperatingSystem.IsWindows())
         {
-            TimerResolutionWindows.Reset(CurrentMs);
-            CurrentMs = GetDefaultResolution;
+            var currentMs = (int)System.Math.Round(Current.Milliseconds);
+            TimerResolutionWindows.Reset(currentMs);
+            Current = GetDefaultResolution;
         }
     }
 
-    private static int GetDefaultResolution => OperatingSystem.IsWindows() ? 16 : 1;
+    private static DeltaTime GetDefaultResolution => DeltaTime.FromMilliseconds(OperatingSystem.IsWindows() ? 16 : 1);
 }

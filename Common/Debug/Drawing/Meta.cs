@@ -1,9 +1,8 @@
 ﻿namespace Tyr.Common.Debug.Drawing;
 
 public record Meta(
-    string Category,
-    DateTime Time,
-    int FrameId,
+    string ModuleName,
+    Timestamp Timestamp,
     string? MemberName,
     string? FilePath,
     int LineNumber);

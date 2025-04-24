@@ -5,18 +5,18 @@ using Tyr.Common.Config;
 namespace Tyr.Common.Debug;
 
 [Configurable]
-public static class Log
+public static class Logging
 {
     [ConfigEntry] private static LogLevel Level { get; set; } = LogLevel.Trace;
 
-    static Log()
+    static Logging()
     {
         // some cultures especially in europe use ',' instead of '.' for the decimal point 
         CultureInfo.DefaultThreadCurrentCulture = CultureInfo.InvariantCulture;
         CultureInfo.DefaultThreadCurrentUICulture = CultureInfo.InvariantCulture;
     }
 
-    private static ILoggerFactory Factory { get; set; } = LoggerFactory.Create(logging =>
+    internal static ILoggerFactory Factory { get; set; } = LoggerFactory.Create(logging =>
     {
         logging.SetMinimumLevel(LogLevel.Trace);
         logging.AddFilter(level => level >= Level);
@@ -35,6 +35,4 @@ public static class Log
             });
         });
     });
-
-    public static ILogger GetLogger(string name) => Factory.CreateLogger(name);
 }

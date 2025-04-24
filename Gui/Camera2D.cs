@@ -92,6 +92,20 @@ public class Camera2D
         return Vector2.Transform(screenPos, _inverse);
     }
 
+    public Vector2 ScreenToWorldDirection(Vector2 screenDir)
+    {
+        if (_dirty) UpdateMatrix();
+
+        return Vector2.TransformNormal(screenDir, _inverse);
+    }
+
+    public Vector2 WorldToScreenDirection(Vector2 worldDir)
+    {
+        if (_dirty) UpdateMatrix();
+
+        return Vector2.TransformNormal(worldDir, _matrix);
+    }
+
     // Scale a size, thickness, or radius from world to screen
     public float WorldToScreenLength(float worldLength)
     {
@@ -107,23 +121,23 @@ public class Camera2D
         return Vector2.TransformNormal(new Vector2(screenLength, 0), _inverse).Length();
     }
 
-    public Rect GetVisibleWorldBounds()
+    public Rectangle GetVisibleWorldBounds()
     {
         if (_dirty) UpdateMatrix();
-        
+
         var corner1 = ScreenToWorld(Vector2.Zero);
         var corner2 = ScreenToWorld(_viewport.Size with { Y = 0 });
         var corner3 = ScreenToWorld(_viewport.Size with { X = 0 });
         var corner4 = ScreenToWorld(_viewport.Size);
-        
+
         var min = Vector2.Min(
             Vector2.Min(corner1, corner2),
             Vector2.Min(corner3, corner4));
-        
+
         var max = Vector2.Max(
             Vector2.Max(corner1, corner2),
             Vector2.Max(corner3, corner4));
 
-        return new Rect(min, max);
+        return new Rectangle(min, max);
     }
 }

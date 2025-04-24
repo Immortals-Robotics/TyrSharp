@@ -27,7 +27,7 @@ public class UdpServer
         }
         catch (Exception ex)
         {
-            Logger.ZLogError(ex, $"Serialization failed: {ex.Message}");
+            Log.ZLogError(ex, $"Serialization failed: {ex.Message}");
             return false;
         }
     }
@@ -43,7 +43,7 @@ public class UdpServer
         }
         catch (Exception ex)
         {
-            Logger.ZLogError(ex, $"Send failed: {ex.Message}");
+            Log.ZLogError(ex, $"Send failed: {ex.Message}");
             return false;
         }
     }

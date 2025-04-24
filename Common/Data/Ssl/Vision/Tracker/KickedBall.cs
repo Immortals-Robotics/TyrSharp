@@ -1,5 +1,4 @@
 ﻿using ProtoBuf;
-using Tyr.Common.Time;
 
 namespace Tyr.Common.Data.Ssl.Vision.Tracker;
 
@@ -23,12 +22,12 @@ public struct KickedBall
     }
 
     [ProtoMember(3, IsRequired = true)] public double StartTimestampSeconds { get; set; }
-    public DateTime StartTimestamp => UnixTime.FromSeconds(StartTimestampSeconds);
+    public Timestamp StartTimestamp => Timestamp.FromSeconds(StartTimestampSeconds);
 
     [ProtoMember(4)] public double? StopTimestampSeconds { get; set; }
 
-    public DateTime? StopTimestamp => StopTimestampSeconds.HasValue
-        ? UnixTime.FromSeconds(StopTimestampSeconds.Value)
+    public Timestamp? StopTimestamp => StopTimestampSeconds.HasValue
+        ? Timestamp.FromSeconds(StopTimestampSeconds.Value)
         : null;
 
     [ProtoMember(5)] public Vector2? StopPosRaw { get; set; }

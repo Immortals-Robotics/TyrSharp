@@ -44,7 +44,7 @@ public class UdpClient : IDisposable
         }
         catch (Exception ex)
         {
-            Logger.ZLogError(ex, $"UDP async receive error");
+            Log.ZLogError(ex, $"UDP async receive error");
             return ReadOnlyMemory<byte>.Empty;
         }
     }
@@ -61,7 +61,7 @@ public class UdpClient : IDisposable
         }
         catch (Exception ex)
         {
-            Logger.ZLogError(ex, $"Failed to deserialize Protobuf-net message");
+            Log.ZLogError(ex, $"Failed to deserialize Protobuf-net message");
             return null;
         }
     }

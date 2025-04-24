@@ -24,7 +24,12 @@ public class BroadcastChannel<T>
 
         _subscribers.Add(channel);
 
-        return new Subscriber<T>(this, channel);
+        return new Subscriber<T>
+        {
+            BroadcastChannel = this,
+            Channel = channel,
+            Mode = mode
+        };
     }
 
     // This is not thread-safe
@@ -49,7 +54,7 @@ public class BroadcastChannel<T>
         foreach (var subscriber in _subscribers)
         {
             var result = subscriber.Writer.TryWrite(item);
-            if (!result) Logger.ZLogError($"Failed to publish item to channel");
+            if (!result) Log.ZLogError($"Failed to publish item to channel");
         }
     }
 }
