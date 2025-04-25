@@ -1,5 +1,7 @@
 ﻿using Hexa.NET.ImGui;
 using Tyr.Gui;
+using Tyr.Gui.Backend;
+using Tyr.Gui.Views;
 
 Tyr.Common.Config.Storage.Initialize(args[0]);
 
@@ -21,7 +23,6 @@ while (window.ShouldClose == false)
     window.Clear(1f, .8f, .75f);
     imgui.NewFrame();
 
-    ImGui.ShowDemoWindow();
     fieldView.Draw();
 
     imgui.Render();

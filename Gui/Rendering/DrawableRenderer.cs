@@ -7,7 +7,7 @@ using Path = Tyr.Common.Debug.Drawing.Drawables.Path;
 using Rectangle = Tyr.Common.Debug.Drawing.Drawables.Rectangle;
 using Triangle = Tyr.Common.Debug.Drawing.Drawables.Triangle;
 
-namespace Tyr.Gui;
+namespace Tyr.Gui.Rendering;
 
 internal class DrawableRenderer
 {

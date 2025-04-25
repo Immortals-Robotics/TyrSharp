@@ -1,11 +1,12 @@
 ﻿using System.Numerics;
 using Hexa.NET.ImGui;
-//using Hexa.NET.ImGui.Widgets;
 using Tyr.Common.Debug;
 using Tyr.Common.Math;
 using Tyr.Common.Time;
+using Tyr.Gui.Data;
+using Tyr.Gui.Rendering;
 
-namespace Tyr.Gui;
+namespace Tyr.Gui.Views;
 
 public class FieldView
 {

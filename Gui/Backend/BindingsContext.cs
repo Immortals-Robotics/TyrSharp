@@ -1,6 +1,6 @@
 ﻿using Hexa.NET.GLFW;
 
-namespace Tyr.Gui;
+namespace Tyr.Gui.Backend;
 
 internal unsafe class BindingsContext(GLFWwindowPtr window) : HexaGen.Runtime.IGLContext
 {

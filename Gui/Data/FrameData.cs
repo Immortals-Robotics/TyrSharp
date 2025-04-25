@@ -1,6 +1,6 @@
 ﻿using Debug = Tyr.Common.Debug;
 
-namespace Tyr.Gui;
+namespace Tyr.Gui.Data;
 
 public class FrameData
 {

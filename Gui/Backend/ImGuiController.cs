@@ -4,7 +4,7 @@ using Hexa.NET.ImGui.Backends.GLFW;
 using Hexa.NET.ImGui.Backends.OpenGL3;
 using Hexa.NET.ImGui.Utilities;
 
-namespace Tyr.Gui;
+namespace Tyr.Gui.Backend;
 
 internal class ImGuiController : IDisposable
 {
@@ -32,7 +32,7 @@ internal class ImGuiController : IDisposable
 
         ImGuiImplGLFW.SetCurrentContext(_ctx);
         if (!ImGuiImplGLFW.InitForOpenGL(
-                Unsafe.BitCast<Hexa.NET.GLFW.GLFWwindowPtr, Hexa.NET.ImGui.Backends.GLFW.GLFWwindowPtr>(window.Handle),
+                Unsafe.BitCast<Hexa.NET.GLFW.GLFWwindowPtr, GLFWwindowPtr>(window.Handle),
                 true))
         {
             throw new Exception("Failed Init GLFW ImGui");
@@ -45,20 +45,23 @@ internal class ImGuiController : IDisposable
 
     private void InitializeImGuiFonts(params string[] fontFiles)
     {
-        _fontBuilder.AddDefaultFont();
         _fontBuilder.SetOption(config => { config.FontBuilderFlags |= (uint)ImGuiFreeTypeBuilderFlags.LoadColor; });
 
+        var loaded = false;
         foreach (var fontFile in fontFiles)
         {
             try
             {
-                _fontBuilder.AddFontFromFileTTF(fontFile, 16.0f, [0x1, 0x1FFFF]);
+                _fontBuilder.AddFontFromFileTTF(fontFile, 13.0f, [0x1, 0x1FFFF]);
+                loaded = true;
             }
             catch (FileNotFoundException e)
             {
                 Console.WriteLine($"Failed to load font {fontFile}: {e.Message}");
             }
         }
+
+        if (!loaded) _fontBuilder.AddDefaultFont();
 
         _fontBuilder.Build();
     }
@@ -68,6 +71,8 @@ internal class ImGuiController : IDisposable
         ImGuiImplOpenGL3.NewFrame();
         ImGuiImplGLFW.NewFrame();
         ImGui.NewFrame();
+
+        ImGui.DockSpaceOverViewport();
     }
 
     public void Render()

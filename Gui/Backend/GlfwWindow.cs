@@ -1,7 +1,7 @@
 ﻿using Hexa.NET.GLFW;
 using Hexa.NET.OpenGL;
 
-namespace Tyr.Gui;
+namespace Tyr.Gui.Backend;
 
 internal class GlfwWindow : IDisposable
 {

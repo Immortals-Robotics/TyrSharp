@@ -1,6 +1,6 @@
 ﻿using Hexa.NET.ImGui;
 
-namespace Tyr.Gui;
+namespace Tyr.Gui.Data;
 
 public class DebugFilter
 {

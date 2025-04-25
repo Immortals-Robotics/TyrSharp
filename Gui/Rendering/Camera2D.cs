@@ -2,7 +2,7 @@
 using Tyr.Common.Math;
 using Tyr.Common.Math.Shapes;
 
-namespace Tyr.Gui;
+namespace Tyr.Gui.Rendering;
 
 public class Camera2D
 {

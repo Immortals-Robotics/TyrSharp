@@ -1,7 +1,7 @@
 ﻿using Tyr.Common.Dataflow;
 using Debug = Tyr.Common.Debug;
 
-namespace Tyr.Gui;
+namespace Tyr.Gui.Data;
 
 public class DebugFramer
 {

@@ -1,7 +1,7 @@
 ﻿using Tyr.Common.Time;
 using Debug = Tyr.Common.Debug;
 
-namespace Tyr.Gui;
+namespace Tyr.Gui.Data;
 
 public class ModuleDebugFramer
 {
