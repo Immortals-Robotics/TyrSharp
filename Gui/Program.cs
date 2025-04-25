@@ -1,4 +1,5 @@
 ﻿using Hexa.NET.ImGui;
+using IconFonts;
 using Tyr.Gui.Backend;
 using Tyr.Gui.Views;
 
@@ -30,7 +31,7 @@ fontLoader
 
 // icons font
 fontLoader
-    .Add("Fonts/fa-solid-900.ttf", (0xF000, 0xF3FF))
+    .Add("Fonts/fa-solid-900.ttf", (FontAwesome6.IconMin, FontAwesome6.IconMax))
     .Load();
 
 while (window.ShouldClose == false)
