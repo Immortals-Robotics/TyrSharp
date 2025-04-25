@@ -28,14 +28,9 @@ public sealed class Runner : IDisposable
 
     private async Task Tick(CancellationToken token)
     {
-        await Task.WhenAny(ReceiveGc(token), ReceiveVision(token));
+        _runner.NewDebugFrame();
 
-        var frame = new Common.Debug.Frame
-        {
-            ModuleName = ModuleName,
-            StartTimestamp = _runner.CurrentTickStartTimestamp,
-        };
-        Hub.Frames.Publish(frame);
+        await Task.WhenAny(ReceiveGc(token), ReceiveVision(token));
 
         if (_referee.Process(_vision, _gc))
         {

@@ -1,9 +1,8 @@
 ﻿using Hexa.NET.ImGui;
 using IconFonts;
 using Tyr.Common.Config;
-using Tyr.Gui.Backend;
 
-namespace Tyr.Gui;
+namespace Tyr.Gui.Backend;
 
 [Configurable]
 public sealed class FontRegistry : IDisposable

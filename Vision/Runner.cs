@@ -26,12 +26,7 @@ public sealed class Runner : IDisposable
 
     private void Tick()
     {
-        var frame = new Common.Debug.Frame
-        {
-            ModuleName = ModuleName,
-            StartTimestamp = _runner.CurrentTickStartTimestamp,
-        };
-        Hub.Frames.Publish(frame);
+        _runner.NewDebugFrame();
 
         FieldSize? fieldSize = _fieldSizeSubscriber.TryGetLatest(out var f) ? f : null;
 

@@ -1,4 +1,6 @@
-﻿using Tyr.Common.Time;
+﻿using Tyr.Common.Dataflow;
+using Tyr.Common.Debug;
+using Tyr.Common.Time;
 
 namespace Tyr.Common.Runner;
 
@@ -32,5 +34,18 @@ public abstract class RunnerBase(int tickRateHz)
         }
 
         while (Timer.Time < nextTick) ;
+    }
+
+    public void NewDebugFrame()
+    {
+        if (ModuleContext.Current.Value == null) return;
+
+        var frame = new Frame
+        {
+            ModuleName = ModuleContext.Current.Value,
+            StartTimestamp = CurrentTickStartTimestamp,
+        };
+        Hub.Frames.Publish(frame);
+        Draw.DrawEmpty();
     }
 }

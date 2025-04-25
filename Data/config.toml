@@ -1,8 +1,3 @@
-[Gui]
-[Gui.FontRegistry]
-FontSize = 17.0 # default: 15
-
-
 [Common]
 [Common.Debug]
 [Common.Debug.Logging]
@@ -81,6 +76,13 @@ CameraTooOldTime = 1.0 # default: 1
 
 [Vision.Runner]
 TickRateHz = 100 # default: 100
+
+
+[Gui]
+[Gui.Backend]
+[Gui.Backend.FontRegistry]
+FontSize = 17.0 # default: 15
+
 
 
 [Referee]
