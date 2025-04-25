@@ -10,7 +10,7 @@ internal class ImGuiController : IDisposable
 {
     private readonly GlfwWindow _window;
     private readonly ImGuiContextPtr _ctx;
-    private ImGuiFontBuilder _fontBuilder;
+    private ImGuiFontBuilder? _fontBuilder;
 
     public ImGuiController(GlfwWindow window)
     {
@@ -27,9 +27,6 @@ internal class ImGuiController : IDisposable
         io.ConfigViewportsNoAutoMerge = false;
         io.ConfigViewportsNoTaskBarIcon = false;
 
-        _fontBuilder = new ImGuiFontBuilder();
-        InitializeImGuiFonts();
-
         ImGuiImplGLFW.SetCurrentContext(_ctx);
         if (!ImGuiImplGLFW.InitForOpenGL(
                 Unsafe.BitCast<Hexa.NET.GLFW.GLFWwindowPtr, GLFWwindowPtr>(window.Handle),
@@ -43,25 +40,30 @@ internal class ImGuiController : IDisposable
             throw new Exception("Failed Init GL3 ImGui");
     }
 
-    private void InitializeImGuiFonts(params string[] fontFiles)
+    public void LoadFont(string? fontFile = null, bool unicode = false,
+        float size = 15.0f, float supersampling = 1.0f)
     {
-        _fontBuilder.SetOption(config => { config.FontBuilderFlags |= (uint)ImGuiFreeTypeBuilderFlags.LoadColor; });
-
-        var loaded = false;
-        foreach (var fontFile in fontFiles)
+        Assert.IsNull(_fontBuilder);
+        
+        _fontBuilder = new ImGuiFontBuilder();
+        
+        if (fontFile != null && File.Exists(fontFile))
         {
-            try
-            {
-                _fontBuilder.AddFontFromFileTTF(fontFile, 13.0f, [0x1, 0x1FFFF]);
-                loaded = true;
-            }
-            catch (FileNotFoundException e)
-            {
-                Console.WriteLine($"Failed to load font {fontFile}: {e.Message}");
-            }
-        }
+            _fontBuilder.SetOption(config => { config.FontBuilderFlags |= (uint)ImGuiFreeTypeBuilderFlags.LoadColor; });
 
-        if (!loaded) _fontBuilder.AddDefaultFont();
+            if (unicode)
+                _fontBuilder.AddFontFromFileTTF(fontFile, size * supersampling, [0x1, 0x1FFFF]);
+            else
+                _fontBuilder.AddFontFromFileTTF(fontFile, size * supersampling);
+
+            ImGui.GetIO().FontGlobalScale = 1f / supersampling;
+            
+            Log.ZLogInformation($"Loaded font {fontFile}");
+        }
+        else
+        {
+            _fontBuilder.AddDefaultFont();
+        }
 
         _fontBuilder.Build();
     }
@@ -94,6 +96,6 @@ internal class ImGuiController : IDisposable
         ImGuiImplOpenGL3.Shutdown();
         ImGuiImplGLFW.Shutdown();
         ImGui.DestroyContext(_ctx);
-        _fontBuilder.Dispose();
+        _fontBuilder?.Dispose();
     }
 }
