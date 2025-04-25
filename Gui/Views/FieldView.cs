@@ -34,6 +34,7 @@ public class FieldView
     public void Draw()
     {
         ImGui.Begin("Field");
+        ImGui.PushFont(FontRegistry.Instance.MonoFont);
 
         _timer.Update();
         _framer.Tick();
@@ -106,6 +107,8 @@ public class FieldView
                 _renderer.Draw(frame.Draws);
             }
         }
+
+        ImGui.PopFont();
 
         ImGui.End();
     }

@@ -19,6 +19,7 @@ public class DebugFilter
     public void Draw()
     {
         ImGui.Begin("Debug Filter");
+        ImGui.PushFont(FontRegistry.Instance.UiFont);
 
         foreach (var (name, enabled) in _nodes)
         {
@@ -28,7 +29,8 @@ public class DebugFilter
                 _nodes[name] = refEnabled;
             }
         }
-        
+
+        ImGui.PopFont();
         ImGui.End();
     }
 }

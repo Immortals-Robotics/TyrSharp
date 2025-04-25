@@ -1,5 +1,6 @@
-﻿using Hexa.NET.ImGui;
-using IconFonts;
+﻿using System.Numerics;
+using Hexa.NET.ImGui;
+using Tyr.Gui;
 using Tyr.Gui.Backend;
 using Tyr.Gui.Views;
 
@@ -16,25 +17,13 @@ var fieldView = new FieldView();
 using var window = new GlfwWindow(1280, 720, "Tyr");
 using var imgui = new ImGuiController(window);
 
-var dpiScale = ImGui.GetPlatformIO().Monitors[0].DpiScale;
-const float fontSize = 15f;
-using var fontLoader = new FontLoader(fontSize, dpiScale);
+var style = ImGui.GetStyle();
+style.FramePadding = new Vector2(6f, 3f);
+style.FrameRounding = 4f;
+style.ItemSpacing = new Vector2(10f, 6f);
+style.ScrollbarSize = 15f;
 
-// main font
-fontLoader
-    .Add("Fonts/InterVariable.ttf") // base
-    .Add("Fonts/seguiemj.ttf", (0x1F300, 0x1FAD0)) // emoji
-    .Load();
-
-// mono-space font
-fontLoader
-    .Add("Fonts/JetBrainsMono[wght].ttf")
-    .Load();
-
-// icons font
-fontLoader
-    .Add("Fonts/fa-solid-900.ttf", (FontAwesome6.IconMin, FontAwesome6.IconMax))
-    .Load();
+using var fontRegistry = new FontRegistry();
 
 while (window.ShouldClose == false)
 {
