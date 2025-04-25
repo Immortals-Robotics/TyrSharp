@@ -4,8 +4,6 @@ namespace Tyr.Gui.Data;
 
 public class DebugFilter
 {
-    private record struct Node(string Name, bool Enabled);
-
     private readonly Dictionary<string, bool> _nodes = [];
 
     public void Register(string moduleName)

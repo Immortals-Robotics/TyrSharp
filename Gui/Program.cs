@@ -1,6 +1,4 @@
-﻿using Hexa.NET.ImGui;
-using Tyr.Gui;
-using Tyr.Gui.Backend;
+﻿using Tyr.Gui.Backend;
 using Tyr.Gui.Views;
 
 Tyr.Common.Config.Storage.Initialize(args[0]);
