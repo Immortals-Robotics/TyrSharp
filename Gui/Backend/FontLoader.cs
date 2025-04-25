@@ -3,12 +3,12 @@ using Hexa.NET.ImGui.Utilities;
 
 namespace Tyr.Gui.Backend;
 
-public sealed class FontLoader : IDisposable
+public sealed class FontLoader(float size = 15f, float supersampling = 1f) : IDisposable
 {
     private readonly List<ImGuiFontBuilder> _builders = [];
     private ImGuiFontBuilder? _currentBuilder;
 
-    public FontLoader Add(string? file, (uint, uint)? glyphRange = null, float size = 15f, float supersampling = 1f)
+    public FontLoader Add(string? file, (uint, uint)? glyphRange = null)
     {
         if (_currentBuilder == null)
         {

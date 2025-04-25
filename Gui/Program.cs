@@ -16,7 +16,11 @@ var fieldView = new FieldView();
 using var window = new GlfwWindow(1280, 720, "Tyr");
 using var imgui = new ImGuiController(window);
 
-using var fontLoader = new FontLoader();
+var dpiScale = ImGui.GetPlatformIO().Monitors[0].DpiScale;
+const float baseFontSize = 15f;
+var fontSize = MathF.Floor(baseFontSize * dpiScale);
+
+using var fontLoader = new FontLoader(fontSize);
 
 // main font
 fontLoader
@@ -33,6 +37,8 @@ fontLoader
 fontLoader
     .Add("Fonts/fa-solid-900.ttf", (FontAwesome6.IconMin, FontAwesome6.IconMax))
     .Load();
+
+ImGui.GetStyle().ScaleAllSizes(dpiScale);
 
 while (window.ShouldClose == false)
 {
