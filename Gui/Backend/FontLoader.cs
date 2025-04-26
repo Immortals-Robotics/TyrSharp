@@ -3,7 +3,7 @@ using Hexa.NET.ImGui.Utilities;
 
 namespace Tyr.Gui.Backend;
 
-public sealed class FontLoader() : IDisposable
+public sealed class FontLoader : IDisposable
 {
     private readonly List<ImGuiFontBuilder> _builders = [];
     private ImGuiFontBuilder? _currentBuilder;

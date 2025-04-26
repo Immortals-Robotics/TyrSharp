@@ -1,3 +1,3 @@
 ﻿namespace Tyr.Common.Debug.Drawing.Drawables;
 
-public readonly record struct Empty() : IDrawable;
+public readonly record struct Empty : IDrawable;

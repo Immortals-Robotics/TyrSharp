@@ -1,5 +1,4 @@
-﻿using System.Numerics;
-using Hexa.NET.ImGui;
+﻿using Hexa.NET.ImGui;
 using Tyr.Gui.Backend;
 using Tyr.Gui.Data;
 using Tyr.Gui.Views;
@@ -10,11 +9,7 @@ Tyr.Common.Config.Storage.Initialize(args[0]);
 using var window = new GlfwWindow(1280, 720, "Tyr");
 using var imgui = new ImGuiController(window);
 
-var style = ImGui.GetStyle();
-style.FramePadding = new Vector2(6f, 3f);
-style.FrameRounding = 4f;
-style.ItemSpacing = new Vector2(10f, 6f);
-style.ScrollbarSize = 15f;
+Style.Apply();
 
 // init our UI stuff
 using var fontRegistry = new FontRegistry();

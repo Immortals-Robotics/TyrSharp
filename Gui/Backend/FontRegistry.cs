@@ -35,6 +35,8 @@ public sealed class FontRegistry : IDisposable
             .Add("Fonts/fa-solid-900.ttf", (FontAwesome6.IconMin, FontAwesome6.IconMax), FontSize, dpiScale)
             .Load();
 
+        ImGui.GetIO().FontDefault = UiFont;
+        
         Assert.IsNull(Instance);
         Instance = this;
     }

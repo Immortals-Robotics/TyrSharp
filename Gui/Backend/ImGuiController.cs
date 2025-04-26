@@ -2,7 +2,6 @@
 using Hexa.NET.ImGui;
 using Hexa.NET.ImGui.Backends.GLFW;
 using Hexa.NET.ImGui.Backends.OpenGL3;
-using Hexa.NET.ImGui.Utilities;
 
 namespace Tyr.Gui.Backend;
 
@@ -10,7 +9,6 @@ internal class ImGuiController : IDisposable
 {
     private readonly GlfwWindow _window;
     private readonly ImGuiContextPtr _ctx;
-
 
     public ImGuiController(GlfwWindow window)
     {
@@ -25,7 +23,7 @@ internal class ImGuiController : IDisposable
         io.ConfigFlags |= ImGuiConfigFlags.DockingEnable; // Enable Docking
         io.ConfigFlags |= ImGuiConfigFlags.ViewportsEnable; // Enable Multi-Viewport / Platform Windows
         io.ConfigViewportsNoAutoMerge = false;
-        io.ConfigViewportsNoTaskBarIcon = false;
+        io.ConfigViewportsNoTaskBarIcon = true;
 
         ImGuiImplGLFW.SetCurrentContext(_ctx);
         if (!ImGuiImplGLFW.InitForOpenGL(
