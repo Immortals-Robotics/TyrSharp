@@ -1,4 +1,5 @@
 ﻿using System.Numerics;
+using Tyr.Common.Debug.Drawing;
 
 namespace Tyr.Common.Math;
 
@@ -11,6 +12,15 @@ public static class Utils
 
     public static bool ApproximatelyEqual(Vector2 a, Vector2 b) =>
         ApproximatelyZero(Vector2.DistanceSquared(a, b));
+
+    public static bool ApproximatelyEqual(Color a, Color b)
+    {
+        return ApproximatelyEqual(a.R, b.R) &&
+               ApproximatelyEqual(a.G, b.G) &&
+               ApproximatelyEqual(a.B, b.B) &&
+               ApproximatelyEqual(a.A, b.A);
+    }
+
 
     public static int SignInt(float value) => value == 0f ? 0 : value > 0f ? 1 : -1;
 

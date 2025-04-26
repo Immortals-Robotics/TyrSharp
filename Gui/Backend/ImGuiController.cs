@@ -2,7 +2,6 @@
 using Hexa.NET.ImGui;
 using Hexa.NET.ImGui.Backends.GLFW;
 using Hexa.NET.ImGui.Backends.OpenGL3;
-using Hexa.NET.ImGui.Utilities;
 
 namespace Tyr.Gui.Backend;
 
@@ -10,7 +9,6 @@ internal class ImGuiController : IDisposable
 {
     private readonly GlfwWindow _window;
     private readonly ImGuiContextPtr _ctx;
-    private ImGuiFontBuilder _fontBuilder;
 
     public ImGuiController(GlfwWindow window)
     {
@@ -25,10 +23,7 @@ internal class ImGuiController : IDisposable
         io.ConfigFlags |= ImGuiConfigFlags.DockingEnable; // Enable Docking
         io.ConfigFlags |= ImGuiConfigFlags.ViewportsEnable; // Enable Multi-Viewport / Platform Windows
         io.ConfigViewportsNoAutoMerge = false;
-        io.ConfigViewportsNoTaskBarIcon = false;
-
-        _fontBuilder = new ImGuiFontBuilder();
-        InitializeImGuiFonts();
+        io.ConfigViewportsNoTaskBarIcon = true;
 
         ImGuiImplGLFW.SetCurrentContext(_ctx);
         if (!ImGuiImplGLFW.InitForOpenGL(
@@ -41,29 +36,6 @@ internal class ImGuiController : IDisposable
         ImGuiImplOpenGL3.SetCurrentContext(_ctx);
         if (!ImGuiImplOpenGL3.Init("#version 150"))
             throw new Exception("Failed Init GL3 ImGui");
-    }
-
-    private void InitializeImGuiFonts(params string[] fontFiles)
-    {
-        _fontBuilder.SetOption(config => { config.FontBuilderFlags |= (uint)ImGuiFreeTypeBuilderFlags.LoadColor; });
-
-        var loaded = false;
-        foreach (var fontFile in fontFiles)
-        {
-            try
-            {
-                _fontBuilder.AddFontFromFileTTF(fontFile, 13.0f, [0x1, 0x1FFFF]);
-                loaded = true;
-            }
-            catch (FileNotFoundException e)
-            {
-                Console.WriteLine($"Failed to load font {fontFile}: {e.Message}");
-            }
-        }
-
-        if (!loaded) _fontBuilder.AddDefaultFont();
-
-        _fontBuilder.Build();
     }
 
     public void NewFrame()
@@ -94,6 +66,5 @@ internal class ImGuiController : IDisposable
         ImGuiImplOpenGL3.Shutdown();
         ImGuiImplGLFW.Shutdown();
         ImGui.DestroyContext(_ctx);
-        _fontBuilder.Dispose();
     }
 }

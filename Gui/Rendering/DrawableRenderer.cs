@@ -2,6 +2,7 @@
 using Hexa.NET.ImGui;
 using Tyr.Common.Debug.Drawing;
 using Tyr.Common.Debug.Drawing.Drawables;
+using Tyr.Common.Math;
 using Color = Tyr.Common.Debug.Drawing.Color;
 using Path = Tyr.Common.Debug.Drawing.Drawables.Path;
 using Rectangle = Tyr.Common.Debug.Drawing.Drawables.Rectangle;
@@ -50,7 +51,7 @@ internal class DrawableRenderer
                     DrawRectangle(rectangle, command.Color, command.Options);
                     break;
                 case Robot robot:
-                    DrawRobot(robot, command.Color);
+                    DrawRobot(robot, command.Color, command.Options);
                     break;
                 case Text text:
                     DrawText(text, command.Color);
@@ -176,13 +177,14 @@ internal class DrawableRenderer
             _drawList.AddRect(min, max, color.ToABGR32(), ImDrawFlags.None, thickness);
     }
 
-    private void DrawRobot(Robot robot, Color color)
+    private void DrawRobot(Robot robot, Color color, Options options)
     {
         const float robotRadius = 90f;
         const int segments = 20; // circle detail
 
         var center = Camera.WorldToScreen(robot.Position);
         var radius = Camera.WorldToScreenLength(robotRadius);
+        var thickness = Camera.WorldToScreenLength(options.Thickness);
 
         if (robot.Orientation.HasValue)
         {
@@ -208,20 +210,34 @@ internal class DrawableRenderer
             {
                 fixed (Vector2* ptr = points)
                 {
-                    _drawList.AddConvexPolyFilled(ptr, points.Length, color.ToABGR32());
+                    if (options.Filled)
+                    {
+                        _drawList.AddConvexPolyFilled(ptr, points.Length, color.ToABGR32());
+                    }
+                    else
+                    {
+                        _drawList.AddPolyline(ptr, points.Length, color.ToABGR32(), ImDrawFlags.Closed, thickness);
+                    }
                 }
             }
         }
         else
         {
-            _drawList.AddCircleFilled(center, radius, color.ToABGR32(), segments);
+            if (options.Filled)
+            {
+                _drawList.AddCircleFilled(center, radius, color.ToABGR32(), segments);
+            }
+            else
+            {
+                _drawList.AddCircle(center, radius, color.ToABGR32(), segments, thickness);
+            }
         }
 
         if (robot.Id.HasValue)
         {
             var text = new Text(robot.Id.Value.ToString(), robot.Position, 120f, TextAlignment.Center);
-            // TODO: choose text color based on team color
-            DrawText(text, Color.Black);
+            var textColor = options.Filled && Utils.ApproximatelyEqual(color, Color.Blue) ? Color.White : Color.Black;
+            DrawText(text, textColor);
         }
     }
 
