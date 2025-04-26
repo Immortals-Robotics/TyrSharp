@@ -11,7 +11,7 @@ public class ConfigsView
     {
         if (ImGui.Begin("Configs"))
         {
-            DrawTree(Registry.ToDictionary());
+            DrawTree(Registry.Tree);
         }
 
         ImGui.End();
@@ -44,8 +44,8 @@ public class ConfigsView
             {
                 ImGui.TableSetupColumn("R", ImGuiTableColumnFlags.WidthFixed, 15f);
                 ImGui.TableSetupColumn("Name", ImGuiTableColumnFlags.WidthStretch, 1.0f);
-                ImGui.TableSetupColumn("Value", ImGuiTableColumnFlags.WidthStretch, 1.0f);
-                
+                ImGui.TableSetupColumn("Value", ImGuiTableColumnFlags.WidthStretch, 1.5f);
+
                 // Draw configurable fields
                 foreach (var field in configurable.Entries)
                 {
@@ -70,6 +70,7 @@ public class ConfigsView
         {
             field.Value = field.DefaultValue;
         }
+
         ImGui.PopFont();
         if (ImGui.IsItemHovered())
         {
@@ -84,20 +85,19 @@ public class ConfigsView
             ImGui.TextUnformatted(field.Comment);
             ImGui.EndTooltip();
         }
-        
-        
+
+
         ImGui.TableNextColumn();
-        
+
         // Draw appropriate editor based on field type
         DrawFieldEditor(field);
-        
+
         ImGui.PopID();
     }
 
     private void DrawFieldEditor(ConfigEntry field)
     {
-        // This is a simplified version - you would need to implement proper editors
-        // for each type that ConfigurableField can represent
+        ImGui.PushFont(FontRegistry.Instance.MonoFont);
         switch (field.Value)
         {
             case int intValue:
@@ -158,5 +158,7 @@ public class ConfigsView
                 ImGui.TextDisabled($"{field.Value}");
                 break;
         }
+
+        ImGui.PopFont();
     }
 }

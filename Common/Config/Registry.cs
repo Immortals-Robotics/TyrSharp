@@ -11,7 +11,8 @@ public static class Registry
 
     private static string MapName(Type type) => $"{type.Namespace}.{type.Name}";
 
-    public static ConcurrentDictionary<string, Configurable> Configurables { get; set; } = [];
+    public static Dictionary<string, object> Tree { get; } = [];
+    public static ConcurrentDictionary<string, Configurable> Configurables { get; } = [];
 
     public static Configurable Get(object obj) => Configurables[MapName(obj.GetType())];
     public static Configurable Get(Type type) => Configurables[MapName(type)];
@@ -43,6 +44,9 @@ public static class Registry
             Configurables[key] = configurable;
             configurable.OnUpdated += OnAnyUpdated;
         }
+        
+        // rebuild the config tree
+        RebuildTree();
     }
 
     private static string ConvertPath(string path)
@@ -60,17 +64,17 @@ public static class Registry
         return sb.ToString();
     }
 
-    public static Dictionary<string, object> ToDictionary()
+    private static void RebuildTree()
     {
-        var result = new Dictionary<string, object>();
+        Tree.Clear();
 
         foreach (var (fullName, configurable) in Configurables) // fullName is "A.B.FirstType", etc.
         {
             var parts = fullName.Split('.');
-            var namespaceParts = parts[..^1];
+            var namespaceParts = parts[1..^1];
             var typeName = parts[^1];
 
-            var current = result;
+            var current = Tree;
 
             foreach (var part in namespaceParts)
             {
@@ -85,10 +89,8 @@ public static class Registry
 
             current[typeName] = configurable;
         }
-        
-        return result;
     }
-
+    
     public static TomlDocument ToToml()
     {
         var document = TomlDocument.CreateEmpty();
