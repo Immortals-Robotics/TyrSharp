@@ -60,6 +60,35 @@ public static class Registry
         return sb.ToString();
     }
 
+    public static Dictionary<string, object> ToDictionary()
+    {
+        var result = new Dictionary<string, object>();
+
+        foreach (var (fullName, configurable) in Configurables) // fullName is "A.B.FirstType", etc.
+        {
+            var parts = fullName.Split('.');
+            var namespaceParts = parts[..^1];
+            var typeName = parts[^1];
+
+            var current = result;
+
+            foreach (var part in namespaceParts)
+            {
+                if (!current.TryGetValue(part, out var child))
+                {
+                    child = new Dictionary<string, object>();
+                    current[part] = child;
+                }
+
+                current = (Dictionary<string, object>)child;
+            }
+
+            current[typeName] = configurable;
+        }
+        
+        return result;
+    }
+
     public static TomlDocument ToToml()
     {
         var document = TomlDocument.CreateEmpty();
