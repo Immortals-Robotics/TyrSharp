@@ -39,14 +39,19 @@ public static class Registry
         foreach (var (key, configurable) in configurables)
         {
             if (Configurables.TryGetValue(key, out var existing))
-                existing.OnUpdated -= OnAnyUpdated; // Remove old handler
+                existing.OnUpdated -= OnConfigurableUpdated; // Remove old handler
 
             Configurables[key] = configurable;
-            configurable.OnUpdated += OnAnyUpdated;
+            configurable.OnUpdated += OnConfigurableUpdated;
         }
         
         // rebuild the config tree
         RebuildTree();
+    }
+
+    private static void OnConfigurableUpdated()
+    {
+        OnAnyUpdated?.Invoke();
     }
 
     private static string ConvertPath(string path)

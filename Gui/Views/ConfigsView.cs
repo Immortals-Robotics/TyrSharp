@@ -1,4 +1,3 @@
-using System.Numerics;
 using Hexa.NET.ImGui;
 using Tyr.Common.Config;
 using Tyr.Common.Network;
@@ -8,20 +7,14 @@ namespace Tyr.Gui.Views;
 
 public class ConfigsView
 {
-    // Search field buffer
     private string _searchText = string.Empty;
-
-    // Flag to track if we're filtering
     private bool IsFiltering => !string.IsNullOrWhiteSpace(_searchText);
 
     public void Draw()
     {
         if (ImGui.Begin("Configs"))
         {
-            // Add search bar at the top
             DrawSearchBar();
-
-            // Draw the filtered tree
             DrawTree(Registry.Tree);
         }
 
