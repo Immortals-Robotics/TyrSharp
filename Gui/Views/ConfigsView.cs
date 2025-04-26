@@ -40,10 +40,20 @@ public class ConfigsView
     {
         if (ImGui.TreeNode($"{name} ({configurable.TypeName})"))
         {
-            // Draw configurable fields
-            foreach (var field in configurable.Entries)
+            if (ImGui.BeginTable("fields", 3, ImGuiTableFlags.SizingStretchProp))
             {
-                DrawField(field);
+                ImGui.TableSetupColumn("R", ImGuiTableColumnFlags.WidthFixed, 15f);
+                ImGui.TableSetupColumn("Name", ImGuiTableColumnFlags.WidthStretch, 1.0f);
+                ImGui.TableSetupColumn("Value", ImGuiTableColumnFlags.WidthStretch, 1.0f);
+                
+                // Draw configurable fields
+                foreach (var field in configurable.Entries)
+                {
+                    ImGui.TableNextRow();
+                    DrawField(field);
+                }
+
+                ImGui.EndTable();
             }
 
             ImGui.TreePop();
@@ -53,36 +63,33 @@ public class ConfigsView
     private void DrawField(ConfigEntry field)
     {
         ImGui.PushID(field.Name);
-        
+
+        ImGui.TableNextColumn();
         ImGui.PushFont(FontRegistry.Instance.IconFont);
         if (ImGui.SmallButton($"{IconFonts.FontAwesome6.RotateLeft}"))
         {
             field.Value = field.DefaultValue;
         }
         ImGui.PopFont();
-        
         if (ImGui.IsItemHovered())
         {
             ImGui.SetTooltip($"{field.DefaultValue}");
         }
 
-        ImGui.SameLine();
-
+        ImGui.TableNextColumn();
+        ImGui.TextUnformatted(field.Name);
+        if (ImGui.IsItemHovered() && !string.IsNullOrEmpty(field.Comment))
+        {
+            ImGui.BeginTooltip();
+            ImGui.TextUnformatted(field.Comment);
+            ImGui.EndTooltip();
+        }
+        
+        
+        ImGui.TableNextColumn();
+        
         // Draw appropriate editor based on field type
         DrawFieldEditor(field);
-
-        if (!string.IsNullOrEmpty(field.Comment))
-        {
-            ImGui.SameLine();
-
-            ImGui.TextDisabled("(?)");
-            if (ImGui.IsItemHovered())
-            {
-                ImGui.BeginTooltip();
-                ImGui.TextUnformatted(field.Comment);
-                ImGui.EndTooltip();
-            }
-        }
         
         ImGui.PopID();
     }
@@ -94,7 +101,7 @@ public class ConfigsView
         switch (field.Value)
         {
             case int intValue:
-                if (ImGui.InputInt(field.Name, ref intValue))
+                if (ImGui.InputInt("", ref intValue))
                 {
                     field.Value = (intValue);
                 }
@@ -102,7 +109,7 @@ public class ConfigsView
                 break;
 
             case float floatValue:
-                if (ImGui.InputFloat(field.Name, ref floatValue))
+                if (ImGui.InputFloat("", ref floatValue))
                 {
                     field.Value = (floatValue);
                 }
@@ -111,7 +118,7 @@ public class ConfigsView
 
             case double doubleValue:
                 var tmpValue = (float)doubleValue;
-                if (ImGui.InputFloat(field.Name, ref tmpValue))
+                if (ImGui.InputFloat("", ref tmpValue))
                 {
                     field.Value = ((double)tmpValue);
                 }
@@ -119,7 +126,7 @@ public class ConfigsView
                 break;
 
             case bool boolValue:
-                if (ImGui.Checkbox(field.Name, ref boolValue))
+                if (ImGui.Checkbox("", ref boolValue))
                 {
                     field.Value = (boolValue);
                 }
@@ -127,13 +134,13 @@ public class ConfigsView
                 break;
 
             case string stringValue:
-                if (ImGui.InputText(field.Name, ref stringValue, 256))
+                if (ImGui.InputText("", ref stringValue, 256))
                 {
                     field.Value = stringValue;
                 }
 
                 break;
-            
+
             case Address addressValue:
                 var ip = addressValue.Ip;
                 var port = addressValue.Port;
@@ -142,15 +149,13 @@ public class ConfigsView
                 ImGui.Text(":");
                 ImGui.SameLine();
                 ImGui.InputInt("##port", ref port);
-                ImGui.SameLine();
-                ImGui.TextUnformatted(field.Name);
-                
+
                 field.Value = addressValue;
                 break;
 
             default:
                 // For other types, just display as string
-                ImGui.TextDisabled($"{field.Name}: {field.Value}");
+                ImGui.TextDisabled($"{field.Value}");
                 break;
         }
     }
