@@ -1,3 +1,4 @@
+using System.Numerics;
 using Hexa.NET.ImGui;
 using Tyr.Common.Config;
 using Tyr.Common.Network;
@@ -7,30 +8,69 @@ namespace Tyr.Gui.Views;
 
 public class ConfigsView
 {
+    // Search field buffer
+    private string _searchText = string.Empty;
+
+    // Flag to track if we're filtering
+    private bool IsFiltering => !string.IsNullOrWhiteSpace(_searchText);
+
     public void Draw()
     {
         if (ImGui.Begin("Configs"))
         {
+            // Add search bar at the top
+            DrawSearchBar();
+
+            // Draw the filtered tree
             DrawTree(Registry.Tree);
         }
 
         ImGui.End();
     }
 
+    private void DrawSearchBar()
+    {
+        // Create a search input with hint text
+        ImGui.PushItemWidth(-1); // Make the input field fill the available width
+        ImGui.InputTextWithHint("##search", "Search configs...", ref _searchText, 256);
+        ImGui.PopItemWidth();
+
+        ImGui.Separator();
+    }
+
     private void DrawTree(Dictionary<string, object> tree)
     {
         foreach (var (key, value) in tree)
         {
-            if (value is Configurable configurable)
+            var keyMatch = MatchesSearch(key);
+
+            switch (value)
             {
-                DrawConfigurable(key, configurable);
-            }
-            else if (value is Dictionary<string, object> subTree)
-            {
-                if (ImGui.TreeNode(key))
+                case Configurable configurable:
+                    // Check if any of its fields match the search
+                    var fieldsMatch = configurable.Entries.Any(field => MatchesSearch(field.Name));
+
+                    if (keyMatch || fieldsMatch)
+                    {
+                        DrawConfigurable(key, configurable);
+                    }
+
+                    break;
+
+                case Dictionary<string, object> subTree:
                 {
-                    DrawTree(subTree);
-                    ImGui.TreePop();
+                    var childrenMatch = ChildrenMatchSearch(subTree);
+
+                    if (keyMatch || childrenMatch)
+                    {
+                        if (ImGui.TreeNodeEx(key, IsFiltering && childrenMatch ? ImGuiTreeNodeFlags.DefaultOpen : 0))
+                        {
+                            DrawTree(subTree);
+                            ImGui.TreePop();
+                        }
+                    }
+
+                    break;
                 }
             }
         }
@@ -38,7 +78,10 @@ public class ConfigsView
 
     private void DrawConfigurable(string name, Configurable configurable)
     {
-        if (ImGui.TreeNode($"{name} ({configurable.TypeName})"))
+        var shouldOpen = IsFiltering && configurable.Entries.Any(field => MatchesSearch(field.Name));
+
+        if (ImGui.TreeNodeEx($"{name} ({configurable.TypeName})",
+                shouldOpen ? ImGuiTreeNodeFlags.DefaultOpen : 0))
         {
             if (ImGui.BeginTable("fields", 3, ImGuiTableFlags.SizingStretchProp))
             {
@@ -48,6 +91,9 @@ public class ConfigsView
 
                 foreach (var field in configurable.Entries)
                 {
+                    // Only show fields that match the search criteria when filtering
+                    if (!MatchesSearch(field.Name)) continue;
+
                     ImGui.TableNextRow();
                     DrawField(field);
                 }
@@ -80,6 +126,7 @@ public class ConfigsView
         // Name
         ImGui.TableNextColumn();
         ImGui.TextUnformatted(field.Name);
+
         if (ImGui.IsItemHovered() && !string.IsNullOrEmpty(field.Comment))
         {
             ImGui.BeginTooltip();
@@ -171,5 +218,41 @@ public class ConfigsView
         }
 
         ImGui.PopFont();
+    }
+
+    // Helper method to check if any children in the tree match the search
+    private bool ChildrenMatchSearch(Dictionary<string, object> tree)
+    {
+        if (!IsFiltering) return true;
+
+        foreach (var (key, value) in tree)
+        {
+            if (MatchesSearch(key)) return true;
+
+            switch (value)
+            {
+                case Configurable configurable:
+                    if (configurable.Entries.Any(field => MatchesSearch(field.Name)))
+                        return true;
+                    break;
+
+                case Dictionary<string, object> subTree:
+                    if (ChildrenMatchSearch(subTree)) return true;
+                    break;
+            }
+        }
+
+        return false;
+    }
+
+    // Helper method to check if a string matches the search text
+    private bool MatchesSearch(string text)
+    {
+        if (!IsFiltering) return true;
+
+        if (string.IsNullOrEmpty(text) || string.IsNullOrEmpty(_searchText))
+            return false;
+
+        return text.Contains(_searchText, StringComparison.OrdinalIgnoreCase);
     }
 }
