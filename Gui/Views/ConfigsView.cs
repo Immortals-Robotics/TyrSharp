@@ -46,7 +46,6 @@ public class ConfigsView
                 ImGui.TableSetupColumn("Name", ImGuiTableColumnFlags.WidthStretch, 1.0f);
                 ImGui.TableSetupColumn("Value", ImGuiTableColumnFlags.WidthStretch, 1.5f);
 
-                // Draw configurable fields
                 foreach (var field in configurable.Entries)
                 {
                     ImGui.TableNextRow();
@@ -64,19 +63,21 @@ public class ConfigsView
     {
         ImGui.PushID(field.Name);
 
+        // Reset button
         ImGui.TableNextColumn();
-        ImGui.PushFont(FontRegistry.Instance.IconFont);
         if (ImGui.SmallButton($"{IconFonts.FontAwesome6.RotateLeft}"))
         {
             field.Value = field.DefaultValue;
         }
 
-        ImGui.PopFont();
         if (ImGui.IsItemHovered())
         {
+            ImGui.PushFont(FontRegistry.Instance.MonoFont);
             ImGui.SetTooltip($"{field.DefaultValue}");
+            ImGui.PopFont();
         }
 
+        // Name
         ImGui.TableNextColumn();
         ImGui.TextUnformatted(field.Name);
         if (ImGui.IsItemHovered() && !string.IsNullOrEmpty(field.Comment))
@@ -86,10 +87,8 @@ public class ConfigsView
             ImGui.EndTooltip();
         }
 
-
+        // Value
         ImGui.TableNextColumn();
-
-        // Draw appropriate editor based on field type
         DrawFieldEditor(field);
 
         ImGui.PopID();
@@ -153,8 +152,20 @@ public class ConfigsView
                 field.Value = addressValue;
                 break;
 
+            case Enum enumValue:
+                var names = Enum.GetNames(enumValue.GetType());
+                var values = Enum.GetValues(enumValue.GetType());
+                var index = Array.IndexOf(values, enumValue);
+                if (ImGui.Combo("", ref index, names, names.Length))
+                {
+                    field.Value = values.GetValue(index)!;
+                }
+
+                break;
+
             default:
                 // For other types, just display as string
+                Log.ZLogWarning($"Unsupported config type: {field.Type}");
                 ImGui.TextDisabled($"{field.Value}");
                 break;
         }

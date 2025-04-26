@@ -6,5 +6,5 @@ namespace Tyr.Common.Debug.Assertion;
 [Configurable]
 public partial class Assert(ILogger logger)
 {
-    [ConfigEntry] private static bool Enabled { get; } = true;
+    [ConfigEntry] private static bool Enabled { get; set; } = true;
 }
