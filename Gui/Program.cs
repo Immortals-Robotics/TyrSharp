@@ -3,6 +3,7 @@ using Tyr.Gui.Backend;
 using Tyr.Gui.Data;
 using Tyr.Gui.Views;
 
+Tyr.Common.Debug.ModuleContext.Current.Value = ModuleName;
 Tyr.Common.Config.Storage.Initialize(args[0]);
 
 // init the backend

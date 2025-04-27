@@ -2,19 +2,27 @@
 using Hexa.NET.ImGui;
 using Hexa.NET.ImGui.Backends.GLFW;
 using Hexa.NET.ImGui.Backends.OpenGL3;
+using Hexa.NET.ImPlot;
 
 namespace Tyr.Gui.Backend;
 
 internal class ImGuiController : IDisposable
 {
     private readonly GlfwWindow _window;
-    private readonly ImGuiContextPtr _ctx;
+    private readonly ImGuiContextPtr _imguiCtx;
+    private ImPlotContextPtr _plotCtx;
 
     public ImGuiController(GlfwWindow window)
     {
         _window = window;
-        _ctx = ImGui.CreateContext();
-        ImGui.SetCurrentContext(_ctx);
+        _imguiCtx = ImGui.CreateContext();
+
+        ImGui.SetCurrentContext(_imguiCtx);
+        ImPlot.SetImGuiContext(_imguiCtx);
+
+        _plotCtx = ImPlot.CreateContext();
+        ImPlot.SetCurrentContext(_plotCtx);
+        ImPlot.StyleColorsDark(ImPlot.GetStyle());
 
         // Setup ImGui config.
         var io = ImGui.GetIO();
@@ -25,7 +33,7 @@ internal class ImGuiController : IDisposable
         io.ConfigViewportsNoAutoMerge = false;
         io.ConfigViewportsNoTaskBarIcon = true;
 
-        ImGuiImplGLFW.SetCurrentContext(_ctx);
+        ImGuiImplGLFW.SetCurrentContext(_imguiCtx);
         if (!ImGuiImplGLFW.InitForOpenGL(
                 Unsafe.BitCast<Hexa.NET.GLFW.GLFWwindowPtr, GLFWwindowPtr>(window.Handle),
                 true))
@@ -33,7 +41,7 @@ internal class ImGuiController : IDisposable
             throw new Exception("Failed Init GLFW ImGui");
         }
 
-        ImGuiImplOpenGL3.SetCurrentContext(_ctx);
+        ImGuiImplOpenGL3.SetCurrentContext(_imguiCtx);
         if (!ImGuiImplOpenGL3.Init("#version 150"))
             throw new Exception("Failed Init GL3 ImGui");
     }
@@ -65,6 +73,13 @@ internal class ImGuiController : IDisposable
     {
         ImGuiImplOpenGL3.Shutdown();
         ImGuiImplGLFW.Shutdown();
-        ImGui.DestroyContext(_ctx);
+
+        ImPlot.SetCurrentContext(null);
+        ImPlot.SetImGuiContext(null);
+
+        ImPlot.DestroyContext(_plotCtx);
+
+        ImGui.SetCurrentContext(null);
+        ImGui.DestroyContext(_imguiCtx);
     }
 }

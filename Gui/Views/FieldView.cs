@@ -29,7 +29,6 @@ public class FieldView
     {
         _debugFramer = debugFramer;
         _filter = filter;
-        Debug.ModuleContext.Current.Value = ModuleName;
 
         _timer.Start();
 
