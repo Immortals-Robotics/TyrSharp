@@ -1,5 +1,6 @@
 ﻿using Tyr.Common.Config;
 using Tyr.Common.Debug.Drawing;
+using Tyr.Common.Math;
 using Tyr.Common.Time;
 
 namespace Tyr.Vision;
@@ -62,6 +63,8 @@ public sealed class Vision
             DrawRobots(camera);
             DrawBalls(camera);
         }
+
+        Plot.Plot((float)Math.Sin(Timestamp.Now.Seconds));
     }
 
     private static void DrawBalls(Camera camera)
@@ -69,7 +72,6 @@ public sealed class Vision
         foreach (var tracker in camera.Balls)
         {
             Draw.DrawCircle(tracker.Position, 25f, Color.Orange, new Options { Filled = true });
-            Plot.Plot(tracker.Velocity);
         }
     }
 

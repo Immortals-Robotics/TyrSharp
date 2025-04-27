@@ -18,6 +18,7 @@ using var fontRegistry = new FontRegistry();
 var framer = new DebugFramer();
 var filter = new DebugFilter(framer);
 var field = new FieldView(framer, filter);
+var plots = new PlotView(framer, filter);
 var control = new PlaybackControl(framer);
 var configs = new ConfigsView();
 
@@ -39,11 +40,12 @@ while (window.ShouldClose == false)
     imgui.NewFrame();
 
     ImGui.ShowDemoWindow();
-    
+
     configs.Draw();
 
     control.Draw();
     field.Draw(control.Current);
+    plots.Draw(control.Current);
     filter.Draw();
 
     imgui.Render();

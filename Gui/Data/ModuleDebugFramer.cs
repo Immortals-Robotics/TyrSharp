@@ -7,8 +7,16 @@ public class ModuleDebugFramer
 {
     private readonly List<FrameData> _frames = [];
     private readonly Queue<Debug.Drawing.Command> _unassignedDraws = [];
+    private readonly Queue<Debug.Plotting.Command> _unassignedPlots = [];
 
     private Timestamp? _latestAssignedDrawTimestamp;
+    private Timestamp? _latestAssignedPlotTimestamp;
+
+    private Timestamp? LatestAssignedCommandTimestamp =>
+        !_latestAssignedDrawTimestamp.HasValue || !_latestAssignedPlotTimestamp.HasValue
+            ? null
+            : Timestamp.Min(_latestAssignedDrawTimestamp.Value, _latestAssignedPlotTimestamp.Value);
+
     private int? _latestSealedFrameIndex;
     private int FirstUnsealedFrameIndex => _latestSealedFrameIndex.GetValueOrDefault(-1) + 1;
 
@@ -52,6 +60,24 @@ public class ModuleDebugFramer
         return null;
     }
 
+    public IEnumerable<FrameData> GetFrameRange(Timestamp startTime, Timestamp endTime)
+    {
+        if (StartTime is null || EndTime is null) yield break;
+    
+        startTime = Timestamp.Clamp(startTime, StartTime.Value, EndTime.Value);
+        endTime = Timestamp.Clamp(endTime, StartTime.Value, EndTime.Value);
+    
+        // TODO: start from the GetFrame idx
+        for (var i = 0; i <= _latestSealedFrameIndex!.Value; i++)
+        {
+            var frame = _frames[i];
+            if (frame.EndTimestamp < startTime) continue;
+            if (frame.StartTimestamp > endTime) yield break;
+            yield return frame;
+        }
+    }
+    
+    
     public void OnFrame(Debug.Frame frame)
     {
         if (_frames.LastOrDefault() is { } lastFrame)
@@ -69,7 +95,7 @@ public class ModuleDebugFramer
             var draw = _unassignedDraws.Peek();
 
             // drop the draw if it never could be assigned
-            if (IsDrawUnassignable(draw))
+            if (IsUnassignable(draw.Meta))
             {
                 _unassignedDraws.Dequeue();
                 continue;
@@ -89,13 +115,38 @@ public class ModuleDebugFramer
             _latestAssignedDrawTimestamp = draw.Meta.Timestamp;
         }
 
+        while (_unassignedPlots.Count > 0)
+        {
+            var plot = _unassignedPlots.Peek();
+
+            // drop the draw if it never could be assigned
+            if (IsUnassignable(plot.Meta))
+            {
+                _unassignedPlots.Dequeue();
+                continue;
+            }
+
+            var fillFrame = GetFillFrame(plot.Meta.Timestamp);
+
+            // plots are in order, if the current one is not assignable,
+            // then the next ones are also guaranteed not to be assignable
+            if (fillFrame is null) break;
+
+            // assignable, let's remove it from the queue
+            _unassignedPlots.Dequeue();
+
+            fillFrame.Plots.Add(plot);
+            AddToMetaTree(plot.Meta);
+            _latestAssignedPlotTimestamp = plot.Meta.Timestamp;
+        }
+
         SealFrames();
     }
 
     public void OnDraw(Debug.Drawing.Command draw)
     {
         // drop the draw if it never could be assigned
-        if (IsDrawUnassignable(draw)) return;
+        if (IsUnassignable(draw.Meta)) return;
 
         // check if we can already assign it to a frame
         var frame = GetFillFrame(draw.Meta.Timestamp);
@@ -109,6 +160,26 @@ public class ModuleDebugFramer
         else
         {
             _unassignedDraws.Enqueue(draw); // queue it for later
+        }
+    }
+
+    public void OnPlot(Debug.Plotting.Command plot)
+    {
+        // drop the draw if it never could be assigned
+        if (IsUnassignable(plot.Meta)) return;
+
+        // check if we can already assign it to a frame
+        var frame = GetFillFrame(plot.Meta.Timestamp);
+        if (frame is not null)
+        {
+            frame.Plots.Add(plot); // already assignable to its frame
+            AddToMetaTree(plot.Meta);
+            _latestAssignedPlotTimestamp = plot.Meta.Timestamp;
+            SealFrames();
+        }
+        else
+        {
+            _unassignedPlots.Enqueue(plot); // queue it for later
         }
     }
 
@@ -132,12 +203,12 @@ public class ModuleDebugFramer
         }
     }
 
-    private bool IsDrawUnassignable(Debug.Drawing.Command draw)
+    private bool IsUnassignable(Debug.Meta meta)
     {
         // handle the edge case where we've missed the frame this draw corresponds to
         // this should only happen for the first frame
         return _frames.Count > 0 &&
-               _frames[0].StartTimestamp > draw.Meta.Timestamp;
+               _frames[0].StartTimestamp > meta.Timestamp;
     }
 
     private FrameData? GetFillFrame(Timestamp time)
@@ -161,13 +232,13 @@ public class ModuleDebugFramer
     // seal the frames up to the latest assigned draw timestamp
     private void SealFrames()
     {
-        if (_latestAssignedDrawTimestamp is null) return;
+        if (LatestAssignedCommandTimestamp is null) return;
 
         for (var index = FirstUnsealedFrameIndex; index < _frames.Count; index++)
         {
             var sealable =
                 _frames[index].IsDefined &&
-                _frames[index].EndTimestamp <= _latestAssignedDrawTimestamp;
+                _frames[index].EndTimestamp <= LatestAssignedCommandTimestamp;
 
             if (!sealable) break;
 
