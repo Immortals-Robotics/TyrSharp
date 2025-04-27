@@ -13,7 +13,7 @@ public class Configurable
     public string Namespace => Type.Namespace ?? "Tyr.Global";
     public string TypeName => Type.Name;
 
-    public string? Comment => _meta.Comment;
+    public string? Comment => _meta.Description;
 
     private readonly ConfigurableAttribute _meta;
 
