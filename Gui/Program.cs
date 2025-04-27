@@ -16,8 +16,9 @@ using var fontRegistry = new FontRegistry();
 
 var framer = new DebugFramer();
 var filter = new DebugFilter(framer);
-var fieldView = new FieldView(framer, filter);
+var field = new FieldView(framer, filter);
 var control = new PlaybackControl(framer);
+var configs = new ConfigsView();
 
 // init the AI
 using var sslVisionPublisher = new Tyr.Vision.SslVisionDataPublisher();
@@ -37,9 +38,11 @@ while (window.ShouldClose == false)
     imgui.NewFrame();
 
     ImGui.ShowDemoWindow();
+    
+    configs.Draw();
 
     control.Draw();
-    fieldView.Draw(control.Current);
+    field.Draw(control.Current);
     filter.Draw();
 
     imgui.Render();

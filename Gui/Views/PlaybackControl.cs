@@ -14,8 +14,15 @@ public class PlaybackControl(DebugFramer debugFramer)
 
     public void Draw()
     {
-        if (ImGui.Begin("Playback"))
+        if (ImGui.Begin($"{IconFonts.FontAwesome6.Clapperboard} Playback"))
         {
+            ImGui.Button($"{IconFonts.FontAwesome6.BackwardStep}");
+            ImGui.SameLine();
+            ImGui.Button($"{IconFonts.FontAwesome6.Pause}");
+            ImGui.SameLine();
+            ImGui.Button($"{IconFonts.FontAwesome6.ForwardStep}");
+            ImGui.SameLine();
+            
             if (_live) _time = (float)debugFramer.Duration.Seconds;
 
             ImGui.PushFont(FontRegistry.Instance.MonoFont);

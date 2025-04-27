@@ -13,7 +13,6 @@ public sealed class FontRegistry : IDisposable
 
     public ImFontPtr UiFont { get; }
     public ImFontPtr MonoFont { get; }
-    public ImFontPtr IconFont { get; }
 
     private readonly FontLoader _loader;
 
@@ -25,18 +24,15 @@ public sealed class FontRegistry : IDisposable
         UiFont = _loader
             .Add("Fonts/InterVariable.ttf", null, FontSize, dpiScale) // base
             .Add("Fonts/seguiemj.ttf", (0x1F300, 0x1FAD0), FontSize, dpiScale) // emoji
+            .Add("Fonts/fa-solid-900.ttf", (FontAwesome6.IconMin, FontAwesome6.IconMax), FontSize, dpiScale) // icons
             .Load();
 
         MonoFont = _loader
             .Add("Fonts/JetBrainsMono[wght].ttf", null, FontSize * 1.1f, dpiScale * 2f)
             .Load();
 
-        IconFont = _loader
-            .Add("Fonts/fa-solid-900.ttf", (FontAwesome6.IconMin, FontAwesome6.IconMax), FontSize, dpiScale)
-            .Load();
-
         ImGui.GetIO().FontDefault = UiFont;
-        
+
         Assert.IsNull(Instance);
         Instance = this;
     }

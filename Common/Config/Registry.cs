@@ -11,7 +11,8 @@ public static class Registry
 
     private static string MapName(Type type) => $"{type.Namespace}.{type.Name}";
 
-    public static ConcurrentDictionary<string, Configurable> Configurables { get; set; } = [];
+    public static Dictionary<string, object> Tree { get; } = [];
+    public static ConcurrentDictionary<string, Configurable> Configurables { get; } = [];
 
     public static Configurable Get(object obj) => Configurables[MapName(obj.GetType())];
     public static Configurable Get(Type type) => Configurables[MapName(type)];
@@ -38,11 +39,19 @@ public static class Registry
         foreach (var (key, configurable) in configurables)
         {
             if (Configurables.TryGetValue(key, out var existing))
-                existing.OnUpdated -= OnAnyUpdated; // Remove old handler
+                existing.OnUpdated -= OnConfigurableUpdated; // Remove old handler
 
             Configurables[key] = configurable;
-            configurable.OnUpdated += OnAnyUpdated;
+            configurable.OnUpdated += OnConfigurableUpdated;
         }
+        
+        // rebuild the config tree
+        RebuildTree();
+    }
+
+    private static void OnConfigurableUpdated()
+    {
+        OnAnyUpdated?.Invoke();
     }
 
     private static string ConvertPath(string path)
@@ -60,6 +69,33 @@ public static class Registry
         return sb.ToString();
     }
 
+    private static void RebuildTree()
+    {
+        Tree.Clear();
+
+        foreach (var (fullName, configurable) in Configurables) // fullName is "A.B.FirstType", etc.
+        {
+            var parts = fullName.Split('.');
+            var namespaceParts = parts[1..^1];
+            var typeName = parts[^1];
+
+            var current = Tree;
+
+            foreach (var part in namespaceParts)
+            {
+                if (!current.TryGetValue(part, out var child))
+                {
+                    child = new Dictionary<string, object>();
+                    current[part] = child;
+                }
+
+                current = (Dictionary<string, object>)child;
+            }
+
+            current[typeName] = configurable;
+        }
+    }
+    
     public static TomlDocument ToToml()
     {
         var document = TomlDocument.CreateEmpty();
