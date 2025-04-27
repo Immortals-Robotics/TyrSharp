@@ -72,6 +72,7 @@ public sealed class Vision
         foreach (var tracker in camera.Balls)
         {
             Draw.DrawCircle(tracker.Position, 25f, Color.Orange, new Options { Filled = true });
+            Plot.Plot(tracker.Velocity);
         }
     }
 

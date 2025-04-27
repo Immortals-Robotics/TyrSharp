@@ -1,5 +1,6 @@
 ﻿using Cysharp.Text;
 using Hexa.NET.ImGui;
+using Tyr.Common.Debug;
 using Tyr.Gui.Backend;
 using StrSpan = System.ReadOnlySpan<char>;
 
@@ -8,7 +9,7 @@ namespace Tyr.Gui.Data;
 public sealed class DebugFilter : IDisposable
 {
     // Dictionary to track the enabled state of each node in the tree
-    // Format: "module" or "module/file" or "module/file/function" or "module/file/function/line"
+    // Format: "module" or "module/file" or "module/file/function" or "module/file/function/line/expression"
     private readonly Dictionary<string, bool> _filterState = [];
     private readonly Dictionary<string, bool>.AlternateLookup<StrSpan> _lookup;
 
@@ -22,7 +23,7 @@ public sealed class DebugFilter : IDisposable
     }
 
     private StrSpan MakePath(string moduleName, string? filePath = null,
-        string? memberName = null, int? lineNumber = null)
+        string? memberName = null, int? lineNumber = null, string? expression = null)
     {
         _stringBuilder.Clear();
 
@@ -32,13 +33,15 @@ public sealed class DebugFilter : IDisposable
             _stringBuilder.AppendFormat("{0}/{1}", moduleName, filePath);
         else if (lineNumber == null)
             _stringBuilder.AppendFormat("{0}/{1}/{2}", moduleName, filePath, memberName);
-        else
+        else if (expression == null)
             _stringBuilder.AppendFormat("{0}/{1}/{2}/{3}", moduleName, filePath, memberName, lineNumber);
+        else
+            _stringBuilder.AppendFormat("{0}/{1}/{2}/{3}/{4}", moduleName, filePath, memberName, lineNumber, expression);
 
         return _stringBuilder.AsSpan();
     }
 
-    public bool IsEnabled(Common.Debug.Drawing.Meta meta) =>
+    public bool IsEnabled(Meta meta) =>
         IsEnabled(meta.ModuleName, meta.FilePath, meta.MemberName, meta.LineNumber);
 
     public bool IsEnabled(string module, string? file = null, string? member = null, int? line = null)
@@ -87,13 +90,13 @@ public sealed class DebugFilter : IDisposable
             {
                 _lookup.TryAdd(MakePath(module, file), true);
 
-                foreach (var (function, lines) in functions)
+                foreach (var (function, entries) in functions)
                 {
                     _lookup.TryAdd(MakePath(module, file, function), true);
 
-                    foreach (var line in lines)
+                    foreach (var entry in entries)
                     {
-                        _lookup.TryAdd(MakePath(module, file, function, line), true);
+                        _lookup.TryAdd(MakePath(module, file, function, entry.Item1, entry.Item2), true);
                     }
                 }
             }
@@ -132,14 +135,14 @@ public sealed class DebugFilter : IDisposable
     }
 
     private void DrawFileNode(string module, string file,
-        Dictionary<string, SortedSet<int>> functions, bool parentEnabled)
+        Dictionary<string, SortedSet<(int, string)>> functions, bool parentEnabled)
     {
         var path = MakePath(module, file);
 
         // Get current state
         var isEnabled = parentEnabled && _lookup[path];
 
-        // Extract filename from path for display
+        // Extract filename from the path for display
         var displayName = Path.GetFileName(file);
 
         // Create tree node with checkbox
@@ -169,9 +172,9 @@ public sealed class DebugFilter : IDisposable
             ImGui.BeginDisabled(!isEnabled);
 
             // Draw functions
-            foreach (var (functionName, lines) in functions)
+            foreach (var (functionName, entries) in functions)
             {
-                DrawFunctionNode(module, file, functionName, lines, isEnabled);
+                DrawFunctionNode(module, file, functionName, entries, isEnabled);
             }
 
             ImGui.EndDisabled();
@@ -181,7 +184,7 @@ public sealed class DebugFilter : IDisposable
         ImGui.PopID();
     }
 
-    private void DrawFunctionNode(string module, string file, string function, SortedSet<int> lines,
+    private void DrawFunctionNode(string module, string file, string function, SortedSet<(int, string)> entries,
         bool parentEnabled)
     {
         var path = MakePath(module, file, function);
@@ -208,9 +211,9 @@ public sealed class DebugFilter : IDisposable
             ImGui.BeginDisabled(!isEnabled);
 
             // Draw lines
-            foreach (var lineNumber in lines)
+            foreach (var entry in entries)
             {
-                DrawLineNode(module, file, function, lineNumber, isEnabled);
+                DrawEntryNode(module, file, function, entry, isEnabled);
             }
 
             ImGui.EndDisabled();
@@ -220,18 +223,24 @@ public sealed class DebugFilter : IDisposable
         ImGui.PopID();
     }
 
-    private void DrawLineNode(string module, string file, string function, int line, bool parentEnabled)
+    private void DrawEntryNode(string module, string file, string function, (int, string) entry, bool parentEnabled)
     {
-        var path = MakePath(module, file, function, line);
+        var path = MakePath(module, file, function, entry.Item1, entry.Item2);
 
         // Get current state
         var isEnabled = parentEnabled && _lookup[path];
 
         // Create leaf node with checkbox (no children)
-        ImGui.PushID(line);
+        ImGui.PushID(entry.Item1);
         ImGui.Indent();
         ImGui.PushFont(FontRegistry.Instance.MonoFont);
-        ImGui.Checkbox($"{IconFonts.FontAwesome6.BarsStaggered} Line {line}", ref isEnabled);
+        ImGui.Checkbox($"{IconFonts.FontAwesome6.BarsStaggered} Line {entry.Item1}", ref isEnabled);
+
+        if (ImGui.IsItemHovered(ImGuiHoveredFlags.ForTooltip))
+        {
+            ImGui.SetTooltip(entry.Item2);
+        }
+        
         ImGui.PopFont();
         ImGui.Unindent();
 

@@ -12,8 +12,8 @@ public class ModuleDebugFramer
     private int? _latestSealedFrameIndex;
     private int FirstUnsealedFrameIndex => _latestSealedFrameIndex.GetValueOrDefault(-1) + 1;
 
-    // file -> function -> line
-    public Dictionary<string, Dictionary<string, SortedSet<int>>> MetaTree { get; } = [];
+    // file -> function -> (line, expression)
+    public Dictionary<string, Dictionary<string, SortedSet<(int, string)>>> MetaTree { get; } = [];
 
     public int FrameCount => _frames.Count;
     public Timestamp? StartTime => _frames.FirstOrDefault()?.StartTimestamp;
@@ -112,23 +112,23 @@ public class ModuleDebugFramer
         }
     }
 
-    private void AddToMetaTree(Debug.Drawing.Meta meta)
+    private void AddToMetaTree(Debug.Meta meta)
     {
         if (meta is { FilePath: not null, MemberName: not null })
         {
             if (!MetaTree.TryGetValue(meta.FilePath, out var functionDict))
             {
-                functionDict = new Dictionary<string, SortedSet<int>>();
+                functionDict = new Dictionary<string, SortedSet<(int, string)>>();
                 MetaTree[meta.FilePath] = functionDict;
             }
 
             if (!functionDict.TryGetValue(meta.MemberName, out var lineSet))
             {
-                lineSet = new SortedSet<int>();
+                lineSet = new SortedSet<(int, string)>();
                 functionDict[meta.MemberName] = lineSet;
             }
 
-            lineSet.Add(meta.LineNumber);
+            lineSet.Add((meta.LineNumber, meta.Expression)!);
         }
     }
 

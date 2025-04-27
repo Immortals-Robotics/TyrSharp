@@ -128,7 +128,7 @@ public class FieldView
     private void DrawInternal(Debug.Drawing.IDrawable drawable,
         Debug.Drawing.Color color, Debug.Drawing.Options options)
     {
-        _internalDraws.Add(new Debug.Drawing.Command(drawable, color, options, Debug.Drawing.Meta.Empty));
+        _internalDraws.Add(new Debug.Drawing.Command(drawable, color, options, Debug.Meta.Empty));
     }
 
     private void DrawField()

@@ -21,9 +21,14 @@ internal class GlfwWindow : IDisposable
 
         Handle = GLFW.CreateWindow(w, h, title, null, null);
         if (Handle.IsNull) throw new Exception("GLFW window failed");
-
         MakeContextCurrent();
         _gl = new GL(new BindingsContext(Handle));
+    }
+    
+    public void SetVSync(bool enabled)
+    {
+        MakeContextCurrent();
+        GLFW.SwapInterval(enabled ? 1 : 0);
     }
 
     public void MakeContextCurrent() => GLFW.MakeContextCurrent(Handle);

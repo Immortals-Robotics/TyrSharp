@@ -19,4 +19,5 @@ public static class Hub
     // debug
     public static readonly BroadcastChannel<Debug.Frame> Frames = new();
     public static readonly BroadcastChannel<Debug.Drawing.Command> Draws = new();
+    public static readonly BroadcastChannel<Debug.Plotting.Command> Plots = new();
 }

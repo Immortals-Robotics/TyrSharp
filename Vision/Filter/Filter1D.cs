@@ -90,8 +90,7 @@ public class Filter1D
         var dt = timestamp - LastTimestamp;
         return Position + Velocity * (float)dt.Seconds;
     }
-
-
+    
     private float MeasurementError
     {
         get => (float)_kalman.MeasurementNoiseCovariance[0, 0];
