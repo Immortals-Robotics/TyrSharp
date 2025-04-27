@@ -11,6 +11,8 @@ public class ConfigsView
     private ImGuiTextFilterPtr _filter = ImGui.ImGuiTextFilter();
     private bool IsFiltering => _filter.IsActive();
 
+    private ImGuiTreeNodeFlags TreeNodeFlags => IsFiltering ? ImGuiTreeNodeFlags.DefaultOpen : ImGuiTreeNodeFlags.None;
+
     private readonly Dictionary<Type, (string[] Names, Array Values)> _enumCache = [];
 
     public void Draw()
@@ -82,7 +84,7 @@ public class ConfigsView
                         var icon = depth == 0
                             ? $"{IconFonts.FontAwesome6.CubesStacked}"
                             : $"{IconFonts.FontAwesome6.Cube}";
-                        if (ImGui.TreeNodeEx($"{icon} {key}", IsFiltering ? ImGuiTreeNodeFlags.DefaultOpen : 0))
+                        if (ImGui.TreeNodeEx($"{icon} {key}", TreeNodeFlags))
                         {
                             DrawTree(subTree, depth + 1);
                             ImGui.TreePop();
@@ -97,10 +99,7 @@ public class ConfigsView
 
     private void DrawConfigurable(string name, Configurable configurable)
     {
-        var shouldOpen = IsFiltering && configurable.Entries.Any(field => _filter.PassFilter(field.Name));
-
-        var nodeOpen = ImGui.TreeNodeEx($"{IconFonts.FontAwesome6.Gears} {name}",
-            shouldOpen ? ImGuiTreeNodeFlags.DefaultOpen : 0);
+        var nodeOpen = ImGui.TreeNodeEx($"{IconFonts.FontAwesome6.Gears} {name}", TreeNodeFlags);
 
         if (ImGui.IsItemHovered(ImGuiHoveredFlags.ForTooltip))
         {
