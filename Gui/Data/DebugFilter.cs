@@ -9,81 +9,30 @@ public class DebugFilter(DebugFramer debugFramer)
     // Format: "module" or "module/file" or "module/file/function" or "module/file/function/line"
     private readonly Dictionary<string, bool> _filterState = [];
 
-    public bool IsEnabled(string moduleName, string? filePath, string? memberName, int lineNumber)
+    private bool IsEnabledInternal(string path) => !_filterState.TryGetValue(path, out var enabled) || enabled;
+
+    public bool IsEnabled(string moduleName, string? filePath = null, string? memberName = null, int? lineNumber = null)
     {
-        // Build the path to check
-        string path = moduleName;
+        if (!IsEnabledInternal(moduleName)) return false;
 
-        if (filePath != null)
-        {
-            path = $"{path}/{filePath}";
+        if (filePath == null) return true;
+        if (!IsEnabledInternal($"{moduleName}/{filePath}")) return false;
 
-            if (memberName != null)
-            {
-                path = $"{path}/{memberName}";
+        if (memberName == null) return true;
+        if (!IsEnabledInternal($"{moduleName}/{filePath}/{memberName}")) return false;
 
-                if (lineNumber != null)
-                {
-                    path = $"{path}/{lineNumber}";
-                }
-            }
-        }
+        if (lineNumber == null) return true;
+        if (!IsEnabledInternal($"{moduleName}/{filePath}/{memberName}/{lineNumber}")) return false;
 
-        // Check parent nodes first (hierarchical filtering)
-        string[] parts = path.Split('/');
-        string currentPath = "";
-
-        // Check each level of the hierarchy
-        for (int i = 0; i < parts.Length; i++)
-        {
-            currentPath = i == 0 ? parts[0] : $"{currentPath}/{parts[i]}";
-
-            // If any parent level is disabled, this node is disabled
-            if (_filterState.TryGetValue(currentPath, out bool enabled) && !enabled)
-                return false;
-        }
-
-        // If we have explicitly stored this path, return its state
-        if (_filterState.TryGetValue(path, out bool state))
-            return state;
-
-        // Default to enabled if not found
         return true;
-    }
-
-    private void RegisterNode(string path, bool defaultEnabled = true)
-    {
-        _filterState.TryAdd(path, defaultEnabled);
     }
 
     public void Draw()
     {
-        // Register all modules, files, and functions
-        foreach (var (moduleName, framer) in debugFramer.Modules)
-        {
-            RegisterNode(moduleName);
-
-            foreach (var (filePath, functions) in framer.MetaTree)
-            {
-                string filePath_nodePath = $"{moduleName}/{filePath}";
-                RegisterNode(filePath_nodePath);
-
-                foreach (var (functionName, lines) in functions)
-                {
-                    string function_nodePath = $"{filePath_nodePath}/{functionName}";
-                    RegisterNode(function_nodePath);
-
-                    foreach (var line in lines)
-                    {
-                        RegisterNode($"{function_nodePath}/{line}");
-                    }
-                }
-            }
-        }
-
         if (ImGui.Begin($"{IconFonts.FontAwesome6.Filter} Debug Filter"))
         {
-            // Draw modules
+            RegisterModules();
+
             foreach (var (moduleName, framer) in debugFramer.Modules)
             {
                 DrawModuleNode(moduleName, framer);
@@ -93,35 +42,59 @@ public class DebugFilter(DebugFramer debugFramer)
         ImGui.End();
     }
 
+    // Register all modules, files, and functions
+    private void RegisterModules()
+    {
+        foreach (var (moduleName, framer) in debugFramer.Modules)
+        {
+            _filterState.TryAdd(moduleName, true);
+
+            foreach (var (filePath, functions) in framer.MetaTree)
+            {
+                var filePathNodePath = $"{moduleName}/{filePath}";
+                _filterState.TryAdd(filePathNodePath, true);
+
+                foreach (var (functionName, lines) in functions)
+                {
+                    var functionNodePath = $"{filePathNodePath}/{functionName}";
+                    _filterState.TryAdd(functionNodePath, true);
+
+                    foreach (var line in lines)
+                    {
+                        _filterState.TryAdd($"{functionNodePath}/{line}", true);
+                    }
+                }
+            }
+        }
+    }
+
     private void DrawModuleNode(string moduleName, ModuleDebugFramer framer)
     {
         // Get current state
-        bool isEnabled = _filterState.GetValueOrDefault(moduleName, true);
-        bool wasEnabled = isEnabled;
+        var isEnabled = _filterState[moduleName];
 
         // Create tree node with checkbox
         ImGui.PushID(moduleName);
-        bool isOpen = ImGui.TreeNodeEx($"##tree_{moduleName}");
+        var isOpen = ImGui.TreeNodeEx($"##tree_{moduleName}");
         ImGui.SameLine();
         ImGui.Checkbox($"{moduleName}", ref isEnabled);
 
-        // Update state if changed
-        if (isEnabled != wasEnabled)
-        {
-            _filterState[moduleName] = isEnabled;
-        }
+        _filterState[moduleName] = isEnabled;
 
         // Draw child nodes if open
         if (isOpen)
         {
+            ImGui.BeginDisabled(!isEnabled);
+
             // Draw files
             foreach (var (filePath, functions) in framer.MetaTree)
             {
-                string filePath_nodePath = $"{moduleName}/{filePath}";
-                DrawFileNode(filePath_nodePath, filePath, functions);
+                var filePathNodePath = $"{moduleName}/{filePath}";
+                DrawFileNode(filePathNodePath, filePath, functions);
             }
 
             ImGui.TreePop();
+            ImGui.EndDisabled();
         }
 
         ImGui.PopID();
@@ -130,40 +103,42 @@ public class DebugFilter(DebugFramer debugFramer)
     private void DrawFileNode(string nodePath, string filePath, Dictionary<string, SortedSet<int>> functions)
     {
         // Get current state
-        bool isEnabled = _filterState.GetValueOrDefault(nodePath, true);
-        bool wasEnabled = isEnabled;
+        var isEnabled = _filterState[nodePath];
 
         // Extract filename from path for display
-        string displayName = System.IO.Path.GetFileName(filePath);
+        var displayName = Path.GetFileName(filePath);
 
         // Create tree node with checkbox
         ImGui.PushID(nodePath);
-        bool isOpen = ImGui.TreeNodeEx($"##tree_{nodePath}");
+        var isOpen = ImGui.TreeNodeEx($"##tree_{nodePath}");
         ImGui.SameLine();
+        ImGui.PushFont(FontRegistry.Instance.MonoFont);
         ImGui.Checkbox($"{displayName}", ref isEnabled);
+        ImGui.PopFont();
 
         // Show full path as tooltip
-        if (ImGui.IsItemHovered())
+        if (ImGui.IsItemHovered(ImGuiHoveredFlags.ForTooltip))
         {
+            ImGui.PushFont(FontRegistry.Instance.MonoFont);
             ImGui.SetTooltip(filePath);
+            ImGui.PopFont();
         }
 
-        // Update state if changed
-        if (isEnabled != wasEnabled)
-        {
-            _filterState[nodePath] = isEnabled;
-        }
+        _filterState[nodePath] = isEnabled;
 
         // Draw child nodes if open
         if (isOpen)
         {
+            ImGui.BeginDisabled(!isEnabled);
+
             // Draw functions
             foreach (var (functionName, lines) in functions)
             {
-                string function_nodePath = $"{nodePath}/{functionName}";
-                DrawFunctionNode(function_nodePath, functionName, lines);
+                var functionNodePath = $"{nodePath}/{functionName}";
+                DrawFunctionNode(functionNodePath, functionName, lines);
             }
 
+            ImGui.EndDisabled();
             ImGui.TreePop();
         }
 
@@ -173,31 +148,31 @@ public class DebugFilter(DebugFramer debugFramer)
     private void DrawFunctionNode(string nodePath, string functionName, SortedSet<int> lines)
     {
         // Get current state
-        bool isEnabled = _filterState.GetValueOrDefault(nodePath, true);
-        bool wasEnabled = isEnabled;
+        var isEnabled = _filterState.GetValueOrDefault(nodePath, true);
 
         // Create tree node with checkbox
         ImGui.PushID(nodePath);
-        bool isOpen = ImGui.TreeNodeEx($"##tree_{nodePath}");
+        var isOpen = ImGui.TreeNodeEx($"##tree_{nodePath}");
         ImGui.SameLine();
+        ImGui.PushFont(FontRegistry.Instance.MonoFont);
         ImGui.Checkbox($"{functionName}()", ref isEnabled);
+        ImGui.PopFont();
 
-        // Update state if changed
-        if (isEnabled != wasEnabled)
-        {
-            _filterState[nodePath] = isEnabled;
-        }
+        _filterState[nodePath] = isEnabled;
 
         // Draw child nodes if open
         if (isOpen)
         {
+            ImGui.BeginDisabled(!isEnabled);
+
             // Draw lines
             foreach (var lineNumber in lines)
             {
-                string line_nodePath = $"{nodePath}/{lineNumber}";
-                DrawLineNode(line_nodePath, lineNumber);
+                var lineNodePath = $"{nodePath}/{lineNumber}";
+                DrawLineNode(lineNodePath, lineNumber);
             }
 
+            ImGui.EndDisabled();
             ImGui.TreePop();
         }
 
@@ -207,20 +182,17 @@ public class DebugFilter(DebugFramer debugFramer)
     private void DrawLineNode(string nodePath, int lineNumber)
     {
         // Get current state
-        bool isEnabled = _filterState.GetValueOrDefault(nodePath, true);
-        bool wasEnabled = isEnabled;
+        var isEnabled = _filterState[nodePath];
 
         // Create leaf node with checkbox (no children)
         ImGui.PushID(nodePath);
         ImGui.Indent();
+        ImGui.PushFont(FontRegistry.Instance.MonoFont);
         ImGui.Checkbox($"Line {lineNumber}", ref isEnabled);
+        ImGui.PopFont();
         ImGui.Unindent();
 
-        // Update state if changed
-        if (isEnabled != wasEnabled)
-        {
-            _filterState[nodePath] = isEnabled;
-        }
+        _filterState[nodePath] = isEnabled;
 
         ImGui.PopID();
     }

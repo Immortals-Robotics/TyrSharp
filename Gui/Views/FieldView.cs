@@ -68,7 +68,7 @@ public class FieldView
 
             foreach (var (module, framer) in _debugFramer.Modules)
             {
-                //if (!_filter.IsEnabled(module)) continue;
+                if (!_filter.IsEnabled(module)) continue;
 
                 var frame = time.Live ? framer.LatestFrame : framer.GetFrame(time.Time);
                 if (frame == null) continue;
