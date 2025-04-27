@@ -1,3 +1,4 @@
+using System.Numerics;
 using Hexa.NET.ImGui;
 using Tyr.Common.Config;
 using Tyr.Common.Network;
@@ -12,10 +13,22 @@ public class ConfigsView
 
     public void Draw()
     {
-        if (ImGui.Begin("Configs"))
+        if (ImGui.Begin($"{IconFonts.FontAwesome6.Gear} Configs"))
         {
             DrawSearchBar();
             DrawTree(Registry.Tree);
+
+            // Add status bar at bottom
+            if (IsFiltering)
+            {
+                ImGui.Separator();
+
+                // Count how many items are shown/filtered
+                var totalItems = Registry.Configurables.Count;
+                var visibleItems = IsFiltering ? CountMatchingFields(Registry.Tree) : totalItems;
+
+                ImGui.TextDisabled($"{visibleItems} of {totalItems} items matching");
+            }
         }
 
         ImGui.End();
@@ -23,10 +36,23 @@ public class ConfigsView
 
     private void DrawSearchBar()
     {
-        // Create a search input with hint text
-        ImGui.PushItemWidth(-1); // Make the input field fill the available width
+        // Start with a search icon
+        ImGui.Text($"{IconFonts.FontAwesome6.MagnifyingGlass}");
+        ImGui.SameLine();
+
+        ImGui.PushItemWidth(-24); // Make space for the clear button
         ImGui.InputTextWithHint("##search", "Search configs...", ref _searchText, 256);
         ImGui.PopItemWidth();
+
+        // Clear button
+        if (IsFiltering)
+        {
+            ImGui.SameLine();
+            if (ImGui.Button($"{IconFonts.FontAwesome6.Xmark}##clear"))
+            {
+                _searchText = string.Empty;
+            }
+        }
 
         ImGui.Separator();
     }
@@ -56,7 +82,11 @@ public class ConfigsView
 
                     if (keyMatch || childrenMatch)
                     {
-                        if (ImGui.TreeNodeEx(key, IsFiltering && childrenMatch ? ImGuiTreeNodeFlags.DefaultOpen : 0))
+                        var flags = ImGuiTreeNodeFlags.None;
+                        if (IsFiltering && childrenMatch)
+                            flags |= ImGuiTreeNodeFlags.DefaultOpen;
+
+                        if (ImGui.TreeNodeEx(key, flags))
                         {
                             DrawTree(subTree);
                             ImGui.TreePop();
@@ -73,13 +103,21 @@ public class ConfigsView
     {
         var shouldOpen = IsFiltering && configurable.Entries.Any(field => MatchesSearch(field.Name));
 
-        if (ImGui.TreeNodeEx($"{name} ({configurable.TypeName})",
-                shouldOpen ? ImGuiTreeNodeFlags.DefaultOpen : 0))
+        var nodeOpen = ImGui.TreeNodeEx($"{IconFonts.FontAwesome6.Sliders} {name}",
+            shouldOpen ? ImGuiTreeNodeFlags.DefaultOpen : 0);
+
+        // type name
+        ImGui.SameLine();
+        ImGui.PushFont(FontRegistry.Instance.MonoFont);
+        ImGui.TextDisabled($" : {configurable.TypeName}");
+        ImGui.PopFont();
+
+        if (nodeOpen)
         {
-            if (ImGui.BeginTable("fields", 3, ImGuiTableFlags.SizingStretchProp))
+            if (ImGui.BeginTable("fields", 3, ImGuiTableFlags.BordersInnerH))
             {
-                ImGui.TableSetupColumn("R", ImGuiTableColumnFlags.WidthFixed, 15f);
                 ImGui.TableSetupColumn("Name", ImGuiTableColumnFlags.WidthStretch, 1.0f);
+                ImGui.TableSetupColumn("Reset", ImGuiTableColumnFlags.WidthFixed, 15f);
                 ImGui.TableSetupColumn("Value", ImGuiTableColumnFlags.WidthStretch, 1.5f);
 
                 foreach (var field in configurable.Entries)
@@ -102,6 +140,28 @@ public class ConfigsView
     {
         ImGui.PushID(field.Name);
 
+        // Name
+        ImGui.TableNextColumn();
+        ImGui.TextUnformatted(field.Name);
+        
+        if (ImGui.IsItemHovered())
+        {
+            ImGui.BeginTooltip();
+
+            ImGui.PushFont(FontRegistry.Instance.MonoFont);
+            ImGui.TextDisabled($"{field.Type.FullName}");
+            ImGui.PopFont();
+
+            if (!string.IsNullOrEmpty(field.Comment))
+            {
+                ImGui.PushTextWrapPos(ImGui.GetFontSize() * 15.0f);
+                ImGui.TextUnformatted(field.Comment);
+                ImGui.PopTextWrapPos();
+            }
+
+            ImGui.EndTooltip();
+        }
+
         // Reset button
         ImGui.TableNextColumn();
         if (ImGui.SmallButton($"{IconFonts.FontAwesome6.RotateLeft}"))
@@ -111,19 +171,12 @@ public class ConfigsView
 
         if (ImGui.IsItemHovered())
         {
-            ImGui.PushFont(FontRegistry.Instance.MonoFont);
-            ImGui.SetTooltip($"{field.DefaultValue}");
-            ImGui.PopFont();
-        }
-
-        // Name
-        ImGui.TableNextColumn();
-        ImGui.TextUnformatted(field.Name);
-
-        if (ImGui.IsItemHovered() && !string.IsNullOrEmpty(field.Comment))
-        {
             ImGui.BeginTooltip();
-            ImGui.TextUnformatted(field.Comment);
+            ImGui.Text("Reset to");
+            ImGui.SameLine();
+            ImGui.PushFont(FontRegistry.Instance.MonoFont);
+            ImGui.TextColored(new Vector4(0.8f, 0.8f, 0.2f, 1.0f), $"{field.DefaultValue}");
+            ImGui.PopFont();
             ImGui.EndTooltip();
         }
 
@@ -237,6 +290,26 @@ public class ConfigsView
 
         return false;
     }
+
+    private int CountMatchingFields(Dictionary<string, object> tree)
+    {
+        int count = 0;
+        foreach (var (key, value) in tree)
+        {
+            switch (value)
+            {
+                case Configurable configurable:
+                    count += configurable.Entries.Count(field => MatchesSearch(field.Name));
+                    break;
+                case Dictionary<string, object> subTree:
+                    count += CountMatchingFields(subTree);
+                    break;
+            }
+        }
+
+        return count;
+    }
+
 
     // Helper method to check if a string matches the search text
     private bool MatchesSearch(string text)
