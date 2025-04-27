@@ -60,8 +60,6 @@ public sealed class Vision
                 camera.Timestamp - averageTimestamp > DeltaTime.FromSeconds(CameraTooOldTime));
         }
 
-        DrawField();
-
         foreach (var camera in _cameras.Values)
         {
             DrawRobots(camera);
@@ -82,26 +80,8 @@ public sealed class Vision
         foreach (var (id, tracker) in camera.Robots)
         {
             var color = id.Team == TeamColor.Blue ? Color.Blue : Color.Yellow;
-            Draw.DrawRobot(tracker.Position, tracker.Angle, (int?)id.Id, color,
-                new Options { Filled = true });
+            Draw.DrawRobot(tracker.Position, tracker.Angle, id.Id,
+                color, new Options { Filled = true });
         }
-    }
-
-    private void DrawField()
-    {
-        if (!_fieldSize.HasValue) return;
-
-        Draw.DrawRectangle(_fieldSize.Value.FieldRectangleWithBoundary,
-            Color.Green, new Options { Filled = true });
-
-        foreach (var line in _fieldSize.Value.FieldLines)
-        {
-            Draw.DrawLineSegment(line.LineSegment, Color.White,
-                new Options { Thickness = line.Thickness });
-        }
-
-        var lineThickness = _fieldSize.Value.LineThickness.GetValueOrDefault();
-        Draw.DrawCircle(_fieldSize.Value.CenterCircle, Color.White,
-            new Options { Thickness = lineThickness });
     }
 }

@@ -17,7 +17,7 @@ internal class DrawableRenderer
 
     private ImDrawListPtr _drawList;
 
-    internal void Draw(IReadOnlyList<Command> commands, DebugFilter filter)
+    internal void Draw(IReadOnlyList<Command> commands, DebugFilter? filter)
     {
         Log.ZLogTrace($"Drawing {commands.Count} items");
 
@@ -28,7 +28,7 @@ internal class DrawableRenderer
 
         foreach (var command in commands)
         {
-            if (!filter.IsEnabled(command.Meta)) continue;
+            if (filter != null && !filter.IsEnabled(command.Meta)) continue;
 
             switch (command.Drawable)
             {

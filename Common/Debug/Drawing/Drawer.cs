@@ -1,6 +1,5 @@
-﻿using System.Diagnostics.CodeAnalysis;
-using System.Numerics;
-using System.Runtime.CompilerServices;
+﻿using System.Runtime.CompilerServices;
+using Tyr.Common.Data;
 using Tyr.Common.Dataflow;
 using Tyr.Common.Debug.Drawing.Drawables;
 using Tyr.Common.Math;
@@ -9,10 +8,10 @@ using Line = Tyr.Common.Debug.Drawing.Drawables.Line;
 using LineSegment = Tyr.Common.Debug.Drawing.Drawables.LineSegment;
 using Robot = Tyr.Common.Debug.Drawing.Drawables.Robot;
 using Triangle = Tyr.Common.Debug.Drawing.Drawables.Triangle;
+using Vector2 = System.Numerics.Vector2;
 
 namespace Tyr.Common.Debug.Drawing;
 
-[SuppressMessage("ReSharper", "ExplicitCallerInfoArgument")]
 public class Drawer(string moduleName)
 {
     private void Draw(IDrawable drawable, Color color, Options options,
@@ -57,7 +56,8 @@ public class Drawer(string moduleName)
         [CallerFilePath] string? filePath = null,
         [CallerLineNumber] int lineNumber = 0)
     {
-        DrawLine(line.SomePoint, line.Angle, color, options, memberName, filePath, lineNumber);
+        var drawable = new Line(line);
+        Draw(drawable, color, options, memberName, filePath, lineNumber);
     }
 
     public void DrawLineSegment(Vector2 start, Vector2 end, Color color, Options options = default,
@@ -74,7 +74,8 @@ public class Drawer(string moduleName)
         [CallerFilePath] string? filePath = null,
         [CallerLineNumber] int lineNumber = 0)
     {
-        DrawLineSegment(segment.Start, segment.End, color, options, memberName, filePath, lineNumber);
+        var drawable = new LineSegment(segment);
+        Draw(drawable, color, options, memberName, filePath, lineNumber);
     }
 
     public void DrawArrow(Vector2 start, Vector2 end, Color color, Options options = default,
@@ -91,7 +92,8 @@ public class Drawer(string moduleName)
         [CallerFilePath] string? filePath = null,
         [CallerLineNumber] int lineNumber = 0)
     {
-        DrawArrow(segment.Start, segment.End, color, options, memberName, filePath, lineNumber);
+        var drawable = new Arrow(segment);
+        Draw(drawable, color, options, memberName, filePath, lineNumber);
     }
 
     public void DrawRectangle(Vector2 min, Vector2 max, Color color, Options options = default,
@@ -108,7 +110,8 @@ public class Drawer(string moduleName)
         [CallerFilePath] string? filePath = null,
         [CallerLineNumber] int lineNumber = 0)
     {
-        DrawRectangle(rectangle.Min, rectangle.Max, color, options, memberName, filePath, lineNumber);
+        var drawable = new Rectangle(rectangle);
+        Draw(drawable, color, options, memberName, filePath, lineNumber);
     }
 
     public void DrawTriangle(Vector2 v1, Vector2 v2, Vector2 v3, Color color, Options options = default,
@@ -125,8 +128,8 @@ public class Drawer(string moduleName)
         [CallerFilePath] string? filePath = null,
         [CallerLineNumber] int lineNumber = 0)
     {
-        DrawTriangle(triangle.Corner1, triangle.Corner2, triangle.Corner3,
-            color, options, memberName, filePath, lineNumber);
+        var drawable = new Triangle(triangle);
+        Draw(drawable, color, options, memberName, filePath, lineNumber);
     }
 
     public void DrawCircle(Vector2 center, float radius, Color color, Options options = default,
@@ -143,10 +146,11 @@ public class Drawer(string moduleName)
         [CallerFilePath] string? filePath = null,
         [CallerLineNumber] int lineNumber = 0)
     {
-        DrawCircle(circle.Center, circle.Radius, color, options, memberName, filePath, lineNumber);
+        var drawable = new Circle(circle);
+        Draw(drawable, color, options, memberName, filePath, lineNumber);
     }
 
-    public void DrawRobot(Vector2 position, Angle? orientation, int? id, Color color, Options options = default,
+    public void DrawRobot(Vector2 position, Angle? orientation, uint? id, Color color, Options options = default,
         [CallerMemberName] string? memberName = null,
         [CallerFilePath] string? filePath = null,
         [CallerLineNumber] int lineNumber = 0)
@@ -155,12 +159,35 @@ public class Drawer(string moduleName)
         Draw(robot, color, options, memberName, filePath, lineNumber);
     }
 
-    public void DrawRobot(Math.Shapes.Robot robot, int? id, Color color, Options options = default,
+    public void DrawRobot(Math.Shapes.Robot robot, uint? id, Color color, Options options = default,
         [CallerMemberName] string? memberName = null,
         [CallerFilePath] string? filePath = null,
         [CallerLineNumber] int lineNumber = 0)
     {
-        DrawRobot(robot.Center, robot.Angle, id, color, options, memberName, filePath, lineNumber);
+        var drawable = new Robot(robot, id);
+        Draw(drawable, color, options, memberName, filePath, lineNumber);
+    }
+
+    public void DrawRobot(Data.Ssl.Vision.Detection.Robot robot, Data.Ssl.RobotId id, Options options = default,
+        [CallerMemberName] string? memberName = null,
+        [CallerFilePath] string? filePath = null,
+        [CallerLineNumber] int lineNumber = 0)
+    {
+        var drawable = new Robot(robot, id.Id);
+        var color = id.Team.ToColor();
+
+        Draw(drawable, color, options, memberName, filePath, lineNumber);
+    }
+
+    public void DrawRobot(Data.Ssl.Vision.Tracker.Robot robot, Options options = default,
+        [CallerMemberName] string? memberName = null,
+        [CallerFilePath] string? filePath = null,
+        [CallerLineNumber] int lineNumber = 0)
+    {
+        var drawable = new Robot(robot);
+        var color = robot.Id.Team.ToColor();
+
+        Draw(drawable, color, options, memberName, filePath, lineNumber);
     }
 
     public void DrawPath(IReadOnlyList<Vector2> points, Color color, Options options = default,
