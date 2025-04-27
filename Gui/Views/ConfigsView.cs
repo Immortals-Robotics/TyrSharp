@@ -3,14 +3,17 @@ using Hexa.NET.ImGui;
 using Tyr.Common.Config;
 using Tyr.Common.Network;
 using Tyr.Gui.Backend;
-using Humanizer;
 
 namespace Tyr.Gui.Views;
 
 public class ConfigsView
 {
-    private string _searchText = string.Empty;
-    private bool IsFiltering => !string.IsNullOrWhiteSpace(_searchText);
+    private ImGuiTextFilterPtr _filter = ImGui.ImGuiTextFilter();
+    private bool IsFiltering => _filter.IsActive();
+
+    private ImGuiTreeNodeFlags TreeNodeFlags => IsFiltering ? ImGuiTreeNodeFlags.DefaultOpen : ImGuiTreeNodeFlags.None;
+
+    private readonly Dictionary<Type, (string[] Names, Array Values)> _enumCache = [];
 
     public void Draw()
     {
@@ -42,7 +45,7 @@ public class ConfigsView
         ImGui.SameLine();
 
         ImGui.PushItemWidth(-24); // Make space for the clear button
-        ImGui.InputTextWithHint("##search", "Search configs...", ref _searchText, 256);
+        _filter.Draw("##search");
         ImGui.PopItemWidth();
 
         // Clear button
@@ -51,14 +54,14 @@ public class ConfigsView
             ImGui.SameLine();
             if (ImGui.Button($"{IconFonts.FontAwesome6.Xmark}##clear"))
             {
-                _searchText = string.Empty;
+                _filter.Clear();
             }
         }
 
         ImGui.Separator();
     }
 
-    private void DrawTree(Dictionary<string, object> tree)
+    private void DrawTree(Dictionary<string, object> tree, int depth = 0)
     {
         foreach (var (key, value) in tree)
         {
@@ -66,7 +69,7 @@ public class ConfigsView
             {
                 case Configurable configurable:
                     // Check if any of its fields match the search
-                    var fieldsMatch = configurable.Entries.Any(field => MatchesSearch(field.Name));
+                    var fieldsMatch = configurable.Entries.Any(field => _filter.PassFilter(field.Name));
                     if (fieldsMatch)
                     {
                         DrawConfigurable(key, configurable);
@@ -78,9 +81,12 @@ public class ConfigsView
                 {
                     if (ChildrenMatchSearch(subTree))
                     {
-                        if (ImGui.TreeNodeEx(key, IsFiltering ? ImGuiTreeNodeFlags.DefaultOpen : 0))
+                        var icon = depth == 0
+                            ? $"{IconFonts.FontAwesome6.CubesStacked}"
+                            : $"{IconFonts.FontAwesome6.Cube}";
+                        if (ImGui.TreeNodeEx($"{icon} {key}", TreeNodeFlags))
                         {
-                            DrawTree(subTree);
+                            DrawTree(subTree, depth + 1);
                             ImGui.TreePop();
                         }
                     }
@@ -93,10 +99,7 @@ public class ConfigsView
 
     private void DrawConfigurable(string name, Configurable configurable)
     {
-        var shouldOpen = IsFiltering && configurable.Entries.Any(field => MatchesSearch(field.Name));
-
-        var nodeOpen = ImGui.TreeNodeEx($"{IconFonts.FontAwesome6.Gears} {name.Humanize()}",
-            shouldOpen ? ImGuiTreeNodeFlags.DefaultOpen : 0);
+        var nodeOpen = ImGui.TreeNodeEx($"{IconFonts.FontAwesome6.Gears} {name}", TreeNodeFlags);
 
         if (ImGui.IsItemHovered(ImGuiHoveredFlags.ForTooltip))
         {
@@ -127,7 +130,7 @@ public class ConfigsView
                 foreach (var field in configurable.Entries)
                 {
                     // Only show fields that match the search criteria when filtering
-                    if (!MatchesSearch(field.Name)) continue;
+                    if (!_filter.PassFilter(field.Name)) continue;
 
                     ImGui.TableNextRow();
                     DrawField(field);
@@ -146,7 +149,7 @@ public class ConfigsView
 
         // Name
         ImGui.TableNextColumn();
-        ImGui.TextUnformatted(field.Name.Humanize());
+        ImGui.TextUnformatted(field.Name);
 
         if (ImGui.IsItemHovered(ImGuiHoveredFlags.ForTooltip))
         {
@@ -250,12 +253,19 @@ public class ConfigsView
                 break;
 
             case Enum enumValue:
-                var names = Enum.GetNames(enumValue.GetType());
-                var values = Enum.GetValues(enumValue.GetType());
-                var index = Array.IndexOf(values, enumValue);
-                if (ImGui.Combo("", ref index, names, names.Length))
+                var enumType = enumValue.GetType();
+                if (!_enumCache.TryGetValue(enumType, out var enumData))
                 {
-                    field.Value = values.GetValue(index)!;
+                    enumData.Names = Enum.GetNames(enumType);
+                    enumData.Values = Enum.GetValues(enumType);
+
+                    _enumCache[enumType] = enumData;
+                }
+
+                var index = Array.IndexOf(enumData.Values, enumValue);
+                if (ImGui.Combo("", ref index, enumData.Names, enumData.Names.Length))
+                {
+                    field.Value = enumData.Values.GetValue(index)!;
                 }
 
                 break;
@@ -280,7 +290,7 @@ public class ConfigsView
             switch (value)
             {
                 case Configurable configurable:
-                    if (configurable.Entries.Any(field => MatchesSearch(field.Name)))
+                    if (configurable.Entries.Any(field => _filter.PassFilter(field.Name)))
                         return true;
                     break;
 
@@ -301,7 +311,7 @@ public class ConfigsView
             switch (value)
             {
                 case Configurable configurable:
-                    count += configurable.Entries.Count(field => MatchesSearch(field.Name));
+                    count += configurable.Entries.Count(field => _filter.PassFilter(field.Name));
                     break;
                 case Dictionary<string, object> subTree:
                     count += CountMatchingFields(subTree);
@@ -310,15 +320,5 @@ public class ConfigsView
         }
 
         return count;
-    }
-
-
-    // Helper method to check if a string matches the search text
-    private bool MatchesSearch(string text)
-    {
-        if (!IsFiltering) return true;
-        if (string.IsNullOrEmpty(text)) return false;
-
-        return ImGui.ImGuiTextFilter(_searchText).PassFilter(text);
     }
 }

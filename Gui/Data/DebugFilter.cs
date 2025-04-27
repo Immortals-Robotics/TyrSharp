@@ -1,45 +1,251 @@
-﻿using Hexa.NET.ImGui;
+﻿using Cysharp.Text;
+using Hexa.NET.ImGui;
 using Tyr.Gui.Backend;
+using StrSpan = System.ReadOnlySpan<char>;
 
 namespace Tyr.Gui.Data;
 
-public class DebugFilter(DebugFramer debugFramer)
+public sealed class DebugFilter : IDisposable
 {
-    private readonly Dictionary<string, bool> _nodes = [];
+    // Dictionary to track the enabled state of each node in the tree
+    // Format: "module" or "module/file" or "module/file/function" or "module/file/function/line"
+    private readonly Dictionary<string, bool> _filterState = [];
+    private readonly Dictionary<string, bool>.AlternateLookup<StrSpan> _lookup;
 
-    public bool IsEnabled(string moduleName)
+    private Utf16ValueStringBuilder _stringBuilder = ZString.CreateStringBuilder();
+    private readonly DebugFramer _debugFramer;
+
+    public DebugFilter(DebugFramer debugFramer)
     {
-        return _nodes.GetValueOrDefault(moduleName);
+        _debugFramer = debugFramer;
+        _lookup = _filterState.GetAlternateLookup<StrSpan>();
     }
 
-    private void Register(string moduleName)
+    private StrSpan MakePath(string moduleName, string? filePath = null,
+        string? memberName = null, int? lineNumber = null)
     {
-        _nodes.TryAdd(moduleName, true);
+        _stringBuilder.Clear();
+
+        if (filePath == null)
+            _stringBuilder.AppendFormat("{0}", moduleName);
+        else if (memberName == null)
+            _stringBuilder.AppendFormat("{0}/{1}", moduleName, filePath);
+        else if (lineNumber == null)
+            _stringBuilder.AppendFormat("{0}/{1}/{2}", moduleName, filePath, memberName);
+        else
+            _stringBuilder.AppendFormat("{0}/{1}/{2}/{3}", moduleName, filePath, memberName, lineNumber);
+
+        return _stringBuilder.AsSpan();
+    }
+
+    public bool IsEnabled(Common.Debug.Drawing.Meta meta) =>
+        IsEnabled(meta.ModuleName, meta.FilePath, meta.MemberName, meta.LineNumber);
+
+    public bool IsEnabled(string module, string? file = null, string? member = null, int? line = null)
+    {
+        if (!IsEnabledInternal(MakePath(module))) return false;
+
+        if (file == null) return true;
+        if (!IsEnabledInternal(MakePath(module, file))) return false;
+
+        if (member == null) return true;
+        if (!IsEnabledInternal(MakePath(module, file, member))) return false;
+
+        if (line == null) return true;
+        if (!IsEnabledInternal(MakePath(module, file, member, line.Value))) return false;
+
+        return true;
+
+        bool IsEnabledInternal(StrSpan path) => !_lookup.TryGetValue(path, out var enabled) || enabled;
     }
 
     public void Draw()
     {
-        foreach (var module in debugFramer.Modules.Keys)
-        {
-            Register(module);
-        }
-
         if (ImGui.Begin($"{IconFonts.FontAwesome6.Filter} Debug Filter"))
         {
-            ImGui.PushFont(FontRegistry.Instance.UiFont);
+            RegisterModules();
 
-            foreach (var (name, enabled) in _nodes)
+            foreach (var (moduleName, framer) in _debugFramer.Modules)
             {
-                var refEnabled = enabled;
-                if (ImGui.Checkbox(name, ref refEnabled))
-                {
-                    _nodes[name] = refEnabled;
-                }
-            }
+                if (framer.MetaTree.Count == 0) continue;
 
-            ImGui.PopFont();
+                DrawModuleNode(moduleName, framer);
+            }
         }
 
         ImGui.End();
+    }
+
+    // Register all modules, files, and functions
+    private void RegisterModules()
+    {
+        foreach (var (module, framer) in _debugFramer.Modules)
+        {
+            _filterState.TryAdd(module, true);
+
+            foreach (var (file, functions) in framer.MetaTree)
+            {
+                _lookup.TryAdd(MakePath(module, file), true);
+
+                foreach (var (function, lines) in functions)
+                {
+                    _lookup.TryAdd(MakePath(module, file, function), true);
+
+                    foreach (var line in lines)
+                    {
+                        _lookup.TryAdd(MakePath(module, file, function, line), true);
+                    }
+                }
+            }
+        }
+    }
+
+    private void DrawModuleNode(string module, ModuleDebugFramer framer)
+    {
+        // Get current state
+        var isEnabled = _filterState[module];
+
+        // Create tree node with checkbox
+        ImGui.PushID(module);
+        var isOpen = ImGui.TreeNode("");
+        ImGui.SameLine();
+        ImGui.Checkbox($"{IconFonts.FontAwesome6.CubesStacked} {module}", ref isEnabled);
+
+        _filterState[module] = isEnabled;
+
+        // Draw child nodes if open
+        if (isOpen)
+        {
+            ImGui.BeginDisabled(!isEnabled);
+
+            // Draw files
+            foreach (var (filePath, functions) in framer.MetaTree)
+            {
+                DrawFileNode(module, filePath, functions, isEnabled);
+            }
+
+            ImGui.TreePop();
+            ImGui.EndDisabled();
+        }
+
+        ImGui.PopID();
+    }
+
+    private void DrawFileNode(string module, string file,
+        Dictionary<string, SortedSet<int>> functions, bool parentEnabled)
+    {
+        var path = MakePath(module, file);
+
+        // Get current state
+        var isEnabled = parentEnabled && _lookup[path];
+
+        // Extract filename from path for display
+        var displayName = Path.GetFileName(file);
+
+        // Create tree node with checkbox
+        ImGui.PushID(file);
+        var isOpen = ImGui.TreeNode("");
+        ImGui.SameLine();
+        ImGui.PushFont(FontRegistry.Instance.MonoFont);
+        ImGui.Checkbox($"{IconFonts.FontAwesome6.FileCode} {displayName}", ref isEnabled);
+        ImGui.PopFont();
+
+        // Show full path as tooltip
+        if (ImGui.IsItemHovered(ImGuiHoveredFlags.ForTooltip))
+        {
+            ImGui.PushFont(FontRegistry.Instance.MonoFont);
+            ImGui.SetTooltip(file);
+            ImGui.PopFont();
+        }
+
+        if (parentEnabled)
+        {
+            _lookup[path] = isEnabled;
+        }
+
+        // Draw child nodes if open
+        if (isOpen)
+        {
+            ImGui.BeginDisabled(!isEnabled);
+
+            // Draw functions
+            foreach (var (functionName, lines) in functions)
+            {
+                DrawFunctionNode(module, file, functionName, lines, isEnabled);
+            }
+
+            ImGui.EndDisabled();
+            ImGui.TreePop();
+        }
+
+        ImGui.PopID();
+    }
+
+    private void DrawFunctionNode(string module, string file, string function, SortedSet<int> lines,
+        bool parentEnabled)
+    {
+        var path = MakePath(module, file, function);
+
+        // Get current state
+        var isEnabled = parentEnabled && _lookup[path];
+
+        // Create tree node with checkbox
+        ImGui.PushID(function);
+        var isOpen = ImGui.TreeNode("");
+        ImGui.SameLine();
+        ImGui.PushFont(FontRegistry.Instance.MonoFont);
+        ImGui.Checkbox($"{IconFonts.FontAwesome6.Code} {function}()", ref isEnabled);
+        ImGui.PopFont();
+
+        if (parentEnabled)
+        {
+            _lookup[path] = isEnabled;
+        }
+
+        // Draw child nodes if open
+        if (isOpen)
+        {
+            ImGui.BeginDisabled(!isEnabled);
+
+            // Draw lines
+            foreach (var lineNumber in lines)
+            {
+                DrawLineNode(module, file, function, lineNumber, isEnabled);
+            }
+
+            ImGui.EndDisabled();
+            ImGui.TreePop();
+        }
+
+        ImGui.PopID();
+    }
+
+    private void DrawLineNode(string module, string file, string function, int line, bool parentEnabled)
+    {
+        var path = MakePath(module, file, function, line);
+
+        // Get current state
+        var isEnabled = parentEnabled && _lookup[path];
+
+        // Create leaf node with checkbox (no children)
+        ImGui.PushID(line);
+        ImGui.Indent();
+        ImGui.PushFont(FontRegistry.Instance.MonoFont);
+        ImGui.Checkbox($"{IconFonts.FontAwesome6.BarsStaggered} Line {line}", ref isEnabled);
+        ImGui.PopFont();
+        ImGui.Unindent();
+
+        if (parentEnabled)
+        {
+            _lookup[path] = isEnabled;
+        }
+
+        ImGui.PopID();
+    }
+
+    public void Dispose()
+    {
+        _stringBuilder.Dispose();
+        _stringBuilder = default;
     }
 }

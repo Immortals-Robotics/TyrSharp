@@ -10,7 +10,7 @@ public class ConfigEntry(PropertyInfo info, Configurable owner)
 
     public string Name => info.Name;
     public Type Type => info.PropertyType;
-    public string? Comment => _meta.Comment;
+    public string? Comment => _meta.Description;
     public object DefaultValue { get; } = info.GetValue(null)!;
 
     static ConfigEntry()

@@ -26,9 +26,11 @@ public sealed class FontRegistry : IDisposable
             .Add("Fonts/seguiemj.ttf", (0x1F300, 0x1FAD0), FontSize, dpiScale) // emoji
             .Add("Fonts/fa-solid-900.ttf", (FontAwesome6.IconMin, FontAwesome6.IconMax), FontSize, dpiScale) // icons
             .Load();
-
+        
         MonoFont = _loader
             .Add("Fonts/JetBrainsMono[wght].ttf", null, FontSize * 1.1f, dpiScale * 2f)
+            .Add("Fonts/seguiemj.ttf", (0x1F300, 0x1FAD0), FontSize, dpiScale) // emoji
+            .Add("Fonts/fa-solid-900.ttf", (FontAwesome6.IconMin, FontAwesome6.IconMax), FontSize, dpiScale) // icons
             .Load();
 
         ImGui.GetIO().FontDefault = UiFont;

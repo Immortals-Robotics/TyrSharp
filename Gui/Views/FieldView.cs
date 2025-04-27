@@ -73,7 +73,7 @@ public class FieldView
                 var frame = time.Live ? framer.LatestFrame : framer.GetFrame(time.Time);
                 if (frame == null) continue;
 
-                _renderer.Draw(frame.Draws);
+                _renderer.Draw(frame.Draws, _filter);
             }
 
             ShowStats();
