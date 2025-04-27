@@ -3,6 +3,7 @@ using Hexa.NET.ImGui;
 using Tyr.Common.Config;
 using Tyr.Common.Network;
 using Tyr.Gui.Backend;
+using Humanizer;
 
 namespace Tyr.Gui.Views;
 
@@ -94,14 +95,26 @@ public class ConfigsView
     {
         var shouldOpen = IsFiltering && configurable.Entries.Any(field => MatchesSearch(field.Name));
 
-        var nodeOpen = ImGui.TreeNodeEx($"{IconFonts.FontAwesome6.Gears} {name}",
+        var nodeOpen = ImGui.TreeNodeEx($"{IconFonts.FontAwesome6.Gears} {name.Humanize()}",
             shouldOpen ? ImGuiTreeNodeFlags.DefaultOpen : 0);
 
-        // type name
-        ImGui.SameLine();
-        ImGui.PushFont(FontRegistry.Instance.MonoFont);
-        ImGui.TextDisabled($" : {configurable.TypeName}");
-        ImGui.PopFont();
+        if (ImGui.IsItemHovered(ImGuiHoveredFlags.ForTooltip))
+        {
+            ImGui.BeginTooltip();
+
+            ImGui.PushFont(FontRegistry.Instance.MonoFont);
+            ImGui.TextDisabled($"{configurable.Type.FullName}");
+            ImGui.PopFont();
+
+            if (!string.IsNullOrEmpty(configurable.Comment))
+            {
+                ImGui.PushTextWrapPos(ImGui.GetFontSize() * 15.0f);
+                ImGui.TextUnformatted(configurable.Comment);
+                ImGui.PopTextWrapPos();
+            }
+
+            ImGui.EndTooltip();
+        }
 
         if (nodeOpen)
         {
@@ -133,7 +146,7 @@ public class ConfigsView
 
         // Name
         ImGui.TableNextColumn();
-        ImGui.TextUnformatted(field.Name);
+        ImGui.TextUnformatted(field.Name.Humanize());
 
         if (ImGui.IsItemHovered(ImGuiHoveredFlags.ForTooltip))
         {
@@ -233,7 +246,7 @@ public class ConfigsView
                 ImGui.SameLine();
                 ImGui.InputInt("##port", ref port);
 
-                field.Value = new Address{Ip = ip, Port = port};
+                field.Value = new Address { Ip = ip, Port = port };
                 break;
 
             case Enum enumValue:
@@ -262,7 +275,7 @@ public class ConfigsView
     {
         if (!IsFiltering) return true;
 
-        foreach (var (key, value) in tree)
+        foreach (var value in tree.Values)
         {
             switch (value)
             {
@@ -283,7 +296,7 @@ public class ConfigsView
     private int CountMatchingFields(Dictionary<string, object> tree)
     {
         var count = 0;
-        foreach (var (key, value) in tree)
+        foreach (var value in tree.Values)
         {
             switch (value)
             {
