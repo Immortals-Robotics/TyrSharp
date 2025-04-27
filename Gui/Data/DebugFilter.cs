@@ -236,7 +236,7 @@ public sealed class DebugFilter : IDisposable
         ImGui.PushFont(FontRegistry.Instance.MonoFont);
         ImGui.Checkbox($"{IconFonts.FontAwesome6.BarsStaggered} Line {entry.Item1}", ref isEnabled);
 
-        if (ImGui.IsItemHovered(ImGuiHoveredFlags.ForTooltip))
+        if (!string.IsNullOrWhiteSpace(entry.Item2) && ImGui.IsItemHovered(ImGuiHoveredFlags.ForTooltip))
         {
             ImGui.SetTooltip(entry.Item2);
         }

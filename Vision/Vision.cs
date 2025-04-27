@@ -13,8 +13,6 @@ public sealed class Vision
 
     private readonly Dictionary<uint, Camera> _cameras = [];
 
-    private FieldSize? _fieldSize;
-
     private Camera GetOrCreateCamera(uint id)
     {
         if (_cameras.TryGetValue(id, out var camera)) return camera;
@@ -40,7 +38,6 @@ public sealed class Vision
 
         if (fieldSize.HasValue)
         {
-            _fieldSize = fieldSize;
             foreach (var camera in _cameras.Values)
                 camera.OnFieldSize(fieldSize.Value);
         }
