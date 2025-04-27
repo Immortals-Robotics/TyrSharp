@@ -60,35 +60,48 @@ public sealed class Vision
                 camera.Timestamp - averageTimestamp > DeltaTime.FromSeconds(CameraTooOldTime));
         }
 
-        if (_fieldSize.HasValue)
-        {
-            Draw.DrawRectangle(_fieldSize.Value.FieldRectangleWithBoundary,
-                Color.Green, new Options { Filled = true });
-
-            foreach (var line in _fieldSize.Value.FieldLines)
-            {
-                Draw.DrawLineSegment(line.LineSegment, Color.White,
-                    new Options { Thickness = line.Thickness });
-            }
-
-            var lineThickness = _fieldSize.Value.LineThickness.GetValueOrDefault();
-            Draw.DrawCircle(_fieldSize.Value.CenterCircle, Color.White,
-                new Options { Thickness = lineThickness });
-        }
+        DrawField();
 
         foreach (var camera in _cameras.Values)
         {
-            foreach (var (id, tracker) in camera.Robots)
-            {
-                var color = id.Team == TeamColor.Blue ? Color.Blue : Color.Yellow;
-                Draw.DrawRobot(tracker.Position, tracker.Angle, (int?)id.Id, color,
-                    new Options { Filled = true });
-            }
-
-            foreach (var tracker in camera.Balls)
-            {
-                Draw.DrawCircle(tracker.Position, 25f, Color.Orange, new Options { Filled = true });
-            }
+            DrawRobots(camera);
+            DrawBalls(camera);
         }
+    }
+
+    private static void DrawBalls(Camera camera)
+    {
+        foreach (var tracker in camera.Balls)
+        {
+            Draw.DrawCircle(tracker.Position, 25f, Color.Orange, new Options { Filled = true });
+        }
+    }
+
+    private static void DrawRobots(Camera camera)
+    {
+        foreach (var (id, tracker) in camera.Robots)
+        {
+            var color = id.Team == TeamColor.Blue ? Color.Blue : Color.Yellow;
+            Draw.DrawRobot(tracker.Position, tracker.Angle, (int?)id.Id, color,
+                new Options { Filled = true });
+        }
+    }
+
+    private void DrawField()
+    {
+        if (!_fieldSize.HasValue) return;
+
+        Draw.DrawRectangle(_fieldSize.Value.FieldRectangleWithBoundary,
+            Color.Green, new Options { Filled = true });
+
+        foreach (var line in _fieldSize.Value.FieldLines)
+        {
+            Draw.DrawLineSegment(line.LineSegment, Color.White,
+                new Options { Thickness = line.Thickness });
+        }
+
+        var lineThickness = _fieldSize.Value.LineThickness.GetValueOrDefault();
+        Draw.DrawCircle(_fieldSize.Value.CenterCircle, Color.White,
+            new Options { Thickness = lineThickness });
     }
 }

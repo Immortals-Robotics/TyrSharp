@@ -3,6 +3,7 @@ using Hexa.NET.ImGui;
 using Tyr.Common.Debug.Drawing;
 using Tyr.Common.Debug.Drawing.Drawables;
 using Tyr.Common.Math;
+using Tyr.Gui.Data;
 using Color = Tyr.Common.Debug.Drawing.Color;
 using Path = Tyr.Common.Debug.Drawing.Drawables.Path;
 using Rectangle = Tyr.Common.Debug.Drawing.Drawables.Rectangle;
@@ -16,7 +17,7 @@ internal class DrawableRenderer
 
     private ImDrawListPtr _drawList;
 
-    internal void Draw(IReadOnlyList<Command> commands)
+    internal void Draw(IReadOnlyList<Command> commands, DebugFilter filter)
     {
         Log.ZLogTrace($"Drawing {commands.Count} items");
 
@@ -27,6 +28,8 @@ internal class DrawableRenderer
 
         foreach (var command in commands)
         {
+            if (!filter.IsEnabled(command.Meta)) continue;
+
             switch (command.Drawable)
             {
                 case Arrow arrow:
