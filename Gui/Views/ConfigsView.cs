@@ -61,15 +61,12 @@ public class ConfigsView
     {
         foreach (var (key, value) in tree)
         {
-            var keyMatch = MatchesSearch(key);
-
             switch (value)
             {
                 case Configurable configurable:
                     // Check if any of its fields match the search
                     var fieldsMatch = configurable.Entries.Any(field => MatchesSearch(field.Name));
-
-                    if (keyMatch || fieldsMatch)
+                    if (fieldsMatch)
                     {
                         DrawConfigurable(key, configurable);
                     }
@@ -78,15 +75,9 @@ public class ConfigsView
 
                 case Dictionary<string, object> subTree:
                 {
-                    var childrenMatch = ChildrenMatchSearch(subTree);
-
-                    if (keyMatch || childrenMatch)
+                    if (ChildrenMatchSearch(subTree))
                     {
-                        var flags = ImGuiTreeNodeFlags.None;
-                        if (IsFiltering && childrenMatch)
-                            flags |= ImGuiTreeNodeFlags.DefaultOpen;
-
-                        if (ImGui.TreeNodeEx(key, flags))
+                        if (ImGui.TreeNodeEx(key, IsFiltering ? ImGuiTreeNodeFlags.DefaultOpen : 0))
                         {
                             DrawTree(subTree);
                             ImGui.TreePop();
@@ -103,7 +94,7 @@ public class ConfigsView
     {
         var shouldOpen = IsFiltering && configurable.Entries.Any(field => MatchesSearch(field.Name));
 
-        var nodeOpen = ImGui.TreeNodeEx($"{IconFonts.FontAwesome6.Sliders} {name}",
+        var nodeOpen = ImGui.TreeNodeEx($"{IconFonts.FontAwesome6.Gears} {name}",
             shouldOpen ? ImGuiTreeNodeFlags.DefaultOpen : 0);
 
         // type name
@@ -143,8 +134,8 @@ public class ConfigsView
         // Name
         ImGui.TableNextColumn();
         ImGui.TextUnformatted(field.Name);
-        
-        if (ImGui.IsItemHovered())
+
+        if (ImGui.IsItemHovered(ImGuiHoveredFlags.ForTooltip))
         {
             ImGui.BeginTooltip();
 
@@ -169,7 +160,7 @@ public class ConfigsView
             field.Value = field.DefaultValue;
         }
 
-        if (ImGui.IsItemHovered())
+        if (ImGui.IsItemHovered(ImGuiHoveredFlags.ForTooltip))
         {
             ImGui.BeginTooltip();
             ImGui.Text("Reset to");
@@ -236,13 +227,13 @@ public class ConfigsView
             case Address addressValue:
                 var ip = addressValue.Ip;
                 var port = addressValue.Port;
-                ImGui.InputText("##ip", ref ip, 256);
+                ImGui.InputText("##ip", ref ip, 256, ImGuiInputTextFlags.CharsDecimal);
                 ImGui.SameLine();
                 ImGui.Text(":");
                 ImGui.SameLine();
                 ImGui.InputInt("##port", ref port);
 
-                field.Value = addressValue;
+                field.Value = new Address{Ip = ip, Port = port};
                 break;
 
             case Enum enumValue:
@@ -273,8 +264,6 @@ public class ConfigsView
 
         foreach (var (key, value) in tree)
         {
-            if (MatchesSearch(key)) return true;
-
             switch (value)
             {
                 case Configurable configurable:
@@ -293,7 +282,7 @@ public class ConfigsView
 
     private int CountMatchingFields(Dictionary<string, object> tree)
     {
-        int count = 0;
+        var count = 0;
         foreach (var (key, value) in tree)
         {
             switch (value)
@@ -315,10 +304,8 @@ public class ConfigsView
     private bool MatchesSearch(string text)
     {
         if (!IsFiltering) return true;
+        if (string.IsNullOrEmpty(text)) return false;
 
-        if (string.IsNullOrEmpty(text) || string.IsNullOrEmpty(_searchText))
-            return false;
-
-        return text.Contains(_searchText, StringComparison.OrdinalIgnoreCase);
+        return ImGui.ImGuiTextFilter(_searchText).PassFilter(text);
     }
 }

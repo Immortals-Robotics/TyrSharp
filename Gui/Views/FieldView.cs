@@ -31,7 +31,7 @@ public class FieldView
     {
         _timer.Update();
 
-        if (ImGui.Begin("Field"))
+        if (ImGui.Begin($"{IconFonts.FontAwesome6.Video} Field"))
         {
             ImGui.PushFont(FontRegistry.Instance.MonoFont);
 

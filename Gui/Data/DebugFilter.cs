@@ -24,7 +24,7 @@ public class DebugFilter(DebugFramer debugFramer)
             Register(module);
         }
 
-        if (ImGui.Begin("Debug Filter"))
+        if (ImGui.Begin($"{IconFonts.FontAwesome6.Filter} Debug Filter"))
         {
             ImGui.PushFont(FontRegistry.Instance.UiFont);
 
