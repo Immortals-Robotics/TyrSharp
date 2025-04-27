@@ -1,4 +1,5 @@
 ﻿using System.Numerics;
+using Cysharp.Text;
 using Hexa.NET.ImGui;
 using Tyr.Common.Data.Ssl.Vision.Geometry;
 using Tyr.Common.Dataflow;
@@ -17,6 +18,8 @@ public class FieldView
     private readonly DrawableRenderer _renderer = new();
     private readonly Common.Time.Timer _timer = new();
 
+    private Utf8ValueStringBuilder _stringBuilder = ZString.CreateUtf8StringBuilder();
+    
     private readonly Subscriber<FieldSize> _fieldSizeSubscriber = Hub.FieldSize.Subscribe(Mode.Latest);
     private FieldSize? _fieldSize;
 
@@ -105,7 +108,9 @@ public class FieldView
 
         if (ImGui.Begin("Stats", flags))
         {
-            ImGui.Text($"FPS: {_timer.FpsSmooth:F0}");
+            _stringBuilder.Clear();
+            _stringBuilder.AppendFormat("FPS: {0:F1}", _timer.FpsSmooth);
+            ImGui.TextUnformatted(_stringBuilder.AsSpan());
         }
 
         ImGui.End();
@@ -114,7 +119,7 @@ public class FieldView
     private void DrawInternals()
     {
         _internalDraws.Clear();
-        
+
         DrawField();
 
         _renderer.Draw(_internalDraws, null);
@@ -123,8 +128,7 @@ public class FieldView
     private void DrawInternal(Debug.Drawing.IDrawable drawable,
         Debug.Drawing.Color color, Debug.Drawing.Options options)
     {
-        var meta = new Debug.Drawing.Meta("", Timestamp.Zero, null, null, 0);
-        _internalDraws.Add(new Debug.Drawing.Command(drawable, color, options, meta));
+        _internalDraws.Add(new Debug.Drawing.Command(drawable, color, options, Debug.Drawing.Meta.Empty));
     }
 
     private void DrawField()

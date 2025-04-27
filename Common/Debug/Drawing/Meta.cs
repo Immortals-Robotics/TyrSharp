@@ -5,4 +5,7 @@ public record Meta(
     Timestamp Timestamp,
     string? MemberName,
     string? FilePath,
-    int LineNumber);
+    int LineNumber)
+{
+    public static readonly Meta Empty = new(string.Empty, Timestamp.Zero, null, null, 0);
+}
