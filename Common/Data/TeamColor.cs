@@ -10,13 +10,23 @@ public enum TeamColor
 
 public static class TeamColorExtensions
 {
-    public static TeamColor Opposite(this TeamColor color)
+    public static TeamColor Opposite(this TeamColor? color)
     {
         return color switch
         {
             TeamColor.Yellow => TeamColor.Blue,
             TeamColor.Blue => TeamColor.Yellow,
             _ => TeamColor.Unknown
+        };
+    }
+
+    public static Debug.Drawing.Color ToColor(this TeamColor? color)
+    {
+        return color switch
+        {
+            TeamColor.Blue => Debug.Drawing.Color.Blue,
+            TeamColor.Yellow => Debug.Drawing.Color.Yellow,
+            _ => Debug.Drawing.Color.Black
         };
     }
 }

@@ -1,10 +1,13 @@
 ﻿using System.Numerics;
+using Cysharp.Text;
 using Hexa.NET.ImGui;
-using Tyr.Common.Debug;
+using Tyr.Common.Data.Ssl.Vision.Geometry;
+using Tyr.Common.Dataflow;
 using Tyr.Common.Math;
 using Tyr.Gui.Backend;
 using Tyr.Gui.Data;
 using Tyr.Gui.Rendering;
+using Debug = Tyr.Common.Debug;
 
 namespace Tyr.Gui.Views;
 
@@ -15,11 +18,18 @@ public class FieldView
     private readonly DrawableRenderer _renderer = new();
     private readonly Common.Time.Timer _timer = new();
 
+    private Utf8ValueStringBuilder _stringBuilder = ZString.CreateUtf8StringBuilder();
+    
+    private readonly Subscriber<FieldSize> _fieldSizeSubscriber = Hub.FieldSize.Subscribe(Mode.Latest);
+    private FieldSize? _fieldSize;
+
+    private readonly List<Debug.Drawing.Command> _internalDraws = [];
+
     public FieldView(DebugFramer debugFramer, DebugFilter filter)
     {
         _debugFramer = debugFramer;
         _filter = filter;
-        ModuleContext.Current.Value = ModuleName;
+        Debug.ModuleContext.Current.Value = ModuleName;
 
         _timer.Start();
 
@@ -66,6 +76,8 @@ public class FieldView
                 }
             }
 
+            DrawInternals();
+
             foreach (var (module, framer) in _debugFramer.Modules)
             {
                 if (!_filter.IsEnabled(module)) continue;
@@ -96,9 +108,49 @@ public class FieldView
 
         if (ImGui.Begin("Stats", flags))
         {
-            ImGui.Text($"FPS: {_timer.FpsSmooth:F0}");
+            _stringBuilder.Clear();
+            _stringBuilder.AppendFormat("FPS: {0:F1}", _timer.FpsSmooth);
+            ImGui.TextUnformatted(_stringBuilder.AsSpan());
         }
 
         ImGui.End();
+    }
+
+    private void DrawInternals()
+    {
+        _internalDraws.Clear();
+
+        DrawField();
+
+        _renderer.Draw(_internalDraws, null);
+    }
+
+    private void DrawInternal(Debug.Drawing.IDrawable drawable,
+        Debug.Drawing.Color color, Debug.Drawing.Options options)
+    {
+        _internalDraws.Add(new Debug.Drawing.Command(drawable, color, options, Debug.Drawing.Meta.Empty));
+    }
+
+    private void DrawField()
+    {
+        if (_fieldSizeSubscriber.TryGetLatest(out var fieldSize))
+        {
+            _fieldSize = fieldSize;
+        }
+
+        if (!_fieldSize.HasValue) return;
+
+        DrawInternal(new Debug.Drawing.Drawables.Rectangle(_fieldSize.Value.FieldRectangleWithBoundary),
+            Debug.Drawing.Color.Green, new Debug.Drawing.Options { Filled = true });
+
+        foreach (var line in _fieldSize.Value.FieldLines)
+        {
+            DrawInternal(new Debug.Drawing.Drawables.LineSegment(line.LineSegment),
+                Debug.Drawing.Color.White, new Debug.Drawing.Options { Thickness = line.Thickness });
+        }
+
+        var lineThickness = _fieldSize.Value.LineThickness.GetValueOrDefault();
+        DrawInternal(new Debug.Drawing.Drawables.Circle(_fieldSize.Value.CenterCircle),
+            Debug.Drawing.Color.White, new Debug.Drawing.Options { Thickness = lineThickness });
     }
 }
