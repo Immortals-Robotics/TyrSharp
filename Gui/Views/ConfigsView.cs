@@ -58,7 +58,7 @@ public class ConfigsView
         ImGui.Separator();
     }
 
-    private void DrawTree(Dictionary<string, object> tree)
+    private void DrawTree(Dictionary<string, object> tree, int depth = 0)
     {
         foreach (var (key, value) in tree)
         {
@@ -78,9 +78,10 @@ public class ConfigsView
                 {
                     if (ChildrenMatchSearch(subTree))
                     {
-                        if (ImGui.TreeNodeEx(key, IsFiltering ? ImGuiTreeNodeFlags.DefaultOpen : 0))
+                        var icon = depth == 0 ? $"{IconFonts.FontAwesome6.CubesStacked}" : $"{IconFonts.FontAwesome6.Cube}";
+                        if (ImGui.TreeNodeEx($"{icon} {key}", IsFiltering ? ImGuiTreeNodeFlags.DefaultOpen : 0))
                         {
-                            DrawTree(subTree);
+                            DrawTree(subTree, depth + 1);
                             ImGui.TreePop();
                         }
                     }

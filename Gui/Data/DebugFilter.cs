@@ -77,7 +77,7 @@ public class DebugFilter(DebugFramer debugFramer)
         ImGui.PushID(moduleName);
         var isOpen = ImGui.TreeNodeEx($"##tree_{moduleName}");
         ImGui.SameLine();
-        ImGui.Checkbox($"{moduleName}", ref isEnabled);
+        ImGui.Checkbox($"{IconFonts.FontAwesome6.CubesStacked} {moduleName}", ref isEnabled);
 
         _filterState[moduleName] = isEnabled;
 
@@ -90,7 +90,7 @@ public class DebugFilter(DebugFramer debugFramer)
             foreach (var (filePath, functions) in framer.MetaTree)
             {
                 var filePathNodePath = $"{moduleName}/{filePath}";
-                DrawFileNode(filePathNodePath, filePath, functions);
+                DrawFileNode(filePathNodePath, filePath, functions, isEnabled);
             }
 
             ImGui.TreePop();
@@ -100,10 +100,11 @@ public class DebugFilter(DebugFramer debugFramer)
         ImGui.PopID();
     }
 
-    private void DrawFileNode(string nodePath, string filePath, Dictionary<string, SortedSet<int>> functions)
+    private void DrawFileNode(string nodePath, string filePath, Dictionary<string, SortedSet<int>> functions,
+        bool parentEnabled)
     {
         // Get current state
-        var isEnabled = _filterState[nodePath];
+        var isEnabled = parentEnabled && _filterState[nodePath];
 
         // Extract filename from path for display
         var displayName = Path.GetFileName(filePath);
@@ -113,7 +114,7 @@ public class DebugFilter(DebugFramer debugFramer)
         var isOpen = ImGui.TreeNodeEx($"##tree_{nodePath}");
         ImGui.SameLine();
         ImGui.PushFont(FontRegistry.Instance.MonoFont);
-        ImGui.Checkbox($"{displayName}", ref isEnabled);
+        ImGui.Checkbox($"{IconFonts.FontAwesome6.FileCode} {displayName}", ref isEnabled);
         ImGui.PopFont();
 
         // Show full path as tooltip
@@ -124,7 +125,10 @@ public class DebugFilter(DebugFramer debugFramer)
             ImGui.PopFont();
         }
 
-        _filterState[nodePath] = isEnabled;
+        if (parentEnabled)
+        {
+            _filterState[nodePath] = isEnabled;
+        }
 
         // Draw child nodes if open
         if (isOpen)
@@ -135,7 +139,7 @@ public class DebugFilter(DebugFramer debugFramer)
             foreach (var (functionName, lines) in functions)
             {
                 var functionNodePath = $"{nodePath}/{functionName}";
-                DrawFunctionNode(functionNodePath, functionName, lines);
+                DrawFunctionNode(functionNodePath, functionName, lines, isEnabled);
             }
 
             ImGui.EndDisabled();
@@ -145,20 +149,23 @@ public class DebugFilter(DebugFramer debugFramer)
         ImGui.PopID();
     }
 
-    private void DrawFunctionNode(string nodePath, string functionName, SortedSet<int> lines)
+    private void DrawFunctionNode(string nodePath, string functionName, SortedSet<int> lines, bool parentEnabled)
     {
         // Get current state
-        var isEnabled = _filterState.GetValueOrDefault(nodePath, true);
+        var isEnabled = parentEnabled && _filterState.GetValueOrDefault(nodePath, true);
 
         // Create tree node with checkbox
         ImGui.PushID(nodePath);
         var isOpen = ImGui.TreeNodeEx($"##tree_{nodePath}");
         ImGui.SameLine();
         ImGui.PushFont(FontRegistry.Instance.MonoFont);
-        ImGui.Checkbox($"{functionName}()", ref isEnabled);
+        ImGui.Checkbox($"{IconFonts.FontAwesome6.Code} {functionName}()", ref isEnabled);
         ImGui.PopFont();
 
-        _filterState[nodePath] = isEnabled;
+        if (parentEnabled)
+        {
+            _filterState[nodePath] = isEnabled;
+        }
 
         // Draw child nodes if open
         if (isOpen)
@@ -169,7 +176,7 @@ public class DebugFilter(DebugFramer debugFramer)
             foreach (var lineNumber in lines)
             {
                 var lineNodePath = $"{nodePath}/{lineNumber}";
-                DrawLineNode(lineNodePath, lineNumber);
+                DrawLineNode(lineNodePath, lineNumber, isEnabled);
             }
 
             ImGui.EndDisabled();
@@ -179,20 +186,23 @@ public class DebugFilter(DebugFramer debugFramer)
         ImGui.PopID();
     }
 
-    private void DrawLineNode(string nodePath, int lineNumber)
+    private void DrawLineNode(string nodePath, int lineNumber, bool parentEnabled)
     {
         // Get current state
-        var isEnabled = _filterState[nodePath];
+        var isEnabled = parentEnabled && _filterState[nodePath];
 
         // Create leaf node with checkbox (no children)
         ImGui.PushID(nodePath);
         ImGui.Indent();
         ImGui.PushFont(FontRegistry.Instance.MonoFont);
-        ImGui.Checkbox($"Line {lineNumber}", ref isEnabled);
+        ImGui.Checkbox($"{IconFonts.FontAwesome6.BarsStaggered} Line {lineNumber}", ref isEnabled);
         ImGui.PopFont();
         ImGui.Unindent();
 
-        _filterState[nodePath] = isEnabled;
+        if (parentEnabled)
+        {
+            _filterState[nodePath] = isEnabled;
+        }
 
         ImGui.PopID();
     }
