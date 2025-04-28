@@ -1,13 +1,18 @@
 using System.Numerics;
+using System.Runtime.InteropServices;
 using Hexa.NET.ImGui;
 using Hexa.NET.ImPlot;
+using Tyr.Common.Config;
 using Tyr.Common.Time;
 using Tyr.Gui.Data;
 
 namespace Tyr.Gui.Views;
 
+[Configurable]
 public class PlotView(DebugFramer debugFramer, DebugFilter filter)
 {
+    [ConfigEntry] private static int TimeAxisExtension { get; set; } = 5;
+
     private readonly (List<float> xs, List<float> ys) _plot = ([], []);
 
     public void Draw(PlaybackTime time)
@@ -24,23 +29,39 @@ public class PlotView(DebugFramer debugFramer, DebugFilter filter)
                 // TODO: draw frame.Plots using implot
                 for (var index = 0; index < frame.Plots.Count; index++)
                 {
-                    var plot = frame.Plots[index];
-                    if (!filter.IsEnabled(plot.Meta)) continue;
+                    var plotData = frame.Plots[index];
+                    if (!filter.IsEnabled(plotData.Meta)) continue;
 
-                    Log.ZLogDebug($"Plot {plot.Meta.Expression} = {plot.Value}");
-
-                    // Basic example of creating a plot
-                    if (ImPlot.BeginPlot(plot.Meta.Expression))
+                    if (ImPlot.BeginPlot(plotData.Meta.Expression))
                     {
-                        var start = framer.StartTime.Value + DeltaTime.FromSeconds(ImPlot.ImPlotRange().Min);
-                        var end = framer.StartTime.Value + DeltaTime.FromSeconds(ImPlot.ImPlotRange().Max);
-                        
-                        FillPlot(framer, index, framer.StartTime.Value, framer.EndTime.Value);
-                        if (_plot.xs.Count == 0) continue;
-                        
-                        ImPlot.PlotLine("Data Series",
-                            ref _plot.xs.ToArray()[0], ref _plot.ys.ToArray()[0],
-                            _plot.xs.Count);
+                        //ImPlot.SetupAxisScale(ImAxis.X1, ImPlotScale.Time);
+
+                        var plot = ImPlot.GetCurrentPlot();
+                        var xAxis = ImPlot.XAxis(plot, 0);
+
+                        var end = time.Delta;
+                        var start = end - DeltaTime.FromSeconds(xAxis.Range.Size());
+
+                        // limits defined by the range [0, time] extended by 5s on each side
+                        ImPlot.SetupAxisLimitsConstraints(ImAxis.X1, -TimeAxisExtension,
+                            TimeAxisExtension + end.Seconds);
+
+                        // snap to the latest data
+                        xAxis.SetMax(Math.Max(TimeAxisExtension, end.Seconds));
+                        if (!xAxis.Held && !plot.Held)
+                        {
+                            xAxis.SetMin(start.Seconds);
+                        }
+
+                        FillPlot(framer, index, time.StartTime, start, end);
+
+                        var count = _plot.xs.Count;
+                        if (count == 0) continue;
+
+                        var xs = CollectionsMarshal.AsSpan(_plot.xs);
+                        var ys = CollectionsMarshal.AsSpan(_plot.ys);
+
+                        ImPlot.PlotLine("", ref xs[0], ref ys[0], count);
 
                         ImPlot.EndPlot();
                     }
@@ -51,17 +72,17 @@ public class PlotView(DebugFramer debugFramer, DebugFilter filter)
         ImGui.End();
     }
 
-    private void FillPlot(ModuleDebugFramer framer, int idx, Timestamp start, Timestamp end)
+    private void FillPlot(ModuleDebugFramer framer, int idx, Timestamp origin, DeltaTime min, DeltaTime max)
     {
         _plot.xs.Clear();
         _plot.ys.Clear();
-        foreach (var frame in framer.GetFrameRange(start, end))
+        foreach (var frame in framer.GetFrameRange(origin + min, origin + max))
         {
             if (idx >= frame.Plots.Count) continue;
 
             // TODO: this assumes constant number of plots in all frames
             var plot = frame.Plots[idx];
-            _plot.xs.Add((float)(frame.StartTimestamp - framer.StartTime.Value).Seconds);
+            _plot.xs.Add((float)(frame.StartTimestamp - origin).Seconds);
 
             switch (plot.Value)
             {

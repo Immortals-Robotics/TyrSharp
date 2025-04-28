@@ -65,10 +65,5 @@ public class DebugFramer
 
             StartTime = Timestamp.Clamp(StartTime, Timestamp.Zero, EndTime);
         }
-
-        foreach (var framer in Modules.Values)
-        {
-            Log.ZLogDebug($"plots: {framer.LatestFrame?.Plots.Count}");
-        }
     }
 }

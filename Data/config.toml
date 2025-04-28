@@ -1,45 +1,11 @@
-[Common]
-[Common.Debug]
-[Common.Debug.Logging]
-Level = "Debug" # default: Trace
-
-[Common.Debug.Assertion]
-[Common.Debug.Assertion.Assert]
-Enabled = true # default: True
-
-
-
-[Common.Data]
-[Common.Data.CommonConfigs]
-# The variety of standard patterns that we can have is 16
-MaxRobots = 16 # default: 16
-# Hope it lasts
-ImmortalsIsTheBestTeam = true # default: True
-OurColor = "Unknown" # default: Unknown
-EnableDebug = false # default: False
-
-
-[Common.Config]
-[Common.Config.Storage]
-DebounceDelayS = 0.5 # default: 0.5
-
-
-
 [Vision]
-[Vision.Tracker]
-[Vision.Tracker.Ball]
-InitialCovariance = 1000.0 # default: 1000
-ModelError = 0.10000000149011612 # default: 0.1
-MeasurementError = 100.0 # default: 100
-# Maximum assumed ball speed in [mm/s] to filter outliers
-MaxLinearVelocity = 15000.0 # default: 15000
-# Factor to weight stdDeviation during tracker merging, reasonable range: 1.0 - 2.0. High values lead to more jitter
-MergePower = 1.5 # default: 1.5
-# Reciprocal health is used as uncertainty, increased on update, decreased on prediction
-MaxHealth = 20 # default: 20
-# How many updates are required until this tracker is grown up?
-GrownUpAge = 3 # default: 3
+[Vision.Runner]
+TickRateHz = 100 # default: 100
 
+[Vision.Vision]
+CameraTooOldTime = 1.0 # default: 1
+
+[Vision.Tracker]
 [Vision.Tracker.Robot]
 InitialCovarianceXy = 100.0 # default: 100
 ModelErrorXy = 0.10000000149011612 # default: 0.1
@@ -56,6 +22,23 @@ MaxAngularVelocity = 1700.0 # default: 1700
 # Reciprocal health is used as uncertainty, increased on update, decreased on prediction
 MaxHealth = 20 # default: 20
 
+[Vision.Tracker.Ball]
+InitialCovariance = 1000.0 # default: 1000
+ModelError = 0.10000000149011612 # default: 0.1
+MeasurementError = 100.0 # default: 100
+# Maximum assumed ball speed in [mm/s] to filter outliers
+MaxLinearVelocity = 15000.0 # default: 15000
+# Factor to weight stdDeviation during tracker merging, reasonable range: 1.0 - 2.0. High values lead to more jitter
+MergePower = 1.5 # default: 1.5
+# Reciprocal health is used as uncertainty, increased on update, decreased on prediction
+MaxHealth = 20 # default: 20
+# How many updates are required until this tracker is grown up?
+GrownUpAge = 3 # default: 3
+
+
+[Vision.SslVisionDataPublisher]
+VisionAddress = { Ip = "224.5.23.2", Port = 10006 } # default: 224.5.23.2:10006
+VisionSimAddress = { Ip = "224.5.23.2", Port = 10025 } # default: 224.5.23.2:10025
 
 [Vision.Camera]
 # Time in [s] after an invisible ball is removed
@@ -67,21 +50,43 @@ MaxBallTrackers = 10 # default: 10
 # Max. distance to copy state from filtered bot to new trackers
 CopyTrackerMaxDistance = 200.0 # default: 200
 
-[Vision.SslVisionDataPublisher]
-VisionAddress = { Ip = "224.5.23.2", Port = 10006 } # default: 224.5.23.2:10006
-VisionSimAddress = { Ip = "224.5.23.2", Port = 10025 } # default: 224.5.23.2:10025
 
-[Vision.Vision]
-CameraTooOldTime = 1.0 # default: 1
+[Common]
+[Common.Debug]
+[Common.Debug.Assertion]
+[Common.Debug.Assertion.Assert]
+Enabled = true # default: True
 
-[Vision.Runner]
-TickRateHz = 100 # default: 100
+
+[Common.Debug.Logging]
+Level = "Debug" # default: Trace
+
+
+[Common.Config]
+[Common.Config.Storage]
+DebounceDelayS = 0.5 # default: 0.5
+
+
+[Common.Data]
+[Common.Data.CommonConfigs]
+# The variety of standard patterns that we can have is 16
+MaxRobots = 16 # default: 16
+# Hope it lasts
+ImmortalsIsTheBestTeam = true # default: True
+OurColor = "Unknown" # default: Unknown
+EnableDebug = false # default: False
+
 
 
 [Gui]
 [Gui.Backend]
 [Gui.Backend.FontRegistry]
 FontSize = 17.0 # default: 17
+
+
+[Gui.Views]
+[Gui.Views.PlotView]
+TimeAxisExtension = 2 # default: 5
 
 
 

@@ -65,6 +65,7 @@ public sealed class Vision
         }
 
         Plot.Plot((float)Math.Sin(Timestamp.Now.Seconds));
+        Plot.Plot((float)Math.Cos(Timestamp.Now.Seconds));
     }
 
     private static void DrawBalls(Camera camera)

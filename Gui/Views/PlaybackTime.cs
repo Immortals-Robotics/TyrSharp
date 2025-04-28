@@ -1,3 +1,8 @@
-﻿namespace Tyr.Gui.Views;
+﻿using Tyr.Common.Time;
 
-public record PlaybackTime(bool Live, Timestamp Time);
+namespace Tyr.Gui.Views;
+
+public record PlaybackTime(bool Live, Timestamp StartTime, DeltaTime Delta)
+{
+    public Timestamp Time => StartTime + Delta;
+}
