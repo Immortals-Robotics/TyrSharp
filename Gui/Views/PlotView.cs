@@ -44,6 +44,11 @@ public class PlotView(DebugFramer debugFramer, DebugFilter filter)
 
     private DeltaTime _linkedTimeRange = DeltaTime.Zero;
 
+    private ImGuiTextFilterPtr _filter = ImGui.ImGuiTextFilter();
+    private bool IsFiltering => _filter.IsActive();
+    private int _filterTested = 0;
+    private int _filterPassed = 0;
+
     enum PlotDataType
     {
         Float,
@@ -55,105 +60,155 @@ public class PlotView(DebugFramer debugFramer, DebugFilter filter)
     {
         if (ImGui.Begin($"{IconFonts.FontAwesome6.ChartLine} Plots"))
         {
-            ImGui.PushFont(FontRegistry.Instance.MonoFont);
+            _filterTested = 0;
+            _filterPassed = 0;
 
-            foreach (var framer in debugFramer.Modules.Values)
+            DrawSearchBar();
+            DrawPlots(time);
+
+            // Add status bar at bottom
+            if (IsFiltering)
             {
-                foreach (var (plotId, plotMeta) in framer.Plots)
-                {
-                    if (!filter.IsEnabled(plotMeta)) continue;
-
-                    ImGui.PushID(plotId);
-
-                    var open = ImGui.CollapsingHeader(plotId);
-                    ImGui.SameLine();
-                    ImGui.TextUnformatted("   ");
-                    ImGui.SameLine();
-                    ImGui.TextDisabled(plotMeta.Expression);
-
-                    if (open)
-                    {
-                        if (ImPlot.BeginPlot("##plot"))
-                        {
-                            // limits defined by the range [0, ∞) extended by the extension factor 
-                            ImPlot.SetupAxisLimitsConstraints(ImAxis.X1, -TimeAxisExtension, float.PositiveInfinity);
-                            ImPlot.SetupAxisZoomConstraints(ImAxis.X1, TimeAxisMinRange, TimeAxisMaxRange);
-                            ImPlot.SetupAxisZoomConstraints(ImAxis.Y1, YAxisMinRange, double.PositiveInfinity);
-
-                            ImPlot.SetupAxis(ImAxis.X1, "Time (s)");
-
-                            var plot = ImPlot.GetCurrentPlot();
-                            var xAxis = ImPlot.XAxis(plot, 0);
-
-                            // the active plot can override the range, others will follow
-                            if (plot.Hovered || xAxis.Hovered)
-                                _linkedTimeRange = DeltaTime.FromSeconds(xAxis.Range.Size());
-
-                            var end = time.Delta;
-
-                            var extensionCausedRange = Math.Clamp(3 * TimeAxisExtension - end.Seconds,
-                                0, 2 * TimeAxisExtension);
-                            var minRange = Math.Max(TimeAxisMinRange, extensionCausedRange);
-                            _linkedTimeRange = DeltaTime.Max(_linkedTimeRange, DeltaTime.FromSeconds(minRange));
-
-                            var start = xAxis.Held || plot.Held
-                                ? DeltaTime.FromSeconds(xAxis.Range.Min)
-                                : end - _linkedTimeRange;
-
-                            // snap to the latest data
-                            xAxis.SetMax(Math.Max(TimeAxisExtension, end.Seconds));
-                            xAxis.SetMin(start.Seconds);
-
-                            var (type, title) = GatherData(framer, plotId, time.StartTime, start, end);
-
-                            if (title != null)
-                            {
-                                ImPlot.SetupAxis(ImAxis.Y1, title, ImPlotAxisFlags.AutoFit);
-                            }
-                            else
-                            {
-                                ImPlot.SetupAxis(ImAxis.Y1, ImPlotAxisFlags.AutoFit | ImPlotAxisFlags.NoLabel);
-                            }
-
-                            var count = TimeList.Count;
-                            if (count == 0) continue;
-
-                            switch (type)
-                            {
-                                case PlotDataType.Float:
-                                    ImPlot.PlotLine("##value", ref TimeSpan[0], ref ValueSpan[0], count);
-                                    break;
-                                case PlotDataType.Vector2:
-                                    ImPlot.PlotLine("x", ref TimeSpan[0], ref XSpan[0], count);
-                                    ImPlot.PlotLine("y", ref TimeSpan[0], ref YSpan[0], count);
-                                    ImPlot.PlotLine("len", ref TimeSpan[0], ref LenSpan[0], count);
-                                    break;
-                                case PlotDataType.Vector3:
-                                    ImPlot.PlotLine("x", ref TimeSpan[0], ref XSpan[0], count);
-                                    ImPlot.PlotLine("y", ref TimeSpan[0], ref YSpan[0], count);
-                                    ImPlot.PlotLine("z", ref TimeSpan[0], ref ZSpan[0], count);
-                                    ImPlot.PlotLine("len", ref TimeSpan[0], ref LenSpan[0], count);
-                                    break;
-                                default:
-                                    throw new ArgumentOutOfRangeException();
-                            }
-
-                            ImPlot.EndPlot();
-                        }
-                    }
-
-                    ImGui.PopID();
-                }
+                ImGui.Separator();
+                ImGui.TextDisabled($"{_filterPassed} of {_filterTested} items matching");
             }
-
-            ImGui.PopFont();
         }
 
         ImGui.End();
     }
 
-    private (PlotDataType type, string? title) GatherData(ModuleDebugFramer framer, string id, Timestamp origin,
-        DeltaTime min, DeltaTime max)
+    private void DrawSearchBar()
+    {
+        ImGui.PushItemWidth(-24); // Make space for the clear button
+        _filter.Draw("##search");
+        ImGui.PopItemWidth();
+
+        ImGui.SameLine();
+        if (IsFiltering)
+        {
+            if (ImGui.Button($"{IconFonts.FontAwesome6.Xmark}##clear"))
+            {
+                _filter.Clear();
+            }
+        }
+        else
+        {
+            ImGui.TextDisabled($"{IconFonts.FontAwesome6.MagnifyingGlass}");
+        }
+
+        ImGui.Separator();
+    }
+
+    private void DrawPlots(PlaybackTime time)
+    {
+        ImGui.PushFont(FontRegistry.Instance.MonoFont);
+
+        foreach (var framer in debugFramer.Modules.Values)
+        {
+            foreach (var (plotId, plotMeta) in framer.Plots)
+            {
+                if (!filter.IsEnabled(plotMeta)) continue;
+
+                _filterTested += 1;
+                if (!_filter.PassFilter(plotId)) continue;
+                _filterPassed += 1;
+
+                ImGui.PushID(plotId);
+
+                var open = ImGui.CollapsingHeader(plotId);
+                ImGui.SameLine();
+                ImGui.TextUnformatted("   ");
+                ImGui.SameLine();
+                ImGui.TextDisabled(plotMeta.Expression);
+
+                if (open)
+                {
+                    if (DrawPlot(time, framer, plotId)) continue;
+                }
+
+                ImGui.PopID();
+            }
+        }
+
+        ImGui.PopFont();
+    }
+
+    private bool DrawPlot(PlaybackTime time, ModuleDebugFramer framer, string plotId)
+    {
+        if (ImPlot.BeginPlot("##plot"))
+        {
+            // limits defined by the range [0, ∞) extended by the extension factor 
+            ImPlot.SetupAxisLimitsConstraints(ImAxis.X1, -TimeAxisExtension, float.PositiveInfinity);
+            ImPlot.SetupAxisZoomConstraints(ImAxis.X1, TimeAxisMinRange, TimeAxisMaxRange);
+            ImPlot.SetupAxisZoomConstraints(ImAxis.Y1, YAxisMinRange, double.PositiveInfinity);
+
+            ImPlot.SetupAxis(ImAxis.X1, "Time (s)");
+
+            var plot = ImPlot.GetCurrentPlot();
+            var xAxis = ImPlot.XAxis(plot, 0);
+
+            // the active plot can override the range, others will follow
+            if (plot.Hovered || xAxis.Hovered)
+                _linkedTimeRange = DeltaTime.FromSeconds(xAxis.Range.Size());
+
+            var end = time.Delta;
+
+            var extensionCausedRange = Math.Clamp(3 * TimeAxisExtension - end.Seconds,
+                0, 2 * TimeAxisExtension);
+            var minRange = Math.Max(TimeAxisMinRange, extensionCausedRange);
+            _linkedTimeRange = DeltaTime.Max(_linkedTimeRange, DeltaTime.FromSeconds(minRange));
+
+            var start = xAxis.Held || plot.Held
+                ? DeltaTime.FromSeconds(xAxis.Range.Min)
+                : end - _linkedTimeRange;
+
+            // snap to the latest data
+            xAxis.SetMax(Math.Max(TimeAxisExtension, end.Seconds));
+            xAxis.SetMin(start.Seconds);
+
+            var (type, title) = GatherData(framer, plotId, time.StartTime, start, end);
+
+            if (title != null)
+            {
+                ImPlot.SetupAxis(ImAxis.Y1, title, ImPlotAxisFlags.AutoFit);
+            }
+            else
+            {
+                ImPlot.SetupAxis(ImAxis.Y1, ImPlotAxisFlags.AutoFit | ImPlotAxisFlags.NoLabel);
+            }
+
+            var count = TimeList.Count;
+            if (count == 0) return true;
+
+            switch (type)
+            {
+                case PlotDataType.Float:
+                    ImPlot.PlotLine("##value", ref TimeSpan[0], ref ValueSpan[0], count);
+                    break;
+                case PlotDataType.Vector2:
+                    ImPlot.PlotLine("x", ref TimeSpan[0], ref XSpan[0], count);
+                    ImPlot.PlotLine("y", ref TimeSpan[0], ref YSpan[0], count);
+                    ImPlot.PlotLine("len", ref TimeSpan[0], ref LenSpan[0], count);
+                    break;
+                case PlotDataType.Vector3:
+                    ImPlot.PlotLine("x", ref TimeSpan[0], ref XSpan[0], count);
+                    ImPlot.PlotLine("y", ref TimeSpan[0], ref YSpan[0], count);
+                    ImPlot.PlotLine("z", ref TimeSpan[0], ref ZSpan[0], count);
+                    ImPlot.PlotLine("len", ref TimeSpan[0], ref LenSpan[0], count);
+                    break;
+                default:
+                    throw new ArgumentOutOfRangeException();
+            }
+
+            ImPlot.EndPlot();
+        }
+
+        return false;
+    }
+
+    private (PlotDataType type, string? title) GatherData(
+        ModuleDebugFramer framer, string id,
+        Timestamp origin, DeltaTime min, DeltaTime max)
     {
         foreach (var list in _rawData) list.Clear();
 
