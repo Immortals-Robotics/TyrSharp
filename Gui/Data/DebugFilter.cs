@@ -9,7 +9,7 @@ namespace Tyr.Gui.Data;
 public sealed class DebugFilter : IDisposable
 {
     // Dictionary to track the enabled state of each node in the tree
-    // Format: "module" or "module/file" or "module/file/function" or "module/file/function/line/expression"
+    // Format: "module" or "module/file" or "module/file/function" or "module/file/function/line"
     private readonly Dictionary<string, bool> _filterState = [];
     private readonly Dictionary<string, bool>.AlternateLookup<StrSpan> _lookup;
 
@@ -23,7 +23,7 @@ public sealed class DebugFilter : IDisposable
     }
 
     private StrSpan MakePath(string moduleName, string? filePath = null,
-        string? memberName = null, int? lineNumber = null, string? expression = null)
+        string? memberName = null, int? lineNumber = null)
     {
         _stringBuilder.Clear();
 
@@ -33,10 +33,8 @@ public sealed class DebugFilter : IDisposable
             _stringBuilder.AppendFormat("{0}/{1}", moduleName, filePath);
         else if (lineNumber == null)
             _stringBuilder.AppendFormat("{0}/{1}/{2}", moduleName, filePath, memberName);
-        else if (expression == null)
-            _stringBuilder.AppendFormat("{0}/{1}/{2}/{3}", moduleName, filePath, memberName, lineNumber);
         else
-            _stringBuilder.AppendFormat("{0}/{1}/{2}/{3}/{4}", moduleName, filePath, memberName, lineNumber, expression);
+            _stringBuilder.AppendFormat("{0}/{1}/{2}/{3}", moduleName, filePath, memberName, lineNumber);
 
         return _stringBuilder.AsSpan();
     }
@@ -90,13 +88,13 @@ public sealed class DebugFilter : IDisposable
             {
                 _lookup.TryAdd(MakePath(module, file), true);
 
-                foreach (var (function, entries) in functions)
+                foreach (var (function, items) in functions)
                 {
                     _lookup.TryAdd(MakePath(module, file, function), true);
 
-                    foreach (var entry in entries)
+                    foreach (var item in items)
                     {
-                        _lookup.TryAdd(MakePath(module, file, function, entry.Item1, entry.Item2), true);
+                        _lookup.TryAdd(MakePath(module, file, function, item.Line), true);
                     }
                 }
             }
@@ -135,7 +133,7 @@ public sealed class DebugFilter : IDisposable
     }
 
     private void DrawFileNode(string module, string file,
-        Dictionary<string, SortedSet<(int, string)>> functions, bool parentEnabled)
+        Dictionary<string, SortedSet<MetaTreeItem>> functions, bool parentEnabled)
     {
         var path = MakePath(module, file);
 
@@ -172,9 +170,9 @@ public sealed class DebugFilter : IDisposable
             ImGui.BeginDisabled(!isEnabled);
 
             // Draw functions
-            foreach (var (functionName, entries) in functions)
+            foreach (var (functionName, items) in functions)
             {
-                DrawFunctionNode(module, file, functionName, entries, isEnabled);
+                DrawFunctionNode(module, file, functionName, items, isEnabled);
             }
 
             ImGui.EndDisabled();
@@ -184,7 +182,8 @@ public sealed class DebugFilter : IDisposable
         ImGui.PopID();
     }
 
-    private void DrawFunctionNode(string module, string file, string function, SortedSet<(int, string)> entries,
+    private void DrawFunctionNode(string module, string file, string function,
+        SortedSet<MetaTreeItem> items,
         bool parentEnabled)
     {
         var path = MakePath(module, file, function);
@@ -211,9 +210,9 @@ public sealed class DebugFilter : IDisposable
             ImGui.BeginDisabled(!isEnabled);
 
             // Draw lines
-            foreach (var entry in entries)
+            foreach (var item in items)
             {
-                DrawEntryNode(module, file, function, entry, isEnabled);
+                DrawItemNode(module, file, function, item, isEnabled);
             }
 
             ImGui.EndDisabled();
@@ -223,24 +222,33 @@ public sealed class DebugFilter : IDisposable
         ImGui.PopID();
     }
 
-    private void DrawEntryNode(string module, string file, string function, (int, string) entry, bool parentEnabled)
+    private void DrawItemNode(string module, string file, string function, MetaTreeItem treeItem,
+        bool parentEnabled)
     {
-        var path = MakePath(module, file, function, entry.Item1, entry.Item2);
+        var path = MakePath(module, file, function, treeItem.Line);
 
         // Get current state
         var isEnabled = parentEnabled && _lookup[path];
 
         // Create leaf node with checkbox (no children)
-        ImGui.PushID(entry.Item1);
+        ImGui.PushID(treeItem.Line);
         ImGui.Indent();
         ImGui.PushFont(FontRegistry.Instance.MonoFont);
-        ImGui.Checkbox($"{IconFonts.FontAwesome6.BarsStaggered} Line {entry.Item1}", ref isEnabled);
 
-        if (!string.IsNullOrWhiteSpace(entry.Item2) && ImGui.IsItemHovered(ImGuiHoveredFlags.ForTooltip))
+        var icon = treeItem.Type switch
         {
-            ImGui.SetTooltip(entry.Item2);
-        }
+            MetaTreeItem.ItemType.Plot => $"{IconFonts.FontAwesome6.ChartLine}",
+            MetaTreeItem.ItemType.Draw => $"{IconFonts.FontAwesome6.DrawPolygon}",
+            _ => $"{IconFonts.FontAwesome6.Square}" // Default to square icon for other types
+        };
         
+        ImGui.Checkbox($"{icon} Line {treeItem.Line}", ref isEnabled);
+
+        if (!string.IsNullOrWhiteSpace(treeItem.Expression) && ImGui.IsItemHovered(ImGuiHoveredFlags.ForTooltip))
+        {
+            ImGui.SetTooltip(treeItem.Expression);
+        }
+
         ImGui.PopFont();
         ImGui.Unindent();
 

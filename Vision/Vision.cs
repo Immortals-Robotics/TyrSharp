@@ -1,6 +1,5 @@
 ﻿using Tyr.Common.Config;
 using Tyr.Common.Debug.Drawing;
-using Tyr.Common.Math;
 using Tyr.Common.Time;
 
 namespace Tyr.Vision;
@@ -64,8 +63,8 @@ public sealed class Vision
             DrawBalls(camera);
         }
 
-        Plot.Plot((float)Math.Sin(Timestamp.Now.Seconds));
-        Plot.Plot((float)Math.Cos(Timestamp.Now.Seconds));
+        Plot.Plot("sin(t)", (float)Math.Sin(Timestamp.Now.Seconds));
+        Plot.Plot("cos(t)", (float)Math.Cos(Timestamp.Now.Seconds));
     }
 
     private static void DrawBalls(Camera camera)

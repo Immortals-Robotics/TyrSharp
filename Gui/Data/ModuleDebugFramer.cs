@@ -20,8 +20,10 @@ public class ModuleDebugFramer
     private int? _latestSealedFrameIndex;
     private int FirstUnsealedFrameIndex => _latestSealedFrameIndex.GetValueOrDefault(-1) + 1;
 
-    // file -> function -> (line, expression)
-    public Dictionary<string, Dictionary<string, SortedSet<(int, string)>>> MetaTree { get; } = [];
+    // file -> function -> MetaItem
+    public Dictionary<string, Dictionary<string, SortedSet<MetaTreeItem>>> MetaTree { get; } = [];
+
+    public Dictionary<string, Debug.Meta> Plots { get; } = [];
 
     public int FrameCount => _frames.Count;
     public Timestamp? StartTime => _frames.FirstOrDefault()?.StartTimestamp;
@@ -63,10 +65,10 @@ public class ModuleDebugFramer
     public IEnumerable<FrameData> GetFrameRange(Timestamp startTime, Timestamp endTime)
     {
         if (StartTime is null || EndTime is null) yield break;
-    
+
         startTime = Timestamp.Clamp(startTime, StartTime.Value, EndTime.Value);
         endTime = Timestamp.Clamp(endTime, StartTime.Value, EndTime.Value);
-    
+
         // TODO: start from the GetFrame idx
         for (var i = 0; i <= _latestSealedFrameIndex!.Value; i++)
         {
@@ -76,8 +78,8 @@ public class ModuleDebugFramer
             yield return frame;
         }
     }
-    
-    
+
+
     public void OnFrame(Debug.Frame frame)
     {
         if (_frames.LastOrDefault() is { } lastFrame)
@@ -111,7 +113,7 @@ public class ModuleDebugFramer
             _unassignedDraws.Dequeue();
 
             drawFrame.Draws.Add(draw);
-            AddToMetaTree(draw.Meta);
+            AddToMetaTree(draw.Meta, MetaTreeItem.ItemType.Draw);
             _latestAssignedDrawTimestamp = draw.Meta.Timestamp;
         }
 
@@ -135,8 +137,9 @@ public class ModuleDebugFramer
             // assignable, let's remove it from the queue
             _unassignedPlots.Dequeue();
 
-            fillFrame.Plots.Add(plot);
-            AddToMetaTree(plot.Meta);
+            fillFrame.Plots.Add(plot.Id, plot);
+            Plots[plot.Id] = plot.Meta;
+            AddToMetaTree(plot.Meta, MetaTreeItem.ItemType.Plot);
             _latestAssignedPlotTimestamp = plot.Meta.Timestamp;
         }
 
@@ -153,7 +156,7 @@ public class ModuleDebugFramer
         if (frame is not null)
         {
             frame.Draws.Add(draw); // already assignable to its frame
-            AddToMetaTree(draw.Meta);
+            AddToMetaTree(draw.Meta, MetaTreeItem.ItemType.Draw);
             _latestAssignedDrawTimestamp = draw.Meta.Timestamp;
             SealFrames();
         }
@@ -172,8 +175,9 @@ public class ModuleDebugFramer
         var frame = GetFillFrame(plot.Meta.Timestamp);
         if (frame is not null)
         {
-            frame.Plots.Add(plot); // already assignable to its frame
-            AddToMetaTree(plot.Meta);
+            frame.Plots.Add(plot.Id, plot); // already assignable to its frame
+            Plots[plot.Id] = plot.Meta;
+            AddToMetaTree(plot.Meta, MetaTreeItem.ItemType.Plot);
             _latestAssignedPlotTimestamp = plot.Meta.Timestamp;
             SealFrames();
         }
@@ -183,23 +187,28 @@ public class ModuleDebugFramer
         }
     }
 
-    private void AddToMetaTree(Debug.Meta meta)
+    private void AddToMetaTree(Debug.Meta meta, MetaTreeItem.ItemType type)
     {
-        if (meta is { FilePath: not null, MemberName: not null })
+        if (meta is { FilePath: not null, MemberName: not null, Expression: not null })
         {
             if (!MetaTree.TryGetValue(meta.FilePath, out var functionDict))
             {
-                functionDict = new Dictionary<string, SortedSet<(int, string)>>();
+                functionDict = [];
                 MetaTree[meta.FilePath] = functionDict;
             }
 
             if (!functionDict.TryGetValue(meta.MemberName, out var lineSet))
             {
-                lineSet = new SortedSet<(int, string)>();
+                lineSet = [];
                 functionDict[meta.MemberName] = lineSet;
             }
 
-            lineSet.Add((meta.LineNumber, meta.Expression)!);
+            var item = new MetaTreeItem(type, meta.LineNumber, meta.Expression);
+            lineSet.Add(item);
+        }
+        else
+        {
+            Log.ZLogWarning($"Failed to add item of type {type} with null meta to the tree: {meta}");
         }
     }
 

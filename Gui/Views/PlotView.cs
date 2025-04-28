@@ -23,16 +23,11 @@ public class PlotView(DebugFramer debugFramer, DebugFilter filter)
             {
                 if (!filter.IsEnabled(module)) continue;
 
-                var frame = time.Live ? framer.LatestFrame : framer.GetFrame(time.Time);
-                if (frame == null) continue;
-
-                // TODO: draw frame.Plots using implot
-                for (var index = 0; index < frame.Plots.Count; index++)
+                foreach (var (plotId, plotMeta) in framer.Plots)
                 {
-                    var plotData = frame.Plots[index];
-                    if (!filter.IsEnabled(plotData.Meta)) continue;
+                    if (!filter.IsEnabled(plotMeta)) continue;
 
-                    if (ImPlot.BeginPlot(plotData.Meta.Expression))
+                    if (ImPlot.BeginPlot(plotId))
                     {
                         //ImPlot.SetupAxisScale(ImAxis.X1, ImPlotScale.Time);
 
@@ -53,7 +48,7 @@ public class PlotView(DebugFramer debugFramer, DebugFilter filter)
                             xAxis.SetMin(start.Seconds);
                         }
 
-                        FillPlot(framer, index, time.StartTime, start, end);
+                        FillPlot(framer, plotId, time.StartTime, start, end);
 
                         var count = _plot.xs.Count;
                         if (count == 0) continue;
@@ -72,16 +67,14 @@ public class PlotView(DebugFramer debugFramer, DebugFilter filter)
         ImGui.End();
     }
 
-    private void FillPlot(ModuleDebugFramer framer, int idx, Timestamp origin, DeltaTime min, DeltaTime max)
+    private void FillPlot(ModuleDebugFramer framer, string id, Timestamp origin, DeltaTime min, DeltaTime max)
     {
         _plot.xs.Clear();
         _plot.ys.Clear();
         foreach (var frame in framer.GetFrameRange(origin + min, origin + max))
         {
-            if (idx >= frame.Plots.Count) continue;
+            if (!frame.Plots.TryGetValue(id, out var plot)) continue;
 
-            // TODO: this assumes constant number of plots in all frames
-            var plot = frame.Plots[idx];
             _plot.xs.Add((float)(frame.StartTimestamp - origin).Seconds);
 
             switch (plot.Value)
@@ -104,7 +97,6 @@ public class PlotView(DebugFramer debugFramer, DebugFilter filter)
 
                 default:
                     throw new NotImplementedException();
-                    break;
             }
         }
     }
