@@ -149,7 +149,10 @@ public class ModuleDebugFramer
             // assignable, let's remove it from the queue
             _unassignedPlots.Dequeue();
 
-            fillFrame.Plots.Add(plot.Id, plot);
+            if (!fillFrame.Plots.TryAdd(plot.Id, plot))
+            {
+                Log.ZLogWarning($"Dropping duplicate plot with id {plot.Id} to frame {fillFrame.StartTimestamp}");
+            }
             Plots[plot.Id] = plot.Meta;
             AddToMetaTree(plot.Meta, MetaTreeItem.ItemType.Plot);
             _latestAssignedPlotTimestamp = plot.Meta.Timestamp;
@@ -187,7 +190,11 @@ public class ModuleDebugFramer
         var frame = GetFillFrame(plot.Meta.Timestamp);
         if (frame is not null)
         {
-            frame.Plots.Add(plot.Id, plot); // already assignable to its frame
+            // already assignable to its frame
+            if (!frame.Plots.TryAdd(plot.Id, plot))
+            {
+                Log.ZLogWarning($"Dropping duplicate plot with id {plot.Id} to frame {frame.StartTimestamp}");
+            }
             Plots[plot.Id] = plot.Meta;
             AddToMetaTree(plot.Meta, MetaTreeItem.ItemType.Plot);
             _latestAssignedPlotTimestamp = plot.Meta.Timestamp;
