@@ -23,7 +23,11 @@ public class UdpReceiver<T> : IDisposable where T : class
         var packet = await _client.Receive<T>(token);
         if (packet == null)
         {
-            Log.ZLogError($"Received null {typeof(T).Name} packet");
+            if (!token.IsCancellationRequested)
+            {
+                Log.ZLogError($"Received null {typeof(T).Name} packet");
+            }
+
             return;
         }
 
