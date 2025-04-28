@@ -19,7 +19,7 @@ public class FieldView
     private readonly Common.Time.Timer _timer = new();
 
     private Utf8ValueStringBuilder _stringBuilder = ZString.CreateUtf8StringBuilder();
-    
+
     private readonly Subscriber<FieldSize> _fieldSizeSubscriber = Hub.FieldSize.Subscribe(Mode.Latest);
     private FieldSize? _fieldSize;
 
@@ -127,7 +127,7 @@ public class FieldView
     private void DrawInternal(Debug.Drawing.IDrawable drawable,
         Debug.Drawing.Color color, Debug.Drawing.Options options)
     {
-        _internalDraws.Add(new Debug.Drawing.Command(drawable, color, options, Debug.Meta.Empty));
+        _internalDraws.Add(new Debug.Drawing.Command(drawable, color, options, Debug.Meta.Empty, Timestamp.Zero));
     }
 
     private void DrawField()

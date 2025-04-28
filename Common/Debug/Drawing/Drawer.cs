@@ -17,9 +17,8 @@ public class Drawer(string moduleName)
     private void Draw(IDrawable drawable, Color color, Options options,
         string? expression, string? memberName, string? filePath, int lineNumber)
     {
-        var timestamp = Timestamp.Now;
-        var meta = new Meta(moduleName, timestamp, expression, memberName, filePath, lineNumber);
-        var command = new Command(drawable, color, options, meta);
+        var meta = new Meta(moduleName, expression, memberName, filePath, lineNumber);
+        var command = new Command(drawable, color, options, meta, Timestamp.Now);
 
         Hub.Draws.Publish(command);
     }

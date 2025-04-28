@@ -46,8 +46,8 @@ public class PlotView(DebugFramer debugFramer, DebugFilter filter)
 
     private ImGuiTextFilterPtr _filter = ImGui.ImGuiTextFilter();
     private bool IsFiltering => _filter.IsActive();
-    private int _filterTested = 0;
-    private int _filterPassed = 0;
+    private int _filterTested;
+    private int _filterPassed;
 
     enum PlotDataType
     {
