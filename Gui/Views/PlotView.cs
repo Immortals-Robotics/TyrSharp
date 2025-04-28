@@ -13,7 +13,28 @@ public class PlotView(DebugFramer debugFramer, DebugFilter filter)
 {
     [ConfigEntry] private static int TimeAxisExtension { get; set; } = 5;
 
-    private readonly (List<float> xs, List<float> ys) _plot = ([], []);
+    private readonly List<float>[] _rawData = [[], [], [], [], []];
+
+    private List<float> TimeList => _rawData[0];
+    private List<float> ValueList => _rawData[4];
+    private List<float> XList => _rawData[1];
+    private List<float> YList => _rawData[2];
+    private List<float> ZList => _rawData[3];
+    private List<float> LenList => _rawData[4];
+
+    private Span<float> TimeSpan => CollectionsMarshal.AsSpan(TimeList);
+    private Span<float> ValueSpan => CollectionsMarshal.AsSpan(ValueList);
+    private Span<float> XSpan => CollectionsMarshal.AsSpan(XList);
+    private Span<float> YSpan => CollectionsMarshal.AsSpan(YList);
+    private Span<float> ZSpan => CollectionsMarshal.AsSpan(ZList);
+    private Span<float> LenSpan => CollectionsMarshal.AsSpan(LenList);
+
+    enum PlotDataType
+    {
+        Float,
+        Vector2,
+        Vector3
+    }
 
     public void Draw(PlaybackTime time)
     {
@@ -27,38 +48,54 @@ public class PlotView(DebugFramer debugFramer, DebugFilter filter)
                 {
                     if (!filter.IsEnabled(plotMeta)) continue;
 
-                    if (ImPlot.BeginPlot(plotId))
+                    if (ImGui.CollapsingHeader(plotId))
                     {
-                        //ImPlot.SetupAxisScale(ImAxis.X1, ImPlotScale.Time);
-
-                        var plot = ImPlot.GetCurrentPlot();
-                        var xAxis = ImPlot.XAxis(plot, 0);
-
-                        var end = time.Delta;
-                        var start = end - DeltaTime.FromSeconds(xAxis.Range.Size());
-
-                        // limits defined by the range [0, time] extended by 5s on each side
-                        ImPlot.SetupAxisLimitsConstraints(ImAxis.X1, -TimeAxisExtension,
-                            TimeAxisExtension + end.Seconds);
-
-                        // snap to the latest data
-                        xAxis.SetMax(Math.Max(TimeAxisExtension, end.Seconds));
-                        if (!xAxis.Held && !plot.Held)
+                        if (ImPlot.BeginPlot("##plot"))
                         {
-                            xAxis.SetMin(start.Seconds);
+                            //ImPlot.SetupAxisScale(ImAxis.X1, ImPlotScale.Time);
+
+                            var plot = ImPlot.GetCurrentPlot();
+                            var xAxis = ImPlot.XAxis(plot, 0);
+
+                            var end = time.Delta;
+                            var start = end - DeltaTime.FromSeconds(xAxis.Range.Size());
+
+                            // limits defined by the range [0, time] extended by 5s on each side
+                            ImPlot.SetupAxisLimitsConstraints(ImAxis.X1, -TimeAxisExtension,
+                                TimeAxisExtension + end.Seconds);
+
+                            // snap to the latest data
+                            xAxis.SetMax(Math.Max(TimeAxisExtension, end.Seconds));
+                            if (!xAxis.Held && !plot.Held)
+                            {
+                                xAxis.SetMin(start.Seconds);
+                            }
+
+                            var type = FillPlot(framer, plotId, time.StartTime, start, end);
+
+                            var count = TimeList.Count;
+                            if (count == 0) continue;
+
+                            switch (type)
+                            {
+                                case PlotDataType.Float:
+                                    ImPlot.PlotLine("##value", ref TimeSpan[0], ref ValueSpan[0], count);
+                                    break;
+                                case PlotDataType.Vector2:
+                                    ImPlot.PlotLine("x", ref TimeSpan[0], ref XSpan[0], count);
+                                    ImPlot.PlotLine("y", ref TimeSpan[0], ref YSpan[0], count);
+                                    ImPlot.PlotLine("len", ref TimeSpan[0], ref LenSpan[0], count);
+                                    break;
+                                case PlotDataType.Vector3:
+                                    ImPlot.PlotLine("x", ref TimeSpan[0], ref XSpan[0], count);
+                                    ImPlot.PlotLine("y", ref TimeSpan[0], ref YSpan[0], count);
+                                    ImPlot.PlotLine("z", ref TimeSpan[0], ref ZSpan[0], count);
+                                    ImPlot.PlotLine("len", ref TimeSpan[0], ref LenSpan[0], count);
+                                    break;
+                            }
+
+                            ImPlot.EndPlot();
                         }
-
-                        FillPlot(framer, plotId, time.StartTime, start, end);
-
-                        var count = _plot.xs.Count;
-                        if (count == 0) continue;
-
-                        var xs = CollectionsMarshal.AsSpan(_plot.xs);
-                        var ys = CollectionsMarshal.AsSpan(_plot.ys);
-
-                        ImPlot.PlotLine("", ref xs[0], ref ys[0], count);
-
-                        ImPlot.EndPlot();
                     }
                 }
             }
@@ -67,37 +104,50 @@ public class PlotView(DebugFramer debugFramer, DebugFilter filter)
         ImGui.End();
     }
 
-    private void FillPlot(ModuleDebugFramer framer, string id, Timestamp origin, DeltaTime min, DeltaTime max)
+    private PlotDataType FillPlot(ModuleDebugFramer framer, string id, Timestamp origin, DeltaTime min, DeltaTime max)
     {
-        _plot.xs.Clear();
-        _plot.ys.Clear();
+        foreach (var list in _rawData) list.Clear();
+
+        var type = PlotDataType.Float;
+
         foreach (var frame in framer.GetFrameRange(origin + min, origin + max))
         {
             if (!frame.Plots.TryGetValue(id, out var plot)) continue;
 
-            _plot.xs.Add((float)(frame.StartTimestamp - origin).Seconds);
+            TimeList.Add((float)(frame.StartTimestamp - origin).Seconds);
 
             switch (plot.Value)
             {
                 case float f:
-                    _plot.ys.Add(f);
+                    type = PlotDataType.Float;
+                    ValueList.Add(f);
                     break;
 
                 case double d:
-                    _plot.ys.Add((float)d);
+                    type = PlotDataType.Float;
+                    ValueList.Add((float)d);
                     break;
 
                 case Vector2 v:
-                    _plot.ys.Add(v.Length());
+                    type = PlotDataType.Vector2;
+                    XList.Add(v.X);
+                    YList.Add(v.Y);
+                    LenList.Add(v.Length());
                     break;
 
                 case Vector3 v:
-                    _plot.ys.Add(v.Length());
+                    type = PlotDataType.Vector3;
+                    XList.Add(v.X);
+                    YList.Add(v.Y);
+                    ZList.Add(v.Z);
+                    LenList.Add(v.Length());
                     break;
 
                 default:
                     throw new NotImplementedException();
             }
         }
+
+        return type;
     }
 }

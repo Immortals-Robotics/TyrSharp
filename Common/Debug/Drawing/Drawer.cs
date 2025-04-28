@@ -30,7 +30,7 @@ public class Drawer(string moduleName)
         [CallerLineNumber] int lineNumber = 0)
     {
         var empty = new Empty();
-        Draw(empty, Color.Black, default, null, memberName, filePath, lineNumber);
+        Draw(empty, Color.Black, default, "", memberName, filePath, lineNumber);
     }
 
     public void DrawPoint(Vector2 position, Color color, Options options = default,

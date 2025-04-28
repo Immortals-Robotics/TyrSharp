@@ -86,7 +86,7 @@ FontSize = 17.0 # default: 17
 
 [Gui.Views]
 [Gui.Views.PlotView]
-TimeAxisExtension = 2 # default: 5
+TimeAxisExtension = 5 # default: 5
 
 
 
