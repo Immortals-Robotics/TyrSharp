@@ -236,6 +236,16 @@ public class PlotView(DebugFramer debugFramer, DebugFilter filter)
                     ValueList.Add((float)d);
                     break;
 
+                case int i:
+                    type = PlotDataType.Float;
+                    ValueList.Add(i);
+                    break;
+
+                case bool b:
+                    type = PlotDataType.Float;
+                    ValueList.Add(b ? 1f : 0f);
+                    break;
+
                 case Vector2 v:
                     type = PlotDataType.Vector2;
                     XList.Add(v.X);
