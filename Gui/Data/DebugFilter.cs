@@ -238,7 +238,7 @@ public sealed class DebugFilter : IDisposable
         var icon = treeItem.Type switch
         {
             MetaTreeItem.ItemType.Plot => $"{IconFonts.FontAwesome6.ChartLine}",
-            MetaTreeItem.ItemType.Draw => $"{IconFonts.FontAwesome6.DrawPolygon}",
+            MetaTreeItem.ItemType.Draw => $"{IconFonts.FontAwesome6.Shapes}",
             _ => $"{IconFonts.FontAwesome6.Square}" // Default to square icon for other types
         };
         

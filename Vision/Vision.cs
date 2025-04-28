@@ -63,19 +63,16 @@ public sealed class Vision
             DrawRobots(camera);
             DrawBalls(camera);
         }
-
-        Plot.Plot("sin(t)", (float)Math.Sin(Timestamp.Now.Seconds));
-        Plot.Plot("cos(t)", (float)Math.Cos(Timestamp.Now.Seconds));
-
-        Plot.Plot("SinCos(t)",
-            new Vector2((float)Math.Cos(Timestamp.Now.Seconds), (float)Math.Sin(Timestamp.Now.Seconds)));
     }
 
     private static void DrawBalls(Camera camera)
     {
-        foreach (var tracker in camera.Balls)
+        for (var index = 0; index < camera.Balls.Count; index++)
         {
+            var tracker = camera.Balls[index];
             Draw.DrawCircle(tracker.Position, 25f, Color.Orange, new Options { Filled = true });
+
+            Plot.Plot($"cam[{camera.Id}] ball[{index}]", tracker.Velocity, "vel (mm/s)");
         }
     }
 
@@ -86,6 +83,8 @@ public sealed class Vision
             var color = id.Team == TeamColor.Blue ? Color.Blue : Color.Yellow;
             Draw.DrawRobot(tracker.Position, tracker.Angle, id.Id,
                 color, new Options { Filled = true });
+
+            Plot.Plot($"cam[{camera.Id}] robot[{id}]", tracker.Velocity, "vel (mm/s)");
         }
     }
 }

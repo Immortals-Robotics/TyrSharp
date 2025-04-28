@@ -31,9 +31,9 @@ public class ModuleDebugFramer
 
     public FrameData? LatestFrame => _latestSealedFrameIndex.HasValue ? _frames[_latestSealedFrameIndex.Value] : null;
 
-    public FrameData? GetFrame(Timestamp time)
+    private int GetFrameIndex(Timestamp time)
     {
-        if (StartTime is null || EndTime is null) return null;
+        if (StartTime is null || EndTime is null) return -1;
 
         time = Timestamp.Clamp(time, StartTime.Value, EndTime.Value);
 
@@ -55,22 +55,35 @@ public class ModuleDebugFramer
             }
             else
             {
-                return frame;
+                return mid;
             }
         }
 
-        return null;
+        return -1;
     }
 
-    public IEnumerable<FrameData> GetFrameRange(Timestamp startTime, Timestamp endTime)
+    public FrameData? GetFrame(Timestamp time)
+    {
+        var index = GetFrameIndex(time);
+        return index >= 0 ? _frames[index] : null;
+    }
+
+    public IEnumerable<FrameData> GetFrameRange(Timestamp startTime, Timestamp endTime, int? maxCount = null)
     {
         if (StartTime is null || EndTime is null) yield break;
 
         startTime = Timestamp.Clamp(startTime, StartTime.Value, EndTime.Value);
         endTime = Timestamp.Clamp(endTime, StartTime.Value, EndTime.Value);
 
-        // TODO: start from the GetFrame idx
-        for (var i = 0; i <= _latestSealedFrameIndex!.Value; i++)
+
+        var startIdx = GetFrameIndex(startTime);
+        var endIdx = GetFrameIndex(endTime);
+        if (startIdx < 0 || endIdx < 0) yield break;
+
+        var count = endIdx - startIdx + 1;
+        var step = maxCount.HasValue ? int.Max(1, count / maxCount.Value) : 1;
+
+        for (var i = startIdx; i <= _latestSealedFrameIndex!.Value; i += step)
         {
             var frame = _frames[i];
             if (frame.EndTimestamp < startTime) continue;
@@ -78,7 +91,6 @@ public class ModuleDebugFramer
             yield return frame;
         }
     }
-
 
     public void OnFrame(Debug.Frame frame)
     {
