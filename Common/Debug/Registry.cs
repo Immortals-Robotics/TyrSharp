@@ -2,6 +2,7 @@
 using Microsoft.Extensions.Logging;
 using Tyr.Common.Debug.Assertion;
 using Tyr.Common.Debug.Drawing;
+using Tyr.Common.Debug.Plotting;
 
 namespace Tyr.Common.Debug;
 
@@ -10,6 +11,7 @@ public static class Registry
     private static readonly ConcurrentDictionary<string, ILogger> Loggers = [];
     private static readonly ConcurrentDictionary<string, Assert> Asserts = [];
     private static readonly ConcurrentDictionary<string, Drawer> Drawers = [];
+    private static readonly ConcurrentDictionary<string, Plotter> Plotters = [];
 
     public static ILogger GetLogger(string moduleName) => Loggers.GetOrAdd(moduleName, Logging.Factory.CreateLogger);
 
@@ -18,4 +20,7 @@ public static class Registry
 
     public static Drawer GetDrawer(string moduleName) =>
         Drawers.GetOrAdd(moduleName, name => new Drawer(name));
+    
+    public static Plotter GetPlotter(string moduleName) =>
+        Plotters.GetOrAdd(moduleName, name => new Plotter(name));
 }

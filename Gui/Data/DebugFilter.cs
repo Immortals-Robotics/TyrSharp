@@ -1,5 +1,6 @@
 ﻿using Cysharp.Text;
 using Hexa.NET.ImGui;
+using Tyr.Common.Debug;
 using Tyr.Gui.Backend;
 using StrSpan = System.ReadOnlySpan<char>;
 
@@ -38,7 +39,7 @@ public sealed class DebugFilter : IDisposable
         return _stringBuilder.AsSpan();
     }
 
-    public bool IsEnabled(Common.Debug.Drawing.Meta meta) =>
+    public bool IsEnabled(Meta meta) =>
         IsEnabled(meta.ModuleName, meta.FilePath, meta.MemberName, meta.LineNumber);
 
     public bool IsEnabled(string module, string? file = null, string? member = null, int? line = null)
@@ -87,13 +88,13 @@ public sealed class DebugFilter : IDisposable
             {
                 _lookup.TryAdd(MakePath(module, file), true);
 
-                foreach (var (function, lines) in functions)
+                foreach (var (function, items) in functions)
                 {
                     _lookup.TryAdd(MakePath(module, file, function), true);
 
-                    foreach (var line in lines)
+                    foreach (var item in items)
                     {
-                        _lookup.TryAdd(MakePath(module, file, function, line), true);
+                        _lookup.TryAdd(MakePath(module, file, function, item.Line), true);
                     }
                 }
             }
@@ -132,14 +133,14 @@ public sealed class DebugFilter : IDisposable
     }
 
     private void DrawFileNode(string module, string file,
-        Dictionary<string, SortedSet<int>> functions, bool parentEnabled)
+        Dictionary<string, SortedSet<MetaTreeItem>> functions, bool parentEnabled)
     {
         var path = MakePath(module, file);
 
         // Get current state
         var isEnabled = parentEnabled && _lookup[path];
 
-        // Extract filename from path for display
+        // Extract filename from the path for display
         var displayName = Path.GetFileName(file);
 
         // Create tree node with checkbox
@@ -169,9 +170,9 @@ public sealed class DebugFilter : IDisposable
             ImGui.BeginDisabled(!isEnabled);
 
             // Draw functions
-            foreach (var (functionName, lines) in functions)
+            foreach (var (functionName, items) in functions)
             {
-                DrawFunctionNode(module, file, functionName, lines, isEnabled);
+                DrawFunctionNode(module, file, functionName, items, isEnabled);
             }
 
             ImGui.EndDisabled();
@@ -181,7 +182,8 @@ public sealed class DebugFilter : IDisposable
         ImGui.PopID();
     }
 
-    private void DrawFunctionNode(string module, string file, string function, SortedSet<int> lines,
+    private void DrawFunctionNode(string module, string file, string function,
+        SortedSet<MetaTreeItem> items,
         bool parentEnabled)
     {
         var path = MakePath(module, file, function);
@@ -208,9 +210,9 @@ public sealed class DebugFilter : IDisposable
             ImGui.BeginDisabled(!isEnabled);
 
             // Draw lines
-            foreach (var lineNumber in lines)
+            foreach (var item in items)
             {
-                DrawLineNode(module, file, function, lineNumber, isEnabled);
+                DrawItemNode(module, file, function, item, isEnabled);
             }
 
             ImGui.EndDisabled();
@@ -220,18 +222,33 @@ public sealed class DebugFilter : IDisposable
         ImGui.PopID();
     }
 
-    private void DrawLineNode(string module, string file, string function, int line, bool parentEnabled)
+    private void DrawItemNode(string module, string file, string function, MetaTreeItem treeItem,
+        bool parentEnabled)
     {
-        var path = MakePath(module, file, function, line);
+        var path = MakePath(module, file, function, treeItem.Line);
 
         // Get current state
         var isEnabled = parentEnabled && _lookup[path];
 
         // Create leaf node with checkbox (no children)
-        ImGui.PushID(line);
+        ImGui.PushID(treeItem.Line);
         ImGui.Indent();
         ImGui.PushFont(FontRegistry.Instance.MonoFont);
-        ImGui.Checkbox($"{IconFonts.FontAwesome6.BarsStaggered} Line {line}", ref isEnabled);
+
+        var icon = treeItem.Type switch
+        {
+            MetaTreeItem.ItemType.Plot => $"{IconFonts.FontAwesome6.ChartLine}",
+            MetaTreeItem.ItemType.Draw => $"{IconFonts.FontAwesome6.Shapes}",
+            _ => $"{IconFonts.FontAwesome6.Square}" // Default to square icon for other types
+        };
+        
+        ImGui.Checkbox($"{icon} Line {treeItem.Line}", ref isEnabled);
+
+        if (!string.IsNullOrWhiteSpace(treeItem.Expression) && ImGui.IsItemHovered(ImGuiHoveredFlags.ForTooltip))
+        {
+            ImGui.SetTooltip(treeItem.Expression);
+        }
+
         ImGui.PopFont();
         ImGui.Unindent();
 

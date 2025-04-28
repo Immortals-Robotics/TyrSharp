@@ -11,4 +11,5 @@ public class FrameData
     public bool IsSealed { get; set; }
 
     public List<Debug.Drawing.Command> Draws { get; } = [];
+    public Dictionary<string, Debug.Plotting.Command> Plots { get; } = [];
 }

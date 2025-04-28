@@ -56,12 +56,14 @@ public class GlobalsGenerator : ISourceGenerator
                                  internal static ILogger Log => CallingModuleName == null ? _log : Common.Debug.Registry.GetLogger(CallingModuleName);
                                  internal static Common.Debug.Assertion.Assert Assert => CallingModuleName == null ? _assert : Common.Debug.Registry.GetAssert(CallingModuleName);
                                  internal static Common.Debug.Drawing.Drawer Draw => CallingModuleName == null ? _draw : Common.Debug.Registry.GetDrawer(CallingModuleName);
+                                 internal static Common.Debug.Plotting.Plotter Plot => CallingModuleName == null ? _plot : Common.Debug.Registry.GetPlotter(CallingModuleName);
                                  internal static Random Rand { get; private set; } = null!;
                                  
                                  // cached owned instances to avoid registry lookups
                                  private static ILogger _log = null!;
                                  private static Common.Debug.Assertion.Assert _assert = null!;
                                  private static Common.Debug.Drawing.Drawer _draw = null!;
+                                 private static Common.Debug.Plotting.Plotter _plot = null!;
 
                                  [ModuleInitializer]
                                  internal static void Init()
@@ -69,6 +71,7 @@ public class GlobalsGenerator : ISourceGenerator
                                      _log = Common.Debug.Registry.GetLogger(ModuleName);
                                      _assert = Common.Debug.Registry.GetAssert(ModuleName);
                                      _draw = Common.Debug.Registry.GetDrawer(ModuleName);
+                                     _plot = Common.Debug.Registry.GetPlotter(ModuleName);
 
                                      Rand = new Random();
                                      

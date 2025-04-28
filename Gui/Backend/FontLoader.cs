@@ -1,4 +1,5 @@
-﻿using Hexa.NET.ImGui;
+﻿using System.Numerics;
+using Hexa.NET.ImGui;
 using Hexa.NET.ImGui.Utilities;
 
 namespace Tyr.Gui.Backend;
@@ -8,7 +9,8 @@ public sealed class FontLoader : IDisposable
     private readonly List<ImGuiFontBuilder> _builders = [];
     private ImGuiFontBuilder? _currentBuilder;
 
-    public FontLoader Add(string? file, (uint, uint)? glyphRange = null, float size = 15f, float supersampling = 1f)
+    public FontLoader Add(string? file, (uint, uint)? glyphRange = null,
+        float size = 15f, float supersampling = 1f, Vector2? offset = null)
     {
         if (_currentBuilder == null)
         {
@@ -18,6 +20,8 @@ public sealed class FontLoader : IDisposable
 
         _currentBuilder.Config.RasterizerDensity = supersampling;
         _currentBuilder.Config.FontBuilderFlags |= (uint)ImGuiFreeTypeBuilderFlags.LoadColor;
+
+        _currentBuilder.Config.GlyphOffset = offset ?? Vector2.Zero;
 
         if (file == null)
         {

@@ -9,6 +9,7 @@ namespace Tyr.Common.Runner;
 /// </summary>
 public sealed class Debouncer : IDisposable
 {
+    private readonly Action _action;
     private readonly Timer _timer;
     private readonly Lock _lock = new();
 
@@ -20,12 +21,13 @@ public sealed class Debouncer : IDisposable
     /// <param name="action">The action to execute after the delay.</param>
     public Debouncer(DeltaTime delay, Action action)
     {
+        _action = action;
         _timer = new Timer(delay.ToTimeSpan()) { AutoReset = false };
         _timer.Elapsed += (_, _) =>
         {
             lock (_lock)
             {
-                action();
+                _action();
             }
         };
     }
@@ -55,6 +57,15 @@ public sealed class Debouncer : IDisposable
 
     public void Dispose()
     {
+        lock (_lock)
+        {
+            if (_timer.Enabled)
+            {
+                _timer.Stop();
+                _action();
+            }
+        }
+
         _timer.Dispose();
     }
 }

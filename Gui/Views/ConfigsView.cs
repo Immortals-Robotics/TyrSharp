@@ -40,22 +40,20 @@ public class ConfigsView
 
     private void DrawSearchBar()
     {
-        // Start with a search icon
-        ImGui.Text($"{IconFonts.FontAwesome6.MagnifyingGlass}");
-        ImGui.SameLine();
-
         ImGui.PushItemWidth(-24); // Make space for the clear button
         _filter.Draw("##search");
         ImGui.PopItemWidth();
-
-        // Clear button
+        ImGui.SameLine();
         if (IsFiltering)
         {
-            ImGui.SameLine();
             if (ImGui.Button($"{IconFonts.FontAwesome6.Xmark}##clear"))
             {
                 _filter.Clear();
             }
+        }
+        else
+        {
+            ImGui.TextDisabled($"{IconFonts.FontAwesome6.MagnifyingGlass}");
         }
 
         ImGui.Separator();

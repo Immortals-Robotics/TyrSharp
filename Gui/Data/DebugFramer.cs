@@ -7,6 +7,7 @@ namespace Tyr.Gui.Data;
 public class DebugFramer
 {
     private readonly Subscriber<Debug.Drawing.Command> _drawCommandsSubscriber = Hub.Draws.Subscribe(Mode.All);
+    private readonly Subscriber<Debug.Plotting.Command> _plotCommandsSubscriber = Hub.Plots.Subscribe(Mode.All);
     private readonly Subscriber<Debug.Frame> _frameSubscriber = Hub.Frames.Subscribe(Mode.All);
 
     public Dictionary<string, ModuleDebugFramer> Modules { get; } = [];
@@ -28,28 +29,41 @@ public class DebugFramer
 
     internal void Tick()
     {
+        var dirty = false;
+
         while (_frameSubscriber.Reader.TryRead(out var frame))
         {
             GetOrCreateModuleFramer(frame.ModuleName).OnFrame(frame);
+            dirty = true;
         }
 
         while (_drawCommandsSubscriber.Reader.TryRead(out var draw))
         {
             GetOrCreateModuleFramer(draw.Meta.ModuleName).OnDraw(draw);
+            dirty = true;
         }
-        
-        // update times
-        StartTime = Timestamp.MaxValue;
-        EndTime = Timestamp.Zero;
 
-        foreach (var framer in Modules.Values)
+        while (_plotCommandsSubscriber.Reader.TryRead(out var plot))
         {
-            if (!framer.StartTime.HasValue || !framer.EndTime.HasValue) continue;
-
-            StartTime = Timestamp.Min(StartTime, framer.StartTime.Value);
-            EndTime = Timestamp.Max(EndTime, framer.EndTime.Value);
+            GetOrCreateModuleFramer(plot.Meta.ModuleName).OnPlot(plot);
+            dirty = true;
         }
 
-        StartTime = Timestamp.Clamp(StartTime, Timestamp.Zero, EndTime);
+        // update time ranges if anything has changed
+        if (dirty)
+        {
+            StartTime = Timestamp.MaxValue;
+            EndTime = Timestamp.Zero;
+
+            foreach (var framer in Modules.Values)
+            {
+                if (!framer.StartTime.HasValue || !framer.EndTime.HasValue) continue;
+
+                StartTime = Timestamp.Min(StartTime, framer.StartTime.Value);
+                EndTime = Timestamp.Max(EndTime, framer.EndTime.Value);
+            }
+
+            StartTime = Timestamp.Clamp(StartTime, Timestamp.Zero, EndTime);
+        }
     }
 }

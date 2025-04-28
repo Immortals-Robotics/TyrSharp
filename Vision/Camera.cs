@@ -70,6 +70,8 @@ public class Camera(uint id)
 
         Log.ZLogTrace($"Camera {Id} FPS: {Fps:F2}");
 
+        Plot.Plot($"cam[{Id}] fps", Fps, "fps");
+
         // detections
         ProcessRobots(frame, lastFilteredFrame.Robots);
         ProcessBalls(frame, lastFilteredFrame.Ball);

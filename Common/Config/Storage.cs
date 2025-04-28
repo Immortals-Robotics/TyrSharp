@@ -14,9 +14,9 @@ public static class Storage
     private static FileSystemWatcher? _watcher;
     private static DateTime _lastReadTime;
 
-    [ConfigEntry] private static float DebounceDelayS { get; set; } = 0.5f;
-    private static Debouncer _loadDebouncer = new(DeltaTime.FromSeconds(DebounceDelayS), Load);
-    private static Debouncer _saveDebouncer = new(DeltaTime.FromSeconds(DebounceDelayS), Save);
+    [ConfigEntry] private static float DebounceDelayS { get; set; } = 0.2f;
+    private static readonly Debouncer LoadDebouncer = new(DeltaTime.FromSeconds(DebounceDelayS), Load);
+    private static readonly Debouncer SaveDebouncer = new(DeltaTime.FromSeconds(DebounceDelayS), Save);
 
     public static void Initialize(string path)
     {
@@ -49,7 +49,7 @@ public static class Storage
         if (newWriteTime <= _lastReadTime) return;
 
         Log.ZLogTrace($"Detected external changes to config file {Path}");
-        _loadDebouncer.Trigger();
+        LoadDebouncer.Trigger();
     }
 
     public static void Load()
@@ -109,6 +109,6 @@ public static class Storage
 
         Log.ZLogTrace($"Detected runtime changes to configs");
 
-        _saveDebouncer.Trigger();
+        SaveDebouncer.Trigger();
     }
 }

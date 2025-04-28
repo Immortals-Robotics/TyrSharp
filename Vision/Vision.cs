@@ -1,4 +1,5 @@
-﻿using Tyr.Common.Config;
+﻿using System.Numerics;
+using Tyr.Common.Config;
 using Tyr.Common.Debug.Drawing;
 using Tyr.Common.Time;
 
@@ -12,8 +13,6 @@ public sealed class Vision
     private readonly FilteredFrame _filteredFrame = new();
 
     private readonly Dictionary<uint, Camera> _cameras = [];
-
-    private FieldSize? _fieldSize;
 
     private Camera GetOrCreateCamera(uint id)
     {
@@ -40,7 +39,6 @@ public sealed class Vision
 
         if (fieldSize.HasValue)
         {
-            _fieldSize = fieldSize;
             foreach (var camera in _cameras.Values)
                 camera.OnFieldSize(fieldSize.Value);
         }
@@ -69,9 +67,12 @@ public sealed class Vision
 
     private static void DrawBalls(Camera camera)
     {
-        foreach (var tracker in camera.Balls)
+        for (var index = 0; index < camera.Balls.Count; index++)
         {
+            var tracker = camera.Balls[index];
             Draw.DrawCircle(tracker.Position, 25f, Color.Orange, new Options { Filled = true });
+
+            Plot.Plot($"cam[{camera.Id}] ball[{index}]", tracker.Velocity, "vel (mm/s)");
         }
     }
 
@@ -82,6 +83,8 @@ public sealed class Vision
             var color = id.Team == TeamColor.Blue ? Color.Blue : Color.Yellow;
             Draw.DrawRobot(tracker.Position, tracker.Angle, id.Id,
                 color, new Options { Filled = true });
+
+            Plot.Plot($"cam[{camera.Id}] robot[{id}]", tracker.Velocity, "vel (mm/s)");
         }
     }
 }
