@@ -4,5 +4,6 @@ public readonly record struct Command(
     IDrawable Drawable,
     Color Color,
     Options Options,
-    Meta Meta
+    Meta Meta,
+    Timestamp Timestamp
 );

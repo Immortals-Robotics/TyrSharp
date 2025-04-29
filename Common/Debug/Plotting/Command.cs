@@ -4,5 +4,6 @@ public readonly record struct Command(
     string Id,
     object Value,
     string? Title,
-    Meta Meta
+    Meta Meta,
+    Timestamp Timestamp
 );

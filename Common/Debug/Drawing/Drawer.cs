@@ -1,4 +1,5 @@
 ﻿using System.Runtime.CompilerServices;
+using System.Text;
 using Tyr.Common.Data;
 using Tyr.Common.Dataflow;
 using Tyr.Common.Debug.Drawing.Drawables;
@@ -14,12 +15,13 @@ namespace Tyr.Common.Debug.Drawing;
 
 public class Drawer(string moduleName)
 {
+    private readonly StringBuilder _stringBuilder = new();
+
     private void Draw(IDrawable drawable, Color color, Options options,
         string? expression, string? memberName, string? filePath, int lineNumber)
     {
-        var timestamp = Timestamp.Now;
-        var meta = new Meta(moduleName, timestamp, expression, memberName, filePath, lineNumber);
-        var command = new Command(drawable, color, options, meta);
+        var meta = Meta.GetOrCreate(moduleName, expression, memberName, filePath, lineNumber);
+        var command = new Command(drawable, color, options, meta, Timestamp.Now);
 
         Hub.Draws.Publish(command);
     }
@@ -34,7 +36,8 @@ public class Drawer(string moduleName)
     }
 
     public void DrawPoint(Vector2 position, Color color, Options options = default,
-        [CallerArgumentExpression("position")] string? positionExpression = null,
+        [CallerArgumentExpression(nameof(position))]
+        string? positionExpression = null,
         [CallerMemberName] string? memberName = null,
         [CallerFilePath] string? filePath = null,
         [CallerLineNumber] int lineNumber = 0)
@@ -44,19 +47,28 @@ public class Drawer(string moduleName)
     }
 
     public void DrawLine(Vector2 point, Angle angle, Color color, Options options = default,
-        [CallerArgumentExpression("point")] string? pointExpression = null,
-        [CallerArgumentExpression("angle")] string? angleExpression = null,
+        [CallerArgumentExpression(nameof(point))]
+        string? pointExpression = null,
+        [CallerArgumentExpression(nameof(angle))]
+        string? angleExpression = null,
         [CallerMemberName] string? memberName = null,
         [CallerFilePath] string? filePath = null,
         [CallerLineNumber] int lineNumber = 0)
     {
         var line = new Line(point, angle);
-        var expression = $"point: {pointExpression}, angle: {angleExpression}";
+
+        _stringBuilder.Clear()
+            .Append(nameof(point)).Append(": ").Append(pointExpression)
+            .Append(", ")
+            .Append(nameof(angle)).Append(": ").Append(angleExpression);
+        var expression = string.Intern(_stringBuilder.ToString());
+
         Draw(line, color, options, expression, memberName, filePath, lineNumber);
     }
 
     public void DrawLine(Math.Shapes.Line line, Color color, Options options = default,
-        [CallerArgumentExpression("line")] string? lineExpression = null,
+        [CallerArgumentExpression(nameof(line))]
+        string? lineExpression = null,
         [CallerMemberName] string? memberName = null,
         [CallerFilePath] string? filePath = null,
         [CallerLineNumber] int lineNumber = 0)
@@ -66,19 +78,28 @@ public class Drawer(string moduleName)
     }
 
     public void DrawLineSegment(Vector2 start, Vector2 end, Color color, Options options = default,
-        [CallerArgumentExpression("start")] string? startExpression = null,
-        [CallerArgumentExpression("end")] string? endExpression = null,
+        [CallerArgumentExpression(nameof(start))]
+        string? startExpression = null,
+        [CallerArgumentExpression(nameof(end))]
+        string? endExpression = null,
         [CallerMemberName] string? memberName = null,
         [CallerFilePath] string? filePath = null,
         [CallerLineNumber] int lineNumber = 0)
     {
         var segment = new LineSegment(start, end);
-        var expression = $"start: {startExpression}, end: {endExpression}";
+
+        _stringBuilder.Clear()
+            .Append(nameof(start)).Append(": ").Append(startExpression)
+            .Append(", ")
+            .Append(nameof(end)).Append(": ").Append(endExpression);
+        var expression = string.Intern(_stringBuilder.ToString());
+
         Draw(segment, color, options, expression, memberName, filePath, lineNumber);
     }
 
     public void DrawLineSegment(Math.Shapes.LineSegment segment, Color color, Options options = default,
-        [CallerArgumentExpression("segment")] string? segmentExpression = null,
+        [CallerArgumentExpression(nameof(segment))]
+        string? segmentExpression = null,
         [CallerMemberName] string? memberName = null,
         [CallerFilePath] string? filePath = null,
         [CallerLineNumber] int lineNumber = 0)
@@ -88,19 +109,28 @@ public class Drawer(string moduleName)
     }
 
     public void DrawArrow(Vector2 start, Vector2 end, Color color, Options options = default,
-        [CallerArgumentExpression("start")] string? startExpression = null,
-        [CallerArgumentExpression("end")] string? endExpression = null,
+        [CallerArgumentExpression(nameof(start))]
+        string? startExpression = null,
+        [CallerArgumentExpression(nameof(end))]
+        string? endExpression = null,
         [CallerMemberName] string? memberName = null,
         [CallerFilePath] string? filePath = null,
         [CallerLineNumber] int lineNumber = 0)
     {
         var arrow = new Arrow(start, end);
-        var expression = $"start: {startExpression}, end: {endExpression}";
+
+        _stringBuilder.Clear()
+            .Append(nameof(start)).Append(": ").Append(startExpression)
+            .Append(", ")
+            .Append(nameof(end)).Append(": ").Append(endExpression);
+        var expression = string.Intern(_stringBuilder.ToString());
+
         Draw(arrow, color, options, expression, memberName, filePath, lineNumber);
     }
 
     public void DrawArrow(Math.Shapes.LineSegment segment, Color color, Options options = default,
-        [CallerArgumentExpression("segment")] string? segmentExpression = null,
+        [CallerArgumentExpression(nameof(segment))]
+        string? segmentExpression = null,
         [CallerMemberName] string? memberName = null,
         [CallerFilePath] string? filePath = null,
         [CallerLineNumber] int lineNumber = 0)
@@ -110,19 +140,27 @@ public class Drawer(string moduleName)
     }
 
     public void DrawRectangle(Vector2 min, Vector2 max, Color color, Options options = default,
-        [CallerArgumentExpression("min")] string? minExpression = null,
-        [CallerArgumentExpression("max")] string? maxExpression = null,
+        [CallerArgumentExpression(nameof(min))]
+        string? minExpression = null,
+        [CallerArgumentExpression(nameof(max))]
+        string? maxExpression = null,
         [CallerMemberName] string? memberName = null,
         [CallerFilePath] string? filePath = null,
         [CallerLineNumber] int lineNumber = 0)
     {
         var rect = new Rectangle(min, max);
-        var expression = $"min: {minExpression}, max: {maxExpression}";
+
+        _stringBuilder.Clear()
+            .Append(nameof(min)).Append(": ").Append(minExpression)
+            .Append(", ")
+            .Append(nameof(max)).Append(": ").Append(maxExpression);
+        var expression = string.Intern(_stringBuilder.ToString());
+
         Draw(rect, color, options, expression, memberName, filePath, lineNumber);
     }
 
     public void DrawRectangle(Math.Shapes.Rectangle rectangle, Color color, Options options = default,
-        [CallerArgumentExpression("rectangle")]
+        [CallerArgumentExpression(nameof(rectangle))]
         string? rectangleExpression = null,
         [CallerMemberName] string? memberName = null,
         [CallerFilePath] string? filePath = null,
@@ -133,20 +171,29 @@ public class Drawer(string moduleName)
     }
 
     public void DrawTriangle(Vector2 v1, Vector2 v2, Vector2 v3, Color color, Options options = default,
-        [CallerArgumentExpression("v1")] string? v1Expression = null,
-        [CallerArgumentExpression("v2")] string? v2Expression = null,
-        [CallerArgumentExpression("v3")] string? v3Expression = null,
+        [CallerArgumentExpression(nameof(v1))] string? v1Expression = null,
+        [CallerArgumentExpression(nameof(v2))] string? v2Expression = null,
+        [CallerArgumentExpression(nameof(v3))] string? v3Expression = null,
         [CallerMemberName] string? memberName = null,
         [CallerFilePath] string? filePath = null,
         [CallerLineNumber] int lineNumber = 0)
     {
         var triangle = new Triangle(v1, v2, v3);
-        var expression = $"v1: {v1Expression}, v2: {v2Expression}, v3: {v3Expression}";
+
+        _stringBuilder.Clear()
+            .Append(nameof(v1)).Append(": ").Append(v1Expression)
+            .Append(", ")
+            .Append(nameof(v2)).Append(": ").Append(v2Expression)
+            .Append(", ")
+            .Append(nameof(v3)).Append(": ").Append(v3Expression);
+        var expression = string.Intern(_stringBuilder.ToString());
+
         Draw(triangle, color, options, expression, memberName, filePath, lineNumber);
     }
 
     public void DrawTriangle(Math.Shapes.Triangle triangle, Color color, Options options = default,
-        [CallerArgumentExpression("triangle")] string? triangleExpression = null,
+        [CallerArgumentExpression(nameof(triangle))]
+        string? triangleExpression = null,
         [CallerMemberName] string? memberName = null,
         [CallerFilePath] string? filePath = null,
         [CallerLineNumber] int lineNumber = 0)
@@ -156,19 +203,28 @@ public class Drawer(string moduleName)
     }
 
     public void DrawCircle(Vector2 center, float radius, Color color, Options options = default,
-        [CallerArgumentExpression("center")] string? centerExpression = null,
-        [CallerArgumentExpression("radius")] string? radiusExpression = null,
+        [CallerArgumentExpression(nameof(center))]
+        string? centerExpression = null,
+        [CallerArgumentExpression(nameof(radius))]
+        string? radiusExpression = null,
         [CallerMemberName] string? memberName = null,
         [CallerFilePath] string? filePath = null,
         [CallerLineNumber] int lineNumber = 0)
     {
         var circle = new Circle(center, radius);
-        var expression = $"center: {centerExpression}, radius: {radiusExpression}";
+
+        _stringBuilder.Clear()
+            .Append(nameof(center)).Append(": ").Append(centerExpression)
+            .Append(", ")
+            .Append(nameof(radius)).Append(": ").Append(radiusExpression);
+        var expression = string.Intern(_stringBuilder.ToString());
+
         Draw(circle, color, options, expression, memberName, filePath, lineNumber);
     }
 
     public void DrawCircle(Math.Shapes.Circle circle, Color color, Options options = default,
-        [CallerArgumentExpression("circle")] string? circleExpression = null,
+        [CallerArgumentExpression(nameof(circle))]
+        string? circleExpression = null,
         [CallerMemberName] string? memberName = null,
         [CallerFilePath] string? filePath = null,
         [CallerLineNumber] int lineNumber = 0)
@@ -178,46 +234,70 @@ public class Drawer(string moduleName)
     }
 
     public void DrawRobot(Vector2 position, Angle? orientation, uint? id, Color color, Options options = default,
-        [CallerArgumentExpression("position")] string? positionExpression = null,
-        [CallerArgumentExpression("orientation")]
+        [CallerArgumentExpression(nameof(position))]
+        string? positionExpression = null,
+        [CallerArgumentExpression(nameof(orientation))]
         string? orientationExpression = null,
-        [CallerArgumentExpression("id")] string? idExpression = null,
+        [CallerArgumentExpression(nameof(id))] string? idExpression = null,
         [CallerMemberName] string? memberName = null,
         [CallerFilePath] string? filePath = null,
         [CallerLineNumber] int lineNumber = 0)
     {
         var robot = new Robot(position, orientation, id);
-        var expression = $"position: {positionExpression}, orientation: {orientationExpression}, id: {idExpression}";
+
+        _stringBuilder.Clear()
+            .Append(nameof(position)).Append(": ").Append(positionExpression)
+            .Append(", ")
+            .Append(nameof(orientation)).Append(": ").Append(orientationExpression)
+            .Append(", ")
+            .Append(nameof(id)).Append(": ").Append(idExpression);
+        var expression = string.Intern(_stringBuilder.ToString());
+
         Draw(robot, color, options, expression, memberName, filePath, lineNumber);
     }
 
     public void DrawRobot(Math.Shapes.Robot robot, uint? id, Color color, Options options = default,
-        [CallerArgumentExpression("robot")] string? robotExpression = null,
-        [CallerArgumentExpression("id")] string? idExpression = null,
+        [CallerArgumentExpression(nameof(robot))]
+        string? robotExpression = null,
+        [CallerArgumentExpression(nameof(id))] string? idExpression = null,
         [CallerMemberName] string? memberName = null,
         [CallerFilePath] string? filePath = null,
         [CallerLineNumber] int lineNumber = 0)
     {
         var drawable = new Robot(robot, id);
-        var expression = $"robot: {robotExpression}, id: {idExpression}";
+
+        _stringBuilder.Clear()
+            .Append(nameof(robot)).Append(": ").Append(robotExpression)
+            .Append(", ")
+            .Append(nameof(id)).Append(": ").Append(idExpression);
+        var expression = string.Intern(_stringBuilder.ToString());
+
         Draw(drawable, color, options, expression, memberName, filePath, lineNumber);
     }
 
     public void DrawRobot(Data.Ssl.Vision.Detection.Robot robot, Data.Ssl.RobotId id, Options options = default,
-        [CallerArgumentExpression("robot")] string? robotExpression = null,
-        [CallerArgumentExpression("id")] string? idExpression = null,
+        [CallerArgumentExpression(nameof(robot))]
+        string? robotExpression = null,
+        [CallerArgumentExpression(nameof(id))] string? idExpression = null,
         [CallerMemberName] string? memberName = null,
         [CallerFilePath] string? filePath = null,
         [CallerLineNumber] int lineNumber = 0)
     {
         var drawable = new Robot(robot, id.Id);
         var color = id.Team.ToColor();
-        var expression = $"robot: {robotExpression}, id: {idExpression}";
+
+        _stringBuilder.Clear()
+            .Append(nameof(robot)).Append(": ").Append(robotExpression)
+            .Append(", ")
+            .Append(nameof(id)).Append(": ").Append(idExpression);
+        var expression = string.Intern(_stringBuilder.ToString());
+
         Draw(drawable, color, options, expression, memberName, filePath, lineNumber);
     }
 
     public void DrawRobot(Data.Ssl.Vision.Tracker.Robot robot, Options options = default,
-        [CallerArgumentExpression("robot")] string? robotExpression = null,
+        [CallerArgumentExpression(nameof(robot))]
+        string? robotExpression = null,
         [CallerMemberName] string? memberName = null,
         [CallerFilePath] string? filePath = null,
         [CallerLineNumber] int lineNumber = 0)
@@ -228,7 +308,8 @@ public class Drawer(string moduleName)
     }
 
     public void DrawPath(IReadOnlyList<Vector2> points, Color color, Options options = default,
-        [CallerArgumentExpression("points")] string? pointsExpression = null,
+        [CallerArgumentExpression(nameof(points))]
+        string? pointsExpression = null,
         [CallerMemberName] string? memberName = null,
         [CallerFilePath] string? filePath = null,
         [CallerLineNumber] int lineNumber = 0)
@@ -238,15 +319,26 @@ public class Drawer(string moduleName)
     }
 
     public void DrawText(string content, Vector2 position, float size, Color color, Options options = default,
-        [CallerArgumentExpression("content")] string? contentExpression = null,
-        [CallerArgumentExpression("position")] string? positionExpression = null,
-        [CallerArgumentExpression("size")] string? sizeExpression = null,
+        [CallerArgumentExpression(nameof(content))]
+        string? contentExpression = null,
+        [CallerArgumentExpression(nameof(position))]
+        string? positionExpression = null,
+        [CallerArgumentExpression(nameof(size))]
+        string? sizeExpression = null,
         [CallerMemberName] string? memberName = null,
         [CallerFilePath] string? filePath = null,
         [CallerLineNumber] int lineNumber = 0)
     {
         var text = new Text(content, position, size);
-        var expression = $"content: {contentExpression}, position: {positionExpression}, size: {sizeExpression}";
+
+        _stringBuilder.Clear()
+            .Append(nameof(content)).Append(": ").Append(contentExpression)
+            .Append(", ")
+            .Append(nameof(position)).Append(": ").Append(positionExpression)
+            .Append(", ")
+            .Append(nameof(size)).Append(": ").Append(sizeExpression);
+        var expression = string.Intern(_stringBuilder.ToString());
+
         Draw(text, color, options, expression, memberName, filePath, lineNumber);
     }
 }

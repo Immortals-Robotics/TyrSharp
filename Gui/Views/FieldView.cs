@@ -19,11 +19,11 @@ public class FieldView
     private readonly Common.Time.Timer _timer = new();
 
     private Utf8ValueStringBuilder _stringBuilder = ZString.CreateUtf8StringBuilder();
-    
+
     private readonly Subscriber<FieldSize> _fieldSizeSubscriber = Hub.FieldSize.Subscribe(Mode.Latest);
     private FieldSize? _fieldSize;
 
-    private readonly List<Debug.Drawing.Command> _internalDraws = [];
+    private readonly List<Debug.Drawing.Command> _fieldDraws = [];
 
     public FieldView(DebugFramer debugFramer, DebugFilter filter)
     {
@@ -75,7 +75,7 @@ public class FieldView
                 }
             }
 
-            DrawInternals();
+            DrawField();
 
             foreach (var (module, framer) in _debugFramer.Modules)
             {
@@ -115,19 +115,10 @@ public class FieldView
         ImGui.End();
     }
 
-    private void DrawInternals()
-    {
-        _internalDraws.Clear();
-
-        DrawField();
-
-        _renderer.Draw(_internalDraws, null);
-    }
-
     private void DrawInternal(Debug.Drawing.IDrawable drawable,
         Debug.Drawing.Color color, Debug.Drawing.Options options)
     {
-        _internalDraws.Add(new Debug.Drawing.Command(drawable, color, options, Debug.Meta.Empty));
+        _fieldDraws.Add(new Debug.Drawing.Command(drawable, color, options, Debug.Meta.Empty, Timestamp.Zero));
     }
 
     private void DrawField()
@@ -135,21 +126,24 @@ public class FieldView
         if (_fieldSizeSubscriber.TryGetLatest(out var fieldSize))
         {
             _fieldSize = fieldSize;
+            if (!_fieldSize.HasValue) return;
+
+            _fieldDraws.Clear();
+
+            DrawInternal(new Debug.Drawing.Drawables.Rectangle(_fieldSize.Value.FieldRectangleWithBoundary),
+                Debug.Drawing.Color.Green, new Debug.Drawing.Options { Filled = true });
+
+            foreach (var line in _fieldSize.Value.FieldLines)
+            {
+                DrawInternal(new Debug.Drawing.Drawables.LineSegment(line.LineSegment),
+                    Debug.Drawing.Color.White, new Debug.Drawing.Options { Thickness = line.Thickness });
+            }
+
+            var lineThickness = _fieldSize.Value.LineThickness.GetValueOrDefault();
+            DrawInternal(new Debug.Drawing.Drawables.Circle(_fieldSize.Value.CenterCircle),
+                Debug.Drawing.Color.White, new Debug.Drawing.Options { Thickness = lineThickness });
         }
 
-        if (!_fieldSize.HasValue) return;
-
-        DrawInternal(new Debug.Drawing.Drawables.Rectangle(_fieldSize.Value.FieldRectangleWithBoundary),
-            Debug.Drawing.Color.Green, new Debug.Drawing.Options { Filled = true });
-
-        foreach (var line in _fieldSize.Value.FieldLines)
-        {
-            DrawInternal(new Debug.Drawing.Drawables.LineSegment(line.LineSegment),
-                Debug.Drawing.Color.White, new Debug.Drawing.Options { Thickness = line.Thickness });
-        }
-
-        var lineThickness = _fieldSize.Value.LineThickness.GetValueOrDefault();
-        DrawInternal(new Debug.Drawing.Drawables.Circle(_fieldSize.Value.CenterCircle),
-            Debug.Drawing.Color.White, new Debug.Drawing.Options { Thickness = lineThickness });
+        _renderer.Draw(_fieldDraws, null);
     }
 }
