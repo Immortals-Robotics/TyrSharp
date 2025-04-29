@@ -119,7 +119,7 @@ public class ConfigsView
 
         if (nodeOpen)
         {
-            if (ImGui.BeginTable("fields", 3, ImGuiTableFlags.BordersInnerH))
+            if (ImGui.BeginTable("fields", 3, ImGuiTableFlags.BordersInnerH | ImGuiTableFlags.BordersOuterH))
             {
                 ImGui.TableSetupColumn("Name", ImGuiTableColumnFlags.WidthStretch, 1.0f);
                 ImGui.TableSetupColumn("Reset", ImGuiTableColumnFlags.WidthFixed, 15f);
