@@ -107,6 +107,8 @@ public class PlotView(DebugFramer debugFramer, DebugFilter filter)
         {
             foreach (var (plotId, plotMeta) in framer.Plots)
             {
+                if (string.IsNullOrWhiteSpace(plotId)) continue;
+
                 if (!filter.IsEnabled(plotMeta)) continue;
 
                 _filterTested += 1;

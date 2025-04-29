@@ -46,6 +46,9 @@ public abstract class RunnerBase(int tickRateHz)
             StartTimestamp = CurrentTickStartTimestamp,
         };
         Hub.Frames.Publish(frame);
+
         Draw.DrawEmpty();
+        Plot.Plot(string.Empty, 0);
+        Log.ZLogTrace($"");
     }
 }

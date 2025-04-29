@@ -6,8 +6,10 @@ namespace Tyr.Gui.Data;
 
 public class DebugFramer
 {
-    private readonly Subscriber<Debug.Drawing.Command> _drawCommandsSubscriber = Hub.Draws.Subscribe(Mode.All);
-    private readonly Subscriber<Debug.Plotting.Command> _plotCommandsSubscriber = Hub.Plots.Subscribe(Mode.All);
+    private readonly Subscriber<Debug.Logging.Entry> _logSubscriber = Hub.Logs.Subscribe(Mode.All);
+    private readonly Subscriber<Debug.Drawing.Command> _drawSubscriber = Hub.Draws.Subscribe(Mode.All);
+    private readonly Subscriber<Debug.Plotting.Command> _plotSubscriber = Hub.Plots.Subscribe(Mode.All);
+    
     private readonly Subscriber<Debug.Frame> _frameSubscriber = Hub.Frames.Subscribe(Mode.All);
 
     public Dictionary<string, ModuleDebugFramer> Modules { get; } = [];
@@ -37,13 +39,19 @@ public class DebugFramer
             dirty = true;
         }
 
-        while (_drawCommandsSubscriber.Reader.TryRead(out var draw))
+        while (_logSubscriber.Reader.TryRead(out var log))
+        {
+            GetOrCreateModuleFramer(log.Meta.ModuleName).OnLog(log);
+            dirty = true;
+        }
+        
+        while (_drawSubscriber.Reader.TryRead(out var draw))
         {
             GetOrCreateModuleFramer(draw.Meta.ModuleName).OnDraw(draw);
             dirty = true;
         }
 
-        while (_plotCommandsSubscriber.Reader.TryRead(out var plot))
+        while (_plotSubscriber.Reader.TryRead(out var plot))
         {
             GetOrCreateModuleFramer(plot.Meta.ModuleName).OnPlot(plot);
             dirty = true;
