@@ -272,6 +272,9 @@ public class ModuleDebugFramer
 
             if (!sealable) break;
 
+            _frames[index].Draws.TrimExcess();
+            _frames[index].Plots.TrimExcess();
+
             _frames[index].IsSealed = true;
             _latestSealedFrameIndex = index;
         }
