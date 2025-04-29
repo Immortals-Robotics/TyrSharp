@@ -13,6 +13,10 @@ public class Plotter(string moduleName)
     {
         var meta = new Meta(moduleName, valueExpression,
             memberName, filePath, lineNumber);
+
+        id = string.Intern(id);
+        title = title != null ? string.Intern(title) : null;
+
         var command = new Command(id, value!, title, meta, Timestamp.Now);
 
         Hub.Plots.Publish(command);
