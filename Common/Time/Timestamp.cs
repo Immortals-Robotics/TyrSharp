@@ -14,6 +14,9 @@ public readonly record struct Timestamp : IComparable<Timestamp>
     public static Timestamp FromDateTime(DateTime dateTime) =>
         FromNanoseconds((dateTime - DateTime.UnixEpoch).Ticks * TimeSpan.NanosecondsPerTick);
 
+    public static Timestamp FromDateTimeOffset(DateTimeOffset dateTimeOffset) =>
+        FromNanoseconds((dateTimeOffset - DateTimeOffset.UnixEpoch).Ticks * TimeSpan.NanosecondsPerTick);
+
     public static Timestamp Zero => new(0);
     public static Timestamp MaxValue => new(long.MaxValue);
     public static Timestamp Now => FromDateTime(DateTime.UtcNow);

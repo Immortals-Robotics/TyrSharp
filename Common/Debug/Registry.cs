@@ -13,7 +13,7 @@ public static class Registry
     private static readonly ConcurrentDictionary<string, Drawer> Drawers = [];
     private static readonly ConcurrentDictionary<string, Plotter> Plotters = [];
 
-    public static ILogger GetLogger(string moduleName) => Loggers.GetOrAdd(moduleName, Logging.Factory.CreateLogger);
+    public static ILogger GetLogger(string moduleName) => Loggers.GetOrAdd(moduleName, Logging.Logging.Factory.CreateLogger);
 
     public static Assert GetAssert(string moduleName) =>
         Asserts.GetOrAdd(moduleName, name => new Assert(GetLogger(name)));

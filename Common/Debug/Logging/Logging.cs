@@ -2,7 +2,7 @@
 using Microsoft.Extensions.Logging;
 using Tyr.Common.Config;
 
-namespace Tyr.Common.Debug;
+namespace Tyr.Common.Debug.Logging;
 
 [Configurable]
 public static class Logging
@@ -22,7 +22,6 @@ public static class Logging
         logging.AddFilter(level => level >= Level);
         logging.AddZLoggerConsole(options =>
         {
-            options.CaptureThreadInfo = true;
             options.UsePlainTextFormatter(formatter =>
             {
                 formatter.SetPrefixFormatter($"[{0} | {1} | {2} | {3} @ {4}:{5}] ",
@@ -33,6 +32,12 @@ public static class Logging
                             info.MemberName, Path.GetFileName(info.FilePath), info.LineNumber);
                     });
             });
+        });
+
+        logging.AddZLoggerLogProcessor(options =>
+        {
+            options.UsePlainTextFormatter();
+            return new LogPublisher();
         });
     });
 }
