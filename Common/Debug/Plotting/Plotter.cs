@@ -11,8 +11,7 @@ public class Plotter(string moduleName)
         [CallerFilePath] string? filePath = null,
         [CallerLineNumber] int lineNumber = 0)
     {
-        var meta = new Meta(moduleName, valueExpression,
-            memberName, filePath, lineNumber);
+        var meta = Meta.GetOrCreate(moduleName, valueExpression, memberName, filePath, lineNumber);
 
         id = string.Intern(id);
         title = title != null ? string.Intern(title) : null;
