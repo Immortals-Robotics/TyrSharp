@@ -1,12 +1,16 @@
-﻿using System.Globalization;
+﻿using Cysharp.Text;
 using Hexa.NET.ImGui;
+using Microsoft.Extensions.Logging;
 using Tyr.Gui.Backend;
 using Tyr.Gui.Data;
+using Debug = Tyr.Common.Debug;
 
 namespace Tyr.Gui.Views;
 
 public class LogView(DebugFramer debugFramer, DebugFilter filter)
 {
+    private Utf8ValueStringBuilder _stringBuilder = ZString.CreateUtf8StringBuilder();
+
     public void Draw(PlaybackTime time)
     {
         if (ImGui.Begin($"{IconFonts.FontAwesome6.Terminal} Logs"))
@@ -42,17 +46,25 @@ public class LogView(DebugFramer debugFramer, DebugFilter filter)
                         ImGui.TableNextRow();
 
                         ImGui.TableNextColumn();
-                        ImGui.TextUnformatted(log.Timestamp.ToDateTime()
-                            .ToString("HH:mm:ss.fff", CultureInfo.InvariantCulture));
+                        _stringBuilder.Clear();
+                        _stringBuilder.AppendFormat("{0:D2}:{1:D2}:{2:D2}.{3:D3}\0",
+                            (int)log.Timestamp.NormalizedHours,
+                            (int)log.Timestamp.NormalizedMinutes,
+                            (int)log.Timestamp.NormalizedSeconds,
+                            (int)log.Timestamp.NormalizedMilliseconds);
+                        ImGui.TextUnformatted(_stringBuilder.AsSpan());
 
                         ImGui.TableNextColumn();
                         ImGui.TextUnformatted(log.Meta.ModuleName);
 
                         ImGui.TableNextColumn();
-                        ImGui.TextUnformatted(log.Level.ToString());
+                        ImGui.TextUnformatted(Debug.EnumCache<LogLevel>.GetName(log.Level));
 
                         ImGui.TableNextColumn();
-                        ImGui.TextUnformatted($"{Path.GetFileName(log.Meta.FilePath)}:{log.Meta.LineNumber}");
+                        _stringBuilder.Clear();
+                        _stringBuilder.AppendFormat("{0}: {1}\0",
+                            Debug.PathCache.GetFileName(log.Meta.FilePath), log.Meta.LineNumber);
+                        ImGui.TextUnformatted(_stringBuilder.AsSpan());
 
                         ImGui.TableNextColumn();
                         ImGui.TextUnformatted(log.Meta.MemberName);

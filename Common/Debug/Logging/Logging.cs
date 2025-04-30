@@ -29,7 +29,7 @@ public static class Logging
                     {
                         template.Format(
                             info.Timestamp, info.Category, info.LogLevel,
-                            info.MemberName, Path.GetFileName(info.FilePath), info.LineNumber);
+                            info.MemberName, PathCache.GetFileName(info.FilePath), info.LineNumber);
                     });
             });
         });

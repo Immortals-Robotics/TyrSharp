@@ -23,9 +23,16 @@ public readonly record struct Timestamp : IComparable<Timestamp>
     public static Timestamp MaxValue => new(long.MaxValue);
     public static Timestamp Now => FromDateTime(DateTime.UtcNow);
 
+    public double Hours => Seconds / 3600;
+    public double Minutes => Seconds / 60;
     public double Seconds => Nanoseconds / 1e9;
     public double Milliseconds => Nanoseconds / 1e6;
     public double Microseconds => Nanoseconds / 1e3;
+
+    public double NormalizedHours => Minutes / 60 % 24;
+    public double NormalizedMinutes => Minutes % 60;
+    public double NormalizedSeconds => Seconds % 60;
+    public double NormalizedMilliseconds => Milliseconds % 1000;
 
     public static Timestamp Min(Timestamp a, Timestamp b) => a < b ? a : b;
     public static Timestamp Max(Timestamp a, Timestamp b) => a > b ? a : b;
@@ -49,5 +56,6 @@ public readonly record struct Timestamp : IComparable<Timestamp>
 
     public int CompareTo(Timestamp other) => Nanoseconds.CompareTo(other.Nanoseconds);
 
-    public override string ToString() => $"{Seconds:F6}s";
+    public override string ToString() =>
+        $"{(int)NormalizedHours:D2}:{(int)NormalizedMinutes:D2}:{(int)NormalizedSeconds:D2}.{(int)NormalizedMilliseconds:D3}";
 }
