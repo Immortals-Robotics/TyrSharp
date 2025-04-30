@@ -4,11 +4,11 @@ namespace Tyr.Common.Debug;
 
 public record Meta
 {
-    public string ModuleName { get; init; }
-    public string? Expression { get; init; }
-    public string? MemberName { get; init; }
-    public string? FilePath { get; init; }
-    public int LineNumber { get; init; }
+    public string ModuleName { get; }
+    public string? Expression { get; }
+    public string? MemberName { get; }
+    public string? FilePath { get; }
+    public int LineNumber { get; }
 
     private Meta(string ModuleName,
         string? Expression,

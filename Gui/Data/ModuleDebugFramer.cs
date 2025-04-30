@@ -26,7 +26,7 @@ public class ModuleDebugFramer
     private int FirstUnsealedFrameIndex => _latestSealedFrameIndex.GetValueOrDefault(-1) + 1;
 
     // file -> function -> MetaItem
-    public Dictionary<string, Dictionary<string, SortedSet<MetaTreeItem>>> MetaTree { get; } = [];
+    public Dictionary<string, Dictionary<string, HashSet<MetaTreeItem>>> MetaTree { get; } = [];
 
     public Dictionary<string, Debug.Meta> Plots { get; } = [];
 
@@ -273,7 +273,7 @@ public class ModuleDebugFramer
                 functionDict[meta.MemberName] = lineSet;
             }
 
-            var item = new MetaTreeItem(type, meta.LineNumber, meta.Expression);
+            var item = MetaTreeItem.GetOrCreate(type, meta.LineNumber, meta.Expression);
             lineSet.Add(item);
         }
         else
