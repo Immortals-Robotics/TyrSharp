@@ -77,7 +77,7 @@ public sealed class Vision
         for (var index = 0; index < camera.Balls.Count; index++)
         {
             var tracker = camera.Balls[index];
-            Draw.DrawCircle(tracker.Position, 25f, Color.OrangeA400,
+            Draw.DrawCircle(tracker.Position, 25f, Color.Orange400,
                 new Options { Filled = true, Thickness = 5f });
 
             Plot.Plot($"cam[{camera.Id}] ball[{index}]", tracker.Velocity, "vel (mm/s)");

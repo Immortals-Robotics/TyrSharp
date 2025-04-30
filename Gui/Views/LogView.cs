@@ -16,7 +16,8 @@ public sealed class LogView(DebugFramer debugFramer, DebugFilter filter) : IDisp
     {
         if (ImGui.Begin($"{IconFonts.FontAwesome6.Terminal} Logs", ImGuiWindowFlags.AlwaysVerticalScrollbar))
         {
-            const ImGuiTableFlags flags = ImGuiTableFlags.Resizable | ImGuiTableFlags.Hideable | ImGuiTableFlags.Reorderable |
+            const ImGuiTableFlags flags = ImGuiTableFlags.Resizable | ImGuiTableFlags.Hideable |
+                                          ImGuiTableFlags.Reorderable |
                                           ImGuiTableFlags.HighlightHoveredColumn |
                                           ImGuiTableFlags.RowBg | ImGuiTableFlags.BordersInnerH;
 
@@ -28,7 +29,8 @@ public sealed class LogView(DebugFramer debugFramer, DebugFilter filter) : IDisp
                     ImGui.GetFontSize());
                 ImGui.TableSetupColumn("Time", ImGuiTableColumnFlags.WidthStretch, 1.5f);
                 ImGui.TableSetupColumn("Module", ImGuiTableColumnFlags.WidthStretch, 1f);
-                ImGui.TableSetupColumn("Level", ImGuiTableColumnFlags.WidthStretch | ImGuiTableColumnFlags.DefaultHide, 1f);
+                ImGui.TableSetupColumn("Level", ImGuiTableColumnFlags.WidthStretch | ImGuiTableColumnFlags.DefaultHide,
+                    1f);
                 ImGui.TableSetupColumn("File", ImGuiTableColumnFlags.WidthStretch, 2f);
                 ImGui.TableSetupColumn("Function", ImGuiTableColumnFlags.WidthStretch, 1f);
                 ImGui.TableSetupColumn("Text", ImGuiTableColumnFlags.WidthStretch, 10f);
@@ -53,12 +55,12 @@ public sealed class LogView(DebugFramer debugFramer, DebugFilter filter) : IDisp
 
                         var color = log.Level switch
                         {
-                            LogLevel.Trace => Color.BlueGrey100,
-                            LogLevel.Debug => Color.TealA100,
-                            LogLevel.Information => Color.LightBlueA100,
-                            LogLevel.Warning => Color.YellowA200,
-                            LogLevel.Error => Color.RedA200,
-                            LogLevel.Critical => Color.PurpleA100,
+                            LogLevel.Trace => Color.Slate300,
+                            LogLevel.Debug => Color.Teal200,
+                            LogLevel.Information => Color.Sky200,
+                            LogLevel.Warning => Color.Yellow300,
+                            LogLevel.Error => Color.Red400,
+                            LogLevel.Critical => Color.Fuchsia400,
                             _ => Color.White,
                         };
                         ImGui.PushStyleColor(ImGuiCol.Text, color.RGBA);

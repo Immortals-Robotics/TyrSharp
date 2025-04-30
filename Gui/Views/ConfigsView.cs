@@ -31,7 +31,7 @@ public class ConfigsView
                 var totalItems = Registry.Configurables.Count;
                 var visibleItems = IsFiltering ? CountMatchingFields(Registry.Tree) : totalItems;
 
-                ImGui.TextColored(Color.Grey500, $"{visibleItems} of {totalItems} items matching");
+                ImGui.TextColored(Color.Gray500, $"{visibleItems} of {totalItems} items matching");
             }
         }
 
@@ -53,7 +53,7 @@ public class ConfigsView
         }
         else
         {
-            ImGui.TextColored(Color.Grey600, $"{IconFonts.FontAwesome6.MagnifyingGlass}");
+            ImGui.TextColored(Color.Gray600, $"{IconFonts.FontAwesome6.MagnifyingGlass}");
         }
 
         ImGui.Separator();
@@ -104,7 +104,7 @@ public class ConfigsView
             ImGui.BeginTooltip();
 
             ImGui.PushFont(FontRegistry.Instance.MonoFont);
-            ImGui.TextColored(Color.Grey400, $"{configurable.Type.FullName}");
+            ImGui.TextColored(Color.Gray400, $"{configurable.Type.FullName}");
             ImGui.PopFont();
 
             if (!string.IsNullOrEmpty(configurable.Comment))
@@ -154,7 +154,7 @@ public class ConfigsView
             ImGui.BeginTooltip();
 
             ImGui.PushFont(FontRegistry.Instance.MonoFont);
-            ImGui.TextColored(Color.Grey400, $"{field.Type.FullName}");
+            ImGui.TextColored(Color.Gray400, $"{field.Type.FullName}");
             ImGui.PopFont();
 
             if (!string.IsNullOrEmpty(field.Comment))

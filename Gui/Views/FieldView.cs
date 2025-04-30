@@ -131,7 +131,7 @@ public sealed class FieldView : IDisposable
             _fieldDraws.Clear();
 
             DrawInternal(new Debug.Drawing.Drawables.Rectangle(_fieldSize.Value.FieldRectangleWithBoundary),
-                Debug.Drawing.Color.LightGreen900, new Debug.Drawing.Options { Filled = true });
+                Debug.Drawing.Color.Green800, new Debug.Drawing.Options { Filled = true });
 
             var lineColor = Debug.Drawing.Color.White.WithAlpha(0.7f);
             

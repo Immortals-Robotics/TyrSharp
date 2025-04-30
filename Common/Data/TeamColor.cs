@@ -20,15 +20,15 @@ public static class TeamColorExtensions
         };
     }
 
-    public static Debug.Drawing.Color ToColor(this TeamColor? color) => color?.ToColor() ?? Debug.Drawing.Color.Grey;
+    public static Debug.Drawing.Color ToColor(this TeamColor? color) => color?.ToColor() ?? Debug.Drawing.Color.Gray;
 
     public static Debug.Drawing.Color ToColor(this TeamColor color)
     {
         return color switch
         {
-            TeamColor.Blue => Debug.Drawing.Color.BlueA200,
-            TeamColor.Yellow => Debug.Drawing.Color.YellowA400,
-            _ => Debug.Drawing.Color.Grey
+            TeamColor.Blue => Debug.Drawing.Color.Blue500,
+            TeamColor.Yellow => Debug.Drawing.Color.Yellow300,
+            _ => Debug.Drawing.Color.Gray
         };
     }
 }
