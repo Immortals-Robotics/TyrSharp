@@ -52,11 +52,13 @@ public class GlobalsGenerator : ISourceGenerator
                              {
                                  internal static string ModuleName => "{{moduleName}}";
                                  internal static string? CallingModuleName => Common.Debug.ModuleContext.Current.Value;
+                                 
+                                 private static bool UseCachedInstance => CallingModuleName == null || CallingModuleName == ModuleName;
                              
-                                 internal static ILogger Log => CallingModuleName == null ? _log : Common.Debug.Registry.GetLogger(CallingModuleName);
-                                 internal static Common.Debug.Assertion.Assert Assert => CallingModuleName == null ? _assert : Common.Debug.Registry.GetAssert(CallingModuleName);
-                                 internal static Common.Debug.Drawing.Drawer Draw => CallingModuleName == null ? _draw : Common.Debug.Registry.GetDrawer(CallingModuleName);
-                                 internal static Common.Debug.Plotting.Plotter Plot => CallingModuleName == null ? _plot : Common.Debug.Registry.GetPlotter(CallingModuleName);
+                                 internal static ILogger Log => UseCachedInstance ? _log : Common.Debug.Registry.GetLogger(CallingModuleName!);
+                                 internal static Common.Debug.Assertion.Assert Assert => UseCachedInstance ? _assert : Common.Debug.Registry.GetAssert(CallingModuleName!);
+                                 internal static Common.Debug.Drawing.Drawer Draw => UseCachedInstance ? _draw : Common.Debug.Registry.GetDrawer(CallingModuleName!);
+                                 internal static Common.Debug.Plotting.Plotter Plot => UseCachedInstance ? _plot : Common.Debug.Registry.GetPlotter(CallingModuleName!);
                                  internal static Random Rand { get; private set; } = null!;
                                  
                                  // cached owned instances to avoid registry lookups
