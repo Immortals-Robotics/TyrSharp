@@ -272,6 +272,27 @@ public sealed class Drawer(string moduleName) : IDisposable
 
         Draw(robot, color, options, expression, memberName, filePath, lineNumber);
     }
+    
+    public void DrawRobot(Vector2 position, Angle? orientation, Data.Ssl.RobotId? id, Options options = default,
+        [CallerArgumentExpression(nameof(position))]
+        string? positionExpression = null,
+        [CallerArgumentExpression(nameof(orientation))]
+        string? orientationExpression = null,
+        [CallerArgumentExpression(nameof(id))] string? idExpression = null,
+        [CallerMemberName] string? memberName = null,
+        [CallerFilePath] string? filePath = null,
+        [CallerLineNumber] int lineNumber = 0)
+    {
+        var robot = new Robot(position, orientation, id?.Id);
+
+        var expression = MakeExpression(
+            nameof(position), positionExpression,
+            nameof(orientation), orientationExpression,
+            nameof(id), idExpression);
+        
+        var color = (id?.Team).ToColor();
+        Draw(robot, color, options, expression, memberName, filePath, lineNumber);
+    }
 
     public void DrawRobot(Math.Shapes.Robot robot, uint? id, Color color, Options options = default,
         [CallerArgumentExpression(nameof(robot))]

@@ -50,16 +50,16 @@ public sealed class LogView(DebugFramer debugFramer, DebugFilter filter) : IDisp
 
                         var color = log.Level switch
                         {
-                            LogLevel.Trace => Color.Gray,
-                            LogLevel.Debug => new(0f, 0.7f, 0.7f),
-                            LogLevel.Information => Color.LightBlue,
-                            LogLevel.Warning => Color.Yellow,
-                            LogLevel.Error => Color.Orange,
-                            LogLevel.Critical => new(0.95f, 0.33f, 0.3f),
-                            _ => Color.White, 
+                            LogLevel.Trace => Color.BlueGrey100,
+                            LogLevel.Debug => Color.TealA100,
+                            LogLevel.Information => Color.LightBlueA100,
+                            LogLevel.Warning => Color.YellowA200,
+                            LogLevel.Error => Color.RedA200,
+                            LogLevel.Critical => Color.PurpleA100,
+                            _ => Color.White,
                         };
-                        ImGui.PushStyleColor(ImGuiCol.Text, color.ToVector4());
-                        
+                        ImGui.PushStyleColor(ImGuiCol.Text, color.RGBA);
+
                         ImGui.TableNextColumn();
                         var icon = log.Level switch
                         {
@@ -71,7 +71,7 @@ public sealed class LogView(DebugFramer debugFramer, DebugFilter filter) : IDisp
                             LogLevel.Critical => IconFonts.FontAwesome6.SkullCrossbones,
                             _ => IconFonts.FontAwesome6.Question,
                         };
-                        
+
                         ImGui.SetCursorPosX(ImGui.GetCursorPosX() + ImGui.GetFontSize() / 2f);
                         ImGui.TextUnformatted(icon);
 
@@ -101,7 +101,7 @@ public sealed class LogView(DebugFramer debugFramer, DebugFilter filter) : IDisp
 
                         ImGui.TableNextColumn();
                         ImGui.TextUnformatted(log.Message);
-                        
+
                         ImGui.PopStyleColor();
                     }
                 }

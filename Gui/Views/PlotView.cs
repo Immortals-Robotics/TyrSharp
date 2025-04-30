@@ -3,6 +3,7 @@ using System.Runtime.InteropServices;
 using Hexa.NET.ImGui;
 using Hexa.NET.ImPlot;
 using Tyr.Common.Config;
+using Tyr.Common.Debug.Drawing;
 using Tyr.Common.Time;
 using Tyr.Gui.Backend;
 using Tyr.Gui.Data;
@@ -70,7 +71,7 @@ public class PlotView(DebugFramer debugFramer, DebugFilter filter)
             if (IsFiltering)
             {
                 ImGui.Separator();
-                ImGui.TextDisabled($"{_filterPassed} of {_filterTested} items matching");
+                ImGui.TextColored(Color.Grey500, $"{_filterPassed} of {_filterTested} items matching");
             }
         }
 

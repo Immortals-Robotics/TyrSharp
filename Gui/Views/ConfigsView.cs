@@ -1,6 +1,6 @@
-using System.Numerics;
 using Hexa.NET.ImGui;
 using Tyr.Common.Config;
+using Tyr.Common.Debug.Drawing;
 using Tyr.Common.Network;
 using Tyr.Gui.Backend;
 
@@ -31,7 +31,7 @@ public class ConfigsView
                 var totalItems = Registry.Configurables.Count;
                 var visibleItems = IsFiltering ? CountMatchingFields(Registry.Tree) : totalItems;
 
-                ImGui.TextDisabled($"{visibleItems} of {totalItems} items matching");
+                ImGui.TextColored(Color.Grey500, $"{visibleItems} of {totalItems} items matching");
             }
         }
 
@@ -53,7 +53,7 @@ public class ConfigsView
         }
         else
         {
-            ImGui.TextDisabled($"{IconFonts.FontAwesome6.MagnifyingGlass}");
+            ImGui.TextColored(Color.Grey600, $"{IconFonts.FontAwesome6.MagnifyingGlass}");
         }
 
         ImGui.Separator();
@@ -104,7 +104,7 @@ public class ConfigsView
             ImGui.BeginTooltip();
 
             ImGui.PushFont(FontRegistry.Instance.MonoFont);
-            ImGui.TextDisabled($"{configurable.Type.FullName}");
+            ImGui.TextColored(Color.Grey400, $"{configurable.Type.FullName}");
             ImGui.PopFont();
 
             if (!string.IsNullOrEmpty(configurable.Comment))
@@ -154,7 +154,7 @@ public class ConfigsView
             ImGui.BeginTooltip();
 
             ImGui.PushFont(FontRegistry.Instance.MonoFont);
-            ImGui.TextDisabled($"{field.Type.FullName}");
+            ImGui.TextColored(Color.Grey400, $"{field.Type.FullName}");
             ImGui.PopFont();
 
             if (!string.IsNullOrEmpty(field.Comment))
@@ -180,7 +180,7 @@ public class ConfigsView
             ImGui.Text("Reset to");
             ImGui.SameLine();
             ImGui.PushFont(FontRegistry.Instance.MonoFont);
-            ImGui.TextColored(new Vector4(0.8f, 0.8f, 0.2f, 1.0f), $"{field.DefaultValue}");
+            ImGui.TextColored(Color.Amber, $"{field.DefaultValue}");
             ImGui.PopFont();
             ImGui.EndTooltip();
         }

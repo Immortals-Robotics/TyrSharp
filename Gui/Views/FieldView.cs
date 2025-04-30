@@ -131,17 +131,17 @@ public sealed class FieldView : IDisposable
             _fieldDraws.Clear();
 
             DrawInternal(new Debug.Drawing.Drawables.Rectangle(_fieldSize.Value.FieldRectangleWithBoundary),
-                Debug.Drawing.Color.Green, new Debug.Drawing.Options { Filled = true });
+                Debug.Drawing.Color.LightGreen900.WithAlpha(0.9f), new Debug.Drawing.Options { Filled = true });
 
             foreach (var line in _fieldSize.Value.FieldLines)
             {
                 DrawInternal(new Debug.Drawing.Drawables.LineSegment(line.LineSegment),
-                    Debug.Drawing.Color.White, new Debug.Drawing.Options { Thickness = line.Thickness });
+                    Debug.Drawing.Color.White.WithAlpha(0.7f), new Debug.Drawing.Options { Thickness = line.Thickness });
             }
 
             var lineThickness = _fieldSize.Value.LineThickness.GetValueOrDefault();
             DrawInternal(new Debug.Drawing.Drawables.Circle(_fieldSize.Value.CenterCircle),
-                Debug.Drawing.Color.White, new Debug.Drawing.Options { Thickness = lineThickness });
+                Debug.Drawing.Color.White.WithAlpha(0.7f), new Debug.Drawing.Options { Thickness = lineThickness });
         }
 
         _renderer.Draw(_fieldDraws, null);
