@@ -54,7 +54,7 @@ public readonly record struct Color
 
     public static implicit operator Vector4(Color color) => color.RGBA;
 
-    public static readonly Color Invisible = FromHex("#00000000");
+    public static readonly Color Invisible = Grey.WithAlpha(0f);
 
     public static readonly Color White = FromHex("#ffffff");
     public static readonly Color Black = FromHex("#000000");
