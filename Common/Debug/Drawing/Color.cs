@@ -1,4 +1,6 @@
-﻿namespace Tyr.Common.Debug.Drawing;
+﻿using System.Numerics;
+
+namespace Tyr.Common.Debug.Drawing;
 
 public readonly record struct Color(
     float R,
@@ -19,6 +21,8 @@ public readonly record struct Color(
         return (a << 24) | (b << 16) | (g << 8) | r;
     }
 
+    public Vector4 ToVector4() => new(R, G, B, A);
+
     public static Color Lerp(Color from, Color to, float t)
     {
         t = float.Clamp(t, 0f, 1f);
@@ -33,12 +37,16 @@ public readonly record struct Color(
     // Common colors
     public static readonly Color White = new(1f, 1f, 1f);
     public static readonly Color Black = new(0f, 0f, 0f);
-    public static readonly Color Red = new(0.902f, 0.1608f, 0.2157f);
+    public static readonly Color Gray = new(0.5f, 0.5f, 0.5f);
+    public static readonly Color Red = new(0.95f, 0.33f, 0.3f);
     public static readonly Color Green = new(0.0f, 0.8941f, 0.1882f);
     public static readonly Color Blue = new(0.0f, 0.4745f, 0.9451f);
+    public static readonly Color LightBlue = new(0.5f, 0.7f, 1.0f);
     public static readonly Color Yellow = new(0.9922f, 0.9765f, 0.0f);
     public static readonly Color Orange = new(1f, 0.6314f, 0f);
     public static readonly Color Magenta = new(1f, 0f, 1f);
+    public static readonly Color Cyan = new(0f, 1f, 1f);
+    public static readonly Color Teal = new(0f, 0.7f, 0.7f);
 
     public static Color Random()
     {

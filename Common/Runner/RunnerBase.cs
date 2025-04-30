@@ -49,6 +49,6 @@ public abstract class RunnerBase(int tickRateHz)
 
         Draw.DrawEmpty();
         Plot.Plot(string.Empty, 0);
-        Log.ZLogTrace($"");
+        Log.ZLogCritical($"");
     }
 }

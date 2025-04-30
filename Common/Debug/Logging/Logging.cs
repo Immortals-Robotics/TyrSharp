@@ -7,7 +7,8 @@ namespace Tyr.Common.Debug.Logging;
 [Configurable]
 public static class Logging
 {
-    [ConfigEntry] private static LogLevel Level { get; set; } = LogLevel.Trace;
+    [ConfigEntry("The level logs are filtered at the source. Anything below this will be rejected on the log call.")]
+    private static LogLevel Level { get; set; } = LogLevel.Debug;
 
     static Logging()
     {

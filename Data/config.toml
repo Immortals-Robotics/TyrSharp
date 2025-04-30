@@ -59,7 +59,10 @@ Enabled = true # default: True
 
 
 [Common.Debug.Logging]
-Level = "Debug" # default: Trace
+[Common.Debug.Logging.Logging]
+# The level logs are filtered at the source. Anything below this will be rejected on the log call.
+Level = "Debug" # default: Debug
+
 
 
 [Common.Config]

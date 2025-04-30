@@ -1,6 +1,7 @@
 ﻿using Cysharp.Text;
 using Hexa.NET.ImGui;
 using Microsoft.Extensions.Logging;
+using Tyr.Common.Debug.Drawing;
 using Tyr.Gui.Backend;
 using Tyr.Gui.Data;
 using Debug = Tyr.Common.Debug;
@@ -13,14 +14,15 @@ public sealed class LogView(DebugFramer debugFramer, DebugFilter filter) : IDisp
 
     public void Draw(PlaybackTime time)
     {
-        if (ImGui.Begin($"{IconFonts.FontAwesome6.Terminal} Logs"))
+        if (ImGui.Begin($"{IconFonts.FontAwesome6.Terminal} Logs", ImGuiWindowFlags.AlwaysVerticalScrollbar))
         {
             const ImGuiTableFlags flags = ImGuiTableFlags.Resizable | ImGuiTableFlags.Hideable |
                                           ImGuiTableFlags.HighlightHoveredColumn |
                                           ImGuiTableFlags.RowBg | ImGuiTableFlags.BordersInnerH;
 
-            if (ImGui.BeginTable("logs", 6, flags))
+            if (ImGui.BeginTable("logs", 7, flags))
             {
+                ImGui.TableSetupColumn("##Icon", ImGuiTableColumnFlags.WidthFixed, ImGui.GetFontSize());
                 ImGui.TableSetupColumn("Time", ImGuiTableColumnFlags.WidthStretch, 1.5f);
                 ImGui.TableSetupColumn("Module", ImGuiTableColumnFlags.WidthStretch, 1f);
                 ImGui.TableSetupColumn("Level", ImGuiTableColumnFlags.WidthStretch, 1f);
@@ -42,8 +44,36 @@ public sealed class LogView(DebugFramer debugFramer, DebugFilter filter) : IDisp
                     foreach (var log in frame.Logs)
                     {
                         if (!filter.IsEnabled(log.Meta)) continue;
+                        if (string.IsNullOrWhiteSpace(log.Message)) continue;
 
                         ImGui.TableNextRow();
+
+                        var color = log.Level switch
+                        {
+                            LogLevel.Trace => Color.Gray,
+                            LogLevel.Debug => new(0f, 0.7f, 0.7f),
+                            LogLevel.Information => Color.LightBlue,
+                            LogLevel.Warning => Color.Yellow,
+                            LogLevel.Error => Color.Orange,
+                            LogLevel.Critical => new(0.95f, 0.33f, 0.3f),
+                            _ => Color.White, 
+                        };
+                        ImGui.PushStyleColor(ImGuiCol.Text, color.ToVector4());
+                        
+                        ImGui.TableNextColumn();
+                        var icon = log.Level switch
+                        {
+                            LogLevel.Trace => IconFonts.FontAwesome6.UserSecret,
+                            LogLevel.Debug => IconFonts.FontAwesome6.Bug,
+                            LogLevel.Information => IconFonts.FontAwesome6.CircleExclamation,
+                            LogLevel.Warning => IconFonts.FontAwesome6.TriangleExclamation,
+                            LogLevel.Error => IconFonts.FontAwesome6.Radiation,
+                            LogLevel.Critical => IconFonts.FontAwesome6.SkullCrossbones,
+                            _ => IconFonts.FontAwesome6.Question,
+                        };
+                        
+                        ImGui.SetCursorPosX(ImGui.GetCursorPosX() + ImGui.GetFontSize() / 2f);
+                        ImGui.TextUnformatted(icon);
 
                         ImGui.TableNextColumn();
                         _stringBuilder.Clear();
@@ -71,6 +101,8 @@ public sealed class LogView(DebugFramer debugFramer, DebugFilter filter) : IDisp
 
                         ImGui.TableNextColumn();
                         ImGui.TextUnformatted(log.Message);
+                        
+                        ImGui.PopStyleColor();
                     }
                 }
 
