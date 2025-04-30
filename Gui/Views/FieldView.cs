@@ -11,7 +11,7 @@ using Debug = Tyr.Common.Debug;
 
 namespace Tyr.Gui.Views;
 
-public class FieldView
+public sealed class FieldView : IDisposable
 {
     private readonly DebugFramer _debugFramer;
     private readonly DebugFilter _filter;
@@ -145,5 +145,11 @@ public class FieldView
         }
 
         _renderer.Draw(_fieldDraws, null);
+    }
+
+    public void Dispose()
+    {
+        _stringBuilder.Dispose();
+        _fieldSizeSubscriber.Dispose();
     }
 }

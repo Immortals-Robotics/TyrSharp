@@ -7,7 +7,7 @@ using Debug = Tyr.Common.Debug;
 
 namespace Tyr.Gui.Views;
 
-public class LogView(DebugFramer debugFramer, DebugFilter filter)
+public sealed class LogView(DebugFramer debugFramer, DebugFilter filter) : IDisposable
 {
     private Utf8ValueStringBuilder _stringBuilder = ZString.CreateUtf8StringBuilder();
 
@@ -81,5 +81,10 @@ public class LogView(DebugFramer debugFramer, DebugFilter filter)
         }
 
         ImGui.End();
+    }
+
+    public void Dispose()
+    {
+        _stringBuilder.Dispose();
     }
 }

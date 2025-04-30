@@ -14,7 +14,7 @@ using Vector2 = System.Numerics.Vector2;
 
 namespace Tyr.Common.Debug.Drawing;
 
-public class Drawer(string moduleName)
+public sealed class Drawer(string moduleName) : IDisposable
 {
     private Utf16ValueStringBuilder _stringBuilder = ZString.CreateStringBuilder();
     private readonly ConcurrentDictionary<int, string> _expressionCache = new();
@@ -350,5 +350,10 @@ public class Drawer(string moduleName)
             nameof(size), sizeExpression);
 
         Draw(text, color, options, expression, memberName, filePath, lineNumber);
+    }
+
+    public void Dispose()
+    {
+        _stringBuilder.Dispose();
     }
 }

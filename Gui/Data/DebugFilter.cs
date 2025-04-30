@@ -264,6 +264,5 @@ public sealed class DebugFilter : IDisposable
     public void Dispose()
     {
         _stringBuilder.Dispose();
-        _stringBuilder = default;
     }
 }
