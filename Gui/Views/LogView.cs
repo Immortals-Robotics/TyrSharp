@@ -16,16 +16,19 @@ public sealed class LogView(DebugFramer debugFramer, DebugFilter filter) : IDisp
     {
         if (ImGui.Begin($"{IconFonts.FontAwesome6.Terminal} Logs", ImGuiWindowFlags.AlwaysVerticalScrollbar))
         {
-            const ImGuiTableFlags flags = ImGuiTableFlags.Resizable | ImGuiTableFlags.Hideable |
+            const ImGuiTableFlags flags = ImGuiTableFlags.Resizable | ImGuiTableFlags.Hideable | ImGuiTableFlags.Reorderable |
                                           ImGuiTableFlags.HighlightHoveredColumn |
                                           ImGuiTableFlags.RowBg | ImGuiTableFlags.BordersInnerH;
 
             if (ImGui.BeginTable("logs", 7, flags))
             {
-                ImGui.TableSetupColumn("##Icon", ImGuiTableColumnFlags.WidthFixed, ImGui.GetFontSize());
+                ImGui.TableSetupColumn("Icon",
+                    ImGuiTableColumnFlags.WidthFixed | ImGuiTableColumnFlags.NoHide |
+                    ImGuiTableColumnFlags.NoHeaderLabel | ImGuiTableColumnFlags.NoResize,
+                    ImGui.GetFontSize());
                 ImGui.TableSetupColumn("Time", ImGuiTableColumnFlags.WidthStretch, 1.5f);
                 ImGui.TableSetupColumn("Module", ImGuiTableColumnFlags.WidthStretch, 1f);
-                ImGui.TableSetupColumn("Level", ImGuiTableColumnFlags.WidthStretch, 1f);
+                ImGui.TableSetupColumn("Level", ImGuiTableColumnFlags.WidthStretch | ImGuiTableColumnFlags.DefaultHide, 1f);
                 ImGui.TableSetupColumn("File", ImGuiTableColumnFlags.WidthStretch, 2f);
                 ImGui.TableSetupColumn("Function", ImGuiTableColumnFlags.WidthStretch, 1f);
                 ImGui.TableSetupColumn("Text", ImGuiTableColumnFlags.WidthStretch, 10f);
@@ -72,7 +75,7 @@ public sealed class LogView(DebugFramer debugFramer, DebugFilter filter) : IDisp
                             _ => IconFonts.FontAwesome6.Question,
                         };
 
-                        ImGui.SetCursorPosX(ImGui.GetCursorPosX() + ImGui.GetFontSize() / 2f);
+                        ImGui.SetCursorPosX(ImGui.GetCursorPosX() + ImGui.GetFontSize() / 4f);
                         ImGui.TextUnformatted(icon);
 
                         ImGui.TableNextColumn();
