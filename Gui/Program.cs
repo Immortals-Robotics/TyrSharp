@@ -37,7 +37,7 @@ while (window.ShouldClose == false)
     window.PollEvents();
 
     // draw
-    window.Clear(1f, .8f, .75f);
+    window.Clear(Color.Slate950);
     imgui.NewFrame();
 
     ImGui.ShowDemoWindow();

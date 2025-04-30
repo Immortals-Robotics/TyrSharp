@@ -31,7 +31,7 @@ public class ConfigsView
                 var totalItems = Registry.Configurables.Count;
                 var visibleItems = IsFiltering ? CountMatchingFields(Registry.Tree) : totalItems;
 
-                ImGui.TextColored(Color.Gray500, $"{visibleItems} of {totalItems} items matching");
+                ImGui.TextColored(Color.Zinc400, $"{visibleItems} of {totalItems} items matching");
             }
         }
 
@@ -53,7 +53,7 @@ public class ConfigsView
         }
         else
         {
-            ImGui.TextColored(Color.Gray600, $"{IconFonts.FontAwesome6.MagnifyingGlass}");
+            ImGui.TextColored(Color.Zinc600, $"{IconFonts.FontAwesome6.MagnifyingGlass}");
         }
 
         ImGui.Separator();
@@ -104,7 +104,7 @@ public class ConfigsView
             ImGui.BeginTooltip();
 
             ImGui.PushFont(FontRegistry.Instance.MonoFont);
-            ImGui.TextColored(Color.Gray400, $"{configurable.Type.FullName}");
+            ImGui.TextColored(Color.Zinc400, $"{configurable.Type.FullName}");
             ImGui.PopFont();
 
             if (!string.IsNullOrEmpty(configurable.Comment))
@@ -119,7 +119,7 @@ public class ConfigsView
 
         if (nodeOpen)
         {
-            if (ImGui.BeginTable("fields", 3, ImGuiTableFlags.BordersInnerH | ImGuiTableFlags.BordersOuterH))
+            if (ImGui.BeginTable("fields", 3, ImGuiTableFlags.BordersH))
             {
                 ImGui.TableSetupColumn("Name", ImGuiTableColumnFlags.WidthStretch, 1.0f);
                 ImGui.TableSetupColumn("Reset", ImGuiTableColumnFlags.WidthFixed, 15f);
@@ -154,7 +154,7 @@ public class ConfigsView
             ImGui.BeginTooltip();
 
             ImGui.PushFont(FontRegistry.Instance.MonoFont);
-            ImGui.TextColored(Color.Gray400, $"{field.Type.FullName}");
+            ImGui.TextColored(Color.Zinc400, $"{field.Type.FullName}");
             ImGui.PopFont();
 
             if (!string.IsNullOrEmpty(field.Comment))

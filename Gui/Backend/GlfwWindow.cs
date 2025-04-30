@@ -1,5 +1,6 @@
 ﻿using Hexa.NET.GLFW;
 using Hexa.NET.OpenGL;
+using Tyr.Common.Debug.Drawing;
 
 namespace Tyr.Gui.Backend;
 
@@ -24,7 +25,7 @@ internal class GlfwWindow : IDisposable
         MakeContextCurrent();
         _gl = new GL(new BindingsContext(Handle));
     }
-    
+
     public void SetVSync(bool enabled)
     {
         MakeContextCurrent();
@@ -37,10 +38,10 @@ internal class GlfwWindow : IDisposable
 
     public void PollEvents() => GLFW.PollEvents();
 
-    public void Clear(float r, float g, float b)
+    public void Clear(Color color)
     {
         MakeContextCurrent();
-        _gl.ClearColor(r, g, b, 1f);
+        _gl.ClearColor(color.R, color.G, color.B, color.A);
         _gl.Clear(GLClearBufferMask.ColorBufferBit);
     }
 

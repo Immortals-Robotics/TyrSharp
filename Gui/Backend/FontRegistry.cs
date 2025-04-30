@@ -8,7 +8,7 @@ namespace Tyr.Gui.Backend;
 [Configurable]
 public sealed class FontRegistry : IDisposable
 {
-    [ConfigEntry] private static float FontSize { get; set; } = 17f;
+    [ConfigEntry] private static int FontSize { get; set; } = 17;
 
     public static FontRegistry Instance { get; private set; } = null!;
 

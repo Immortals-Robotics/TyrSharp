@@ -71,7 +71,7 @@ public class PlotView(DebugFramer debugFramer, DebugFilter filter)
             if (IsFiltering)
             {
                 ImGui.Separator();
-                ImGui.TextColored(Color.Gray500, $"{_filterPassed} of {_filterTested} items matching");
+                ImGui.TextColored(Color.Zinc400, $"{_filterPassed} of {_filterTested} items matching");
             }
         }
 
