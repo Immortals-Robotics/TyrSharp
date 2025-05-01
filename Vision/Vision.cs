@@ -60,6 +60,7 @@ public sealed partial class Vision
         foreach (var camera in _cameras.Values)
         {
             Log.ZLogTrace($"Camera {camera.Id} FPS: {camera.Fps:F2}");
+            Plot.Plot($"cam[{camera.Id}] fps", camera.Fps, "fps");
 
             DrawRobots(camera);
             DrawBalls(camera);

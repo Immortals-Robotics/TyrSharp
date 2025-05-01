@@ -68,8 +68,6 @@ public partial class Camera(uint id)
 
         _frameTimeEstimator.AddSample(frame.FrameNumber, frame.CaptureTime);
 
-        Plot.Plot($"cam[{Id}] fps", Fps, "fps");
-
         // detections
         ProcessRobots(frame, lastFilteredFrame.Robots);
         ProcessBalls(frame, lastFilteredFrame.Ball);

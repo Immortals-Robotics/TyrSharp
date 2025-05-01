@@ -117,13 +117,13 @@ internal partial class DrawableRenderer
 
         if (options.IsFilled)
         {
-            _drawList.AddCircleFilled(center, radius, color.ABGR32, 40);
+            _drawList.AddCircleFilled(center, radius, color.ABGR32);
         }
 
         if (!Utils.ApproximatelyZero(thickness))
         {
             var outlineColor = options.IsFilled ? Color.Black.WithAlpha(OutlineOpacity) : color;
-            _drawList.AddCircle(center, radius, outlineColor.ABGR32, 40, thickness);
+            _drawList.AddCircle(center, radius, outlineColor.ABGR32, thickness);
         }
     }
 
