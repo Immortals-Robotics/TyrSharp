@@ -60,6 +60,7 @@ public sealed partial class Vision
         foreach (var camera in _cameras.Values)
         {
             Log.ZLogTrace($"Camera {camera.Id} FPS: {camera.Fps:F2}");
+            Plot.Plot($"cam[{camera.Id}] fps", camera.Fps, "fps");
 
             DrawRobots(camera);
             DrawBalls(camera);
@@ -72,7 +73,7 @@ public sealed partial class Vision
         {
             var tracker = camera.Balls[index];
             Draw.DrawCircle(tracker.Position, 25f, Color.Orange400,
-                new Options { Filled = true, Thickness = 5f });
+                Options.Filled with { Thickness = 5f });
 
             Plot.Plot($"cam[{camera.Id}] ball[{index}]", tracker.Velocity, "vel (mm/s)");
         }
@@ -83,7 +84,7 @@ public sealed partial class Vision
         foreach (var (id, tracker) in camera.Robots)
         {
             Draw.DrawRobot(tracker.Position, tracker.Angle, id,
-                new Options { Filled = true, Thickness = 10f });
+                Options.Filled with { Thickness = 10f });
 
             Plot.Plot($"cam[{camera.Id}] robot[{id}]", tracker.Velocity, "vel (mm/s)");
         }

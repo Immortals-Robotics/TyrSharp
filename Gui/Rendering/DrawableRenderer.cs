@@ -1,7 +1,9 @@
 ﻿using System.Numerics;
 using Hexa.NET.ImGui;
+using Tyr.Common.Config;
 using Tyr.Common.Debug.Drawing;
 using Tyr.Common.Debug.Drawing.Drawables;
+using Tyr.Common.Math;
 using Tyr.Gui.Data;
 using Color = Tyr.Common.Debug.Drawing.Color;
 using Path = Tyr.Common.Debug.Drawing.Drawables.Path;
@@ -10,9 +12,24 @@ using Triangle = Tyr.Common.Debug.Drawing.Drawables.Triangle;
 
 namespace Tyr.Gui.Rendering;
 
-internal class DrawableRenderer
+[Configurable]
+internal partial class DrawableRenderer
 {
-    public Camera2D Camera { get; set; } = new();
+    [ConfigEntry] private static Color RobotTextColor { get; set; } = Color.Zinc950;
+    [ConfigEntry] private static float ArrowHeadSize { get; set; } = 20f;
+
+    [ConfigEntry("Angle in degrees of the flat front of the robot")]
+    private static float RobotFlatAngle { get; set; } = 45f;
+
+    [ConfigEntry] private static int RobotArcSegments { get; set; } = 20;
+    [ConfigEntry] private static float RobotRadius { get; set; } = 90f;
+
+    [ConfigEntry("Size of the cross used to draw points")]
+    private static float PointCrossSize { get; set; } = 10f;
+
+    [ConfigEntry] private static Color FilledOutlineColor { get; set; } = Color.Zinc950.WithAlpha(0.5f);
+
+    public Camera2D Camera { get; } = new();
 
     private ImDrawListPtr _drawList;
 
@@ -71,17 +88,17 @@ internal class DrawableRenderer
 
     private void DrawArrow(Arrow arrow, Color color, Options options)
     {
+        Assert.IsFalse(options.IsFilled);
+
         var start = Camera.WorldToScreen(arrow.Start);
         var end = Camera.WorldToScreen(arrow.End);
 
         var thickness = Camera.WorldToScreenLength(options.Thickness);
 
         // Line part
-        _drawList.AddLine(start, end, color.ABGR32, thickness);
+        _drawList.AddLine(start, end, ImGui.ColorConvertFloat4ToU32(color), thickness);
 
-        // Arrowhead (simple triangle)
-        const float headSize = 20f;
-        var headSizeScreen = Camera.WorldToScreenLength(headSize);
+        var headSizeScreen = Camera.WorldToScreenLength(ArrowHeadSize);
         var dir = Vector2.Normalize(end - start);
         var perp = new Vector2(-dir.Y, dir.X); // perpendicular for triangle base
 
@@ -89,7 +106,7 @@ internal class DrawableRenderer
         var left = end - dir * headSizeScreen + perp * (headSizeScreen * 0.5f);
         var right = end - dir * headSizeScreen - perp * (headSizeScreen * 0.5f);
 
-        _drawList.AddTriangleFilled(tip, left, right, color.ABGR32);
+        _drawList.AddTriangleFilled(tip, left, right, ImGui.ColorConvertFloat4ToU32(color));
     }
 
     private void DrawCircle(Circle circle, Color color, Options options)
@@ -99,18 +116,22 @@ internal class DrawableRenderer
 
         var thickness = Camera.WorldToScreenLength(options.Thickness);
 
-        if (options.Filled)
+        if (options.IsFilled)
         {
-            _drawList.AddCircleFilled(center, radius, color.ABGR32, 40);
+            _drawList.AddCircleFilled(center, radius, ImGui.ColorConvertFloat4ToU32(color));
         }
-        else
+
+        if (!Utils.ApproximatelyZero(thickness))
         {
-            _drawList.AddCircle(center, radius, color.ABGR32, 40, thickness);
+            var outlineColor = options.IsFilled ? FilledOutlineColor : color;
+            _drawList.AddCircle(center, radius, ImGui.ColorConvertFloat4ToU32(outlineColor), thickness);
         }
     }
 
     private void DrawLine(Line line, Color color, Options options)
     {
+        Assert.IsFalse(options.IsFilled);
+
         var cameraBounds = Camera.GetVisibleWorldBounds();
         var length = Math.Max(cameraBounds.Width, cameraBounds.Height);
 
@@ -123,21 +144,25 @@ internal class DrawableRenderer
 
         var thickness = Camera.WorldToScreenLength(options.Thickness);
 
-        _drawList.AddLine(start, end, color.ABGR32, thickness);
+        _drawList.AddLine(start, end, ImGui.ColorConvertFloat4ToU32(color), thickness);
     }
 
     private void DrawLineSegment(LineSegment lineSegment, Color color, Options options)
     {
+        Assert.IsFalse(options.IsFilled);
+
         var start = Camera.WorldToScreen(lineSegment.Start);
         var end = Camera.WorldToScreen(lineSegment.End);
 
         var thickness = Camera.WorldToScreenLength(options.Thickness);
 
-        _drawList.AddLine(start, end, color.ABGR32, thickness);
+        _drawList.AddLine(start, end, ImGui.ColorConvertFloat4ToU32(color), thickness);
     }
 
     private void DrawPath(Path path, Color color, Options options)
     {
+        Assert.IsFalse(options.IsFilled);
+
         Span<Vector2> points = stackalloc Vector2[path.Points.Length];
         for (var i = 0; i < points.Length; ++i)
         {
@@ -150,26 +175,26 @@ internal class DrawableRenderer
         {
             fixed (Vector2* ptr = points)
             {
-                _drawList.AddPolyline(ptr, points.Length, color.ABGR32, ImDrawFlags.None, thickness);
+                _drawList.AddPolyline(ptr, points.Length, ImGui.ColorConvertFloat4ToU32(color), ImDrawFlags.None,
+                    thickness);
             }
         }
     }
 
     private void DrawPoint(Point point, Color color, Options options)
     {
-        // draw it as a cross
-        const float crossSize = 10f;
+        Assert.IsFalse(options.IsFilled);
 
-        var l1Start = Camera.WorldToScreen(point.Position + new Vector2(-crossSize, -crossSize));
-        var l1End = Camera.WorldToScreen(point.Position + new Vector2(crossSize, crossSize));
+        var l1Start = Camera.WorldToScreen(point.Position + new Vector2(-PointCrossSize, -PointCrossSize));
+        var l1End = Camera.WorldToScreen(point.Position + new Vector2(PointCrossSize, PointCrossSize));
 
-        var l2Start = Camera.WorldToScreen(point.Position + new Vector2(-crossSize, crossSize));
-        var l2End = Camera.WorldToScreen(point.Position + new Vector2(crossSize, -crossSize));
+        var l2Start = Camera.WorldToScreen(point.Position + new Vector2(-PointCrossSize, PointCrossSize));
+        var l2End = Camera.WorldToScreen(point.Position + new Vector2(PointCrossSize, -PointCrossSize));
 
         var thickness = Camera.WorldToScreenLength(options.Thickness);
 
-        _drawList.AddLine(l1Start, l1End, color.ABGR32, thickness);
-        _drawList.AddLine(l2Start, l2End, color.ABGR32, thickness);
+        _drawList.AddLine(l1Start, l1End, ImGui.ColorConvertFloat4ToU32(color), thickness);
+        _drawList.AddLine(l2Start, l2End, ImGui.ColorConvertFloat4ToU32(color), thickness);
     }
 
     private void DrawRectangle(Rectangle rectangle, Color color, Options options)
@@ -179,35 +204,37 @@ internal class DrawableRenderer
 
         var thickness = Camera.WorldToScreenLength(options.Thickness);
 
-        if (options.Filled)
-            _drawList.AddRectFilled(min, max, color.ABGR32);
-        else
-            _drawList.AddRect(min, max, color.ABGR32, ImDrawFlags.None, thickness);
+        if (options.IsFilled)
+        {
+            _drawList.AddRectFilled(min, max, ImGui.ColorConvertFloat4ToU32(color));
+        }
+
+        if (!Utils.ApproximatelyZero(thickness))
+        {
+            var outlineColor = options.IsFilled ? FilledOutlineColor : color;
+            _drawList.AddRect(min, max, ImGui.ColorConvertFloat4ToU32(outlineColor), ImDrawFlags.None, thickness);
+        }
     }
 
     private void DrawRobot(Robot robot, Color color, Options options)
     {
-        const float robotRadius = 90f;
-        const int segments = 20; // circle detail
-
         var center = Camera.WorldToScreen(robot.Position);
-        var radius = Camera.WorldToScreenLength(robotRadius);
+        var radius = Camera.WorldToScreenLength(RobotRadius);
         var thickness = Camera.WorldToScreenLength(options.Thickness);
 
         if (robot.Orientation.HasValue)
         {
             var angle = -robot.Orientation.Value.Rad;
 
-            const float flatAngle = MathF.PI / 4f; // amount to "flatten" at the front (adjust as needed)
+            var robotFlatAngleRad = float.DegreesToRadians(RobotFlatAngle);
+            var startAngle = angle + robotFlatAngleRad;
+            var endAngle = angle + 2 * MathF.PI - robotFlatAngleRad;
 
-            var startAngle = angle + flatAngle;
-            var endAngle = angle + 2 * MathF.PI - flatAngle;
+            Span<Vector2> points = stackalloc Vector2[RobotArcSegments + 1];
 
-            Span<Vector2> points = stackalloc Vector2[segments + 1];
-
-            for (var i = 0; i <= segments; i++)
+            for (var i = 0; i <= RobotArcSegments; i++)
             {
-                var t = (float)i / segments;
+                var t = (float)i / RobotArcSegments;
                 var theta = startAngle + (endAngle - startAngle) * t;
 
                 var dir = new Vector2(MathF.Cos(theta), MathF.Sin(theta));
@@ -218,33 +245,39 @@ internal class DrawableRenderer
             {
                 fixed (Vector2* ptr = points)
                 {
-                    if (options.Filled)
+                    if (options.IsFilled)
                     {
-                        _drawList.AddConvexPolyFilled(ptr, points.Length, color.ABGR32);
+                        _drawList.AddConvexPolyFilled(ptr, points.Length, ImGui.ColorConvertFloat4ToU32(color));
                     }
-                    else
+
+                    if (!Utils.ApproximatelyZero(thickness))
                     {
-                        _drawList.AddPolyline(ptr, points.Length, color.ABGR32, ImDrawFlags.Closed, thickness);
+                        var outlineColor = options.IsFilled ? FilledOutlineColor : color;
+                        _drawList.AddPolyline(ptr, points.Length, ImGui.ColorConvertFloat4ToU32(outlineColor),
+                            ImDrawFlags.Closed, thickness);
                     }
                 }
             }
         }
         else
         {
-            if (options.Filled)
+            if (options.IsFilled)
             {
-                _drawList.AddCircleFilled(center, radius, color.ABGR32, segments);
+                _drawList.AddCircleFilled(center, radius, ImGui.ColorConvertFloat4ToU32(color), RobotArcSegments);
             }
-            else
+
+            if (!Utils.ApproximatelyZero(thickness))
             {
-                _drawList.AddCircle(center, radius, color.ABGR32, segments, thickness);
+                var outlineColor = options.IsFilled ? FilledOutlineColor : color;
+                _drawList.AddCircle(center, radius, ImGui.ColorConvertFloat4ToU32(outlineColor), RobotArcSegments,
+                    thickness);
             }
         }
 
         if (robot.Id.HasValue)
         {
             var text = new Text(robot.Id.Value.ToString(), robot.Position, 135f, TextAlignment.Center);
-            DrawText(text, Color.Black);
+            DrawText(text, RobotTextColor);
         }
     }
 
@@ -262,7 +295,8 @@ internal class DrawableRenderer
 
         unsafe
         {
-            _drawList.AddText(ImGui.GetFont().Handle, sizeScreen, posScreen, color.ABGR32, text.Content);
+            _drawList.AddText(ImGui.GetFont().Handle, sizeScreen, posScreen, ImGui.ColorConvertFloat4ToU32(color),
+                text.Content);
         }
     }
 
@@ -274,9 +308,15 @@ internal class DrawableRenderer
 
         var thickness = Camera.WorldToScreenLength(options.Thickness);
 
-        if (options.Filled)
-            _drawList.AddTriangleFilled(a, b, c, color.ABGR32);
-        else
-            _drawList.AddTriangle(a, b, c, color.ABGR32, thickness);
+        if (options.IsFilled)
+        {
+            _drawList.AddTriangleFilled(a, b, c, ImGui.ColorConvertFloat4ToU32(color));
+        }
+
+        if (!Utils.ApproximatelyZero(thickness))
+        {
+            var outlineColor = options.IsFilled ? FilledOutlineColor : color;
+            _drawList.AddTriangle(a, b, c, ImGui.ColorConvertFloat4ToU32(outlineColor), thickness);
+        }
     }
 }

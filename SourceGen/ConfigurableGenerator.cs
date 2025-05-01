@@ -96,7 +96,7 @@ namespace Tyr.SourceGen
 
                      namespace {{namespaceName}}
                      {
-                         public partial class {{className}}
+                         partial class {{className}}
                          {
                              private static Tyr.Common.Config.Configurable? _configurable;
                              private static Tyr.Common.Config.Configurable Configurable => _configurable ??= Tyr.Common.Config.Registry.Get(typeof({{className}}));

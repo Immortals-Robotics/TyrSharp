@@ -302,6 +302,17 @@ public class ConfigsView
 
                 break;
 
+            case Color colorValue:
+                var colorVec = colorValue.RGBA;
+                ImGui.ColorEdit4("", ref colorVec, 
+                    ImGuiColorEditFlags.DisplayHex | ImGuiColorEditFlags.AlphaBar);
+                if (ImGui.IsItemEdited())
+                {
+                    field.Value = new Color(colorVec);
+                }
+
+                break;
+
             default:
                 // For other types, just display as string
                 Log.ZLogWarning($"Unsupported config type: {field.Type}");
