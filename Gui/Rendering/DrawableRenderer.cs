@@ -15,6 +15,9 @@ namespace Tyr.Gui.Rendering;
 [Configurable]
 internal partial class DrawableRenderer
 {
+    [ConfigEntry] private static Color RobotTextColor { get; set; } = Color.Zinc950;
+    [ConfigEntry] private static float ArrowHeadSize { get; set; } = 20f;
+
     [ConfigEntry("Angle in degrees of the flat front of the robot")]
     private static float RobotFlatAngle { get; set; } = 45f;
 
@@ -24,7 +27,7 @@ internal partial class DrawableRenderer
     [ConfigEntry("Size of the cross used to draw points")]
     private static float PointCrossSize { get; set; } = 10f;
 
-    [ConfigEntry] private static float OutlineOpacity { get; set; } = 0.5f;
+    [ConfigEntry] private static Color FilledOutlineColor { get; set; } = Color.Zinc950.WithAlpha(0.5f);
 
     public Camera2D Camera { get; } = new();
 
@@ -93,11 +96,9 @@ internal partial class DrawableRenderer
         var thickness = Camera.WorldToScreenLength(options.Thickness);
 
         // Line part
-        _drawList.AddLine(start, end, color.ABGR32, thickness);
+        _drawList.AddLine(start, end, ImGui.ColorConvertFloat4ToU32(color), thickness);
 
-        // Arrowhead (simple triangle)
-        const float headSize = 20f;
-        var headSizeScreen = Camera.WorldToScreenLength(headSize);
+        var headSizeScreen = Camera.WorldToScreenLength(ArrowHeadSize);
         var dir = Vector2.Normalize(end - start);
         var perp = new Vector2(-dir.Y, dir.X); // perpendicular for triangle base
 
@@ -105,7 +106,7 @@ internal partial class DrawableRenderer
         var left = end - dir * headSizeScreen + perp * (headSizeScreen * 0.5f);
         var right = end - dir * headSizeScreen - perp * (headSizeScreen * 0.5f);
 
-        _drawList.AddTriangleFilled(tip, left, right, color.ABGR32);
+        _drawList.AddTriangleFilled(tip, left, right, ImGui.ColorConvertFloat4ToU32(color));
     }
 
     private void DrawCircle(Circle circle, Color color, Options options)
@@ -117,13 +118,13 @@ internal partial class DrawableRenderer
 
         if (options.IsFilled)
         {
-            _drawList.AddCircleFilled(center, radius, color.ABGR32);
+            _drawList.AddCircleFilled(center, radius, ImGui.ColorConvertFloat4ToU32(color));
         }
 
         if (!Utils.ApproximatelyZero(thickness))
         {
-            var outlineColor = options.IsFilled ? Color.Black.WithAlpha(OutlineOpacity) : color;
-            _drawList.AddCircle(center, radius, outlineColor.ABGR32, thickness);
+            var outlineColor = options.IsFilled ? FilledOutlineColor : color;
+            _drawList.AddCircle(center, radius, ImGui.ColorConvertFloat4ToU32(outlineColor), thickness);
         }
     }
 
@@ -143,7 +144,7 @@ internal partial class DrawableRenderer
 
         var thickness = Camera.WorldToScreenLength(options.Thickness);
 
-        _drawList.AddLine(start, end, color.ABGR32, thickness);
+        _drawList.AddLine(start, end, ImGui.ColorConvertFloat4ToU32(color), thickness);
     }
 
     private void DrawLineSegment(LineSegment lineSegment, Color color, Options options)
@@ -155,7 +156,7 @@ internal partial class DrawableRenderer
 
         var thickness = Camera.WorldToScreenLength(options.Thickness);
 
-        _drawList.AddLine(start, end, color.ABGR32, thickness);
+        _drawList.AddLine(start, end, ImGui.ColorConvertFloat4ToU32(color), thickness);
     }
 
     private void DrawPath(Path path, Color color, Options options)
@@ -174,7 +175,8 @@ internal partial class DrawableRenderer
         {
             fixed (Vector2* ptr = points)
             {
-                _drawList.AddPolyline(ptr, points.Length, color.ABGR32, ImDrawFlags.None, thickness);
+                _drawList.AddPolyline(ptr, points.Length, ImGui.ColorConvertFloat4ToU32(color), ImDrawFlags.None,
+                    thickness);
             }
         }
     }
@@ -191,8 +193,8 @@ internal partial class DrawableRenderer
 
         var thickness = Camera.WorldToScreenLength(options.Thickness);
 
-        _drawList.AddLine(l1Start, l1End, color.ABGR32, thickness);
-        _drawList.AddLine(l2Start, l2End, color.ABGR32, thickness);
+        _drawList.AddLine(l1Start, l1End, ImGui.ColorConvertFloat4ToU32(color), thickness);
+        _drawList.AddLine(l2Start, l2End, ImGui.ColorConvertFloat4ToU32(color), thickness);
     }
 
     private void DrawRectangle(Rectangle rectangle, Color color, Options options)
@@ -204,13 +206,13 @@ internal partial class DrawableRenderer
 
         if (options.IsFilled)
         {
-            _drawList.AddRectFilled(min, max, color.ABGR32);
+            _drawList.AddRectFilled(min, max, ImGui.ColorConvertFloat4ToU32(color));
         }
 
         if (!Utils.ApproximatelyZero(thickness))
         {
-            var outlineColor = options.IsFilled ? Color.Black.WithAlpha(OutlineOpacity) : color;
-            _drawList.AddRect(min, max, outlineColor.ABGR32, ImDrawFlags.None, thickness);
+            var outlineColor = options.IsFilled ? FilledOutlineColor : color;
+            _drawList.AddRect(min, max, ImGui.ColorConvertFloat4ToU32(outlineColor), ImDrawFlags.None, thickness);
         }
     }
 
@@ -245,13 +247,14 @@ internal partial class DrawableRenderer
                 {
                     if (options.IsFilled)
                     {
-                        _drawList.AddConvexPolyFilled(ptr, points.Length, color.ABGR32);
+                        _drawList.AddConvexPolyFilled(ptr, points.Length, ImGui.ColorConvertFloat4ToU32(color));
                     }
 
                     if (!Utils.ApproximatelyZero(thickness))
                     {
-                        var outlineColor = options.IsFilled ? Color.Black.WithAlpha(OutlineOpacity) : color;
-                        _drawList.AddPolyline(ptr, points.Length, outlineColor.ABGR32, ImDrawFlags.Closed, thickness);
+                        var outlineColor = options.IsFilled ? FilledOutlineColor : color;
+                        _drawList.AddPolyline(ptr, points.Length, ImGui.ColorConvertFloat4ToU32(outlineColor),
+                            ImDrawFlags.Closed, thickness);
                     }
                 }
             }
@@ -260,20 +263,21 @@ internal partial class DrawableRenderer
         {
             if (options.IsFilled)
             {
-                _drawList.AddCircleFilled(center, radius, color.ABGR32, RobotArcSegments);
+                _drawList.AddCircleFilled(center, radius, ImGui.ColorConvertFloat4ToU32(color), RobotArcSegments);
             }
 
             if (!Utils.ApproximatelyZero(thickness))
             {
-                var outlineColor = options.IsFilled ? Color.Black.WithAlpha(OutlineOpacity) : color;
-                _drawList.AddCircle(center, radius, outlineColor.ABGR32, RobotArcSegments, thickness);
+                var outlineColor = options.IsFilled ? FilledOutlineColor : color;
+                _drawList.AddCircle(center, radius, ImGui.ColorConvertFloat4ToU32(outlineColor), RobotArcSegments,
+                    thickness);
             }
         }
 
         if (robot.Id.HasValue)
         {
             var text = new Text(robot.Id.Value.ToString(), robot.Position, 135f, TextAlignment.Center);
-            DrawText(text, Color.Black);
+            DrawText(text, RobotTextColor);
         }
     }
 
@@ -291,7 +295,8 @@ internal partial class DrawableRenderer
 
         unsafe
         {
-            _drawList.AddText(ImGui.GetFont().Handle, sizeScreen, posScreen, color.ABGR32, text.Content);
+            _drawList.AddText(ImGui.GetFont().Handle, sizeScreen, posScreen, ImGui.ColorConvertFloat4ToU32(color),
+                text.Content);
         }
     }
 
@@ -305,13 +310,13 @@ internal partial class DrawableRenderer
 
         if (options.IsFilled)
         {
-            _drawList.AddTriangleFilled(a, b, c, color.ABGR32);
+            _drawList.AddTriangleFilled(a, b, c, ImGui.ColorConvertFloat4ToU32(color));
         }
 
         if (!Utils.ApproximatelyZero(thickness))
         {
-            var outlineColor = options.IsFilled ? Color.Black.WithAlpha(OutlineOpacity) : color;
-            _drawList.AddTriangle(a, b, c, outlineColor.ABGR32, thickness);
+            var outlineColor = options.IsFilled ? FilledOutlineColor : color;
+            _drawList.AddTriangle(a, b, c, ImGui.ColorConvertFloat4ToU32(outlineColor), thickness);
         }
     }
 }
