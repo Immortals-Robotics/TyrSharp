@@ -11,7 +11,6 @@ public class Configurable
     public readonly Type Type;
 
     public string Namespace => Type.Namespace ?? "Tyr.Global";
-    public string TypeName => Type.Name;
 
     public string? Comment => _meta.Description;
 

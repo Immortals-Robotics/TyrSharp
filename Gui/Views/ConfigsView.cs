@@ -66,9 +66,8 @@ public class ConfigsView
             switch (value)
             {
                 case Configurable configurable:
-                    // Check if any of its fields match the search
-                    var fieldsMatch = configurable.Entries.Any(field => _filter.PassFilter(field.Name));
-                    if (fieldsMatch)
+                    if (_filter.PassFilter(configurable.Type.Name) ||
+                        configurable.Entries.Any(field => _filter.PassFilter(field.Name)))
                     {
                         DrawConfigurable(key, configurable);
                     }
@@ -119,6 +118,7 @@ public class ConfigsView
 
         if (nodeOpen)
         {
+            var ownFilterMatch = _filter.PassFilter(configurable.Type.Name);
             if (ImGui.BeginTable("fields", 3, ImGuiTableFlags.BordersH))
             {
                 ImGui.TableSetupColumn("Name", ImGuiTableColumnFlags.WidthStretch, 1.0f);
@@ -128,7 +128,7 @@ public class ConfigsView
                 foreach (var field in configurable.Entries)
                 {
                     // Only show fields that match the search criteria when filtering
-                    if (!_filter.PassFilter(field.Name)) continue;
+                    if (!ownFilterMatch && !_filter.PassFilter(field.Name)) continue;
 
                     ImGui.TableNextRow();
                     DrawField(field);
@@ -288,7 +288,8 @@ public class ConfigsView
             switch (value)
             {
                 case Configurable configurable:
-                    if (configurable.Entries.Any(field => _filter.PassFilter(field.Name)))
+                    if (_filter.PassFilter(configurable.Type.Name) ||
+                        configurable.Entries.Any(field => _filter.PassFilter(field.Name)))
                         return true;
                     break;
 
@@ -309,7 +310,9 @@ public class ConfigsView
             switch (value)
             {
                 case Configurable configurable:
-                    count += configurable.Entries.Count(field => _filter.PassFilter(field.Name));
+                    count += _filter.PassFilter(configurable.Type.Name)
+                        ? configurable.Entries.Count()
+                        : configurable.Entries.Count(field => _filter.PassFilter(field.Name));
                     break;
                 case Dictionary<string, object> subTree:
                     count += CountMatchingFields(subTree);
