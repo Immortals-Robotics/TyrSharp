@@ -6,13 +6,18 @@ using Gc = Tyr.Common.Data.Ssl.Gc;
 namespace Tyr.Referee;
 
 [Configurable]
-public partial class GcDataPublisher : IDisposable
+public sealed partial class GcDataPublisher : IDisposable
 {
     [ConfigEntry] private static Address GcAddress { get; set; } = new() { Ip = "224.5.23.1", Port = 10003 };
 
-    private readonly UdpReceiver<Gc.Referee> _udpReceiver = new(GcAddress, OnData, ModuleName);
+    private readonly UdpReceiver<Gc.Referee> _udpReceiver;
 
-    private static void OnData(Gc.Referee data)
+    public GcDataPublisher()
+    {
+        _udpReceiver = new UdpReceiver<Gc.Referee>(GcAddress, OnData, "Gc");
+    }
+
+    private void OnData(Gc.Referee data)
     {
         Hub.RawReferee.Publish(data);
     }

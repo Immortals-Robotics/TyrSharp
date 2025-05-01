@@ -60,6 +60,8 @@ public class RunnerAsync(Func<CancellationToken, Task> tick, int tickRateHz = 0,
             var tickStart = Timer.Time;
             CurrentTickStartTimestamp = Timestamp.Now;
 
+            NewDebugFrame();
+
             Timer.Update();
 
             await tick(token);

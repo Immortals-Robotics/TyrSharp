@@ -44,6 +44,8 @@ public class RunnerSync(Action tick, int tickRateHz = 0, string? callingModule =
             var tickStart = Timer.Time;
             CurrentTickStartTimestamp = Timestamp.Now;
 
+            NewDebugFrame();
+
             Timer.Update();
             tick();
 

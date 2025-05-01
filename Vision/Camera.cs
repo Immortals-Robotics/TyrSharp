@@ -68,8 +68,6 @@ public partial class Camera(uint id)
 
         _frameTimeEstimator.AddSample(frame.FrameNumber, frame.CaptureTime);
 
-        Log.ZLogTrace($"Camera {Id} FPS: {Fps:F2}");
-
         Plot.Plot($"cam[{Id}] fps", Fps, "fps");
 
         // detections

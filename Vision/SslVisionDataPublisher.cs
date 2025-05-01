@@ -14,14 +14,15 @@ public sealed partial class SslVisionDataPublisher : IDisposable
 
     private static Address Address => UseSimulator ? SimulatorAddress : VisionAddress;
 
-    private readonly UdpReceiver<WrapperPacket> _udpReceiver = new(Address, OnData, ModuleName);
+    private readonly UdpReceiver<WrapperPacket> _udpReceiver;
 
     public SslVisionDataPublisher()
     {
+        _udpReceiver = new UdpReceiver<WrapperPacket>(Address, OnData, "SslVision");
         Log.ZLogInformation($"SSL Vision Data publisher initialized on {Address}.");
     }
 
-    private static void OnData(WrapperPacket data)
+    private void OnData(WrapperPacket data)
     {
         if (data.Detection != null)
             Hub.RawDetection.Publish(data.Detection);

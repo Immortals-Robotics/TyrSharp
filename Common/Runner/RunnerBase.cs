@@ -31,7 +31,7 @@ public abstract class RunnerBase(int tickRateHz)
         while (Timer.Time < nextTick) ;
     }
 
-    public void NewDebugFrame()
+    protected void NewDebugFrame()
     {
         if (ModuleContext.Current.Value == null) return;
 

@@ -26,8 +26,6 @@ public sealed partial class Runner : IDisposable
 
     private void Tick()
     {
-        _runner.NewDebugFrame();
-
         FieldSize? fieldSize = _fieldSizeSubscriber.TryGetLatest(out var f) ? f : null;
 
         _vision.Process(
