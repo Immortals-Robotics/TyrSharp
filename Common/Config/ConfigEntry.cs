@@ -27,7 +27,7 @@ public class ConfigEntry(PropertyInfo info, Configurable owner)
             if (Equals(current, value)) return;
 
             info.SetValue(null, value);
-            owner.OnEntryChanged(this);
+            owner.OnChanged();
         }
     }
 

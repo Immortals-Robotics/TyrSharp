@@ -5,7 +5,7 @@ using Tyr.Common.Time;
 namespace Tyr.Vision;
 
 [Configurable]
-public class Camera(uint id)
+public partial class Camera(uint id)
 {
     [ConfigEntry("Time in [s] after an invisible ball is removed")]
     private static float InvisibleLifetimeBall { get; set; } = 1f;

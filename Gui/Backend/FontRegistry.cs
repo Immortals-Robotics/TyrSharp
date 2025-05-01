@@ -6,7 +6,7 @@ using Tyr.Common.Config;
 namespace Tyr.Gui.Backend;
 
 [Configurable]
-public sealed class FontRegistry : IDisposable
+public sealed partial class FontRegistry : IDisposable
 {
     [ConfigEntry] private static int FontSize { get; set; } = 17;
 

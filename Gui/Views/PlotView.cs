@@ -11,7 +11,7 @@ using Tyr.Gui.Data;
 namespace Tyr.Gui.Views;
 
 [Configurable]
-public class PlotView(DebugFramer debugFramer, DebugFilter filter)
+public partial class PlotView(DebugFramer debugFramer, DebugFilter filter)
 {
     [ConfigEntry] private static double TimeAxisExtension { get; set; } = 5;
     [ConfigEntry] private static double TimeAxisMinRange { get; set; } = 1;

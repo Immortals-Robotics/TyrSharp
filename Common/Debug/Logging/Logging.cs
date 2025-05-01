@@ -5,7 +5,7 @@ using Tyr.Common.Config;
 namespace Tyr.Common.Debug.Logging;
 
 [Configurable]
-public static class Logging
+public static partial class Logging
 {
     [ConfigEntry("The level logs are filtered at the source. Anything below this will be rejected on the log call.")]
     private static LogLevel Level { get; set; } = LogLevel.Debug;

@@ -36,12 +36,11 @@ public class Configurable
             .Where(info => info.GetCustomAttribute<ConfigEntryAttribute>() != null)
             .Select(info => new ConfigEntry(info, this))
             .ToArray();
-
-        OnUpdated += () => Log.ZLogTrace($"Configurable of type {Type.FullName} was updated.");
     }
 
-    public void OnEntryChanged(ConfigEntry entry)
+    public void OnChanged()
     {
+        Log.ZLogTrace($"Configurable of type {Type.FullName} was updated.");
         OnUpdated?.Invoke();
     }
 

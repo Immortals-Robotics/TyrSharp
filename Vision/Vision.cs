@@ -5,7 +5,7 @@ using Tyr.Common.Time;
 namespace Tyr.Vision;
 
 [Configurable]
-public sealed class Vision
+public sealed partial class Vision
 {
     [ConfigEntry] private static float CameraTooOldTime { get; set; } = 1f;
 

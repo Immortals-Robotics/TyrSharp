@@ -6,7 +6,7 @@ using Gc = Tyr.Common.Data.Ssl.Gc;
 namespace Tyr.Referee;
 
 [Configurable]
-public class GcDataPublisher : IDisposable
+public partial class GcDataPublisher : IDisposable
 {
     [ConfigEntry] private static Address GcAddress { get; set; } = new() { Ip = "224.5.23.1", Port = 10003 };
 

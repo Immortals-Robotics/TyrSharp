@@ -1,4 +1,5 @@
 ﻿using Hexa.NET.ImGui;
+using Tyr.Common.Debug.Drawing;
 using Tyr.Gui.Backend;
 using Tyr.Gui.Data;
 using Tyr.Gui.Views;
