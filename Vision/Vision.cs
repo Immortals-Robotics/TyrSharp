@@ -62,14 +62,6 @@ public sealed partial class Vision
             DrawRobots(camera);
             DrawBalls(camera);
         }
-
-        Log.ZLogTrace($"Camera tracking system initialized with {_cameras.Count} active cameras");
-        Log.ZLogDebug($"Processing frames from cameras {string.Join(",", _cameras.Keys)}");
-        Log.ZLogInformation(
-            $"Successfully filtered {_filteredFrame.Balls.Count} balls and {_filteredFrame.Robots.Count} robots");
-        Log.ZLogWarning($"Some cameras may have degraded performance due to high latency");
-        Log.ZLogError($"Failed to process calibration data for camera {_cameras.Keys.FirstOrDefault()}");
-        Log.ZLogCritical($"Vision system encountered critical failure - unable to track objects");
     }
 
     private static void DrawBalls(Camera camera)
