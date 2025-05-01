@@ -3,9 +3,11 @@ using Tyr.Common.Debug.Drawing;
 using Tyr.Gui.Backend;
 using Tyr.Gui.Data;
 using Tyr.Gui.Views;
+using Config = Tyr.Common.Config;
 
 Tyr.Common.Debug.ModuleContext.Current.Value = ModuleName;
-Tyr.Common.Config.Storage.Initialize(args[0]);
+using var projectConfigs = new Config.Storage(args[0], Config.StorageType.Project);
+using var userConfigs = new Config.Storage("user.toml", Config.StorageType.User);
 
 // init the backend
 using var window = new GlfwWindow(1280, 720, "Tyr");

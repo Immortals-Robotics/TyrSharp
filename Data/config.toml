@@ -38,7 +38,7 @@ GrownUpAge = 3 # default: 3
 
 [Vision.SslVisionDataPublisher]
 VisionAddress = { Ip = "224.5.23.2", Port = 10006 } # default: 224.5.23.2:10006
-VisionSimAddress = { Ip = "224.5.23.2", Port = 10025 } # default: 224.5.23.2:10025
+SimulatorAddress = { Ip = "224.5.23.2", Port = 10025 } # default: 224.5.23.2:10025
 
 [Vision.Camera]
 # Time in [s] after an invisible ball is removed
@@ -67,6 +67,8 @@ Level = "Trace" # default: Debug
 
 [Common.Config]
 [Common.Config.Storage]
+MaxLoadAttempts = 10 # default: 10
+LoadAttemptsDelayMs = 100.0 # default: 100
 DebounceDelayS = 0.20000000298023224 # default: 0.2
 
 
@@ -88,9 +90,7 @@ FontSize = 17 # default: 17
 
 
 [Gui.Views]
-[Gui.Views.LogView]
-LogLevel = "Debug" # default: Debug
-
+LogView = {  }
 [Gui.Views.PlotView]
 TimeAxisExtension = 5.0 # default: 5
 TimeAxisMinRange = 1.0 # default: 1

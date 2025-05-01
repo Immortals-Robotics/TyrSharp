@@ -106,10 +106,10 @@ public class ConfigsView
             ImGui.TextColored(Color.Zinc400, $"{configurable.Type.FullName}");
             ImGui.PopFont();
 
-            if (!string.IsNullOrEmpty(configurable.Comment))
+            if (!string.IsNullOrEmpty(configurable.Description))
             {
                 ImGui.PushTextWrapPos(ImGui.GetFontSize() * 15.0f);
-                ImGui.TextUnformatted(configurable.Comment);
+                ImGui.TextUnformatted(configurable.Description);
                 ImGui.PopTextWrapPos();
             }
 
@@ -157,10 +157,10 @@ public class ConfigsView
             ImGui.TextColored(Color.Zinc400, $"{field.Type.FullName}");
             ImGui.PopFont();
 
-            if (!string.IsNullOrEmpty(field.Comment))
+            if (!string.IsNullOrEmpty(field.Description))
             {
                 ImGui.PushTextWrapPos(ImGui.GetFontSize() * 15.0f);
-                ImGui.TextUnformatted(field.Comment);
+                ImGui.TextUnformatted(field.Description);
                 ImGui.PopTextWrapPos();
             }
 

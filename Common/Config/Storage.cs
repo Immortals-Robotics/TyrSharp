@@ -5,28 +5,37 @@ using Tyr.Common.Time;
 namespace Tyr.Common.Config;
 
 [Configurable]
-public static partial class Storage
+public sealed partial class Storage : IDisposable
 {
-    public static string Path { get; private set; } = string.Empty;
-
-    private static bool _loading;
-
-    private static FileSystemWatcher? _watcher;
-    private static DateTime _lastReadTime;
-
+    [ConfigEntry] private static int MaxLoadAttempts { get; set; } = 10;
+    [ConfigEntry] private static float LoadAttemptsDelayMs { get; set; } = 100f;
     [ConfigEntry] private static float DebounceDelayS { get; set; } = 0.2f;
-    private static readonly Debouncer LoadDebouncer = new(DeltaTime.FromSeconds(DebounceDelayS), Load);
-    private static readonly Debouncer SaveDebouncer = new(DeltaTime.FromSeconds(DebounceDelayS), Save);
 
-    public static void Initialize(string path)
+    public string Path { get; }
+    public StorageType StorageType { get; }
+
+    private bool _loading;
+
+    private readonly FileSystemWatcher? _watcher;
+    private DateTime _lastReadTime;
+
+    private readonly Debouncer _loadDebouncer;
+    private readonly Debouncer _saveDebouncer;
+
+    public Storage(string path, StorageType storageType)
     {
         Path = path;
+        StorageType = storageType;
+
         Registry.OnAnyUpdated += OnOnAnyConfigUpdated;
 
         // setup the file watcher
         var fullPath = System.IO.Path.GetFullPath(Path);
         var directory = System.IO.Path.GetDirectoryName(fullPath)!;
         var filename = System.IO.Path.GetFileName(fullPath);
+
+        _loadDebouncer = new Debouncer(DeltaTime.FromSeconds(DebounceDelayS), Load);
+        _saveDebouncer = new Debouncer(DeltaTime.FromSeconds(DebounceDelayS), Save);
 
         _watcher = new FileSystemWatcher(directory, filename)
         {
@@ -43,72 +52,84 @@ public static partial class Storage
         Save();
     }
 
-    private static void OnFileChanged()
+    private void OnFileChanged()
     {
         var newWriteTime = File.GetLastWriteTimeUtc(Path);
         if (newWriteTime <= _lastReadTime) return;
 
-        Log.ZLogTrace($"Detected external changes to config file {Path}");
-        LoadDebouncer.Trigger();
+        Log.ZLogTrace($"Detected external changes to {StorageType} config file {Path}");
+        _loadDebouncer.Trigger();
     }
 
-    public static void Load()
+    public void Load()
     {
-        const int maxAttempts = 10;
-        const int delayMs = 100;
+        if (!File.Exists(Path))
+        {
+            Log.ZLogError($"{StorageType} config file {Path} does not exist");
+            return;
+        }
 
-        for (var attempt = 1; attempt <= maxAttempts; attempt++)
+        for (var attempt = 1; attempt <= MaxLoadAttempts; attempt++)
         {
             try
             {
                 var toml = TomlParser.ParseFile(Path);
 
                 _loading = true;
-                Registry.FromToml(toml);
+                Registry.FromToml(toml, StorageType);
                 _loading = false;
 
                 _lastReadTime = File.GetLastWriteTimeUtc(Path);
 
-                Log.ZLogTrace($"Loaded config file {Path}");
+                Log.ZLogTrace($"Loaded {StorageType} config file {Path}");
 
                 return;
             }
-            catch (IOException) when (attempt < maxAttempts)
+            catch (IOException) when (attempt < MaxLoadAttempts)
             {
-                Thread.Sleep(delayMs);
+                Thread.Sleep(TimeSpan.FromMilliseconds(LoadAttemptsDelayMs));
             }
             catch (Exception e)
             {
-                Log.ZLogError(e, $"Failed to load config file {Path}");
+                Log.ZLogError(e, $"Failed to load {StorageType} config file {Path}");
             }
         }
 
-        Log.ZLogError($"Failed to load config file {Path} after {maxAttempts} attempts.");
+        Log.ZLogError($"Failed to load {StorageType} config file {Path} after {MaxLoadAttempts} attempts.");
     }
 
-    public static void Save()
+    public void Save()
     {
         try
         {
-            var toml = Registry.ToToml();
+            var toml = Registry.ToToml(StorageType);
             File.WriteAllText(Path, toml.SerializedValue);
 
             _lastReadTime = File.GetLastWriteTimeUtc(Path);
 
-            Log.ZLogTrace($"Saved config file {Path}");
+            Log.ZLogTrace($"Saved {StorageType} config file {Path}");
         }
         catch (Exception e)
         {
-            Log.ZLogError(e, $"Failed to save config file {Path}");
+            Log.ZLogError(e, $"Failed to save {StorageType} config file {Path}");
         }
     }
 
-    private static void OnOnAnyConfigUpdated()
+    private void OnOnAnyConfigUpdated(StorageType storageType)
     {
+        if (storageType != StorageType) return;
+
         if (_loading) return;
 
-        Log.ZLogTrace($"Detected runtime changes to configs");
+        Log.ZLogTrace($"Detected runtime changes to {StorageType} configs");
 
-        SaveDebouncer.Trigger();
+        _saveDebouncer.Trigger();
+    }
+
+    public void Dispose()
+    {
+        _watcher?.Dispose();
+        _loadDebouncer.Dispose();
+        _saveDebouncer.Dispose();
     }
 }

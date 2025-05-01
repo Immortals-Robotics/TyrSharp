@@ -1,29 +1,23 @@
 ﻿using System.Reflection;
-using Tomlet;
 using Tomlet.Models;
 
 namespace Tyr.Common.Config;
 
 public class Configurable
 {
-    public event Action? OnUpdated;
+    public event Action<StorageType>? OnUpdated;
 
     public readonly Type Type;
 
     public string Namespace => Type.Namespace ?? "Tyr.Global";
 
-    public string? Comment => _meta.Description;
+    public string? Description => _meta.Description;
 
     private readonly ConfigurableAttribute _meta;
 
     private readonly ConfigEntry[] _entries;
 
     public IEnumerable<ConfigEntry> Entries => _entries;
-
-    static Configurable()
-    {
-        TomletMain.RegisterMapper<Configurable>(configurable => configurable?.ToToml(), null);
-    }
 
     internal Configurable(Type type)
     {
@@ -37,10 +31,10 @@ public class Configurable
             .ToArray();
     }
 
-    public void OnChanged()
+    public void OnChanged(StorageType storageType)
     {
         Log.ZLogTrace($"Configurable of type {Type.FullName} was updated.");
-        OnUpdated?.Invoke();
+        OnUpdated?.Invoke(storageType);
     }
 
     public void SetDefaults()
@@ -51,23 +45,27 @@ public class Configurable
         }
     }
 
-    public TomlTable ToToml()
+    public TomlTable ToToml(StorageType storageType)
     {
         var table = new TomlTable();
-        table.Comments.PrecedingComment = Comment;
+        table.Comments.PrecedingComment = Description;
 
         foreach (var entry in Entries)
         {
+            if (entry.StorageType != storageType) continue;
+
             table.Put(Registry.ConvertName($"{entry.Name}"), entry);
         }
 
         return table;
     }
 
-    public void FromToml(TomlTable table)
+    public void FromToml(TomlTable table, StorageType storageType)
     {
         foreach (var entry in Entries)
         {
+            if (entry.StorageType != storageType) continue;
+
             var key = Registry.ConvertName($"{entry.Name}");
             if (!table.TryGetValue(key, out var value)) continue;
 

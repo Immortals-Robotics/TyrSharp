@@ -10,8 +10,10 @@ public class ConfigEntry(PropertyInfo info, Configurable owner)
 
     public string Name => info.Name;
     public Type Type => info.PropertyType;
-    public string? Comment => _meta.Description;
     public object DefaultValue { get; } = info.GetValue(null)!;
+
+    public string? Description => _meta.Description;
+    public StorageType StorageType => _meta.StorageType;
 
     static ConfigEntry()
     {
@@ -27,14 +29,14 @@ public class ConfigEntry(PropertyInfo info, Configurable owner)
             if (Equals(current, value)) return;
 
             info.SetValue(null, value);
-            owner.OnChanged();
+            owner.OnChanged(StorageType);
         }
     }
 
     public TomlValue ToToml()
     {
         var value = TomletMain.ValueFrom(Type, Value);
-        value.Comments.PrecedingComment = Comment;
+        value.Comments.PrecedingComment = Description;
 
         if (value is not TomlArray)
             value.Comments.InlineComment = $"default: {DefaultValue}";

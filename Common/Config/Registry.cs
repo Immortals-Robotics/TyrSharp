@@ -18,7 +18,7 @@ public static class Registry
     public static Configurable Get(Type type) => Configurables[MapName(type)];
     public static Configurable Get<T>() => Configurables[MapName(typeof(T))];
 
-    public static event Action? OnAnyUpdated;
+    public static event Action<StorageType>? OnAnyUpdated;
 
     public static void RegisterAssembly(Assembly assembly)
     {
@@ -44,14 +44,14 @@ public static class Registry
             Configurables[key] = configurable;
             configurable.OnUpdated += OnConfigurableUpdated;
         }
-        
+
         // rebuild the config tree
         RebuildTree();
     }
 
-    private static void OnConfigurableUpdated()
+    private static void OnConfigurableUpdated(StorageType storageType)
     {
-        OnAnyUpdated?.Invoke();
+        OnAnyUpdated?.Invoke(storageType);
     }
 
     private static string ConvertPath(string path)
@@ -95,21 +95,21 @@ public static class Registry
             current[typeName] = configurable;
         }
     }
-    
-    public static TomlDocument ToToml()
+
+    public static TomlDocument ToToml(StorageType storageType)
     {
         var document = TomlDocument.CreateEmpty();
 
         foreach (var configurable in Configurables.Values)
         {
             var path = ConvertPath($"{configurable.Namespace}.{configurable.Type.Name}");
-            document.Put(path, configurable);
+            document.Put(path, configurable.ToToml(storageType));
         }
 
         return document;
     }
 
-    public static void FromToml(TomlDocument document)
+    public static void FromToml(TomlDocument document, StorageType storageType)
     {
         foreach (var configurable in Configurables.Values)
         {
@@ -119,7 +119,7 @@ public static class Registry
                 value is not TomlTable table)
                 continue;
 
-            configurable.FromToml(table);
+            configurable.FromToml(table, storageType);
         }
     }
 }
