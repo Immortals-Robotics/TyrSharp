@@ -11,9 +11,16 @@ namespace Tyr.Gui;
 [Configurable]
 public sealed partial class Runner : IDisposable
 {
+    [ConfigEntry(StorageType.User)] private static int MaxFps { get; set; } = 0;
     [ConfigEntry(StorageType.User)] private static bool VSync { get; set; } = true;
+
     [ConfigEntry(StorageType.User)] private static int WindowWidth { get; set; } = 1280;
     [ConfigEntry(StorageType.User)] private static int WindowHeight { get; set; } = 720;
+
+    [ConfigEntry(StorageType.User, false)] private static int WindowPosX { get; set; }
+    [ConfigEntry(StorageType.User, false)] private static int WindowPosY { get; set; }
+
+    [ConfigEntry(StorageType.User, false)] private static bool WindowMaximized { get; set; } = false;
 
     private readonly RunnerSync _runner;
 
@@ -34,7 +41,11 @@ public sealed partial class Runner : IDisposable
     public Runner()
     {
         // init the backend
-        _window = new GlfwWindow(WindowWidth, WindowHeight, "Tyr");
+        _window = new GlfwWindow("Tyr",
+            WindowWidth, WindowHeight,
+            WindowPosX, WindowPosY,
+            WindowMaximized);
+
         _window.SetVSync(VSync);
 
         _imgui = new ImGuiController(_window);
@@ -53,12 +64,12 @@ public sealed partial class Runner : IDisposable
         _configs = new ConfigsView();
 
         // and the runner
-        _runner = new RunnerSync(Tick, 0, ModuleName);
+        _runner = new RunnerSync(Tick, MaxFps, ModuleName);
 
-        Configurable.OnUpdated += OnConfigsChanged;
+        Configurable.OnUpdated += _ => OnConfigsChanged();
     }
 
-    private void OnConfigsChanged(StorageType storageType)
+    private void OnConfigsChanged()
     {
         _window.SetVSync(VSync);
         _window.SetSize(WindowWidth, WindowHeight);
@@ -74,6 +85,39 @@ public sealed partial class Runner : IDisposable
         // update
         _framer.Tick();
         _window.PollEvents();
+
+        var (width, height) = _window.GetSize();
+        if (width != WindowWidth)
+        {
+            WindowWidth = width;
+            Configurable.MarkChanged(StorageType.User);
+        }
+
+        if (height != WindowHeight)
+        {
+            WindowHeight = height;
+            Configurable.MarkChanged(StorageType.User);
+        }
+
+        var (x, y) = _window.GetPos();
+        if (x != WindowPosX)
+        {
+            WindowPosX = x;
+            Configurable.MarkChanged(StorageType.User);
+        }
+
+        if (y != WindowPosY)
+        {
+            WindowPosY = y;
+            Configurable.MarkChanged(StorageType.User);
+        }
+
+        var maximized = _window.GetMaximized();
+        if (maximized != WindowMaximized)
+        {
+            WindowMaximized = maximized;
+            Configurable.MarkChanged(StorageType.User);
+        }
 
         // draw
         _window.Clear(Color.Slate950);

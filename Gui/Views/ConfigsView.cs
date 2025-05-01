@@ -167,6 +167,8 @@ public class ConfigsView
             ImGui.EndTooltip();
         }
 
+        ImGui.BeginDisabled(!field.Editable);
+
         // Reset button
         ImGui.TableNextColumn();
         if (ImGui.SmallButton($"{IconFonts.FontAwesome6.RotateLeft}"))
@@ -188,6 +190,8 @@ public class ConfigsView
         // Value
         ImGui.TableNextColumn();
         DrawFieldEditor(field);
+
+        ImGui.EndDisabled();
 
         ImGui.PopID();
     }

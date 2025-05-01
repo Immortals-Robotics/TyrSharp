@@ -11,7 +11,7 @@ internal class GlfwWindow : IDisposable
 
     static GlfwWindow() => GLFW.Init();
 
-    public GlfwWindow(int w, int h, string title)
+    public GlfwWindow(string title, int w, int h, int? x = null, int? y = null, bool? maximized = null)
     {
         GLFW.WindowHint(GLFW.GLFW_CONTEXT_VERSION_MAJOR, 3);
         GLFW.WindowHint(GLFW.GLFW_CONTEXT_VERSION_MINOR, 2);
@@ -19,6 +19,13 @@ internal class GlfwWindow : IDisposable
 
         GLFW.WindowHint(GLFW.GLFW_FOCUSED, 1); // Make window focused on start
         GLFW.WindowHint(GLFW.GLFW_RESIZABLE, 1); // Make window resizable
+
+        if (x.HasValue) GLFW.WindowHint(GLFW.GLFW_POSITION_X, x.Value);
+        if (y.HasValue) GLFW.WindowHint(GLFW.GLFW_POSITION_Y, y.Value);
+        if (maximized.HasValue)
+        {
+            GLFW.WindowHint(GLFW.GLFW_MAXIMIZED, maximized.Value ? GLFW.GLFW_TRUE : GLFW.GLFW_FALSE);
+        }
 
         Handle = GLFW.CreateWindow(w, h, title, null, null);
         if (Handle.IsNull) throw new Exception("GLFW window failed");
@@ -59,6 +66,22 @@ internal class GlfwWindow : IDisposable
         MakeContextCurrent();
         GLFW.SetWindowPos(Handle, w, h);
     }
+
+    public bool GetMaximized()
+    {
+        MakeContextCurrent();
+        return GLFW.GetWindowAttrib(Handle, GLFW.GLFW_MAXIMIZED) == GLFW.GLFW_TRUE;
+    }
+
+    public void SetMaximized(bool maximized)
+    {
+        MakeContextCurrent();
+        if (maximized)
+            GLFW.MaximizeWindow(Handle);
+        else
+            GLFW.RestoreWindow(Handle);
+    }
+
 
     public void MakeContextCurrent() => GLFW.MakeContextCurrent(Handle);
 

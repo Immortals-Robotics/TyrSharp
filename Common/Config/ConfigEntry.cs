@@ -14,6 +14,7 @@ public class ConfigEntry(PropertyInfo info, Configurable owner)
 
     public string? Description => _meta.Description;
     public StorageType StorageType => _meta.StorageType;
+    public bool Editable => _meta.Editable;
 
     static ConfigEntry()
     {
@@ -29,7 +30,7 @@ public class ConfigEntry(PropertyInfo info, Configurable owner)
             if (Equals(current, value)) return;
 
             info.SetValue(null, value);
-            owner.OnChanged(StorageType);
+            owner.MarkChanged(StorageType);
         }
     }
 

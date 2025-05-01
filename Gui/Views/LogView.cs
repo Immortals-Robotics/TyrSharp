@@ -190,7 +190,7 @@ public sealed partial class LogView(DebugFramer debugFramer, DebugFilter filter)
         if (ImGui.Combo("Level", ref index, names, names.Length))
         {
             LogLevel = Debug.EnumCache<LogLevel>.GetByIndex(index);
-            Configurable.OnChanged(StorageType.User);
+            Configurable.MarkChanged(StorageType.User);
         }
 
         ImGui.PopStyleColor();

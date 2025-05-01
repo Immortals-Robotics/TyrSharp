@@ -31,7 +31,7 @@ public class Configurable
             .ToArray();
     }
 
-    public void OnChanged(StorageType storageType)
+    public void MarkChanged(StorageType storageType)
     {
         Log.ZLogTrace($"Configurable of type {Type.FullName} was updated.");
         OnUpdated?.Invoke(storageType);
