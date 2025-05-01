@@ -25,6 +25,17 @@ public class RunnerSync(Action tick, int tickRateHz = 0, string? callingModule =
         _thread.Start();
     }
 
+    public void StartOnCurrentThread()
+    {
+        if (IsRunning) return;
+
+        Timer.Start();
+
+        _running = true;
+
+        Loop();
+    }
+
     public void Stop()
     {
         if (!IsRunning) return;

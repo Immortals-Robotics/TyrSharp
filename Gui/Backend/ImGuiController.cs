@@ -48,6 +48,7 @@ internal class ImGuiController : IDisposable
 
     public void NewFrame()
     {
+        _window.MakeContextCurrent();
         ImGuiImplOpenGL3.NewFrame();
         ImGuiImplGLFW.NewFrame();
         ImGui.NewFrame();
