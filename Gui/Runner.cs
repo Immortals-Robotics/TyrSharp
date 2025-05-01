@@ -1,4 +1,5 @@
 ﻿using Hexa.NET.ImGui;
+using Tyr.Common.Config;
 using Tyr.Common.Debug.Drawing;
 using Tyr.Common.Runner;
 using Tyr.Gui.Backend;
@@ -7,8 +8,13 @@ using Tyr.Gui.Views;
 
 namespace Tyr.Gui;
 
-public sealed class Runner : IDisposable
+[Configurable]
+public sealed partial class Runner : IDisposable
 {
+    [ConfigEntry(StorageType.User)] private static bool VSync { get; set; } = true;
+    [ConfigEntry(StorageType.User)] private static int WindowWidth { get; set; } = 1280;
+    [ConfigEntry(StorageType.User)] private static int WindowHeight { get; set; } = 720;
+
     private readonly RunnerSync _runner;
 
     // backend
@@ -28,8 +34,8 @@ public sealed class Runner : IDisposable
     public Runner()
     {
         // init the backend
-        _window = new GlfwWindow(1280, 720, "Tyr");
-        //window.SetVSync(false);
+        _window = new GlfwWindow(WindowWidth, WindowHeight, "Tyr");
+        _window.SetVSync(VSync);
 
         _imgui = new ImGuiController(_window);
 
@@ -48,6 +54,14 @@ public sealed class Runner : IDisposable
 
         // and the runner
         _runner = new RunnerSync(Tick, 0, ModuleName);
+
+        Configurable.OnUpdated += OnConfigsChanged;
+    }
+
+    private void OnConfigsChanged(StorageType storageType)
+    {
+        _window.SetVSync(VSync);
+        _window.SetSize(WindowWidth, WindowHeight);
     }
 
     public void Start()

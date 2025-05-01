@@ -32,6 +32,34 @@ internal class GlfwWindow : IDisposable
         GLFW.SwapInterval(enabled ? 1 : 0);
     }
 
+    public (int width, int height) GetSize()
+    {
+        MakeContextCurrent();
+        int width = 0, height = 0;
+        GLFW.GetWindowSize(Handle, ref width, ref height);
+        return (width, height);
+    }
+
+    public void SetSize(int w, int h)
+    {
+        MakeContextCurrent();
+        GLFW.SetWindowSize(Handle, w, h);
+    }
+
+    public (int x, int y) GetPos()
+    {
+        MakeContextCurrent();
+        int x = 0, y = 0;
+        GLFW.GetWindowPos(Handle, ref x, ref y);
+        return (x, y);
+    }
+
+    public void SetPos(int w, int h)
+    {
+        MakeContextCurrent();
+        GLFW.SetWindowPos(Handle, w, h);
+    }
+
     public void MakeContextCurrent() => GLFW.MakeContextCurrent(Handle);
 
     public bool ShouldClose => GLFW.WindowShouldClose(Handle) == 1;
