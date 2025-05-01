@@ -84,14 +84,12 @@ TickRateHz = 100 # default: 100
 
 
 [Gui]
-Runner = {  }
 [Gui.Backend]
 [Gui.Backend.FontRegistry]
 FontSize = 17 # default: 17
 
 
 [Gui.Views]
-LogView = {  }
 [Gui.Views.PlotView]
 TimeAxisExtension = 5.0 # default: 5
 TimeAxisMinRange = 1.0 # default: 1

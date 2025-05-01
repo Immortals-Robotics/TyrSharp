@@ -102,6 +102,9 @@ public static class Registry
 
         foreach (var configurable in Configurables.Values)
         {
+            var configurableToml = configurable.ToToml(storageType);
+            if (configurableToml.Entries.Count <= 0) continue;
+
             var path = ConvertPath($"{configurable.Namespace}.{configurable.Type.Name}");
             document.Put(path, configurable.ToToml(storageType));
         }
