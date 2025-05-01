@@ -18,6 +18,8 @@ internal class DrawableRenderer
 
     internal void Draw(IReadOnlyList<Command> commands, DebugFilter? filter)
     {
+        if (commands.Count == 0) return;
+
         Log.ZLogTrace($"Drawing {commands.Count} items");
 
         _drawList = ImGui.GetWindowDrawList();

@@ -7,4 +7,9 @@ public record Entry(
     LogLevel Level,
     Meta Meta,
     Timestamp Timestamp
-);
+)
+{
+    public static Entry Empty => new(string.Empty, LogLevel.None, Meta.Empty, Timestamp.Now);
+
+    public bool IsEmpty => Level == LogLevel.None;
+}

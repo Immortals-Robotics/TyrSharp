@@ -61,15 +61,6 @@ public sealed class Drawer(string moduleName) : IDisposable
         Hub.Draws.Publish(command);
     }
 
-    public void DrawEmpty(
-        [CallerMemberName] string? memberName = null,
-        [CallerFilePath] string? filePath = null,
-        [CallerLineNumber] int lineNumber = 0)
-    {
-        var empty = new Empty();
-        Draw(empty, Color.Black, default, "", memberName, filePath, lineNumber);
-    }
-
     public void DrawPoint(Vector2 position, Color color, Options options = default,
         [CallerArgumentExpression(nameof(position))]
         string? positionExpression = null,

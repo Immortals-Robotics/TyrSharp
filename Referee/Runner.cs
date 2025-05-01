@@ -28,8 +28,6 @@ public sealed class Runner : IDisposable
 
     private async Task Tick(CancellationToken token)
     {
-        _runner.NewDebugFrame();
-
         await Task.WhenAny(ReceiveGc(token), ReceiveVision(token));
 
         if (_referee.Process(_vision, _gc))

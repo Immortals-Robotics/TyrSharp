@@ -106,10 +106,10 @@ public class ConfigsView
             ImGui.TextColored(Color.Zinc400, $"{configurable.Type.FullName}");
             ImGui.PopFont();
 
-            if (!string.IsNullOrEmpty(configurable.Comment))
+            if (!string.IsNullOrEmpty(configurable.Description))
             {
                 ImGui.PushTextWrapPos(ImGui.GetFontSize() * 15.0f);
-                ImGui.TextUnformatted(configurable.Comment);
+                ImGui.TextUnformatted(configurable.Description);
                 ImGui.PopTextWrapPos();
             }
 
@@ -119,8 +119,9 @@ public class ConfigsView
         if (nodeOpen)
         {
             var ownFilterMatch = _filter.PassFilter(configurable.Type.Name);
-            if (ImGui.BeginTable("fields", 3, ImGuiTableFlags.BordersH))
+            if (ImGui.BeginTable("fields", 4, ImGuiTableFlags.BordersH))
             {
+                ImGui.TableSetupColumn("icon", ImGuiTableColumnFlags.WidthFixed, 15f);
                 ImGui.TableSetupColumn("Name", ImGuiTableColumnFlags.WidthStretch, 1.0f);
                 ImGui.TableSetupColumn("Reset", ImGuiTableColumnFlags.WidthFixed, 15f);
                 ImGui.TableSetupColumn("Value", ImGuiTableColumnFlags.WidthStretch, 1.5f);
@@ -145,6 +146,21 @@ public class ConfigsView
     {
         ImGui.PushID(field.Name);
 
+        // Icon
+        ImGui.TableNextColumn();
+        var icon = field.StorageType switch
+        {
+            StorageType.Project => IconFonts.FontAwesome6.Database,
+            StorageType.User => IconFonts.FontAwesome6.LaptopFile,
+            _ => IconFonts.FontAwesome6.Question,
+        };
+        ImGui.TextUnformatted(icon);
+
+        if (ImGui.IsItemHovered(ImGuiHoveredFlags.ForTooltip))
+        {
+            ImGui.SetTooltip($"{field.StorageType} config");
+        }
+
         // Name
         ImGui.TableNextColumn();
         ImGui.TextUnformatted(field.Name);
@@ -157,15 +173,17 @@ public class ConfigsView
             ImGui.TextColored(Color.Zinc400, $"{field.Type.FullName}");
             ImGui.PopFont();
 
-            if (!string.IsNullOrEmpty(field.Comment))
+            if (!string.IsNullOrEmpty(field.Description))
             {
                 ImGui.PushTextWrapPos(ImGui.GetFontSize() * 15.0f);
-                ImGui.TextUnformatted(field.Comment);
+                ImGui.TextUnformatted(field.Description);
                 ImGui.PopTextWrapPos();
             }
 
             ImGui.EndTooltip();
         }
+
+        ImGui.BeginDisabled(!field.Editable);
 
         // Reset button
         ImGui.TableNextColumn();
@@ -189,6 +207,8 @@ public class ConfigsView
         ImGui.TableNextColumn();
         DrawFieldEditor(field);
 
+        ImGui.EndDisabled();
+
         ImGui.PopID();
     }
 
@@ -198,40 +218,46 @@ public class ConfigsView
         switch (field.Value)
         {
             case int intValue:
-                if (ImGui.InputInt("", ref intValue))
+                ImGui.InputInt("", ref intValue);
+                if ((ImGui.IsItemEdited() && ImGui.IsItemClicked()) // changed using the +/- buttons
+                    || ImGui.IsItemDeactivatedAfterEdit()) // or using the text field
                 {
-                    field.Value = (intValue);
+                    field.Value = intValue;
                 }
 
                 break;
 
             case float floatValue:
-                if (ImGui.InputFloat("", ref floatValue))
+                ImGui.InputFloat("", ref floatValue);
+                if (ImGui.IsItemDeactivatedAfterEdit())
                 {
-                    field.Value = (floatValue);
+                    field.Value = floatValue;
                 }
 
                 break;
 
             case double doubleValue:
                 var tmpValue = (float)doubleValue;
-                if (ImGui.InputFloat("", ref tmpValue))
+                ImGui.InputFloat("", ref tmpValue);
+                if (ImGui.IsItemDeactivatedAfterEdit())
                 {
-                    field.Value = ((double)tmpValue);
+                    field.Value = (double)tmpValue;
                 }
 
                 break;
 
             case bool boolValue:
-                if (ImGui.Checkbox("", ref boolValue))
+                ImGui.Checkbox("", ref boolValue);
+                if (ImGui.IsItemDeactivatedAfterEdit())
                 {
-                    field.Value = (boolValue);
+                    field.Value = boolValue;
                 }
 
                 break;
 
             case string stringValue:
-                if (ImGui.InputText("", ref stringValue, 256))
+                ImGui.InputText("", ref stringValue, 256);
+                if (ImGui.IsItemDeactivatedAfterEdit())
                 {
                     field.Value = stringValue;
                 }
@@ -239,15 +265,22 @@ public class ConfigsView
                 break;
 
             case Address addressValue:
+                var changed = false;
                 var ip = addressValue.Ip;
                 var port = addressValue.Port;
                 ImGui.InputText("##ip", ref ip, 256, ImGuiInputTextFlags.CharsDecimal);
+                changed |= ImGui.IsItemDeactivatedAfterEdit();
                 ImGui.SameLine();
                 ImGui.Text(":");
                 ImGui.SameLine();
                 ImGui.InputInt("##port", ref port);
+                changed |= ImGui.IsItemDeactivatedAfterEdit();
 
-                field.Value = new Address { Ip = ip, Port = port };
+                if (changed)
+                {
+                    field.Value = new Address { Ip = ip, Port = port };
+                }
+
                 break;
 
             case Enum enumValue:
@@ -261,7 +294,8 @@ public class ConfigsView
                 }
 
                 var index = Array.IndexOf(enumData.Values, enumValue);
-                if (ImGui.Combo("", ref index, enumData.Names, enumData.Names.Length))
+                ImGui.Combo("", ref index, enumData.Names, enumData.Names.Length);
+                if (ImGui.IsItemDeactivatedAfterEdit())
                 {
                     field.Value = enumData.Values.GetValue(index)!;
                 }

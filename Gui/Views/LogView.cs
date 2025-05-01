@@ -13,7 +13,7 @@ namespace Tyr.Gui.Views;
 [Configurable]
 public sealed partial class LogView(DebugFramer debugFramer, DebugFilter filter) : IDisposable
 {
-    [ConfigEntry] private static LogLevel LogLevel { get; set; } = LogLevel.Debug;
+    [ConfigEntry(StorageType.User)] private static LogLevel LogLevel { get; set; } = LogLevel.Debug;
 
     private Utf8ValueStringBuilder _stringBuilder = ZString.CreateUtf8StringBuilder();
 
@@ -65,7 +65,6 @@ public sealed partial class LogView(DebugFramer debugFramer, DebugFilter filter)
                     {
                         if (!filter.IsEnabled(log.Meta)) continue;
                         if (log.Level < LogLevel) continue;
-                        if (string.IsNullOrWhiteSpace(log.Message)) continue;
 
                         _filterTested += 1;
                         if (!_filter.PassFilter(log.Message) &&
@@ -191,7 +190,7 @@ public sealed partial class LogView(DebugFramer debugFramer, DebugFilter filter)
         if (ImGui.Combo("Level", ref index, names, names.Length))
         {
             LogLevel = Debug.EnumCache<LogLevel>.GetByIndex(index);
-            Configurable.OnChanged();
+            Configurable.MarkChanged(StorageType.User);
         }
 
         ImGui.PopStyleColor();

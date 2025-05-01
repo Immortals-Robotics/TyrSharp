@@ -6,39 +6,39 @@ public class UdpReceiver<T> : IDisposable where T : class
 {
     private readonly Action<T> _onData;
 
-    private readonly UdpClient _client;
-    private readonly RunnerAsync _runner;
+    public UdpClient Client { get; }
+    public RunnerAsync Runner { get; }
 
     public UdpReceiver(Address address, Action<T> onData, string? callingModule = null)
     {
         _onData = onData;
-        _client = new UdpClient(address);
+        Client = new UdpClient(address);
 
-        _runner = new RunnerAsync(Tick, 0, callingModule);
-        _runner.Start();
+        Runner = new RunnerAsync(Tick, 0, callingModule);
+        Runner.Start();
     }
 
     private async Task Tick(CancellationToken token)
     {
-        var packet = await _client.Receive<T>(token);
+        var packet = await Client.Receive<T>(token);
         if (packet == null)
         {
             if (!token.IsCancellationRequested)
             {
-                Log.ZLogError($"Received null {typeof(T).Name} packet");
+                Log.ZLogError($"Received null {typeof(T).Name}");
             }
 
             return;
         }
 
-        Log.ZLogTrace($"Received {typeof(T).Name} packet from {_client.GetLastReceiveEndpoint()}");
+        Log.ZLogTrace($"Received {typeof(T).Name} from {Client.GetLastReceiveEndpoint()}");
 
         _onData(packet);
     }
 
     public void Dispose()
     {
-        _runner.Stop();
-        _client.Dispose();
+        Runner.Stop();
+        Client.Dispose();
     }
 }

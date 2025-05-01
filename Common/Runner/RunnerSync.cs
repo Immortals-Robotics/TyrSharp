@@ -7,9 +7,9 @@ public class RunnerSync(Action tick, int tickRateHz = 0, string? callingModule =
     private Thread? _thread;
     private volatile bool _running;
 
-    public override bool IsRunning => _running;
+    public bool IsRunning => _running;
 
-    public override void Start()
+    public void Start()
     {
         if (IsRunning) return;
 
@@ -25,7 +25,18 @@ public class RunnerSync(Action tick, int tickRateHz = 0, string? callingModule =
         _thread.Start();
     }
 
-    public override void Stop()
+    public void StartOnCurrentThread()
+    {
+        if (IsRunning) return;
+
+        Timer.Start();
+
+        _running = true;
+
+        Loop();
+    }
+
+    public void Stop()
     {
         if (!IsRunning) return;
 
@@ -43,6 +54,8 @@ public class RunnerSync(Action tick, int tickRateHz = 0, string? callingModule =
         {
             var tickStart = Timer.Time;
             CurrentTickStartTimestamp = Timestamp.Now;
+
+            NewDebugFrame();
 
             Timer.Update();
             tick();

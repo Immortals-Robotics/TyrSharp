@@ -6,4 +6,9 @@ public readonly record struct Command(
     Options Options,
     Meta Meta,
     Timestamp Timestamp
-);
+)
+{
+    public static Command Empty => new(null!, Color.Black, new Options(), Meta.Empty, Timestamp.Now);
+
+    public bool IsEmpty => Drawable is null;
+}

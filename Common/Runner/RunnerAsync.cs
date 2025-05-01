@@ -8,9 +8,9 @@ public class RunnerAsync(Func<CancellationToken, Task> tick, int tickRateHz = 0,
     private Task? _task;
     private CancellationTokenSource? _cts;
 
-    public override bool IsRunning => _task != null;
+    public bool IsRunning => _task != null;
 
-    public override void Start()
+    public void Start()
     {
         if (IsRunning) return;
 
@@ -27,7 +27,7 @@ public class RunnerAsync(Func<CancellationToken, Task> tick, int tickRateHz = 0,
             TaskScheduler.Default);
     }
 
-    public override void Stop()
+    public void Stop()
     {
         if (!IsRunning) return;
 
@@ -59,6 +59,8 @@ public class RunnerAsync(Func<CancellationToken, Task> tick, int tickRateHz = 0,
         {
             var tickStart = Timer.Time;
             CurrentTickStartTimestamp = Timestamp.Now;
+
+            NewDebugFrame();
 
             Timer.Update();
 
