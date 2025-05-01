@@ -119,8 +119,9 @@ public class ConfigsView
         if (nodeOpen)
         {
             var ownFilterMatch = _filter.PassFilter(configurable.Type.Name);
-            if (ImGui.BeginTable("fields", 3, ImGuiTableFlags.BordersH))
+            if (ImGui.BeginTable("fields", 4, ImGuiTableFlags.BordersH))
             {
+                ImGui.TableSetupColumn("icon", ImGuiTableColumnFlags.WidthFixed, 15f);
                 ImGui.TableSetupColumn("Name", ImGuiTableColumnFlags.WidthStretch, 1.0f);
                 ImGui.TableSetupColumn("Reset", ImGuiTableColumnFlags.WidthFixed, 15f);
                 ImGui.TableSetupColumn("Value", ImGuiTableColumnFlags.WidthStretch, 1.5f);
@@ -144,6 +145,21 @@ public class ConfigsView
     private void DrawField(ConfigEntry field)
     {
         ImGui.PushID(field.Name);
+
+        // Icon
+        ImGui.TableNextColumn();
+        var icon = field.StorageType switch
+        {
+            StorageType.Project => IconFonts.FontAwesome6.Database,
+            StorageType.User => IconFonts.FontAwesome6.LaptopFile,
+            _ => IconFonts.FontAwesome6.Question,
+        };
+        ImGui.TextUnformatted(icon);
+
+        if (ImGui.IsItemHovered(ImGuiHoveredFlags.ForTooltip))
+        {
+            ImGui.SetTooltip($"{field.StorageType} config");
+        }
 
         // Name
         ImGui.TableNextColumn();

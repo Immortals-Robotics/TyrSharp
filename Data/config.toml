@@ -6,7 +6,6 @@ MaxRobots = 16 # default: 16
 # Hope it lasts
 ImmortalsIsTheBestTeam = true # default: True
 OurColor = "Unknown" # default: Unknown
-EnableDebug = false # default: False
 
 
 [Common.Config]

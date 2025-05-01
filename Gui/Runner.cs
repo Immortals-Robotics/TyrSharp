@@ -20,7 +20,7 @@ public sealed partial class Runner : IDisposable
     [ConfigEntry(StorageType.User, false)] private static int WindowPosX { get; set; }
     [ConfigEntry(StorageType.User, false)] private static int WindowPosY { get; set; }
 
-    [ConfigEntry(StorageType.User, false)] private static bool WindowMaximized { get; set; } = false;
+    [ConfigEntry(StorageType.User, false)] private static bool WindowMaximized { get; set; }
 
     private readonly RunnerSync _runner;
 
