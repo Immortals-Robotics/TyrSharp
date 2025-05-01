@@ -97,6 +97,17 @@ YAxisMinRange = 1.0 # default: 1
 MaxPoints = 500 # default: 500
 
 
+[Gui.Rendering]
+[Gui.Rendering.DrawableRenderer]
+# Angle in degrees of the flat front of the robot
+RobotFlatAngle = 45.0 # default: 45
+RobotArcSegments = 20 # default: 20
+RobotRadius = 90.0 # default: 90
+# Size of the cross used to draw points
+PointCrossSize = 10.0 # default: 10
+OutlineOpacity = 0.5 # default: 0.5
+
+
 
 [Referee]
 [Referee.GcDataPublisher]
