@@ -31,7 +31,7 @@ internal class ImGuiController : IDisposable
         io.ConfigFlags |= ImGuiConfigFlags.DockingEnable; // Enable Docking
         io.ConfigFlags |= ImGuiConfigFlags.ViewportsEnable; // Enable Multi-Viewport / Platform Windows
         io.ConfigViewportsNoAutoMerge = false;
-        io.ConfigViewportsNoTaskBarIcon = true;
+        io.ConfigViewportsNoTaskBarIcon = false;
 
         ImGuiImplGLFW.SetCurrentContext(_imguiCtx);
         if (!ImGuiImplGLFW.InitForOpenGL(

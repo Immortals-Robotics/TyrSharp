@@ -13,14 +13,16 @@ public static class Registry
     private static readonly ConcurrentDictionary<string, Drawer> Drawers = [];
     private static readonly ConcurrentDictionary<string, Plotter> Plotters = [];
 
-    public static ILogger GetLogger(string moduleName) => Loggers.GetOrAdd(moduleName, Logging.Factory.CreateLogger);
+    private static readonly Func<string, ILogger> LoggerFactory = Logging.Logging.Factory.CreateLogger;
+    private static readonly Func<string, Assert> AssertFactory = name => new Assert(GetLogger(name));
+    private static readonly Func<string, Drawer> DrawerFactory = name => new Drawer(name);
+    private static readonly Func<string, Plotter> PlotterFactory = name => new Plotter(name);
 
-    public static Assert GetAssert(string moduleName) =>
-        Asserts.GetOrAdd(moduleName, name => new Assert(GetLogger(name)));
+    public static ILogger GetLogger(string moduleName) => Loggers.GetOrAdd(moduleName, LoggerFactory);
 
-    public static Drawer GetDrawer(string moduleName) =>
-        Drawers.GetOrAdd(moduleName, name => new Drawer(name));
-    
-    public static Plotter GetPlotter(string moduleName) =>
-        Plotters.GetOrAdd(moduleName, name => new Plotter(name));
+    public static Assert GetAssert(string moduleName) => Asserts.GetOrAdd(moduleName, AssertFactory);
+
+    public static Drawer GetDrawer(string moduleName) => Drawers.GetOrAdd(moduleName, DrawerFactory);
+
+    public static Plotter GetPlotter(string moduleName) => Plotters.GetOrAdd(moduleName, PlotterFactory);
 }

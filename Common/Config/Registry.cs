@@ -32,7 +32,7 @@ public static class Registry
         Log.ZLogTrace($"Found {configurables.Count} configurables in {assembly.GetName().Name}");
         foreach (var configurable in configurables.Values)
         {
-            Log.ZLogTrace($" - {configurable.TypeName} @ {configurable.Namespace}");
+            Log.ZLogTrace($" - {configurable.Type.Name} @ {configurable.Namespace}");
         }
 
         // Merge with existing configurables instead of replacing
@@ -102,7 +102,7 @@ public static class Registry
 
         foreach (var configurable in Configurables.Values)
         {
-            var path = ConvertPath($"{configurable.Namespace}.{configurable.TypeName}");
+            var path = ConvertPath($"{configurable.Namespace}.{configurable.Type.Name}");
             document.Put(path, configurable);
         }
 
@@ -113,7 +113,7 @@ public static class Registry
     {
         foreach (var configurable in Configurables.Values)
         {
-            var path = ConvertPath($"{configurable.Namespace}.{configurable.TypeName}");
+            var path = ConvertPath($"{configurable.Namespace}.{configurable.Type.Name}");
 
             if (!document.TryGetValue(path, out var value) ||
                 value is not TomlTable table)

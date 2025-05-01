@@ -5,7 +5,7 @@ using Tyr.Common.Time;
 namespace Tyr.Common.Config;
 
 [Configurable]
-public static class Storage
+public static partial class Storage
 {
     public static string Path { get; private set; } = string.Empty;
 

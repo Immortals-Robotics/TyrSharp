@@ -1,4 +1,5 @@
 ﻿using Hexa.NET.ImGui;
+using Tyr.Common.Debug.Drawing;
 using Tyr.Gui.Backend;
 using Tyr.Gui.Data;
 using Tyr.Gui.Views;
@@ -17,6 +18,7 @@ using var fontRegistry = new FontRegistry();
 
 var framer = new DebugFramer();
 var filter = new DebugFilter(framer);
+var log = new LogView(framer, filter);
 var field = new FieldView(framer, filter);
 var plots = new PlotView(framer, filter);
 var control = new PlaybackControl(framer);
@@ -36,7 +38,7 @@ while (window.ShouldClose == false)
     window.PollEvents();
 
     // draw
-    window.Clear(1f, .8f, .75f);
+    window.Clear(Color.Slate950);
     imgui.NewFrame();
 
     ImGui.ShowDemoWindow();
@@ -44,6 +46,7 @@ while (window.ShouldClose == false)
     configs.Draw();
 
     control.Draw();
+    log.Draw(control.Current);
     field.Draw(control.Current);
     plots.Draw(control.Current);
     filter.Draw();

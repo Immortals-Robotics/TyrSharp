@@ -1,6 +1,6 @@
-using System.Numerics;
 using Hexa.NET.ImGui;
 using Tyr.Common.Config;
+using Tyr.Common.Debug.Drawing;
 using Tyr.Common.Network;
 using Tyr.Gui.Backend;
 
@@ -31,7 +31,7 @@ public class ConfigsView
                 var totalItems = Registry.Configurables.Count;
                 var visibleItems = IsFiltering ? CountMatchingFields(Registry.Tree) : totalItems;
 
-                ImGui.TextDisabled($"{visibleItems} of {totalItems} items matching");
+                ImGui.TextColored(Color.Zinc400, $"{visibleItems} of {totalItems} items matching");
             }
         }
 
@@ -53,7 +53,7 @@ public class ConfigsView
         }
         else
         {
-            ImGui.TextDisabled($"{IconFonts.FontAwesome6.MagnifyingGlass}");
+            ImGui.TextColored(Color.Zinc600, $"{IconFonts.FontAwesome6.MagnifyingGlass}");
         }
 
         ImGui.Separator();
@@ -66,9 +66,8 @@ public class ConfigsView
             switch (value)
             {
                 case Configurable configurable:
-                    // Check if any of its fields match the search
-                    var fieldsMatch = configurable.Entries.Any(field => _filter.PassFilter(field.Name));
-                    if (fieldsMatch)
+                    if (_filter.PassFilter(configurable.Type.Name) ||
+                        configurable.Entries.Any(field => _filter.PassFilter(field.Name)))
                     {
                         DrawConfigurable(key, configurable);
                     }
@@ -104,7 +103,7 @@ public class ConfigsView
             ImGui.BeginTooltip();
 
             ImGui.PushFont(FontRegistry.Instance.MonoFont);
-            ImGui.TextDisabled($"{configurable.Type.FullName}");
+            ImGui.TextColored(Color.Zinc400, $"{configurable.Type.FullName}");
             ImGui.PopFont();
 
             if (!string.IsNullOrEmpty(configurable.Comment))
@@ -119,7 +118,8 @@ public class ConfigsView
 
         if (nodeOpen)
         {
-            if (ImGui.BeginTable("fields", 3, ImGuiTableFlags.BordersInnerH | ImGuiTableFlags.BordersOuterH))
+            var ownFilterMatch = _filter.PassFilter(configurable.Type.Name);
+            if (ImGui.BeginTable("fields", 3, ImGuiTableFlags.BordersH))
             {
                 ImGui.TableSetupColumn("Name", ImGuiTableColumnFlags.WidthStretch, 1.0f);
                 ImGui.TableSetupColumn("Reset", ImGuiTableColumnFlags.WidthFixed, 15f);
@@ -128,7 +128,7 @@ public class ConfigsView
                 foreach (var field in configurable.Entries)
                 {
                     // Only show fields that match the search criteria when filtering
-                    if (!_filter.PassFilter(field.Name)) continue;
+                    if (!ownFilterMatch && !_filter.PassFilter(field.Name)) continue;
 
                     ImGui.TableNextRow();
                     DrawField(field);
@@ -154,7 +154,7 @@ public class ConfigsView
             ImGui.BeginTooltip();
 
             ImGui.PushFont(FontRegistry.Instance.MonoFont);
-            ImGui.TextDisabled($"{field.Type.FullName}");
+            ImGui.TextColored(Color.Zinc400, $"{field.Type.FullName}");
             ImGui.PopFont();
 
             if (!string.IsNullOrEmpty(field.Comment))
@@ -180,7 +180,7 @@ public class ConfigsView
             ImGui.Text("Reset to");
             ImGui.SameLine();
             ImGui.PushFont(FontRegistry.Instance.MonoFont);
-            ImGui.TextColored(new Vector4(0.8f, 0.8f, 0.2f, 1.0f), $"{field.DefaultValue}");
+            ImGui.TextColored(Color.Amber, $"{field.DefaultValue}");
             ImGui.PopFont();
             ImGui.EndTooltip();
         }
@@ -288,7 +288,8 @@ public class ConfigsView
             switch (value)
             {
                 case Configurable configurable:
-                    if (configurable.Entries.Any(field => _filter.PassFilter(field.Name)))
+                    if (_filter.PassFilter(configurable.Type.Name) ||
+                        configurable.Entries.Any(field => _filter.PassFilter(field.Name)))
                         return true;
                     break;
 
@@ -309,7 +310,9 @@ public class ConfigsView
             switch (value)
             {
                 case Configurable configurable:
-                    count += configurable.Entries.Count(field => _filter.PassFilter(field.Name));
+                    count += _filter.PassFilter(configurable.Type.Name)
+                        ? configurable.Entries.Count()
+                        : configurable.Entries.Count(field => _filter.PassFilter(field.Name));
                     break;
                 case Dictionary<string, object> subTree:
                     count += CountMatchingFields(subTree);

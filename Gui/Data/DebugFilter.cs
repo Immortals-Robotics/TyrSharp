@@ -133,7 +133,7 @@ public sealed class DebugFilter : IDisposable
     }
 
     private void DrawFileNode(string module, string file,
-        Dictionary<string, SortedSet<MetaTreeItem>> functions, bool parentEnabled)
+        Dictionary<string, HashSet<MetaTreeItem>> functions, bool parentEnabled)
     {
         var path = MakePath(module, file);
 
@@ -183,8 +183,7 @@ public sealed class DebugFilter : IDisposable
     }
 
     private void DrawFunctionNode(string module, string file, string function,
-        SortedSet<MetaTreeItem> items,
-        bool parentEnabled)
+        HashSet<MetaTreeItem> items, bool parentEnabled)
     {
         var path = MakePath(module, file, function);
 
@@ -237,11 +236,12 @@ public sealed class DebugFilter : IDisposable
 
         var icon = treeItem.Type switch
         {
-            MetaTreeItem.ItemType.Plot => $"{IconFonts.FontAwesome6.ChartLine}",
+            MetaTreeItem.ItemType.Log => $"{IconFonts.FontAwesome6.Terminal}",
             MetaTreeItem.ItemType.Draw => $"{IconFonts.FontAwesome6.Shapes}",
+            MetaTreeItem.ItemType.Plot => $"{IconFonts.FontAwesome6.ChartLine}",
             _ => $"{IconFonts.FontAwesome6.Square}" // Default to square icon for other types
         };
-        
+
         ImGui.Checkbox($"{icon} Line {treeItem.Line}", ref isEnabled);
 
         if (!string.IsNullOrWhiteSpace(treeItem.Expression) && ImGui.IsItemHovered(ImGuiHoveredFlags.ForTooltip))
@@ -263,6 +263,5 @@ public sealed class DebugFilter : IDisposable
     public void Dispose()
     {
         _stringBuilder.Dispose();
-        _stringBuilder = default;
     }
 }

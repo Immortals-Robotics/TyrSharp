@@ -7,7 +7,7 @@ using Tyr.Vision.Filter;
 namespace Tyr.Vision.Tracker;
 
 [Configurable]
-public class Robot
+public partial class Robot
 {
     [ConfigEntry] private static float InitialCovarianceXy { get; set; } = 100.0f;
     [ConfigEntry] private static float ModelErrorXy { get; set; } = 0.1f;

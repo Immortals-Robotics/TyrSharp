@@ -6,22 +6,27 @@ namespace Tyr.Gui.Data;
 public class ModuleDebugFramer
 {
     private readonly List<FrameData> _frames = [];
+    private readonly Queue<Debug.Logging.Entry> _unassignedLogs = [];
     private readonly Queue<Debug.Drawing.Command> _unassignedDraws = [];
     private readonly Queue<Debug.Plotting.Command> _unassignedPlots = [];
 
+    private Timestamp? _latestAssignedLogTimestamp;
     private Timestamp? _latestAssignedDrawTimestamp;
     private Timestamp? _latestAssignedPlotTimestamp;
 
     private Timestamp? LatestAssignedCommandTimestamp =>
-        !_latestAssignedDrawTimestamp.HasValue || !_latestAssignedPlotTimestamp.HasValue
+        !_latestAssignedLogTimestamp.HasValue ||
+        !_latestAssignedDrawTimestamp.HasValue ||
+        !_latestAssignedPlotTimestamp.HasValue
             ? null
-            : Timestamp.Min(_latestAssignedDrawTimestamp.Value, _latestAssignedPlotTimestamp.Value);
+            : Timestamp.Min(_latestAssignedLogTimestamp.Value,
+                Timestamp.Min(_latestAssignedDrawTimestamp.Value, _latestAssignedPlotTimestamp.Value));
 
     private int? _latestSealedFrameIndex;
     private int FirstUnsealedFrameIndex => _latestSealedFrameIndex.GetValueOrDefault(-1) + 1;
 
     // file -> function -> MetaItem
-    public Dictionary<string, Dictionary<string, SortedSet<MetaTreeItem>>> MetaTree { get; } = [];
+    public Dictionary<string, Dictionary<string, HashSet<MetaTreeItem>>> MetaTree { get; } = [];
 
     public Dictionary<string, Debug.Meta> Plots { get; } = [];
 
@@ -75,7 +80,6 @@ public class ModuleDebugFramer
         startTime = Timestamp.Clamp(startTime, StartTime.Value, EndTime.Value);
         endTime = Timestamp.Clamp(endTime, StartTime.Value, EndTime.Value);
 
-
         var startIdx = GetFrameIndex(startTime);
         var endIdx = GetFrameIndex(endTime);
         if (startIdx < 0 || endIdx < 0) yield break;
@@ -104,6 +108,31 @@ public class ModuleDebugFramer
             StartTimestamp = frame.StartTimestamp
         });
 
+        while (_unassignedLogs.Count > 0)
+        {
+            var log = _unassignedLogs.Peek();
+
+            // drop the draw if it never could be assigned
+            if (IsUnassignable(log.Timestamp))
+            {
+                _unassignedLogs.Dequeue();
+                continue;
+            }
+
+            var fillFrame = GetFillFrame(log.Timestamp);
+
+            // draws are in order, if the current one is not assignable,
+            // then the next ones are also guaranteed not to be assignable
+            if (fillFrame is null) break;
+
+            // assignable, let's remove it from the queue
+            _unassignedLogs.Dequeue();
+
+            fillFrame.Logs.Add(log);
+            AddToMetaTree(log.Meta, MetaTreeItem.ItemType.Log);
+            _latestAssignedLogTimestamp = log.Timestamp;
+        }
+
         while (_unassignedDraws.Count > 0)
         {
             var draw = _unassignedDraws.Peek();
@@ -115,16 +144,16 @@ public class ModuleDebugFramer
                 continue;
             }
 
-            var drawFrame = GetFillFrame(draw.Timestamp);
+            var fillFrame = GetFillFrame(draw.Timestamp);
 
             // draws are in order, if the current one is not assignable,
             // then the next ones are also guaranteed not to be assignable
-            if (drawFrame is null) break;
+            if (fillFrame is null) break;
 
             // assignable, let's remove it from the queue
             _unassignedDraws.Dequeue();
 
-            drawFrame.Draws.Add(draw);
+            fillFrame.Draws.Add(draw);
             AddToMetaTree(draw.Meta, MetaTreeItem.ItemType.Draw);
             _latestAssignedDrawTimestamp = draw.Timestamp;
         }
@@ -160,6 +189,26 @@ public class ModuleDebugFramer
         }
 
         SealFrames();
+    }
+
+    public void OnLog(Debug.Logging.Entry log)
+    {
+        // drop the draw if it never could be assigned
+        if (IsUnassignable(log.Timestamp)) return;
+
+        // check if we can already assign it to a frame
+        var frame = GetFillFrame(log.Timestamp);
+        if (frame is not null)
+        {
+            frame.Logs.Add(log); // already assignable to its frame
+            AddToMetaTree(log.Meta, MetaTreeItem.ItemType.Log);
+            _latestAssignedLogTimestamp = log.Timestamp;
+            SealFrames();
+        }
+        else
+        {
+            _unassignedLogs.Enqueue(log); // queue it for later
+        }
     }
 
     public void OnDraw(Debug.Drawing.Command draw)
@@ -210,7 +259,7 @@ public class ModuleDebugFramer
 
     private void AddToMetaTree(Debug.Meta meta, MetaTreeItem.ItemType type)
     {
-        if (meta is { FilePath: not null, MemberName: not null, Expression: not null })
+        if (meta is { FilePath: not null, MemberName: not null })
         {
             if (!MetaTree.TryGetValue(meta.FilePath, out var functionDict))
             {
@@ -224,7 +273,7 @@ public class ModuleDebugFramer
                 functionDict[meta.MemberName] = lineSet;
             }
 
-            var item = new MetaTreeItem(type, meta.LineNumber, meta.Expression);
+            var item = MetaTreeItem.GetOrCreate(type, meta.LineNumber, meta.Expression);
             lineSet.Add(item);
         }
         else
@@ -272,6 +321,7 @@ public class ModuleDebugFramer
 
             if (!sealable) break;
 
+            _frames[index].Logs.TrimExcess();
             _frames[index].Draws.TrimExcess();
             _frames[index].Plots.TrimExcess();
 

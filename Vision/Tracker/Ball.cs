@@ -6,7 +6,7 @@ using Tyr.Vision.Filter;
 namespace Tyr.Vision.Tracker;
 
 [Configurable]
-public class Ball
+public partial class Ball
 {
     [ConfigEntry] private static float InitialCovariance { get; set; } = 1000f;
     [ConfigEntry] private static float ModelError { get; set; } = 0.1f;

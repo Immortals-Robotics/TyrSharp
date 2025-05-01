@@ -5,7 +5,7 @@ using Tyr.Common.Runner;
 namespace Tyr.Vision;
 
 [Configurable]
-public sealed class Runner : IDisposable
+public sealed partial class Runner : IDisposable
 {
     [ConfigEntry] private static int TickRateHz { get; set; } = 100;
 

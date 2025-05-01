@@ -3,6 +3,7 @@ using System.Runtime.InteropServices;
 using Hexa.NET.ImGui;
 using Hexa.NET.ImPlot;
 using Tyr.Common.Config;
+using Tyr.Common.Debug.Drawing;
 using Tyr.Common.Time;
 using Tyr.Gui.Backend;
 using Tyr.Gui.Data;
@@ -10,7 +11,7 @@ using Tyr.Gui.Data;
 namespace Tyr.Gui.Views;
 
 [Configurable]
-public class PlotView(DebugFramer debugFramer, DebugFilter filter)
+public partial class PlotView(DebugFramer debugFramer, DebugFilter filter)
 {
     [ConfigEntry] private static double TimeAxisExtension { get; set; } = 5;
     [ConfigEntry] private static double TimeAxisMinRange { get; set; } = 1;
@@ -70,7 +71,7 @@ public class PlotView(DebugFramer debugFramer, DebugFilter filter)
             if (IsFiltering)
             {
                 ImGui.Separator();
-                ImGui.TextDisabled($"{_filterPassed} of {_filterTested} items matching");
+                ImGui.TextColored(Color.Zinc400, $"{_filterPassed} of {_filterTested} items matching");
             }
         }
 
@@ -79,9 +80,8 @@ public class PlotView(DebugFramer debugFramer, DebugFilter filter)
 
     private void DrawSearchBar()
     {
-        ImGui.PushItemWidth(-24); // Make space for the clear button
+        ImGui.SetNextItemWidth(-24); // Make space for the clear button
         _filter.Draw("##search");
-        ImGui.PopItemWidth();
 
         ImGui.SameLine();
         if (IsFiltering)
@@ -107,6 +107,8 @@ public class PlotView(DebugFramer debugFramer, DebugFilter filter)
         {
             foreach (var (plotId, plotMeta) in framer.Plots)
             {
+                if (string.IsNullOrWhiteSpace(plotId)) continue;
+
                 if (!filter.IsEnabled(plotMeta)) continue;
 
                 _filterTested += 1;

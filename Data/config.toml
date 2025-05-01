@@ -59,7 +59,10 @@ Enabled = true # default: True
 
 
 [Common.Debug.Logging]
-Level = "Debug" # default: Trace
+[Common.Debug.Logging.Logging]
+# The level logs are filtered at the source. Anything below this will be rejected on the log call.
+Level = "Trace" # default: Debug
+
 
 
 [Common.Config]
@@ -81,10 +84,13 @@ EnableDebug = false # default: False
 [Gui]
 [Gui.Backend]
 [Gui.Backend.FontRegistry]
-FontSize = 17.0 # default: 17
+FontSize = 17 # default: 17
 
 
 [Gui.Views]
+[Gui.Views.LogView]
+LogLevel = "Debug" # default: Debug
+
 [Gui.Views.PlotView]
 TimeAxisExtension = 5.0 # default: 5
 TimeAxisMinRange = 1.0 # default: 1

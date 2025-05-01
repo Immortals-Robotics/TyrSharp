@@ -2,12 +2,13 @@
 using Microsoft.Extensions.Logging;
 using Tyr.Common.Config;
 
-namespace Tyr.Common.Debug;
+namespace Tyr.Common.Debug.Logging;
 
 [Configurable]
-public static class Logging
+public static partial class Logging
 {
-    [ConfigEntry] private static LogLevel Level { get; set; } = LogLevel.Trace;
+    [ConfigEntry("The level logs are filtered at the source. Anything below this will be rejected on the log call.")]
+    private static LogLevel Level { get; set; } = LogLevel.Debug;
 
     static Logging()
     {
@@ -22,7 +23,6 @@ public static class Logging
         logging.AddFilter(level => level >= Level);
         logging.AddZLoggerConsole(options =>
         {
-            options.CaptureThreadInfo = true;
             options.UsePlainTextFormatter(formatter =>
             {
                 formatter.SetPrefixFormatter($"[{0} | {1} | {2} | {3} @ {4}:{5}] ",
@@ -30,9 +30,15 @@ public static class Logging
                     {
                         template.Format(
                             info.Timestamp, info.Category, info.LogLevel,
-                            info.MemberName, Path.GetFileName(info.FilePath), info.LineNumber);
+                            info.MemberName, PathCache.GetFileName(info.FilePath), info.LineNumber);
                     });
             });
+        });
+
+        logging.AddZLoggerLogProcessor(options =>
+        {
+            options.UsePlainTextFormatter();
+            return new LogPublisher();
         });
     });
 }

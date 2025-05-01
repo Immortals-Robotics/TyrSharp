@@ -5,7 +5,7 @@ using Tyr.Common.Time;
 namespace Tyr.Vision;
 
 [Configurable]
-public sealed class Vision
+public sealed partial class Vision
 {
     [ConfigEntry] private static float CameraTooOldTime { get; set; } = 1f;
 
@@ -69,7 +69,8 @@ public sealed class Vision
         for (var index = 0; index < camera.Balls.Count; index++)
         {
             var tracker = camera.Balls[index];
-            Draw.DrawCircle(tracker.Position, 25f, Color.Orange, new Options { Filled = true });
+            Draw.DrawCircle(tracker.Position, 25f, Color.Orange400,
+                new Options { Filled = true, Thickness = 5f });
 
             Plot.Plot($"cam[{camera.Id}] ball[{index}]", tracker.Velocity, "vel (mm/s)");
         }
@@ -79,9 +80,8 @@ public sealed class Vision
     {
         foreach (var (id, tracker) in camera.Robots)
         {
-            var color = id.Team == TeamColor.Blue ? Color.Blue : Color.Yellow;
-            Draw.DrawRobot(tracker.Position, tracker.Angle, id.Id,
-                color, new Options { Filled = true });
+            Draw.DrawRobot(tracker.Position, tracker.Angle, id,
+                new Options { Filled = true, Thickness = 10f });
 
             Plot.Plot($"cam[{camera.Id}] robot[{id}]", tracker.Velocity, "vel (mm/s)");
         }

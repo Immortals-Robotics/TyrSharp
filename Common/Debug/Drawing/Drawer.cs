@@ -1,5 +1,6 @@
-﻿using System.Runtime.CompilerServices;
-using System.Text;
+﻿using System.Collections.Concurrent;
+using System.Runtime.CompilerServices;
+using Cysharp.Text;
 using Tyr.Common.Data;
 using Tyr.Common.Dataflow;
 using Tyr.Common.Debug.Drawing.Drawables;
@@ -13,9 +14,43 @@ using Vector2 = System.Numerics.Vector2;
 
 namespace Tyr.Common.Debug.Drawing;
 
-public class Drawer(string moduleName)
+public sealed class Drawer(string moduleName) : IDisposable
 {
-    private readonly StringBuilder _stringBuilder = new();
+    private Utf16ValueStringBuilder _stringBuilder = ZString.CreateStringBuilder();
+    private readonly ConcurrentDictionary<int, string> _expressionCache = new();
+
+    private string InternExpression(ReadOnlySpan<char> span)
+    {
+        var hashCode = string.GetHashCode(span);
+
+        return _expressionCache.TryGetValue(hashCode, out var existing)
+            ? existing
+            : _expressionCache.GetOrAdd(hashCode, string.Intern(new string(span)));
+    }
+
+    private string MakeExpression(
+        string name1, string? expression1,
+        string name2, string? expression2)
+    {
+        _stringBuilder.Clear();
+        _stringBuilder.AppendFormat("{0}: {1}, {2}: {3}",
+            name1, expression1,
+            name2, expression2);
+        return InternExpression(_stringBuilder.AsSpan());
+    }
+
+    private string MakeExpression(
+        string name1, string? expression1,
+        string name2, string? expression2,
+        string name3, string? expression3)
+    {
+        _stringBuilder.Clear();
+        _stringBuilder.AppendFormat("{0}: {1}, {2}: {3}, {4}: {5}",
+            name1, expression1,
+            name2, expression2,
+            name3, expression3);
+        return InternExpression(_stringBuilder.AsSpan());
+    }
 
     private void Draw(IDrawable drawable, Color color, Options options,
         string? expression, string? memberName, string? filePath, int lineNumber)
@@ -57,12 +92,9 @@ public class Drawer(string moduleName)
     {
         var line = new Line(point, angle);
 
-        _stringBuilder.Clear()
-            .Append(nameof(point)).Append(": ").Append(pointExpression)
-            .Append(", ")
-            .Append(nameof(angle)).Append(": ").Append(angleExpression);
-        var expression = string.Intern(_stringBuilder.ToString());
-
+        var expression = MakeExpression(
+            nameof(point), pointExpression,
+            nameof(angle), angleExpression);
         Draw(line, color, options, expression, memberName, filePath, lineNumber);
     }
 
@@ -88,12 +120,9 @@ public class Drawer(string moduleName)
     {
         var segment = new LineSegment(start, end);
 
-        _stringBuilder.Clear()
-            .Append(nameof(start)).Append(": ").Append(startExpression)
-            .Append(", ")
-            .Append(nameof(end)).Append(": ").Append(endExpression);
-        var expression = string.Intern(_stringBuilder.ToString());
-
+        var expression = MakeExpression(
+            nameof(start), startExpression,
+            nameof(end), endExpression);
         Draw(segment, color, options, expression, memberName, filePath, lineNumber);
     }
 
@@ -119,11 +148,9 @@ public class Drawer(string moduleName)
     {
         var arrow = new Arrow(start, end);
 
-        _stringBuilder.Clear()
-            .Append(nameof(start)).Append(": ").Append(startExpression)
-            .Append(", ")
-            .Append(nameof(end)).Append(": ").Append(endExpression);
-        var expression = string.Intern(_stringBuilder.ToString());
+        var expression = MakeExpression(
+            nameof(start), startExpression,
+            nameof(end), endExpression);
 
         Draw(arrow, color, options, expression, memberName, filePath, lineNumber);
     }
@@ -150,11 +177,9 @@ public class Drawer(string moduleName)
     {
         var rect = new Rectangle(min, max);
 
-        _stringBuilder.Clear()
-            .Append(nameof(min)).Append(": ").Append(minExpression)
-            .Append(", ")
-            .Append(nameof(max)).Append(": ").Append(maxExpression);
-        var expression = string.Intern(_stringBuilder.ToString());
+        var expression = MakeExpression(
+            nameof(min), minExpression,
+            nameof(max), maxExpression);
 
         Draw(rect, color, options, expression, memberName, filePath, lineNumber);
     }
@@ -180,13 +205,10 @@ public class Drawer(string moduleName)
     {
         var triangle = new Triangle(v1, v2, v3);
 
-        _stringBuilder.Clear()
-            .Append(nameof(v1)).Append(": ").Append(v1Expression)
-            .Append(", ")
-            .Append(nameof(v2)).Append(": ").Append(v2Expression)
-            .Append(", ")
-            .Append(nameof(v3)).Append(": ").Append(v3Expression);
-        var expression = string.Intern(_stringBuilder.ToString());
+        var expression = MakeExpression(
+            nameof(v1), v1Expression,
+            nameof(v2), v2Expression,
+            nameof(v3), v3Expression);
 
         Draw(triangle, color, options, expression, memberName, filePath, lineNumber);
     }
@@ -213,11 +235,9 @@ public class Drawer(string moduleName)
     {
         var circle = new Circle(center, radius);
 
-        _stringBuilder.Clear()
-            .Append(nameof(center)).Append(": ").Append(centerExpression)
-            .Append(", ")
-            .Append(nameof(radius)).Append(": ").Append(radiusExpression);
-        var expression = string.Intern(_stringBuilder.ToString());
+        var expression = MakeExpression(
+            nameof(center), centerExpression,
+            nameof(radius), radiusExpression);
 
         Draw(circle, color, options, expression, memberName, filePath, lineNumber);
     }
@@ -245,14 +265,32 @@ public class Drawer(string moduleName)
     {
         var robot = new Robot(position, orientation, id);
 
-        _stringBuilder.Clear()
-            .Append(nameof(position)).Append(": ").Append(positionExpression)
-            .Append(", ")
-            .Append(nameof(orientation)).Append(": ").Append(orientationExpression)
-            .Append(", ")
-            .Append(nameof(id)).Append(": ").Append(idExpression);
-        var expression = string.Intern(_stringBuilder.ToString());
+        var expression = MakeExpression(
+            nameof(position), positionExpression,
+            nameof(orientation), orientationExpression,
+            nameof(id), idExpression);
 
+        Draw(robot, color, options, expression, memberName, filePath, lineNumber);
+    }
+    
+    public void DrawRobot(Vector2 position, Angle? orientation, Data.Ssl.RobotId? id, Options options = default,
+        [CallerArgumentExpression(nameof(position))]
+        string? positionExpression = null,
+        [CallerArgumentExpression(nameof(orientation))]
+        string? orientationExpression = null,
+        [CallerArgumentExpression(nameof(id))] string? idExpression = null,
+        [CallerMemberName] string? memberName = null,
+        [CallerFilePath] string? filePath = null,
+        [CallerLineNumber] int lineNumber = 0)
+    {
+        var robot = new Robot(position, orientation, id?.Id);
+
+        var expression = MakeExpression(
+            nameof(position), positionExpression,
+            nameof(orientation), orientationExpression,
+            nameof(id), idExpression);
+        
+        var color = (id?.Team).ToColor();
         Draw(robot, color, options, expression, memberName, filePath, lineNumber);
     }
 
@@ -266,11 +304,9 @@ public class Drawer(string moduleName)
     {
         var drawable = new Robot(robot, id);
 
-        _stringBuilder.Clear()
-            .Append(nameof(robot)).Append(": ").Append(robotExpression)
-            .Append(", ")
-            .Append(nameof(id)).Append(": ").Append(idExpression);
-        var expression = string.Intern(_stringBuilder.ToString());
+        var expression = MakeExpression(
+            nameof(robot), robotExpression,
+            nameof(id), idExpression);
 
         Draw(drawable, color, options, expression, memberName, filePath, lineNumber);
     }
@@ -286,11 +322,9 @@ public class Drawer(string moduleName)
         var drawable = new Robot(robot, id.Id);
         var color = id.Team.ToColor();
 
-        _stringBuilder.Clear()
-            .Append(nameof(robot)).Append(": ").Append(robotExpression)
-            .Append(", ")
-            .Append(nameof(id)).Append(": ").Append(idExpression);
-        var expression = string.Intern(_stringBuilder.ToString());
+        var expression = MakeExpression(
+            nameof(robot), robotExpression,
+            nameof(id), idExpression);
 
         Draw(drawable, color, options, expression, memberName, filePath, lineNumber);
     }
@@ -331,14 +365,16 @@ public class Drawer(string moduleName)
     {
         var text = new Text(content, position, size);
 
-        _stringBuilder.Clear()
-            .Append(nameof(content)).Append(": ").Append(contentExpression)
-            .Append(", ")
-            .Append(nameof(position)).Append(": ").Append(positionExpression)
-            .Append(", ")
-            .Append(nameof(size)).Append(": ").Append(sizeExpression);
-        var expression = string.Intern(_stringBuilder.ToString());
+        var expression = MakeExpression(
+            nameof(content), contentExpression,
+            nameof(position), positionExpression,
+            nameof(size), sizeExpression);
 
         Draw(text, color, options, expression, memberName, filePath, lineNumber);
+    }
+
+    public void Dispose()
+    {
+        _stringBuilder.Dispose();
     }
 }
