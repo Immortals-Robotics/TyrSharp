@@ -6,8 +6,6 @@ namespace Tyr.Common.Runner;
 
 public abstract class RunnerBase(int tickRateHz)
 {
-    public abstract bool IsRunning { get; }
-
     public Time.Timer Timer { get; } = new();
 
     public int TickRateHz { get; } = tickRateHz;
@@ -20,9 +18,6 @@ public abstract class RunnerBase(int tickRateHz)
     {
         TimerResolution.Set(DeltaTime.FromMilliseconds(1));
     }
-
-    public abstract void Start();
-    public abstract void Stop();
 
     protected void SleepUntil(Timestamp nextTick)
     {
@@ -47,8 +42,10 @@ public abstract class RunnerBase(int tickRateHz)
         };
         Hub.Frames.Publish(frame);
 
-        Draw.DrawEmpty();
-        Plot.Plot(string.Empty, 0);
-        Log.ZLogCritical($"");
+        // Send empty debug entries so that the frames can be sealed
+        // even when the frames do not contain any actual entries
+        Hub.Logs.Publish(Debug.Logging.Entry.Empty);
+        Hub.Draws.Publish(Debug.Drawing.Command.Empty);
+        Hub.Plots.Publish(Debug.Plotting.Command.Empty);
     }
 }

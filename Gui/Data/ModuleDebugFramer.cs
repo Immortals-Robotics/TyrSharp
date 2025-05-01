@@ -128,8 +128,12 @@ public class ModuleDebugFramer
             // assignable, let's remove it from the queue
             _unassignedLogs.Dequeue();
 
-            fillFrame.Logs.Add(log);
-            AddToMetaTree(log.Meta, MetaTreeItem.ItemType.Log);
+            if (!log.IsEmpty)
+            {
+                fillFrame.Logs.Add(log);
+                AddToMetaTree(log.Meta, MetaTreeItem.ItemType.Log);
+            }
+
             _latestAssignedLogTimestamp = log.Timestamp;
         }
 
@@ -153,8 +157,12 @@ public class ModuleDebugFramer
             // assignable, let's remove it from the queue
             _unassignedDraws.Dequeue();
 
-            fillFrame.Draws.Add(draw);
-            AddToMetaTree(draw.Meta, MetaTreeItem.ItemType.Draw);
+            if (!draw.IsEmpty)
+            {
+                fillFrame.Draws.Add(draw);
+                AddToMetaTree(draw.Meta, MetaTreeItem.ItemType.Draw);
+            }
+
             _latestAssignedDrawTimestamp = draw.Timestamp;
         }
 
@@ -178,13 +186,19 @@ public class ModuleDebugFramer
             // assignable, let's remove it from the queue
             _unassignedPlots.Dequeue();
 
-            if (!fillFrame.Plots.TryAdd(plot.Id, plot))
+            if (!plot.IsEmpty)
             {
-                Log.ZLogWarning($"Dropping duplicate plot with id {plot.Id} to frame {fillFrame.StartTimestamp}");
+                if (!fillFrame.Plots.TryAdd(plot.Id, plot))
+                {
+                    Log.ZLogWarning($"Dropping duplicate plot with id {plot.Id} to frame {fillFrame.StartTimestamp}");
+                }
+                else
+                {
+                    Plots[plot.Id] = plot.Meta;
+                    AddToMetaTree(plot.Meta, MetaTreeItem.ItemType.Plot);
+                }
             }
 
-            Plots[plot.Id] = plot.Meta;
-            AddToMetaTree(plot.Meta, MetaTreeItem.ItemType.Plot);
             _latestAssignedPlotTimestamp = plot.Timestamp;
         }
 
@@ -200,8 +214,12 @@ public class ModuleDebugFramer
         var frame = GetFillFrame(log.Timestamp);
         if (frame is not null)
         {
-            frame.Logs.Add(log); // already assignable to its frame
-            AddToMetaTree(log.Meta, MetaTreeItem.ItemType.Log);
+            if (!log.IsEmpty)
+            {
+                frame.Logs.Add(log); // already assignable to its frame
+                AddToMetaTree(log.Meta, MetaTreeItem.ItemType.Log);
+            }
+
             _latestAssignedLogTimestamp = log.Timestamp;
             SealFrames();
         }
@@ -220,8 +238,12 @@ public class ModuleDebugFramer
         var frame = GetFillFrame(draw.Timestamp);
         if (frame is not null)
         {
-            frame.Draws.Add(draw); // already assignable to its frame
-            AddToMetaTree(draw.Meta, MetaTreeItem.ItemType.Draw);
+            if (!draw.IsEmpty)
+            {
+                frame.Draws.Add(draw); // already assignable to its frame
+                AddToMetaTree(draw.Meta, MetaTreeItem.ItemType.Draw);
+            }
+
             _latestAssignedDrawTimestamp = draw.Timestamp;
             SealFrames();
         }
@@ -241,13 +263,19 @@ public class ModuleDebugFramer
         if (frame is not null)
         {
             // already assignable to its frame
-            if (!frame.Plots.TryAdd(plot.Id, plot))
+            if (!plot.IsEmpty)
             {
-                Log.ZLogWarning($"Dropping duplicate plot with id {plot.Id} to frame {frame.StartTimestamp}");
+                if (!frame.Plots.TryAdd(plot.Id, plot))
+                {
+                    Log.ZLogWarning($"Dropping duplicate plot with id {plot.Id} to frame {frame.StartTimestamp}");
+                }
+                else
+                {
+                    Plots[plot.Id] = plot.Meta;
+                    AddToMetaTree(plot.Meta, MetaTreeItem.ItemType.Plot);
+                }
             }
 
-            Plots[plot.Id] = plot.Meta;
-            AddToMetaTree(plot.Meta, MetaTreeItem.ItemType.Plot);
             _latestAssignedPlotTimestamp = plot.Timestamp;
             SealFrames();
         }

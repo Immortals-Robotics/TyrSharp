@@ -65,7 +65,6 @@ public sealed partial class LogView(DebugFramer debugFramer, DebugFilter filter)
                     {
                         if (!filter.IsEnabled(log.Meta)) continue;
                         if (log.Level < LogLevel) continue;
-                        if (string.IsNullOrWhiteSpace(log.Message)) continue;
 
                         _filterTested += 1;
                         if (!_filter.PassFilter(log.Message) &&
