@@ -80,9 +80,8 @@ public partial class PlotView(DebugFramer debugFramer, DebugFilter filter)
 
     private void DrawSearchBar()
     {
-        ImGui.PushItemWidth(-24); // Make space for the clear button
+        ImGui.SetNextItemWidth(-24); // Make space for the clear button
         _filter.Draw("##search");
-        ImGui.PopItemWidth();
 
         ImGui.SameLine();
         if (IsFiltering)

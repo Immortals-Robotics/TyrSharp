@@ -16,6 +16,9 @@ public sealed partial class LogView(DebugFramer debugFramer, DebugFilter filter)
 
     private Utf8ValueStringBuilder _stringBuilder = ZString.CreateUtf8StringBuilder();
 
+    private ImGuiTextFilterPtr _filter = ImGui.ImGuiTextFilter();
+    private bool IsFiltering => _filter.IsActive();
+
     public void Draw(PlaybackTime time)
     {
         if (ImGui.Begin($"{IconFonts.FontAwesome6.Terminal} Logs", ImGuiWindowFlags.AlwaysVerticalScrollbar))
@@ -29,10 +32,9 @@ public sealed partial class LogView(DebugFramer debugFramer, DebugFilter filter)
 
     private void DrawHeader()
     {
-        var values = Debug.EnumCache<LogLevel>.Values;
         var names = Debug.EnumCache<LogLevel>.Names;
-
         var index = Debug.EnumCache<LogLevel>.GetIndex(LogLevel);
+        ImGui.SetNextItemWidth(MathF.Min(200f, ImGui.GetContentRegionAvail().X / 3f));
         if (ImGui.Combo("Level", ref index, names, names.Length))
         {
             LogLevel = Debug.EnumCache<LogLevel>.GetByIndex(index);
@@ -63,6 +65,28 @@ public sealed partial class LogView(DebugFramer debugFramer, DebugFilter filter)
 
             ImGui.TableHeadersRow();
 
+            ImGui.SameLine();
+            var spacing = MathF.Max(50f, ImGui.GetContentRegionAvail().X - 300f);
+            ImGui.SetCursorPosX(ImGui.GetCursorPosX() + spacing);
+            ImGui.SetNextItemWidth(-24f);
+            ImGui.PushStyleColor(ImGuiCol.FrameBg, ImGui.TableGetHoveredColumn() == 6
+                ? Color.Zinc600
+                : Color.Zinc800);
+            _filter.Draw("##search");
+            ImGui.PopStyleColor();
+            ImGui.SameLine();
+            if (IsFiltering)
+            {
+                if (ImGui.Button($"{IconFonts.FontAwesome6.Xmark}##clear"))
+                {
+                    _filter.Clear();
+                }
+            }
+            else
+            {
+                ImGui.TextDisabled($"{IconFonts.FontAwesome6.MagnifyingGlass}");
+            }
+
             ImGui.PushFont(FontRegistry.Instance.MonoFont);
 
             foreach (var (module, framer) in debugFramer.Modules)
@@ -77,6 +101,10 @@ public sealed partial class LogView(DebugFramer debugFramer, DebugFilter filter)
                     if (!filter.IsEnabled(log.Meta)) continue;
                     if (log.Level < LogLevel) continue;
                     if (string.IsNullOrWhiteSpace(log.Message)) continue;
+
+                    if (!_filter.PassFilter(log.Message) &&
+                        !_filter.PassFilter(log.Meta.ModuleName))
+                        continue;
 
                     ImGui.TableNextRow();
 
