@@ -23,7 +23,7 @@ public class AngleTests
     [Fact]
     public void FromRad_CreatesCorrectAngle()
     {
-        var angle = Angle.FromRad(MathF.PI);
+        var angle = Angle.Pi;
         Assert.Equal(180f, angle.DegNormalized, 3);
     }
 

@@ -31,6 +31,8 @@ public readonly record struct Angle
         return FromRad(angle);
     }
 
+    public static Angle Pi => FromRad(MathF.PI);
+
     // normalized to [-π, π]
     public float RadNormalized => MathF.IEEERemainder(Rad, 2f * MathF.PI);
 
@@ -68,6 +70,7 @@ public readonly record struct Angle
     public static Angle operator -(Angle a, Angle b) => FromRad(a.Rad - b.Rad);
     public static Angle operator -(Angle a) => FromRad(-a.Rad);
     public static Angle operator *(Angle a, float f) => FromRad(a.Rad * f);
+    public static Angle operator *(float f, Angle a) => a * f;
     public static Angle operator /(Angle a, float f) => FromRad(a.Rad / f);
 
     public static bool operator <(Angle a, Angle b) => (b - a).Rad > 0;
