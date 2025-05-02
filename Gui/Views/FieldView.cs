@@ -145,9 +145,13 @@ public sealed partial class FieldView : IDisposable
                     LineColor, Debug.Drawing.Options.Outline(line.Thickness));
             }
 
-            var lineThickness = _fieldSize.Value.LineThickness.GetValueOrDefault();
-            DrawInternal(new Debug.Drawing.Drawables.Circle(_fieldSize.Value.CenterCircle),
-                lineColor, Debug.Drawing.Options.Outline(lineThickness));
+            foreach (var arc in _fieldSize.Value.FieldArcs)
+            {
+                var start = Angle.FromRad(arc.A1);
+                var end = Angle.FromRad(arc.A2);
+                DrawInternal(new Debug.Drawing.Drawables.Arc(arc.Center, arc.Radius, start, end),
+                    LineColor, Debug.Drawing.Options.Outline(arc.Thickness));
+            }
         }
 
         _renderer.Draw(_fieldDraws, null);

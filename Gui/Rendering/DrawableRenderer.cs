@@ -56,6 +56,9 @@ internal partial class DrawableRenderer
                 case Circle circle:
                     DrawCircle(circle, command.Color, command.Options);
                     break;
+                case Arc arc:
+                    DrawArc(arc, command.Color, command.Options);
+                    break;
                 case Line line:
                     DrawLine(line, command.Color, command.Options);
                     break;
@@ -126,6 +129,19 @@ internal partial class DrawableRenderer
             var outlineColor = options.IsFilled ? FilledOutlineColor : color;
             _drawList.AddCircle(center, radius, ImGui.ColorConvertFloat4ToU32(outlineColor), thickness);
         }
+    }
+
+    private void DrawArc(Arc arc, Color color, Options options)
+    {
+        Assert.IsFalse(options.IsFilled);
+
+        var center = Camera.WorldToScreen(arc.Center);
+        var radius = Camera.WorldToScreenLength(arc.Radius);
+
+        var thickness = Camera.WorldToScreenLength(options.Thickness);
+
+        _drawList.PathArcTo(center, radius, arc.Start.Rad, arc.End.Rad);
+        _drawList.PathStroke(ImGui.ColorConvertFloat4ToU32(color), ImDrawFlags.None, thickness);
     }
 
     private void DrawLine(Line line, Color color, Options options)
