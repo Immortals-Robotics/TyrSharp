@@ -2,7 +2,6 @@
 using System.Numerics;
 using Tomlet;
 using Tomlet.Models;
-using Tyr.Common.Config;
 
 namespace Tyr.Common.Debug.Drawing;
 

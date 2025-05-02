@@ -52,6 +52,38 @@ public sealed class Drawer(string moduleName) : IDisposable
         return InternExpression(_stringBuilder.AsSpan());
     }
 
+    private string MakeExpression(
+        string name1, string? expression1,
+        string name2, string? expression2,
+        string name3, string? expression3,
+        string name4, string? expression4)
+    {
+        _stringBuilder.Clear();
+        _stringBuilder.AppendFormat("{0}: {1}, {2}: {3}, {4}: {5}, {6}: {7}",
+            name1, expression1,
+            name2, expression2,
+            name3, expression3,
+            name4, expression4);
+        return InternExpression(_stringBuilder.AsSpan());
+    }
+
+    private string MakeExpression(
+        string name1, string? expression1,
+        string name2, string? expression2,
+        string name3, string? expression3,
+        string name4, string? expression4,
+        string name5, string? expression5)
+    {
+        _stringBuilder.Clear();
+        _stringBuilder.AppendFormat("{0}: {1}, {2}: {3}, {4}: {5}, {6}: {7}, {8}: {9}",
+            name1, expression1,
+            name2, expression2,
+            name3, expression3,
+            name4, expression4,
+            name5, expression5);
+        return InternExpression(_stringBuilder.AsSpan());
+    }
+
     private void Draw(IDrawable drawable, Color color, Options options,
         string? expression, string? memberName, string? filePath, int lineNumber)
     {
@@ -244,6 +276,34 @@ public sealed class Drawer(string moduleName) : IDisposable
         Draw(drawable, color, options, circleExpression, memberName, filePath, lineNumber);
     }
 
+    public void DrawArc(Vector2 center, float radius, Angle start, Angle end, bool closed,
+        Color color, Options options = default,
+        [CallerArgumentExpression(nameof(center))]
+        string? centerExpression = null,
+        [CallerArgumentExpression(nameof(radius))]
+        string? radiusExpression = null,
+        [CallerArgumentExpression(nameof(start))]
+        string? startExpression = null,
+        [CallerArgumentExpression(nameof(end))]
+        string? endExpression = null,
+        [CallerArgumentExpression(nameof(closed))]
+        string? closedExpression = null,
+        [CallerMemberName] string? memberName = null,
+        [CallerFilePath] string? filePath = null,
+        [CallerLineNumber] int lineNumber = 0)
+    {
+        var arc = new Arc(center, radius, start, end, closed);
+
+        var expression = MakeExpression(
+            nameof(center), centerExpression,
+            nameof(radius), radiusExpression,
+            nameof(start), startExpression,
+            nameof(end), endExpression,
+            nameof(closed), closedExpression);
+
+        Draw(arc, color, options, expression, memberName, filePath, lineNumber);
+    }
+
     public void DrawRobot(Vector2 position, Angle? orientation, uint? id, Color color, Options options = default,
         [CallerArgumentExpression(nameof(position))]
         string? positionExpression = null,
@@ -263,7 +323,7 @@ public sealed class Drawer(string moduleName) : IDisposable
 
         Draw(robot, color, options, expression, memberName, filePath, lineNumber);
     }
-    
+
     public void DrawRobot(Vector2 position, Angle? orientation, Data.Ssl.RobotId? id, Options options = default,
         [CallerArgumentExpression(nameof(position))]
         string? positionExpression = null,
@@ -280,7 +340,7 @@ public sealed class Drawer(string moduleName) : IDisposable
             nameof(position), positionExpression,
             nameof(orientation), orientationExpression,
             nameof(id), idExpression);
-        
+
         var color = (id?.Team).ToColor();
         Draw(robot, color, options, expression, memberName, filePath, lineNumber);
     }
