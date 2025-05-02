@@ -1,0 +1,46 @@
+﻿using ProtoBuf;
+
+namespace Tyr.Common.Data.Ssl.Gc.Events;
+
+[ProtoContract]
+public enum Type
+{
+    UnknownGameEventType = 0,
+    BallLeftFieldTouchLine = 6,
+    BallLeftFieldGoalLine = 7,
+    AimlessKick = 11,
+    AttackerTooCloseToDefenseArea = 19,
+    DefenderInDefenseArea = 31,
+    BoundaryCrossing = 41,
+    KeeperHeldBall = 13,
+    BotDribbledBallTooFar = 17,
+    BotPushedBot = 24,
+    BotHeldBallDeliberately = 26,
+    BotTippedOver = 27,
+    BotDroppedParts = 47,
+    AttackerTouchedBallInDefenseArea = 15,
+    BotKickedBallTooFast = 18,
+    BotCrashUnique = 22,
+    BotCrashDrawn = 21,
+    DefenderTooCloseToKickPoint = 29,
+    BotTooFastInStop = 28,
+    BotInterferedPlacement = 20,
+    ExcessiveBotSubstitution = 48,
+    PossibleGoal = 39,
+    Goal = 8,
+    InvalidGoal = 42,
+    AttackerDoubleTouchedBall = 14,
+    PlacementSucceeded = 5,
+    PenaltyKickFailed = 43,
+    NoProgressInGame = 2,
+    PlacementFailed = 3,
+    MultipleCards = 32,
+    MultipleFouls = 34,
+    BotSubstitution = 37,
+    TooManyRobots = 38,
+    ChallengeFlag = 44,
+    ChallengeFlagHandled = 46,
+    EmergencyStop = 45,
+    UnsportingBehaviorMinor = 35,
+    UnsportingBehaviorMajor = 36,
+}
