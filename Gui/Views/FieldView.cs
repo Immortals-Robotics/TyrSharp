@@ -149,7 +149,7 @@ public sealed partial class FieldView : IDisposable
             {
                 var start = Angle.FromRad(arc.A1);
                 var end = Angle.FromRad(arc.A2);
-                DrawInternal(new Debug.Drawing.Drawables.Arc(arc.Center, arc.Radius, start, end),
+                DrawInternal(new Debug.Drawing.Drawables.Arc(arc.Center, arc.Radius, start, end, false),
                     LineColor, Debug.Drawing.Options.Outline(arc.Thickness));
             }
         }

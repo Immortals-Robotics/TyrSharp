@@ -52,9 +52,9 @@ public readonly record struct Angle
 
     public bool IsBetween(Angle a, Angle b)
     {
-        var diffA = System.Math.Abs((a - this).DegNormalized);
-        var diffB = System.Math.Abs((b - this).DegNormalized);
-        var diffAb = System.Math.Abs((a - b).DegNormalized);
+        var diffA = System.Math.Abs((a - this).RadNormalized);
+        var diffB = System.Math.Abs((b - this).RadNormalized);
+        var diffAb = System.Math.Abs((a - b).RadNormalized);
 
         return Utils.ApproximatelyEqual(diffA + diffB, diffAb);
     }
@@ -64,17 +64,17 @@ public readonly record struct Angle
         return a + (b - a) * 0.5f;
     }
 
-    public static Angle operator +(Angle a, Angle b) => FromDeg(a.DegNormalized + b.DegNormalized);
-    public static Angle operator -(Angle a, Angle b) => FromDeg(a.DegNormalized - b.DegNormalized);
-    public static Angle operator -(Angle a) => FromDeg(-a.DegNormalized);
-    public static Angle operator *(Angle a, float f) => FromDeg(a.DegNormalized * f);
-    public static Angle operator /(Angle a, float f) => FromDeg(a.DegNormalized / f);
+    public static Angle operator +(Angle a, Angle b) => FromRad(a.Rad + b.Rad);
+    public static Angle operator -(Angle a, Angle b) => FromRad(a.Rad - b.Rad);
+    public static Angle operator -(Angle a) => FromRad(-a.Rad);
+    public static Angle operator *(Angle a, float f) => FromRad(a.Rad * f);
+    public static Angle operator /(Angle a, float f) => FromRad(a.Rad / f);
 
-    public static bool operator <(Angle a, Angle b) => (b - a).DegNormalized > 0;
-    public static bool operator >(Angle a, Angle b) => (b - a).DegNormalized < 0;
+    public static bool operator <(Angle a, Angle b) => (b - a).Rad > 0;
+    public static bool operator >(Angle a, Angle b) => (b - a).Rad < 0;
 
     public override string ToString() => $"{DegNormalized:F2}°";
 
-    public bool Equals(Angle other) => Utils.ApproximatelyEqual(DegNormalized, other.DegNormalized);
-    public override int GetHashCode() => DegNormalized.GetHashCode();
+    public bool Equals(Angle other) => Utils.ApproximatelyEqual(Rad, other.Rad);
+    public override int GetHashCode() => Rad.GetHashCode();
 }

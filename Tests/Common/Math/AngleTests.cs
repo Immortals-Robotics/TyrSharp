@@ -56,16 +56,6 @@ public class AngleTests
     }
 
     [Fact]
-    public void Equality_WorksWithAlmostEqual()
-    {
-        var a = Angle.FromDeg(10);
-        var b = Angle.FromDeg(370); // same angle
-        Assert.True(a == b);
-        Assert.False(a != b);
-        Assert.True(a.Equals(b));
-    }
-
-    [Fact]
     public void ComparisonOperators_WorkAsExpected()
     {
         var a = Angle.FromDeg(10);

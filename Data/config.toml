@@ -19,14 +19,14 @@ FontSize = 17 # default: 17
 
 [Gui.Rendering]
 [Gui.Rendering.DrawableRenderer]
+RobotTextSize = 135.0 # default: 135
 RobotTextColor = "#09090BFF" # default: #09090BFF
-ArrowHeadSize = 20.0 # default: 20
 # Angle in degrees of the flat front of the robot
 RobotFlatAngle = 45.0 # default: 45.00°
-RobotArcSegments = 20 # default: 20
 RobotRadius = 90.0 # default: 90
 # Size of the cross used to draw points
 PointCrossSize = 10.0 # default: 10
+ArrowHeadSize = 20.0 # default: 20
 FilledOutlineColor = "#09090B7F" # default: #09090B7F
 
 
