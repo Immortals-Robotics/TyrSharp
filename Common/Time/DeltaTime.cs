@@ -10,8 +10,8 @@ public readonly record struct DeltaTime : IComparable<DeltaTime>
     static DeltaTime()
     {
         TomletMain.RegisterMapper(
-            dt => new TomlLong(dt.Nanoseconds),
-            toml => FromNanoseconds(((TomlLong)toml).Value));
+            dt => new TomlDouble(dt.Seconds),
+            toml => FromSeconds(((TomlDouble)toml).Value));
     }
 
     private DeltaTime(long nanoseconds) => Nanoseconds = nanoseconds;

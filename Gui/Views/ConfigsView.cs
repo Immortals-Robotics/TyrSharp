@@ -258,6 +258,10 @@ public partial class ConfigsView
             case DeltaTime deltaTimeValue:
                 DrawFieldEditorDeltaTime(field, deltaTimeValue);
                 break;
+            
+            case Timestamp timeValue:
+                DrawFieldEditorTime(field, timeValue);
+                break;
 
             default:
                 // For other types, just display as string

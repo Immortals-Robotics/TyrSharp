@@ -9,6 +9,24 @@ namespace Tyr.Gui.Views;
 
 public partial class ConfigsView
 {
+    private static void DrawFieldEditorTime(ConfigEntry field, Timestamp value)
+    {
+        var ns = value.Nanoseconds;
+        unsafe
+        {
+            var nsPtr = &ns;
+            ImGui.InputScalar("", ImGuiDataType.S64, nsPtr);
+        }
+
+        if (ImGui.IsItemDeactivatedAfterEdit())
+        {
+            field.Value = Timestamp.FromNanoseconds(ns);
+        }
+
+        ImGui.SameLine();
+        ImGui.Text("ns");
+    }
+
     private static void DrawFieldEditorDeltaTime(ConfigEntry field, DeltaTime value)
     {
         var seconds = value.Seconds;

@@ -44,8 +44,8 @@ OurColor = "Unknown" # default: Unknown
 [Common.Config]
 [Common.Config.Storage]
 MaxLoadAttempts = 10 # default: 10
-LoadAttemptsDelay = 100000001 # default: 0.100000s
-DebounceDelay = 200000002 # default: 0.200000s
+LoadAttemptsDelay = 0.1 # default: 0.100000s
+DebounceDelay = 0.2 # default: 0.200000s
 
 
 [Common.Debug]
@@ -96,9 +96,9 @@ MaxHealth = 20 # default: 20
 
 [Vision.Camera]
 # Time after which an invisible ball is removed
-InvisibleLifetimeBall = 1000000000 # default: 1.000000s
+InvisibleLifetimeBall = 1.0 # default: 1.000000s
 # Time after which an invisible robot is removed
-InvisibleLifetimeRobot = 2000000000 # default: 2.000000s
+InvisibleLifetimeRobot = 2.0 # default: 2.000000s
 # Maximum number of ball trackers
 MaxBallTrackers = 10 # default: 10
 # Max. distance to copy state from filtered bot to new trackers
@@ -109,7 +109,7 @@ VisionAddress = { Ip = "224.5.23.2", Port = 10006 } # default: 224.5.23.2:10006
 SimulatorAddress = { Ip = "224.5.23.2", Port = 10025 } # default: 224.5.23.2:10025
 
 [Vision.Vision]
-CameraTooOldTime = 1000000000 # default: 1.000000s
+CameraTooOldTime = 1.0 # default: 1.000000s
 
 [Vision.Runner]
 TickRateHz = 100 # default: 100
