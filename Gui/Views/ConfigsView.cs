@@ -30,7 +30,7 @@ public partial class ConfigsView
                 ImGui.Separator();
 
                 // Count how many items are shown/filtered
-                var totalItems = Registry.Configurables.Count;
+                var totalItems = Registry.Configurables.Values.Sum(configurable => configurable.Entries.Count);
                 var visibleItems = IsFiltering ? CountMatchingFields(Registry.Tree) : totalItems;
 
                 ImGui.TextColored(Color.Zinc400, $"{visibleItems} of {totalItems} items matching");
@@ -302,7 +302,7 @@ public partial class ConfigsView
             {
                 case Configurable configurable:
                     count += _filter.PassFilter(configurable.Type.Name)
-                        ? configurable.Entries.Count()
+                        ? configurable.Entries.Count
                         : configurable.Entries.Count(field => _filter.PassFilter(field.Name));
                     break;
                 case Dictionary<string, object> subTree:
