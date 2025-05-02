@@ -52,7 +52,7 @@ DebounceDelay = 200000002 # default: 0.200000s
 [Common.Debug.Logging]
 [Common.Debug.Logging.Logging]
 # The level logs are filtered at the source. Anything below this will be rejected on the log call.
-Level = "Debug" # default: Debug
+Level = "Trace" # default: Debug
 
 
 [Common.Debug.Assertion]
