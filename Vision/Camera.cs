@@ -7,11 +7,11 @@ namespace Tyr.Vision;
 [Configurable]
 public partial class Camera(uint id)
 {
-    [ConfigEntry("Time in [s] after an invisible ball is removed")]
-    private static float InvisibleLifetimeBall { get; set; } = 1f;
+    [ConfigEntry("Time after which an invisible ball is removed")]
+    private static DeltaTime InvisibleLifetimeBall { get; set; } = DeltaTime.FromSeconds(1f);
 
-    [ConfigEntry("Time in [s] after an invisible robot is removed")]
-    private static float InvisibleLifetimeRobot { get; set; } = 2f;
+    [ConfigEntry("Time after which an invisible robot is removed")]
+    private static DeltaTime InvisibleLifetimeRobot { get; set; } = DeltaTime.FromSeconds(2f);
 
     [ConfigEntry("Maximum number of ball trackers")]
     private static int MaxBallTrackers { get; set; } = 10;
@@ -91,8 +91,7 @@ public partial class Camera(uint id)
         // can't directly remove from the dictionary while iterating over it, so we do it in two steps
         Robots.RemoveAll((_, tracker) =>
         {
-            var tooOld = frame.CaptureTime - tracker.LastUpdateTimestamp >
-                         DeltaTime.FromSeconds(InvisibleLifetimeRobot);
+            var tooOld = frame.CaptureTime - tracker.LastUpdateTimestamp > InvisibleLifetimeRobot;
 
             var outsideField = IsOutside(tracker.GetPosition(frame.CaptureTime));
 
@@ -170,8 +169,8 @@ public partial class Camera(uint id)
     {
         // remove trackers of balls that have not been visible or were out of the field for too long
         Balls.RemoveAll(tracker =>
-            frame.CaptureTime - tracker.LastUpdateTimestamp > DeltaTime.FromSeconds(InvisibleLifetimeBall) ||
-            frame.CaptureTime - tracker.LastInFieldTimestamp > DeltaTime.FromSeconds(InvisibleLifetimeBall));
+            frame.CaptureTime - tracker.LastUpdateTimestamp > InvisibleLifetimeBall ||
+            frame.CaptureTime - tracker.LastInFieldTimestamp > InvisibleLifetimeBall);
 
         // do a prediction on all trackers
         foreach (var ball in Balls) ball.Predict(frame.CaptureTime);

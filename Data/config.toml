@@ -1,3 +1,36 @@
+[Gui]
+[Gui.Views]
+[Gui.Views.FieldView]
+ZoomFactor = 1.100000023841858 # default: 1.1
+LineColor = "#FFFFFFB2" # default: #FFFFFFB2
+
+[Gui.Views.PlotView]
+TimeAxisExtension = 5.0 # default: 5
+TimeAxisMinRange = 1.0 # default: 1
+TimeAxisMaxRange = 200.0 # default: 200
+YAxisMinRange = 1.0 # default: 1
+MaxPoints = 500 # default: 500
+
+
+[Gui.Backend]
+[Gui.Backend.FontRegistry]
+FontSize = 17 # default: 17
+
+
+[Gui.Rendering]
+[Gui.Rendering.DrawableRenderer]
+RobotTextSize = 135.0 # default: 135
+RobotTextColor = "#09090BFF" # default: #09090BFF
+# Angle in degrees of the flat front of the robot
+RobotFlatAngle = 45.0 # default: 45.00°
+RobotRadius = 90.0 # default: 90
+# Size of the cross used to draw points
+PointCrossSize = 10.0 # default: 10
+ArrowHeadSize = 20.0 # default: 20
+FilledOutlineColor = "#09090B7F" # default: #09090B7F
+
+
+
 [Common]
 [Common.Data]
 [Common.Data.CommonConfigs]
@@ -11,8 +44,8 @@ OurColor = "Unknown" # default: Unknown
 [Common.Config]
 [Common.Config.Storage]
 MaxLoadAttempts = 10 # default: 10
-LoadAttemptsDelayMs = 100.0 # default: 100
-DebounceDelayS = 0.20000000298023224 # default: 0.2
+LoadAttemptsDelay = 100000001 # default: 0.100000s
+DebounceDelay = 200000002 # default: 0.200000s
 
 
 [Common.Debug]
@@ -62,10 +95,10 @@ MaxHealth = 20 # default: 20
 
 
 [Vision.Camera]
-# Time in [s] after an invisible ball is removed
-InvisibleLifetimeBall = 1.0 # default: 1
-# Time in [s] after an invisible robot is removed
-InvisibleLifetimeRobot = 2.0 # default: 2
+# Time after which an invisible ball is removed
+InvisibleLifetimeBall = 1000000000 # default: 1.000000s
+# Time after which an invisible robot is removed
+InvisibleLifetimeRobot = 2000000000 # default: 2.000000s
 # Maximum number of ball trackers
 MaxBallTrackers = 10 # default: 10
 # Max. distance to copy state from filtered bot to new trackers
@@ -76,37 +109,10 @@ VisionAddress = { Ip = "224.5.23.2", Port = 10006 } # default: 224.5.23.2:10006
 SimulatorAddress = { Ip = "224.5.23.2", Port = 10025 } # default: 224.5.23.2:10025
 
 [Vision.Vision]
-CameraTooOldTime = 1.0 # default: 1
+CameraTooOldTime = 1000000000 # default: 1.000000s
 
 [Vision.Runner]
 TickRateHz = 100 # default: 100
-
-
-[Gui]
-[Gui.Backend]
-[Gui.Backend.FontRegistry]
-FontSize = 17 # default: 17
-
-
-[Gui.Views]
-[Gui.Views.PlotView]
-TimeAxisExtension = 5.0 # default: 5
-TimeAxisMinRange = 1.0 # default: 1
-TimeAxisMaxRange = 200.0 # default: 200
-YAxisMinRange = 1.0 # default: 1
-MaxPoints = 500 # default: 500
-
-
-[Gui.Rendering]
-[Gui.Rendering.DrawableRenderer]
-# Angle in degrees of the flat front of the robot
-RobotFlatAngle = 45.0 # default: 45
-RobotArcSegments = 20 # default: 20
-RobotRadius = 90.0 # default: 90
-# Size of the cross used to draw points
-PointCrossSize = 10.0 # default: 10
-OutlineOpacity = 0.5 # default: 0.5
-
 
 
 [Referee]

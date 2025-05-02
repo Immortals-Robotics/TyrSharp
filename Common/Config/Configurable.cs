@@ -15,9 +15,9 @@ public class Configurable
 
     private readonly ConfigurableAttribute _meta;
 
-    private readonly ConfigEntry[] _entries;
+    private readonly List<ConfigEntry> _entries;
 
-    public IEnumerable<ConfigEntry> Entries => _entries;
+    public IReadOnlyList<ConfigEntry> Entries => _entries;
 
     internal Configurable(Type type)
     {
@@ -28,7 +28,7 @@ public class Configurable
             .GetProperties(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static)
             .Where(info => info.GetCustomAttribute<ConfigEntryAttribute>() != null)
             .Select(info => new ConfigEntry(info, this))
-            .ToArray();
+            .ToList();
     }
 
     public void MarkChanged(StorageType storageType)

@@ -1,5 +1,7 @@
 ﻿using System.Globalization;
 using System.Numerics;
+using Tomlet;
+using Tomlet.Models;
 
 namespace Tyr.Common.Debug.Drawing;
 
@@ -10,6 +12,13 @@ public readonly partial record struct Color(Vector4 RGBA)
     public float G => RGBA.Y;
     public float B => RGBA.Z;
     public float A => RGBA.W;
+
+    static Color()
+    {
+        TomletMain.RegisterMapper(
+            color => new TomlString(color.ToHex()),
+            toml => FromHex(toml.StringValue));
+    }
 
     public Color(float r, float g, float b, float a = 1f) : this(new Vector4(r, g, b, a))
     {

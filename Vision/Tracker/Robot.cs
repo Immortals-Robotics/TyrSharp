@@ -109,7 +109,7 @@ public partial class Robot
         }
 
         var angDiff = Angle.FromRad(_filterW.Position) - robot.Detection.Orientation.GetValueOrDefault();
-        if (Math.Abs(angDiff.Deg) > dtInSec * MaxAngularVelocity)
+        if (Math.Abs(angDiff.DegNormalized) > dtInSec * MaxAngularVelocity)
         {
             // orientation mismatch, maybe a +-90° vision switch => refuse update
             return false;

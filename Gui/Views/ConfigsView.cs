@@ -1,12 +1,14 @@
 using Hexa.NET.ImGui;
 using Tyr.Common.Config;
 using Tyr.Common.Debug.Drawing;
+using Tyr.Common.Math;
 using Tyr.Common.Network;
+using Tyr.Common.Time;
 using Tyr.Gui.Backend;
 
 namespace Tyr.Gui.Views;
 
-public class ConfigsView
+public partial class ConfigsView
 {
     private ImGuiTextFilterPtr _filter = ImGui.ImGuiTextFilter();
     private bool IsFiltering => _filter.IsActive();
@@ -28,7 +30,7 @@ public class ConfigsView
                 ImGui.Separator();
 
                 // Count how many items are shown/filtered
-                var totalItems = Registry.Configurables.Count;
+                var totalItems = Registry.Configurables.Values.Sum(configurable => configurable.Entries.Count);
                 var visibleItems = IsFiltering ? CountMatchingFields(Registry.Tree) : totalItems;
 
                 ImGui.TextColored(Color.Zinc400, $"{visibleItems} of {totalItems} items matching");
@@ -218,99 +220,43 @@ public class ConfigsView
         switch (field.Value)
         {
             case int intValue:
-                ImGui.InputInt("", ref intValue);
-                if ((ImGui.IsItemEdited() && ImGui.IsItemClicked()) // changed using the +/- buttons
-                    || ImGui.IsItemDeactivatedAfterEdit()) // or using the text field
-                {
-                    field.Value = intValue;
-                }
-
+                DrawFieldEditorInt(field, intValue);
                 break;
 
             case float floatValue:
-                ImGui.InputFloat("", ref floatValue);
-                if (ImGui.IsItemDeactivatedAfterEdit())
-                {
-                    field.Value = floatValue;
-                }
-
+                DrawFieldEditorFloat(field, floatValue);
                 break;
 
             case double doubleValue:
-                var tmpValue = (float)doubleValue;
-                ImGui.InputFloat("", ref tmpValue);
-                if (ImGui.IsItemDeactivatedAfterEdit())
-                {
-                    field.Value = (double)tmpValue;
-                }
-
+                DrawFieldEditorDouble(field, doubleValue);
                 break;
 
             case bool boolValue:
-                ImGui.Checkbox("", ref boolValue);
-                if (ImGui.IsItemDeactivatedAfterEdit())
-                {
-                    field.Value = boolValue;
-                }
-
+                DrawFieldEditorBool(field, boolValue);
                 break;
 
             case string stringValue:
-                ImGui.InputText("", ref stringValue, 256);
-                if (ImGui.IsItemDeactivatedAfterEdit())
-                {
-                    field.Value = stringValue;
-                }
-
+                DrawFieldEditorString(field, stringValue);
                 break;
 
             case Address addressValue:
-                var changed = false;
-                var ip = addressValue.Ip;
-                var port = addressValue.Port;
-                ImGui.InputText("##ip", ref ip, 256, ImGuiInputTextFlags.CharsDecimal);
-                changed |= ImGui.IsItemDeactivatedAfterEdit();
-                ImGui.SameLine();
-                ImGui.Text(":");
-                ImGui.SameLine();
-                ImGui.InputInt("##port", ref port);
-                changed |= ImGui.IsItemDeactivatedAfterEdit();
-
-                if (changed)
-                {
-                    field.Value = new Address { Ip = ip, Port = port };
-                }
-
+                DrawFieldEditorAddress(field, addressValue);
                 break;
 
             case Enum enumValue:
-                var enumType = enumValue.GetType();
-                if (!_enumCache.TryGetValue(enumType, out var enumData))
-                {
-                    enumData.Names = Enum.GetNames(enumType);
-                    enumData.Values = Enum.GetValues(enumType);
-
-                    _enumCache[enumType] = enumData;
-                }
-
-                var index = Array.IndexOf(enumData.Values, enumValue);
-                ImGui.Combo("", ref index, enumData.Names, enumData.Names.Length);
-                if (ImGui.IsItemDeactivatedAfterEdit())
-                {
-                    field.Value = enumData.Values.GetValue(index)!;
-                }
-
+                DrawFieldEditorEnum(field, enumValue);
                 break;
 
             case Color colorValue:
-                var colorVec = colorValue.RGBA;
-                ImGui.ColorEdit4("", ref colorVec, 
-                    ImGuiColorEditFlags.DisplayHex | ImGuiColorEditFlags.AlphaBar);
-                if (ImGui.IsItemEdited())
-                {
-                    field.Value = new Color(colorVec);
-                }
+                DrawFieldEditorColor(field, colorValue);
+                break;
 
+            case Angle angleValue:
+                DrawFieldEditorAngle(field, angleValue);
+                break;
+
+            case DeltaTime deltaTimeValue:
+                DrawFieldEditorDeltaTime(field, deltaTimeValue);
                 break;
 
             default:
@@ -356,7 +302,7 @@ public class ConfigsView
             {
                 case Configurable configurable:
                     count += _filter.PassFilter(configurable.Type.Name)
-                        ? configurable.Entries.Count()
+                        ? configurable.Entries.Count
                         : configurable.Entries.Count(field => _filter.PassFilter(field.Name));
                     break;
                 case Dictionary<string, object> subTree:

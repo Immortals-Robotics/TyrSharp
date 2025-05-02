@@ -15,17 +15,18 @@ namespace Tyr.Gui.Rendering;
 [Configurable]
 internal partial class DrawableRenderer
 {
+    [ConfigEntry] private static float RobotTextSize { get; set; } = 135f;
     [ConfigEntry] private static Color RobotTextColor { get; set; } = Color.Zinc950;
-    [ConfigEntry] private static float ArrowHeadSize { get; set; } = 20f;
 
     [ConfigEntry("Angle in degrees of the flat front of the robot")]
-    private static float RobotFlatAngle { get; set; } = 45f;
+    private static Angle RobotFlatAngle { get; set; } = Angle.FromDeg(45f);
 
-    [ConfigEntry] private static int RobotArcSegments { get; set; } = 20;
     [ConfigEntry] private static float RobotRadius { get; set; } = 90f;
 
     [ConfigEntry("Size of the cross used to draw points")]
     private static float PointCrossSize { get; set; } = 10f;
+
+    [ConfigEntry] private static float ArrowHeadSize { get; set; } = 20f;
 
     [ConfigEntry] private static Color FilledOutlineColor { get; set; } = Color.Zinc950.WithAlpha(0.5f);
 
@@ -55,6 +56,9 @@ internal partial class DrawableRenderer
                     break;
                 case Circle circle:
                     DrawCircle(circle, command.Color, command.Options);
+                    break;
+                case Arc arc:
+                    DrawArc(arc, command.Color, command.Options);
                     break;
                 case Line line:
                     DrawLine(line, command.Color, command.Options);
@@ -125,6 +129,28 @@ internal partial class DrawableRenderer
         {
             var outlineColor = options.IsFilled ? FilledOutlineColor : color;
             _drawList.AddCircle(center, radius, ImGui.ColorConvertFloat4ToU32(outlineColor), thickness);
+        }
+    }
+
+    private void DrawArc(Arc arc, Color color, Options options)
+    {
+        var center = Camera.WorldToScreen(arc.Center);
+        var radius = Camera.WorldToScreenLength(arc.Radius);
+
+        var thickness = Camera.WorldToScreenLength(options.Thickness);
+
+        if (options.IsFilled)
+        {
+            _drawList.PathArcTo(center, radius, -arc.Start.Rad, -arc.End.Rad);
+            _drawList.PathFillConvex(ImGui.ColorConvertFloat4ToU32(color));
+        }
+
+        if (!Utils.ApproximatelyZero(thickness))
+        {
+            _drawList.PathArcTo(center, radius, -arc.Start.Rad, -arc.End.Rad);
+            var outlineColor = options.IsFilled ? FilledOutlineColor : color;
+            var flags = arc.Closed ? ImDrawFlags.Closed : ImDrawFlags.None;
+            _drawList.PathStroke(ImGui.ColorConvertFloat4ToU32(outlineColor), flags, thickness);
         }
     }
 
@@ -218,65 +244,23 @@ internal partial class DrawableRenderer
 
     private void DrawRobot(Robot robot, Color color, Options options)
     {
-        var center = Camera.WorldToScreen(robot.Position);
-        var radius = Camera.WorldToScreenLength(RobotRadius);
-        var thickness = Camera.WorldToScreenLength(options.Thickness);
-
         if (robot.Orientation.HasValue)
         {
-            var angle = -robot.Orientation.Value.Rad;
-
-            var robotFlatAngleRad = float.DegreesToRadians(RobotFlatAngle);
-            var startAngle = angle + robotFlatAngleRad;
-            var endAngle = angle + 2 * MathF.PI - robotFlatAngleRad;
-
-            Span<Vector2> points = stackalloc Vector2[RobotArcSegments + 1];
-
-            for (var i = 0; i <= RobotArcSegments; i++)
-            {
-                var t = (float)i / RobotArcSegments;
-                var theta = startAngle + (endAngle - startAngle) * t;
-
-                var dir = new Vector2(MathF.Cos(theta), MathF.Sin(theta));
-                points[i] = center + dir * radius;
-            }
-
-            unsafe
-            {
-                fixed (Vector2* ptr = points)
-                {
-                    if (options.IsFilled)
-                    {
-                        _drawList.AddConvexPolyFilled(ptr, points.Length, ImGui.ColorConvertFloat4ToU32(color));
-                    }
-
-                    if (!Utils.ApproximatelyZero(thickness))
-                    {
-                        var outlineColor = options.IsFilled ? FilledOutlineColor : color;
-                        _drawList.AddPolyline(ptr, points.Length, ImGui.ColorConvertFloat4ToU32(outlineColor),
-                            ImDrawFlags.Closed, thickness);
-                    }
-                }
-            }
+            var arc = new Arc(robot.Position, RobotRadius,
+                robot.Orientation.Value + RobotFlatAngle,
+                robot.Orientation.Value + Angle.FromRad(2 * MathF.PI) - RobotFlatAngle,
+                true);
+            DrawArc(arc, color, options);
         }
         else
         {
-            if (options.IsFilled)
-            {
-                _drawList.AddCircleFilled(center, radius, ImGui.ColorConvertFloat4ToU32(color), RobotArcSegments);
-            }
-
-            if (!Utils.ApproximatelyZero(thickness))
-            {
-                var outlineColor = options.IsFilled ? FilledOutlineColor : color;
-                _drawList.AddCircle(center, radius, ImGui.ColorConvertFloat4ToU32(outlineColor), RobotArcSegments,
-                    thickness);
-            }
+            var circle = new Circle(robot.Position, RobotRadius);
+            DrawCircle(circle, color, options);
         }
 
         if (robot.Id.HasValue)
         {
-            var text = new Text(robot.Id.Value.ToString(), robot.Position, 135f, TextAlignment.Center);
+            var text = new Text(robot.Id.Value.ToString(), robot.Position, RobotTextSize, TextAlignment.Center);
             DrawText(text, RobotTextColor);
         }
     }

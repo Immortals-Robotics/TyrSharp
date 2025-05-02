@@ -1,8 +1,18 @@
-﻿namespace Tyr.Common.Time;
+﻿using Tomlet;
+using Tomlet.Models;
+
+namespace Tyr.Common.Time;
 
 public readonly record struct DeltaTime : IComparable<DeltaTime>
 {
     public long Nanoseconds { get; }
+
+    static DeltaTime()
+    {
+        TomletMain.RegisterMapper(
+            dt => new TomlLong(dt.Nanoseconds),
+            toml => FromNanoseconds(((TomlLong)toml).Value));
+    }
 
     private DeltaTime(long nanoseconds) => Nanoseconds = nanoseconds;
 

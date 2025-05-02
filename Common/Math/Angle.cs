@@ -1,4 +1,6 @@
 ﻿using System.Numerics;
+using Tomlet;
+using Tomlet.Models;
 
 namespace Tyr.Common.Math;
 
@@ -6,10 +8,16 @@ public readonly record struct Angle
 {
     public float Rad { get; }
 
+    static Angle()
+    {
+        TomletMain.RegisterMapper(
+            angle => new TomlDouble(angle.Deg),
+            toml => FromDeg((float)((TomlDouble)toml).Value));
+    }
+
     private Angle(float radians)
     {
-        // normalize to [-PI, PI]
-        Rad = MathF.IEEERemainder(radians, 2f * MathF.PI);
+        Rad = radians;
     }
 
     public static Angle FromDeg(float deg) => new(float.DegreesToRadians(deg));
@@ -23,8 +31,14 @@ public readonly record struct Angle
         return FromRad(angle);
     }
 
+    // normalized to [-π, π]
+    public float RadNormalized => MathF.IEEERemainder(Rad, 2f * MathF.PI);
+
     public float Deg => float.RadiansToDegrees(Rad);
-    public float Deg360 => (Deg + 360f) % 360f;
+
+    // normalized to [-180, 180]
+    public float DegNormalized => float.RadiansToDegrees(RadNormalized);
+    public float Deg360 => (DegNormalized + 360f) % 360f;
 
     public float Sin() => MathF.Sin(Rad);
     public float Cos() => MathF.Cos(Rad);
@@ -38,9 +52,9 @@ public readonly record struct Angle
 
     public bool IsBetween(Angle a, Angle b)
     {
-        var diffA = System.Math.Abs((a - this).Deg);
-        var diffB = System.Math.Abs((b - this).Deg);
-        var diffAb = System.Math.Abs((a - b).Deg);
+        var diffA = System.Math.Abs((a - this).RadNormalized);
+        var diffB = System.Math.Abs((b - this).RadNormalized);
+        var diffAb = System.Math.Abs((a - b).RadNormalized);
 
         return Utils.ApproximatelyEqual(diffA + diffB, diffAb);
     }
@@ -50,17 +64,17 @@ public readonly record struct Angle
         return a + (b - a) * 0.5f;
     }
 
-    public static Angle operator +(Angle a, Angle b) => FromDeg(a.Deg + b.Deg);
-    public static Angle operator -(Angle a, Angle b) => FromDeg(a.Deg - b.Deg);
-    public static Angle operator -(Angle a) => FromDeg(-a.Deg);
-    public static Angle operator *(Angle a, float f) => FromDeg(a.Deg * f);
-    public static Angle operator /(Angle a, float f) => FromDeg(a.Deg / f);
+    public static Angle operator +(Angle a, Angle b) => FromRad(a.Rad + b.Rad);
+    public static Angle operator -(Angle a, Angle b) => FromRad(a.Rad - b.Rad);
+    public static Angle operator -(Angle a) => FromRad(-a.Rad);
+    public static Angle operator *(Angle a, float f) => FromRad(a.Rad * f);
+    public static Angle operator /(Angle a, float f) => FromRad(a.Rad / f);
 
-    public static bool operator <(Angle a, Angle b) => (b - a).Deg > 0;
-    public static bool operator >(Angle a, Angle b) => (b - a).Deg < 0;
+    public static bool operator <(Angle a, Angle b) => (b - a).Rad > 0;
+    public static bool operator >(Angle a, Angle b) => (b - a).Rad < 0;
 
-    public override string ToString() => $"{Deg:F2} deg";
+    public override string ToString() => $"{DegNormalized:F2}°";
 
-    public bool Equals(Angle other) => Utils.ApproximatelyEqual(Deg, other.Deg);
-    public override int GetHashCode() => Deg.GetHashCode();
+    public bool Equals(Angle other) => Utils.ApproximatelyEqual(Rad, other.Rad);
+    public override int GetHashCode() => Rad.GetHashCode();
 }
