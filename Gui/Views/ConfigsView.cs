@@ -1,3 +1,4 @@
+using System.Numerics;
 using Hexa.NET.ImGui;
 using Tyr.Common.Config;
 using Tyr.Common.Debug.Drawing;
@@ -233,6 +234,18 @@ public partial class ConfigsView
 
             case bool boolValue:
                 DrawFieldEditorBool(field, boolValue);
+                break;
+            
+            case Vector2 vector2Value:
+                DrawFieldEditorVector2(field, vector2Value);
+                break;
+            
+            case Vector3 vector3Value:
+                DrawFieldEditorVector3(field, vector3Value);
+                break;
+            
+            case Vector4 vector4Value:
+                DrawFieldEditorVector4(field, vector4Value);
                 break;
 
             case string stringValue:

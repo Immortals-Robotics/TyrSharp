@@ -22,6 +22,11 @@ public sealed partial class Storage : IDisposable
     private readonly Debouncer _loadDebouncer;
     private readonly Debouncer _saveDebouncer;
 
+    static Storage()
+    {
+        VectorTomlMappers.Register();
+    }
+
     public Storage(string path, StorageType storageType)
     {
         Path = path;
