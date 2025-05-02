@@ -1,4 +1,5 @@
-﻿using ProtoBuf;
+﻿using System.Numerics;
+using ProtoBuf;
 using Tyr.Common.Math;
 
 namespace Tyr.Common.Data.Robot;
@@ -8,13 +9,7 @@ public struct Command
 {
     [ProtoMember(1)] public int VisionId;
 
-    [ProtoMember(2)] public Vector2 MotionRaw;
-
-    public System.Numerics.Vector2 Motion
-    {
-        get => MotionRaw;
-        set => MotionRaw = value;
-    }
+    [ProtoMember(2)] public Vector2 Motion;
 
     [ProtoMember(3)] public bool Halted;
 

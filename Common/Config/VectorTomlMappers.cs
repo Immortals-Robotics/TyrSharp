@@ -1,4 +1,5 @@
 ﻿using System.Numerics;
+using System.Runtime.CompilerServices;
 using Tomlet;
 using Tomlet.Models;
 
@@ -6,6 +7,8 @@ namespace Tyr.Common.Config;
 
 public static class VectorTomlMappers
 {
+#pragma warning disable CA2255 // The 'ModuleInitializer' attribute should only be used in
+    [ModuleInitializer]
     internal static void Register()
     {
         TomletMain.RegisterMapper(
@@ -62,4 +65,5 @@ public static class VectorTomlMappers
                 return new Vector4(x, y, z, w);
             });
     }
+#pragma warning restore CA2255
 }
