@@ -116,6 +116,11 @@ TickRateHz = 100 # default: 100
 
 
 [Referee]
+[Referee.Referee]
+RequiredHys = 5 # default: 5
+OurRestartBallMoveDis = 150.0 # default: 150
+DefaultBallMoveDis = 50.0 # default: 50
+
 [Referee.GcDataPublisher]
 GcAddress = { Ip = "224.5.23.1", Port = 10003 } # default: 224.5.23.1:10003
 

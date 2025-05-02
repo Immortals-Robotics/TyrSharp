@@ -1,52 +1,61 @@
 ﻿using System.Numerics;
+using Tyr.Common.Config;
 using Tracker = Tyr.Common.Data.Ssl.Vision.Tracker;
 using Gc = Tyr.Common.Data.Ssl.Gc;
 using Tyr.Common.Data.Referee;
 
 namespace Tyr.Referee;
 
-public class Referee
+[Configurable]
+public partial class Referee
 {
+    [ConfigEntry] private static int RequiredHys { get; set; } = 5;
+    [ConfigEntry] private static float OurRestartBallMoveDis { get; set; } = 150.0f;
+    [ConfigEntry] private static float DefaultBallMoveDis { get; set; } = 50.0f;
+
     private Tracker.Frame _vision = new();
 
-    private State _state = new();
-    public State State => _state;
+    public State State { get; private set; } = new();
 
     private Tracker.Ball? _lastBall;
     private int _moveHysteresis;
 
     public bool Process(Tracker.Frame? vision, Gc.Referee? gc)
     {
-        var oldState = _state;
+        var oldState = State;
 
         if (vision != null)
             _vision = vision;
 
         if (gc != null)
         {
-            _state.Gc = gc;
+            State = State with { Gc = gc };
         }
 
-        if (oldState.Gc.CommandCounter != _state.Gc.CommandCounter)
+        if (oldState.Gc.CommandCounter != State.Gc.CommandCounter)
         {
-            Log.ZLogInformation($"received GC command: [{_state.Gc.CommandCounter}] | {_state.Gc.Command}");
+            Log.ZLogInformation($"received GC command: [{State.Gc.CommandCounter}] | {State.Gc.Command}");
             OnNewCommand();
         }
 
-        if (_state.Restart() && BallInPlay())
+        if (State.Restart() && BallInPlay())
         {
-            _state.GameState = GameState.Running;
+            State = State with { GameState = GameState.Running };
         }
 
-        var color = _state.Gc.Command.ToColor();
-        if (color.HasValue)
-            _state.Color = color.Value;
-
-        if (oldState.GameState != _state.GameState || oldState.Ready != _state.Ready)
+        var color = State.Gc.Command.ToColor();
+        if (color != State.Color)
         {
-            Log.ZLogInformation($"state transition: {oldState} -> {_state}");
+            State = State with { Color = color };
+        }
 
-            _state.Timestamp = _state.Gc.PacketTimestamp;
+        if (oldState.GameState != State.GameState ||
+            oldState.Ready != State.Ready ||
+            oldState.Color != State.Color)
+        {
+            Log.ZLogInformation($"state transition: {oldState} -> {State}");
+
+            State = State with { Timestamp = State.Gc.PacketTimestamp };
             _lastBall = _vision.Ball;
             _moveHysteresis = 0;
 
@@ -58,12 +67,12 @@ public class Referee
 
     private bool BallInPlay()
     {
-        if (!_state.Ready)
+        if (!State.Ready)
         {
             return false;
         }
 
-        if (_state.Gc.CurrentActionTimeRemaining.Nanoseconds <= 0)
+        if (State.Gc.CurrentActionTimeRemaining.Nanoseconds <= 0)
         {
             return true;
         }
@@ -75,65 +84,59 @@ public class Referee
             return false;
         }
 
-        const int requiredHys = 5;
-        var requiredDis = _state.Our() && _state.Restart() ? 150.0f : 50.0f;
-
+        var requiredDis = State.OurRestart() ? OurRestartBallMoveDis : DefaultBallMoveDis;
         var ballMoveDis = Vector3.Distance(_vision.Ball.Value.Position, _lastBall.Value.Position);
-
         if (ballMoveDis > requiredDis)
         {
-            _moveHysteresis++;
+            _moveHysteresis = int.Clamp(_moveHysteresis + 1, 0, RequiredHys);
         }
 
-        return _moveHysteresis >= requiredHys;
+        return _moveHysteresis >= RequiredHys;
     }
 
     private void OnNewCommand()
     {
-        switch (_state.Gc.Command)
+        switch (State.Gc.Command)
         {
             case Gc.Command.Halt:
-                _state.GameState = GameState.Halt;
+                State = State with { GameState = GameState.Halt };
                 break;
 
             case Gc.Command.Stop:
-                _state.GameState = GameState.Stop;
+                State = State with { GameState = GameState.Stop };
                 break;
 
             case Gc.Command.ForceStart:
-                _state.GameState = GameState.Running;
+                State = State with { GameState = GameState.Running };
                 break;
 
-            case Gc.Command.NormalStart when _state.Restart():
-                _state.Ready = true;
+            case Gc.Command.NormalStart when State.Restart():
+                State = State with { Ready = true };
                 break;
 
             case Gc.Command.PrepareKickoffBlue:
             case Gc.Command.PrepareKickoffYellow:
-                _state.GameState = GameState.Kickoff;
-                _state.Ready = false;
+                State = State with { GameState = GameState.Kickoff, Ready = false };
                 break;
 
             case Gc.Command.PreparePenaltyBlue:
             case Gc.Command.PreparePenaltyYellow:
-                _state.GameState = GameState.Penalty;
-                _state.Ready = false;
+                State = State with { GameState = GameState.Penalty, Ready = false };
                 break;
 
             case Gc.Command.DirectFreeBlue:
             case Gc.Command.DirectFreeYellow:
-                _state.GameState = GameState.FreeKick;
-                _state.Ready = true;
+                State = State with { GameState = GameState.FreeKick, Ready = true };
                 break;
 
             case Gc.Command.BallPlacementBlue:
             case Gc.Command.BallPlacementYellow:
-                _state.GameState = GameState.BallPlacement;
+                State = State with { GameState = GameState.BallPlacement };
                 break;
 
             case Gc.Command.TimeoutYellow:
             case Gc.Command.TimeoutBlue:
-                _state.GameState = GameState.Timeout;
+                State = State with { GameState = GameState.Timeout };
                 break;
 
             case Gc.Command.GoalYellow:
@@ -141,7 +144,7 @@ public class Referee
                 break;
 
             default:
-                throw new ArgumentOutOfRangeException(null, _state.Gc.Command, null);
+                throw new ArgumentOutOfRangeException(null, State.Gc.Command, null);
         }
     }
 }
