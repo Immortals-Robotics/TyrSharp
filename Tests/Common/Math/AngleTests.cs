@@ -14,17 +14,17 @@ public class AngleTests
     [Fact]
     public void FromDeg_CreatesNormalizedAngle()
     {
-        Assert.Equal(90f, Angle.FromDeg(90).Deg, 3);
-        Assert.Equal(-90f, Angle.FromDeg(270).Deg, 3); // normalized to [-180, 180]
-        Assert.Equal(0f, Angle.FromDeg(360).Deg, 3);
-        Assert.Equal(0f, Angle.FromDeg(-720).Deg, 3);
+        Assert.Equal(90f, Angle.FromDeg(90).DegNormalized, 3);
+        Assert.Equal(-90f, Angle.FromDeg(270).DegNormalized, 3); // normalized to [-180, 180]
+        Assert.Equal(0f, Angle.FromDeg(360).DegNormalized, 3);
+        Assert.Equal(0f, Angle.FromDeg(-720).DegNormalized, 3);
     }
 
     [Fact]
     public void FromRad_CreatesCorrectAngle()
     {
         var angle = Angle.FromRad(MathF.PI);
-        Assert.Equal(180f, angle.Deg, 3);
+        Assert.Equal(180f, angle.DegNormalized, 3);
     }
 
     [Fact]
@@ -40,10 +40,10 @@ public class AngleTests
     public void FromVector_CreatesAngleFromDirection()
     {
         var angle = Angle.FromVector(new Vector2(1, 0)); // → 0°
-        Assert.Equal(0f, angle.Deg, 3);
+        Assert.Equal(0f, angle.DegNormalized, 3);
 
         angle = Angle.FromVector(new Vector2(0, 1)); // ↑ 90°
-        Assert.Equal(90f, angle.Deg, 3);
+        Assert.Equal(90f, angle.DegNormalized, 3);
     }
 
     [Fact]
@@ -52,7 +52,7 @@ public class AngleTests
         var a = Angle.FromDeg(0);
         var b = Angle.FromDeg(90);
         var avg = Angle.Average(a, b);
-        Assert.True(avg.Deg is > 35 and < 55);
+        Assert.True(avg.DegNormalized is > 35 and < 55);
     }
 
     [Fact]

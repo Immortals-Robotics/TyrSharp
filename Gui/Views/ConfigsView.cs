@@ -1,7 +1,9 @@
 using Hexa.NET.ImGui;
 using Tyr.Common.Config;
 using Tyr.Common.Debug.Drawing;
+using Tyr.Common.Math;
 using Tyr.Common.Network;
+using Tyr.Common.Time;
 using Tyr.Gui.Backend;
 
 namespace Tyr.Gui.Views;
@@ -304,12 +306,35 @@ public class ConfigsView
 
             case Color colorValue:
                 var colorVec = colorValue.RGBA;
-                ImGui.ColorEdit4("", ref colorVec, 
+                ImGui.ColorEdit4("", ref colorVec,
                     ImGuiColorEditFlags.DisplayHex | ImGuiColorEditFlags.AlphaBar);
                 if (ImGui.IsItemEdited())
                 {
                     field.Value = new Color(colorVec);
                 }
+
+                break;
+
+            case Angle angleValue:
+                var radians = angleValue.Rad;
+                ImGui.SliderAngle("", ref radians);
+                if (ImGui.IsItemEdited())
+                {
+                    field.Value = Angle.FromRad(radians);
+                }
+
+                break;
+
+            case DeltaTime deltaTimeValue:
+                var seconds = deltaTimeValue.Seconds;
+                ImGui.InputDouble("", ref seconds);
+                if (ImGui.IsItemDeactivatedAfterEdit())
+                {
+                    field.Value = DeltaTime.FromSeconds(seconds);
+                }
+                
+                ImGui.SameLine();
+                ImGui.Text("s");
 
                 break;
 

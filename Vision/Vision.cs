@@ -7,7 +7,7 @@ namespace Tyr.Vision;
 [Configurable]
 public sealed partial class Vision
 {
-    [ConfigEntry] private static float CameraTooOldTime { get; set; } = 1f;
+    [ConfigEntry] private static DeltaTime CameraTooOldTime { get; set; } = DeltaTime.FromSeconds(1f);
 
     private readonly FilteredFrame _filteredFrame = new();
 
@@ -54,7 +54,7 @@ public sealed partial class Vision
             var averageTimestamp = Timestamp.FromSeconds(
                 _cameras.Values.Average(camera => camera.Timestamp.Seconds));
             _cameras.RemoveAll((_, camera) =>
-                camera.Timestamp - averageTimestamp > DeltaTime.FromSeconds(CameraTooOldTime));
+                camera.Timestamp - averageTimestamp > CameraTooOldTime);
         }
 
         foreach (var camera in _cameras.Values)

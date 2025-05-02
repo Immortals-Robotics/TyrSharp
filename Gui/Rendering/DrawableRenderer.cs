@@ -19,7 +19,7 @@ internal partial class DrawableRenderer
     [ConfigEntry] private static float ArrowHeadSize { get; set; } = 20f;
 
     [ConfigEntry("Angle in degrees of the flat front of the robot")]
-    private static float RobotFlatAngle { get; set; } = 45f;
+    private static Angle RobotFlatAngle { get; set; } = Angle.FromDeg(45f);
 
     [ConfigEntry] private static int RobotArcSegments { get; set; } = 20;
     [ConfigEntry] private static float RobotRadius { get; set; } = 90f;
@@ -226,7 +226,7 @@ internal partial class DrawableRenderer
         {
             var angle = -robot.Orientation.Value.Rad;
 
-            var robotFlatAngleRad = float.DegreesToRadians(RobotFlatAngle);
+            var robotFlatAngleRad = RobotFlatAngle.Rad;
             var startAngle = angle + robotFlatAngleRad;
             var endAngle = angle + 2 * MathF.PI - robotFlatAngleRad;
 

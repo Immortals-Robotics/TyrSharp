@@ -8,8 +8,8 @@ namespace Tyr.Common.Config;
 public sealed partial class Storage : IDisposable
 {
     [ConfigEntry] private static int MaxLoadAttempts { get; set; } = 10;
-    [ConfigEntry] private static float LoadAttemptsDelayMs { get; set; } = 100f;
-    [ConfigEntry] private static float DebounceDelayS { get; set; } = 0.2f;
+    [ConfigEntry] private static DeltaTime LoadAttemptsDelay { get; set; } = DeltaTime.FromSeconds(0.1f);
+    [ConfigEntry] private static DeltaTime DebounceDelay { get; set; } = DeltaTime.FromSeconds(0.2f);
 
     public string Path { get; }
     public StorageType StorageType { get; }
@@ -34,8 +34,8 @@ public sealed partial class Storage : IDisposable
         var directory = System.IO.Path.GetDirectoryName(fullPath)!;
         var filename = System.IO.Path.GetFileName(fullPath);
 
-        _loadDebouncer = new Debouncer(DeltaTime.FromSeconds(DebounceDelayS), Load);
-        _saveDebouncer = new Debouncer(DeltaTime.FromSeconds(DebounceDelayS), Save);
+        _loadDebouncer = new Debouncer(DebounceDelay, Load);
+        _saveDebouncer = new Debouncer(DebounceDelay, Save);
 
         _watcher = new FileSystemWatcher(directory, filename)
         {
@@ -87,7 +87,7 @@ public sealed partial class Storage : IDisposable
             }
             catch (IOException) when (attempt < MaxLoadAttempts)
             {
-                Thread.Sleep(TimeSpan.FromMilliseconds(LoadAttemptsDelayMs));
+                Thread.Sleep(LoadAttemptsDelay.ToTimeSpan());
             }
             catch (Exception e)
             {

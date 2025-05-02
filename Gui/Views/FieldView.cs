@@ -1,6 +1,7 @@
 ﻿using System.Numerics;
 using Cysharp.Text;
 using Hexa.NET.ImGui;
+using Tyr.Common.Config;
 using Tyr.Common.Data.Ssl.Vision.Geometry;
 using Tyr.Common.Dataflow;
 using Tyr.Common.Math;
@@ -11,8 +12,14 @@ using Debug = Tyr.Common.Debug;
 
 namespace Tyr.Gui.Views;
 
-public sealed class FieldView : IDisposable
+[Configurable]
+public sealed partial class FieldView : IDisposable
 {
+    [ConfigEntry] private static float ZoomFactor { get; set; } = 1.1f;
+
+    [ConfigEntry]
+    private static Debug.Drawing.Color LineColor { get; set; } = Debug.Drawing.Color.White.WithAlpha(0.7f);
+
     private readonly DebugFramer _debugFramer;
     private readonly DebugFilter _filter;
     private readonly DrawableRenderer _renderer = new();
@@ -53,10 +60,9 @@ public sealed class FieldView : IDisposable
                 // zooming
                 if (!Utils.ApproximatelyZero(ImGui.GetIO().MouseWheel))
                 {
-                    var zoomFactor = 1.1f; // Adjust as needed for smoother/quicker zooming
                     var newZoom = ImGui.GetIO().MouseWheel > 0
-                        ? _renderer.Camera.Zoom * zoomFactor
-                        : _renderer.Camera.Zoom / zoomFactor;
+                        ? _renderer.Camera.Zoom * ZoomFactor
+                        : _renderer.Camera.Zoom / ZoomFactor;
 
                     var mouseScreen = ImGui.GetMousePos();
                     var mouseWorldBefore = _renderer.Camera.ScreenToWorld(mouseScreen);
@@ -133,12 +139,10 @@ public sealed class FieldView : IDisposable
             DrawInternal(new Debug.Drawing.Drawables.Rectangle(_fieldSize.Value.FieldRectangleWithBoundary),
                 Debug.Drawing.Color.Green800, Debug.Drawing.Options.Filled);
 
-            var lineColor = Debug.Drawing.Color.White.WithAlpha(0.7f);
-
             foreach (var line in _fieldSize.Value.FieldLines)
             {
                 DrawInternal(new Debug.Drawing.Drawables.LineSegment(line.LineSegment),
-                    lineColor, Debug.Drawing.Options.Outline(line.Thickness));
+                    LineColor, Debug.Drawing.Options.Outline(line.Thickness));
             }
 
             var lineThickness = _fieldSize.Value.LineThickness.GetValueOrDefault();
