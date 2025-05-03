@@ -5,6 +5,7 @@ using Tyr.Common.Data.Ssl;
 using Tyr.Common.Data.Ssl.Vision.Geometry;
 using Tyr.Common.Time;
 using Tyr.Vision.Data;
+using Tyr.Vision.Tracking;
 
 namespace Tyr.Vision;
 
@@ -33,25 +34,14 @@ public partial class Camera(uint id)
     public DeltaTime DeltaTime => _frameTimeEstimator.DeltaTime ?? DeltaTime.Zero;
     public float Fps => (float)(1 / DeltaTime.Seconds);
 
-    public Dictionary<RobotId, Tracker.Robot> Robots { get; } = [];
-    public List<Tracker.Ball> Balls { get; } = [];
+    public Dictionary<RobotId, RobotTracker> Robots { get; } = [];
+    public List<BallTracker> Balls { get; } = [];
 
     private readonly DeltaTimeEstimator _frameTimeEstimator = new();
 
-    private CameraCalibration? _calibration;
-    private FieldSize? _fieldSize;
+    public CameraCalibration? Calibration { get; set; }
 
-    private float RobotRadius => _fieldSize?.MaxRobotRadius ?? 90f;
-
-    public void OnCalibration(CameraCalibration calibration)
-    {
-        _calibration = calibration;
-    }
-
-    public void OnFieldSize(FieldSize fieldSize)
-    {
-        _fieldSize = fieldSize;
-    }
+    private float RobotRadius => Vision.FieldSize.MaxRobotRadius ?? 90f;
 
     public void OnFrame(Detection.Frame frame, FilteredFrame lastFilteredFrame)
     {
@@ -86,7 +76,7 @@ public partial class Camera(uint id)
 
     private bool IsOutside(Vector2 position)
     {
-        return _fieldSize.HasValue && !_fieldSize.Value.FieldRectangleWithBoundary.Inside(position);
+        return !Vision.FieldSize.FieldRectangleWithBoundary.Inside(position);
     }
 
     private void ProcessRobots(Detection.Frame frame, IReadOnlyList<FilteredRobot> filteredRobots)
@@ -152,7 +142,8 @@ public partial class Camera(uint id)
 
                     if (IsOutside(filtered.State.Position)) continue;
 
-                    var close = Vector2.Distance(filtered.State.Position, robot.Detection.Position) < CopyTrackerMaxDistance;
+                    var close = Vector2.Distance(filtered.State.Position, robot.Detection.Position) <
+                                CopyTrackerMaxDistance;
                     if (!close) continue;
 
                     filteredRobot = filtered;
@@ -160,8 +151,8 @@ public partial class Camera(uint id)
                 }
 
                 tracker = filteredRobot != null
-                    ? new Tracker.Robot(robot, filteredRobot.Value, color) // on a different camera already 
-                    : new Tracker.Robot(robot, color); // completely new robot on the field
+                    ? new RobotTracker(robot, filteredRobot.Value, color) // on a different camera already 
+                    : new RobotTracker(robot, color); // completely new robot on the field
 
 
                 Robots.Add(id, tracker);
@@ -186,7 +177,7 @@ public partial class Camera(uint id)
         {
             var raw = new RawBall(detection, frame);
 
-            var consumed = Balls.Any(t => t.Update(raw, _fieldSize?.FieldRectangle));
+            var consumed = Balls.Any(t => t.Update(raw, Vision.FieldSize.FieldRectangle));
             if (consumed) continue;
 
             // This is a new ball, we need to create a new tracker for it
@@ -203,8 +194,8 @@ public partial class Camera(uint id)
             if (IsOutside(raw.Detection.Position)) continue;
 
             var tracker = lastFilteredBall.HasValue
-                ? new Tracker.Ball(raw, lastFilteredBall.Value)
-                : new Tracker.Ball(raw)
+                ? new BallTracker(raw, lastFilteredBall.Value)
+                : new BallTracker(raw)
                 {
                     MaxDistance = 500
                 };

@@ -11,6 +11,8 @@ public sealed partial class Vision
 {
     [ConfigEntry] private static DeltaTime CameraTooOldTime { get; set; } = DeltaTime.FromSeconds(1f);
 
+    public static FieldSize FieldSize { get; set; } = FieldSize.DivisionA;
+
     private readonly FilteredFrame _filteredFrame = new();
 
     private readonly Dictionary<uint, Camera> _cameras = [];
@@ -29,19 +31,12 @@ public sealed partial class Vision
     /// This method should be called once per tick.
     internal void Process(
         IEnumerable<Detection.Frame> frames,
-        IEnumerable<CameraCalibration> calibrations,
-        FieldSize? fieldSize)
+        IEnumerable<CameraCalibration> calibrations)
     {
         foreach (var calibration in calibrations)
         {
             var camera = GetOrCreateCamera(calibration.CameraId);
-            camera.OnCalibration(calibration);
-        }
-
-        if (fieldSize.HasValue)
-        {
-            foreach (var camera in _cameras.Values)
-                camera.OnFieldSize(fieldSize.Value);
+            camera.Calibration = calibration;
         }
 
         foreach (var frame in frames)
@@ -74,10 +69,10 @@ public sealed partial class Vision
         for (var index = 0; index < camera.Balls.Count; index++)
         {
             var tracker = camera.Balls[index];
-            Draw.DrawCircle(tracker.Position, 25f, Color.Orange400,
+            Draw.DrawCircle(tracker.Filter.Position, 25f, Color.Orange400,
                 Options.Filled with { Thickness = 5f });
 
-            Plot.Plot($"cam[{camera.Id}] ball[{index}]", tracker.Velocity, "vel (mm/s)");
+            Plot.Plot($"cam[{camera.Id}] ball[{index}]", tracker.Filter.Velocity, "vel (mm/s)");
         }
     }
 

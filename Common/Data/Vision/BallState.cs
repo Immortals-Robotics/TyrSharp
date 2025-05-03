@@ -31,4 +31,12 @@ public readonly record struct BallState
         get => new(Spin[0].Rad, Spin[1].Rad);
         init => Spin = new Vector<Angle>([Angle.FromRad(value.X), Angle.FromRad(value.Y)]);
     }
+
+    /// <summary>
+    /// Returns true if the ball is in a chipped state
+    /// by checking if it has any vertical position, velocity or acceleration
+    /// </summary>
+    public bool IsChipped => Position.Z > 0 ||
+                             !Utils.ApproximatelyZero(Velocity.Z) ||
+                             !Utils.ApproximatelyZero(Acceleration.Z);
 }

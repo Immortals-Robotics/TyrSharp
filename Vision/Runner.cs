@@ -27,12 +27,12 @@ public sealed partial class Runner : IDisposable
 
     private void Tick()
     {
-        FieldSize? fieldSize = _fieldSizeSubscriber.TryGetLatest(out var f) ? f : null;
+        if (_fieldSizeSubscriber.TryGetLatest(out var fieldSize))
+        {
+            Vision.FieldSize = fieldSize;
+        }
 
-        _vision.Process(
-            _detectionSubscriber.All(),
-            _calibrationSubscriber.All(),
-            fieldSize);
+        _vision.Process(_detectionSubscriber.All(), _calibrationSubscriber.All());
     }
 
     public void Dispose()

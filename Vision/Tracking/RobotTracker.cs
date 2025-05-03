@@ -8,10 +8,10 @@ using Tyr.Common.Time;
 using Tyr.Vision.Data;
 using Tyr.Vision.Filter;
 
-namespace Tyr.Vision.Tracker;
+namespace Tyr.Vision.Tracking;
 
 [Configurable]
-public partial class Robot
+public partial class RobotTracker
 {
     [ConfigEntry] private static float InitialCovarianceXy { get; set; } = 100.0f;
     [ConfigEntry] private static float ModelErrorXy { get; set; } = 0.1f;
@@ -62,7 +62,7 @@ public partial class Robot
     public Angle Angle => Angle.FromRad(_filterW.Position);
     public Angle AngularVelocity => Angle.FromRad(_filterW.Velocity);
 
-    public Robot(RawRobot raw, TeamColor color)
+    public RobotTracker(RawRobot raw, TeamColor color)
     {
         _filterXy = new Filter2D(raw.Detection.Position,
             InitialCovarianceXy, ModelErrorXy, MeasurementErrorXy,
@@ -76,7 +76,7 @@ public partial class Robot
         LastRawRobot = raw;
     }
 
-    public Robot(RawRobot raw, FilteredRobot filtered, TeamColor color)
+    public RobotTracker(RawRobot raw, FilteredRobot filtered, TeamColor color)
     {
         _filterXy = new Filter2D(filtered.State.Position, filtered.State.Velocity,
             InitialCovarianceXy, ModelErrorXy, MeasurementErrorXy,
@@ -159,7 +159,7 @@ public partial class Robot
     private float AngularVelocityUncertaintyWeight =>
         MathF.Pow(_filterW.VelocityUncertainty * Uncertainty, -MergePower);
 
-    public static FilteredRobot Merge(IReadOnlyList<Robot> trackers, Timestamp timestamp)
+    public static FilteredRobot Merge(IReadOnlyList<RobotTracker> trackers, Timestamp timestamp)
     {
         Assert.IsNotEmpty(trackers);
 
