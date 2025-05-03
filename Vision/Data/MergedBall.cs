@@ -1,6 +1,6 @@
 ﻿using System.Numerics;
 
-namespace Tyr.Vision.Tracker;
+namespace Tyr.Vision.Data;
 
 public readonly record struct MergedBall
 {

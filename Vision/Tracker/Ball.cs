@@ -1,6 +1,7 @@
 ﻿using System.Numerics;
 using Tyr.Common.Config;
 using Tyr.Common.Math.Shapes;
+using Tyr.Vision.Data;
 using Tyr.Vision.Filter;
 
 namespace Tyr.Vision.Tracker;
