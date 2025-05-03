@@ -1,18 +1,14 @@
 ﻿namespace Tyr.Common.Data.Referee;
 
-public struct State
+public record State
 {
     // when transitioned to this state
-    public Timestamp Timestamp = default;
-    public GameState GameState = GameState.None;
-    public bool Ready = false;
-    public TeamColor Color = TeamColor.Blue;
+    public Timestamp Timestamp { get; init; }
+    public GameState GameState { get; init; } = GameState.None;
+    public bool Ready { get; init; }
+    public TeamColor Color { get; init; } = TeamColor.Unknown;
 
-    public Ssl.Gc.Referee Gc { get; set; } = new();
-
-    public State()
-    {
-    }
+    public Ssl.Gc.Referee Gc { get; init; } = new();
 
     public override string ToString()
     {

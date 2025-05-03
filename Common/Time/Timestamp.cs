@@ -1,8 +1,18 @@
-﻿namespace Tyr.Common.Time;
+﻿using Tomlet;
+using Tomlet.Models;
+
+namespace Tyr.Common.Time;
 
 public readonly record struct Timestamp : IComparable<Timestamp>
 {
     public long Nanoseconds { get; }
+
+    static Timestamp()
+    {
+        TomletMain.RegisterMapper(
+            time => new TomlLong(time.Nanoseconds),
+            toml => FromNanoseconds(((TomlLong)toml).Value));
+    }
 
     private Timestamp(long nanoseconds) => Nanoseconds = nanoseconds;
 
@@ -56,6 +66,5 @@ public readonly record struct Timestamp : IComparable<Timestamp>
 
     public int CompareTo(Timestamp other) => Nanoseconds.CompareTo(other.Nanoseconds);
 
-    public override string ToString() =>
-        $"{(int)NormalizedHours:D2}:{(int)NormalizedMinutes:D2}:{(int)NormalizedSeconds:D2}.{(int)NormalizedMilliseconds:D3}";
+    public override string ToString() => $"{Nanoseconds}ns";
 }

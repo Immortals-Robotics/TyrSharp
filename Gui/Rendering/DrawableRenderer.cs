@@ -248,7 +248,7 @@ internal partial class DrawableRenderer
         {
             var arc = new Arc(robot.Position, RobotRadius,
                 robot.Orientation.Value + RobotFlatAngle,
-                robot.Orientation.Value + Angle.FromRad(2 * MathF.PI) - RobotFlatAngle,
+                robot.Orientation.Value + 2f * Angle.Pi - RobotFlatAngle,
                 true);
             DrawArc(arc, color, options);
         }

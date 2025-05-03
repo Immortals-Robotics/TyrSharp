@@ -56,7 +56,7 @@ public static class StateExtensions
         ? state.Gc.BlueTeamSide
         : state.Gc.YellowTeamSide;
 
-    public static TeamColor? ToColor(this Command command)
+    public static TeamColor ToColor(this Command command)
     {
         switch (command)
         {
@@ -80,7 +80,7 @@ public static class StateExtensions
             case Command.Stop:
             case Command.NormalStart:
             case Command.ForceStart:
-                return null;
+                return TeamColor.Unknown;
 
             default:
                 throw new ArgumentOutOfRangeException(nameof(command), command, null);

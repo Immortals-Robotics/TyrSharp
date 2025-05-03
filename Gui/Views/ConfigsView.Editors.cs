@@ -1,4 +1,5 @@
-﻿using Hexa.NET.ImGui;
+﻿using System.Numerics;
+using Hexa.NET.ImGui;
 using Tyr.Common.Config;
 using Tyr.Common.Debug.Drawing;
 using Tyr.Common.Math;
@@ -9,6 +10,24 @@ namespace Tyr.Gui.Views;
 
 public partial class ConfigsView
 {
+    private static void DrawFieldEditorTime(ConfigEntry field, Timestamp value)
+    {
+        var ns = value.Nanoseconds;
+        unsafe
+        {
+            var nsPtr = &ns;
+            ImGui.InputScalar("", ImGuiDataType.S64, nsPtr);
+        }
+
+        if (ImGui.IsItemDeactivatedAfterEdit())
+        {
+            field.Value = Timestamp.FromNanoseconds(ns);
+        }
+
+        ImGui.SameLine();
+        ImGui.Text("ns");
+    }
+
     private static void DrawFieldEditorDeltaTime(ConfigEntry field, DeltaTime value)
     {
         var seconds = value.Seconds;
@@ -84,6 +103,33 @@ public partial class ConfigsView
     private static void DrawFieldEditorString(ConfigEntry field, string value)
     {
         ImGui.InputText("", ref value, 256);
+        if (ImGui.IsItemDeactivatedAfterEdit())
+        {
+            field.Value = value;
+        }
+    }
+
+    private static void DrawFieldEditorVector4(ConfigEntry field, Vector4 value)
+    {
+        ImGui.InputFloat4("", ref value);
+        if (ImGui.IsItemDeactivatedAfterEdit())
+        {
+            field.Value = value;
+        }
+    }
+
+    private static void DrawFieldEditorVector3(ConfigEntry field, Vector3 value)
+    {
+        ImGui.InputFloat3("", ref value);
+        if (ImGui.IsItemDeactivatedAfterEdit())
+        {
+            field.Value = value;
+        }
+    }
+
+    private static void DrawFieldEditorVector2(ConfigEntry field, Vector2 value)
+    {
+        ImGui.InputFloat2("", ref value);
         if (ImGui.IsItemDeactivatedAfterEdit())
         {
             field.Value = value;
