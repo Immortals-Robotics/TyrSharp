@@ -39,10 +39,12 @@ public partial class BallTracker
     public Timestamp LastUpdateTimestamp => LastRawBall.CaptureTimestamp;
     public Timestamp LastInFieldTimestamp { get; private set; }
 
-    public uint CameraId => LastRawBall.CameraId;
+    public Camera Camera { get; }
 
-    public BallTracker(RawBall ball)
+    public BallTracker(Camera camera, RawBall ball)
     {
+        Camera = camera;
+        
         Filter = new Filter2D(ball.Detection.Position,
             InitialCovariance, ModelError, MeasurementError,
             ball.CaptureTimestamp);
@@ -51,8 +53,10 @@ public partial class BallTracker
         LastRawBall = ball;
     }
 
-    public BallTracker(RawBall rawBall, FilteredBall filteredBall)
+    public BallTracker(Camera camera, RawBall rawBall, FilteredBall filteredBall)
     {
+        Camera = camera;
+        
         var velocity = filteredBall.State.Velocity.Xy()
             .ClampMagnitude(0f, MaxLinearVelocity);
 

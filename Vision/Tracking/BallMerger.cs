@@ -12,11 +12,9 @@ public partial class BallMerger
     private static float MergePower { get; set; } = 1.5f;
 
     [ConfigEntry("Minimum search radius for cam balls around last known position [mm]")]
-    private static float minSearchRadius { get; set; } = 300f;
+    private static float MinSearchRadius { get; set; } = 300f;
 
-    private float lastBallSearchRadius = 1f;
-    private List<Vector2> lastSearchPositions = [];
-    private Timestamp? lastBallUpdateTimestamp;
+    private Timestamp? _lastBallUpdateTimestamp;
 
     private static float PositionUncertaintyWeight(BallTracker ballTracker) =>
         MathF.Pow(ballTracker.Filter.PositionUncertainty.Length() * ballTracker.Uncertainty, -MergePower);
@@ -28,27 +26,53 @@ public partial class BallMerger
     {
         if (ballTrackers.Count == 0) return null;
 
-        lastBallUpdateTimestamp ??= lastFilteredBall.Timestamp;
+        _lastBallUpdateTimestamp ??= lastFilteredBall.Timestamp;
 
-        lastBallSearchRadius =
-            MathF.Abs((float)((timestamp - lastBallUpdateTimestamp.Value).Seconds * BallTracker.MaxLinearVelocity));
-        lastBallSearchRadius = MathF.Max(lastBallSearchRadius, minSearchRadius);
-        
-        lastSearchPositions.Clear();
-        List<BallTracker> primaryTrackers;
+        var dt = timestamp - _lastBallUpdateTimestamp.Value;
+        var searchRadius = MathF.Abs((float)dt.Seconds * BallTracker.MaxLinearVelocity);
+        searchRadius = MathF.Max(searchRadius, MinSearchRadius);
 
-        if (lastFilteredBall.State.IsChipped)
+        List<BallTracker> validTrackers = [];
+
+        foreach (var ballTracker in ballTrackers)
         {
-            // if the ball is airborne we project its position to the ground
-            // from all cameras and use these locations as search point
-            
-            
+            // if the ball is airborne, project its position to the ground
+            var searchPosition = lastFilteredBall.State.IsChipped
+                ? ballTracker.Camera.ProjectToGround(lastFilteredBall.State.Position)
+                : lastFilteredBall.State.Position.Xy();
+
+            var trackerPos = ballTracker.Filter.GetPosition(timestamp);
+
+            if (Vector2.Distance(trackerPos, searchPosition) < searchRadius)
+            {
+                validTrackers.Add(ballTracker);
+            }
         }
+
+        if (validTrackers.Count == 0) return null;
+
+        // select at most one tracker per camera
+        var selectedTrackers = validTrackers
+            .GroupBy(tracker => tracker.Camera.Id)
+            .Select(grouping => grouping.MaxBy(tracker => tracker.LastRawBall.CaptureTimestamp))
+            .OfType<BallTracker>()
+            .ToList();
+
+        Assert.IsPositive(selectedTrackers.Count);
+
+        var mergedBall = Merge(selectedTrackers, timestamp);
+
+        if (mergedBall.LatestRawBall.HasValue)
+        {
+            _lastBallUpdateTimestamp = mergedBall.LatestRawBall.Value.CaptureTimestamp;
+        }
+
+        return mergedBall;
     }
 
     public void Reset()
     {
-        lastBallUpdateTimestamp = null;
+        _lastBallUpdateTimestamp = null;
     }
 
     // Merges multiple ball trackers into a single merged ball,

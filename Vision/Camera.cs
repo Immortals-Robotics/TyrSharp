@@ -43,6 +43,15 @@ public partial class Camera(uint id)
 
     private float RobotRadius => Vision.FieldSize.MaxRobotRadius ?? 90f;
 
+    public Vector2 ProjectToGround(Vector3 pos)
+    {
+        if (!Calibration.HasValue) return pos.Xy();
+
+        var cameraPos = Calibration.Value.DerivedCameraWorld;
+        var scale = cameraPos.Z / (cameraPos.Z - pos.Z);
+        return cameraPos.Xy() + (pos - cameraPos).Xy() * scale;
+    }
+
     public void OnFrame(Detection.Frame frame, FilteredFrame lastFilteredFrame)
     {
         // frame id
@@ -194,8 +203,8 @@ public partial class Camera(uint id)
             if (IsOutside(raw.Detection.Position)) continue;
 
             var tracker = lastFilteredBall.HasValue
-                ? new BallTracker(raw, lastFilteredBall.Value)
-                : new BallTracker(raw)
+                ? new BallTracker(this, raw, lastFilteredBall.Value)
+                : new BallTracker(this, raw)
                 {
                     MaxDistance = 500
                 };
