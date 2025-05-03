@@ -31,33 +31,38 @@ FilledOutlineColor = "#09090B7F" # default: #09090B7F
 
 
 
-[Vision]
-[Vision.BallParameters]
-# Radius of the ball in [mm]
-Radius = 21.0 # default: 21
-# Sliding acceleration in [mm/s^2], expected to be negative
-AccelerationSlide = -3000.0 # default: -3000
-# Rolling acceleration in [mm/s^2], expected to be negative
-AccelerationRoll = -260.0 # default: -260
-# Fraction of the initial velocity where the ball starts to roll
-KSwitch = 0.6399999856948853 # default: 0.64
-# Ball inertia distribution between 0.4 (massive sphere) and 0.66 (hollow sphere)
-InertiaDistribution = 0.5 # default: 0.5
-# Amount of spin transferred during a redirect.
-RedirectSpinFactor = 0.800000011920929 # default: 0.8
-# Restitution coefficient for redirected balls from a bot.
-RedirectRestitutionCoefficient = 0.20000000298023224 # default: 0.2
-# Chip kick velocity damping factor in XY direction for the first hop
-ChipDampingXyFirstHop = 0.800000011920929 # default: 0.8
-# Chip kick velocity damping factor in XY direction for all following hops
-ChipDampingXyOtherHops = 0.8500000238418579 # default: 0.85
-# Chip kick velocity damping factor in Z direction
-ChipDampingZ = 0.4699999988079071 # default: 0.47
-# If a chipped ball does not reach this height it is considered rolling [mm]
-MinHopHeight = 10.0 # default: 10
-# Max. ball height that can be intercepted by robots [mm]
-MaxInterceptableHeight = 150.0 # default: 150
+[Common]
+[Common.Data]
+[Common.Data.CommonConfigs]
+# The variety of standard patterns that we can have is 16
+MaxRobots = 16 # default: 16
+# Hope it lasts
+ImmortalsIsTheBestTeam = true # default: True
+OurColor = "Unknown" # default: Unknown
 
+
+[Common.Config]
+[Common.Config.Storage]
+MaxLoadAttempts = 10 # default: 10
+LoadAttemptsDelay = 0.1 # default: 0.100000s
+DebounceDelay = 0.2 # default: 0.200000s
+
+
+[Common.Debug]
+[Common.Debug.Logging]
+[Common.Debug.Logging.Logging]
+# The level logs are filtered at the source. Anything below this will be rejected on the log call.
+Level = "Trace" # default: Debug
+
+
+[Common.Debug.Assertion]
+[Common.Debug.Assertion.Assert]
+Enabled = true # default: True
+
+
+
+
+[Vision]
 [Vision.Tracker]
 [Vision.Tracker.Ball]
 InitialCovariance = 1000.0 # default: 1000
@@ -89,6 +94,34 @@ MaxAngularVelocity = 1700.0 # default: 1700
 MaxHealth = 20 # default: 20
 
 
+[Vision.Data]
+[Vision.Data.BallParameters]
+# Radius of the ball in [mm]
+Radius = 21.0 # default: 21
+# Sliding acceleration in [mm/s^2], expected to be negative
+AccelerationSlide = -3000.0 # default: -3000
+# Rolling acceleration in [mm/s^2], expected to be negative
+AccelerationRoll = -260.0 # default: -260
+# Fraction of the initial velocity where the ball starts to roll
+KSwitch = 0.6399999856948853 # default: 0.64
+# Ball inertia distribution between 0.4 (massive sphere) and 0.66 (hollow sphere)
+InertiaDistribution = 0.5 # default: 0.5
+# Amount of spin transferred during a redirect.
+RedirectSpinFactor = 0.800000011920929 # default: 0.8
+# Restitution coefficient for redirected balls from a bot.
+RedirectRestitutionCoefficient = 0.20000000298023224 # default: 0.2
+# Chip kick velocity damping factor in XY direction for the first hop
+ChipDampingXyFirstHop = 0.800000011920929 # default: 0.8
+# Chip kick velocity damping factor in XY direction for all following hops
+ChipDampingXyOtherHops = 0.8500000238418579 # default: 0.85
+# Chip kick velocity damping factor in Z direction
+ChipDampingZ = 0.4699999988079071 # default: 0.47
+# If a chipped ball does not reach this height it is considered rolling [mm]
+MinHopHeight = 10.0 # default: 10
+# Max. ball height that can be intercepted by robots [mm]
+MaxInterceptableHeight = 150.0 # default: 150
+
+
 [Vision.Camera]
 # Time after which an invisible ball is removed
 InvisibleLifetimeBall = 1.0 # default: 1.000000s
@@ -108,37 +141,6 @@ CameraTooOldTime = 1.0 # default: 1.000000s
 
 [Vision.Runner]
 TickRateHz = 100 # default: 100
-
-
-[Common]
-[Common.Data]
-[Common.Data.CommonConfigs]
-# The variety of standard patterns that we can have is 16
-MaxRobots = 16 # default: 16
-# Hope it lasts
-ImmortalsIsTheBestTeam = true # default: True
-OurColor = "Unknown" # default: Unknown
-
-
-[Common.Config]
-[Common.Config.Storage]
-MaxLoadAttempts = 10 # default: 10
-LoadAttemptsDelay = 0.1 # default: 0.100000s
-DebounceDelay = 0.2 # default: 0.200000s
-
-
-[Common.Debug]
-[Common.Debug.Logging]
-[Common.Debug.Logging.Logging]
-# The level logs are filtered at the source. Anything below this will be rejected on the log call.
-Level = "Trace" # default: Debug
-
-
-[Common.Debug.Assertion]
-[Common.Debug.Assertion.Assert]
-Enabled = true # default: True
-
-
 
 
 [Referee]

@@ -1,4 +1,4 @@
-﻿namespace Tyr.Vision;
+﻿namespace Tyr.Vision.Data;
 
 /// <summary>
 /// Represents a raw detection (robot or ball) from a single detection frame,

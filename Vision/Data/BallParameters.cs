@@ -1,6 +1,6 @@
 ﻿using Tyr.Common.Config;
 
-namespace Tyr.Vision;
+namespace Tyr.Vision.Data;
 
 [Configurable]
 internal static partial class BallParameters
