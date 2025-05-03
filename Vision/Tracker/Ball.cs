@@ -61,7 +61,7 @@ public partial class Ball
 
     public Ball(RawBall rawBall, FilteredBall filteredBall)
     {
-        var velocity = filteredBall.Velocity.GetValueOrDefault().Xy()
+        var velocity = filteredBall.State.Velocity.Xy()
             .ClampMagnitude(0f, MaxLinearVelocity);
 
         _filter = new Filter2D(rawBall.Detection.Position, velocity,

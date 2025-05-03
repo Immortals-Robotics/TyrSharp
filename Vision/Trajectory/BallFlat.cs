@@ -2,9 +2,9 @@
 using Tyr.Common.Data.Vision;
 using Tyr.Common.Time;
 
-namespace Tyr.Vision.Trajectory.Ball;
+namespace Tyr.Vision.Trajectory;
 
-public class Flat : IBallTrajectory
+public class BallFlat : IBallTrajectory
 {
     private readonly BallState _initial;
 
@@ -16,7 +16,7 @@ public class Flat : IBallTrajectory
     private readonly Vector2 _accelerationSlideSpin;
     private readonly Vector2 _accelerationRoll;
 
-    public Flat(BallState initial)
+    public BallFlat(BallState initial)
     {
         _initial = initial;
 

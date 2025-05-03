@@ -1,12 +1,10 @@
-﻿using Tyr.Common.Data.Ssl.Vision.Detection;
-
-namespace Tyr.Vision;
+﻿namespace Tyr.Vision;
 
 /// <summary>
 /// Represents a raw detection (robot or ball) from a single detection frame,
 /// annotated with its source camera and timestamps.
 /// </summary>
-public readonly record struct RawDetection<T> where T : IObject
+public readonly record struct RawDetection<T> where T : Detection.IObject
 {
     public T Detection { get; }
 
@@ -17,10 +15,10 @@ public readonly record struct RawDetection<T> where T : IObject
     public Timestamp SentTimestamp { get; }
     public Timestamp? CameraCaptureTimestamp { get; }
 
-    public bool IsBall => typeof(T) == typeof(DetectionBall);
-    public bool IsRobot => typeof(T) == typeof(DetectionRobot);
+    public bool IsBall => typeof(T) == typeof(Detection.Ball);
+    public bool IsRobot => typeof(T) == typeof(Detection.Robot);
 
-    public RawDetection(T detection, DetectionFrame frame)
+    public RawDetection(T detection, Detection.Frame frame)
     {
         Detection = detection;
 

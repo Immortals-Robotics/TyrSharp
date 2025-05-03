@@ -1,6 +1,10 @@
 ﻿using System.Numerics;
 using Tyr.Common.Config;
+using Tyr.Common.Data;
+using Tyr.Common.Data.Ssl;
+using Tyr.Common.Data.Ssl.Vision.Geometry;
 using Tyr.Common.Time;
+using Tyr.Vision.Data;
 
 namespace Tyr.Vision;
 
@@ -49,7 +53,7 @@ public partial class Camera(uint id)
         _fieldSize = fieldSize;
     }
 
-    public void OnFrame(DetectionFrame frame, FilteredFrame lastFilteredFrame)
+    public void OnFrame(Detection.Frame frame, FilteredFrame lastFilteredFrame)
     {
         // frame id
         var expectedFrameId = FrameId == 0 ? frame.FrameNumber : FrameId + 1;
@@ -85,7 +89,7 @@ public partial class Camera(uint id)
         return _fieldSize.HasValue && !_fieldSize.Value.FieldRectangleWithBoundary.Inside(position);
     }
 
-    private void ProcessRobots(DetectionFrame frame, IReadOnlyList<FilteredRobot> filteredRobots)
+    private void ProcessRobots(Detection.Frame frame, IReadOnlyList<FilteredRobot> filteredRobots)
     {
         // Remove trackers that are either too old or outside the field
         // can't directly remove from the dictionary while iterating over it, so we do it in two steps
@@ -125,7 +129,7 @@ public partial class Camera(uint id)
         // we filter out the robot with the cam bots id before to allow trackers at the same location
         var shouldIgnore = filteredRobots.Any(filteredRobot =>
             filteredRobot.Id == id &&
-            Vector2.Distance(filteredRobot.Position, robot.Detection.Position) < RobotRadius * 1.5);
+            Vector2.Distance(filteredRobot.State.Position, robot.Detection.Position) < RobotRadius * 1.5);
 
         if (shouldIgnore)
         {
@@ -146,9 +150,9 @@ public partial class Camera(uint id)
                 {
                     if (filtered.Id != id) continue;
 
-                    if (IsOutside(filtered.Position)) continue;
+                    if (IsOutside(filtered.State.Position)) continue;
 
-                    var close = Vector2.Distance(filtered.Position, robot.Detection.Position) < CopyTrackerMaxDistance;
+                    var close = Vector2.Distance(filtered.State.Position, robot.Detection.Position) < CopyTrackerMaxDistance;
                     if (!close) continue;
 
                     filteredRobot = filtered;
@@ -165,7 +169,7 @@ public partial class Camera(uint id)
         }
     }
 
-    private void ProcessBalls(DetectionFrame frame, FilteredBall? lastFilteredBall)
+    private void ProcessBalls(Detection.Frame frame, FilteredBall? lastFilteredBall)
     {
         // remove trackers of balls that have not been visible or were out of the field for too long
         Balls.RemoveAll(tracker =>

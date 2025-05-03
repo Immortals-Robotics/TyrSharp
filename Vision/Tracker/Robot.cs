@@ -1,7 +1,11 @@
 ﻿using System.Numerics;
 using Tyr.Common.Config;
+using Tyr.Common.Data;
+using Tyr.Common.Data.Ssl;
+using Tyr.Common.Data.Vision;
 using Tyr.Common.Math;
 using Tyr.Common.Time;
+using Tyr.Vision.Data;
 using Tyr.Vision.Filter;
 
 namespace Tyr.Vision.Tracker;
@@ -74,11 +78,11 @@ public partial class Robot
 
     public Robot(RawRobot raw, FilteredRobot filtered, TeamColor color)
     {
-        _filterXy = new Filter2D(filtered.Position, filtered.Velocity.GetValueOrDefault(),
+        _filterXy = new Filter2D(filtered.State.Position, filtered.State.Velocity,
             InitialCovarianceXy, ModelErrorXy, MeasurementErrorXy,
             raw.CaptureTimestamp);
 
-        _filterW = new Filter1D(filtered.AngleRad, filtered.AngularVelocityRad.GetValueOrDefault(),
+        _filterW = new Filter1D(filtered.State.Angle.Rad, filtered.State.AngularVelocity.Rad,
             InitialCovarianceW, ModelErrorW, MeasurementErrorW,
             raw.CaptureTimestamp);
 
@@ -155,7 +159,7 @@ public partial class Robot
     private float AngularVelocityUncertaintyWeight =>
         MathF.Pow(_filterW.VelocityUncertainty * Uncertainty, -MergePower);
 
-    static FilteredRobot Merge(IReadOnlyList<Robot> trackers, Timestamp timestamp)
+    public static FilteredRobot Merge(IReadOnlyList<Robot> trackers, Timestamp timestamp)
     {
         Assert.IsNotEmpty(trackers);
 
@@ -210,14 +214,20 @@ public partial class Robot
         orientation /= totalOrientationUncertainty;
         angularVelocity /= totalAngularVelocityUncertainty;
 
-        return new FilteredRobot()
+        var state = new RobotState
         {
-            Id = trackers[0].Id, // TODO: verify that all trackers have the same ID
             Position = position,
             Velocity = velocity,
-            Angle = orientationOffset + Angle.FromRad(orientation),
+            Angle = Angle.FromRad(orientation),
             AngularVelocity = Angle.FromRad(angularVelocity),
-            Visibility = maxQuality,
+        };
+
+        return new FilteredRobot
+        {
+            Id = trackers[0].Id, // TODO: verify that all trackers have the same ID
+            Timestamp = timestamp,
+            State = state,
+            Quality = maxQuality,
         };
     }
 }

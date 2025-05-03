@@ -1,4 +1,5 @@
 ﻿using Tyr.Common.Config;
+using Tyr.Common.Data.Ssl.Vision.Geometry;
 using Tyr.Common.Dataflow;
 using Tyr.Common.Runner;
 
@@ -9,7 +10,7 @@ public sealed partial class Runner : IDisposable
 {
     [ConfigEntry] private static int TickRateHz { get; set; } = 100;
 
-    private readonly Subscriber<DetectionFrame> _detectionSubscriber = Hub.RawDetection.Subscribe(Mode.All);
+    private readonly Subscriber<Detection.Frame> _detectionSubscriber = Hub.RawDetection.Subscribe(Mode.All);
 
     private readonly Subscriber<FieldSize> _fieldSizeSubscriber = Hub.FieldSize.Subscribe(Mode.Latest);
     private readonly Subscriber<CameraCalibration> _calibrationSubscriber = Hub.CameraCalibration.Subscribe(Mode.All);

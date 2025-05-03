@@ -1,6 +1,8 @@
 ﻿using Tyr.Common.Config;
+using Tyr.Common.Data.Ssl.Vision.Geometry;
 using Tyr.Common.Debug.Drawing;
 using Tyr.Common.Time;
+using Tyr.Vision.Data;
 
 namespace Tyr.Vision;
 
@@ -26,7 +28,7 @@ public sealed partial class Vision
     /// Processes the latest batch of detection frames, calibrations, and field size.
     /// This method should be called once per tick.
     internal void Process(
-        IEnumerable<DetectionFrame> frames,
+        IEnumerable<Detection.Frame> frames,
         IEnumerable<CameraCalibration> calibrations,
         FieldSize? fieldSize)
     {
