@@ -14,7 +14,7 @@ public partial class RobotMerger
         "Factor to weight stdDeviation during tracker merging, reasonable range: 1.0 - 2.0. High values lead to more jitter")]
     private static float MergePower { get; set; } = 1.5f;
 
-    public List<FilteredRobot> Process(List<Camera> cameras, Timestamp timestamp)
+    public List<FilteredRobot> Process(IEnumerable<Camera> cameras, Timestamp timestamp)
     {
         var trackersById = cameras
             .SelectMany(camera => camera.Robots.Values)
@@ -91,7 +91,7 @@ public partial class RobotMerger
         {
             Position = position,
             Velocity = velocity,
-            Angle = Angle.FromRad(orientation),
+            Angle = Angle.FromRad(orientation) + orientationOffset,
             AngularVelocity = Angle.FromRad(angularVelocity),
         };
 

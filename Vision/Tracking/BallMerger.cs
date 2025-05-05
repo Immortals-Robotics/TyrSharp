@@ -16,8 +16,12 @@ public partial class BallMerger
 
     private Timestamp? _lastBallUpdateTimestamp;
 
-    public MergedBall? Process(List<BallTracker> ballTrackers, Timestamp timestamp, FilteredBall lastFilteredBall)
+    public MergedBall? Process(IEnumerable<Camera> cameras, Timestamp timestamp, FilteredBall lastFilteredBall)
     {
+        var ballTrackers = cameras
+            .SelectMany(camera => camera.Balls)
+            .ToList();
+
         if (ballTrackers.Count == 0) return null;
 
         _lastBallUpdateTimestamp ??= lastFilteredBall.Timestamp;
@@ -30,6 +34,8 @@ public partial class BallMerger
 
         foreach (var ballTracker in ballTrackers)
         {
+            if (!ballTracker.IsGrownUp) continue;
+
             // if the ball is airborne, project its position to the ground
             var searchPosition = lastFilteredBall.State.IsChipped
                 ? ballTracker.Camera.ProjectToGround(lastFilteredBall.State.Position)

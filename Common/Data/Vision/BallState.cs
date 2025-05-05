@@ -24,13 +24,9 @@ public readonly record struct BallState
     /// The ball's rotational spin vector in radians per second around each axis.
     /// Positive spin corresponds to positive linear velocity for each axis.
     /// </summary>
-    public Vector<Angle> Spin { get; init; }
+    public Vector2 SpinRadians { get; init; }
 
-    public Vector2 SpinRadians
-    {
-        get => new(Spin[0].Rad, Spin[1].Rad);
-        init => Spin = new Vector<Angle>([Angle.FromRad(value.X), Angle.FromRad(value.Y)]);
-    }
+    public Vector<Angle> Spin => new Vector<Angle>([Angle.FromRad(SpinRadians.X), Angle.FromRad(SpinRadians.Y)]);
 
     /// <summary>
     /// Returns true if the ball is in a chipped state

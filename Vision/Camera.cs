@@ -127,7 +127,7 @@ public partial class Camera(uint id)
         // check if there are other robots very close by, could be a false vision detection then
         // we filter out the robot with the cam bots id before to allow trackers at the same location
         var shouldIgnore = filteredRobots.Any(filteredRobot =>
-            filteredRobot.Id == id &&
+            filteredRobot.Id != id &&
             Vector2.Distance(filteredRobot.State.Position, robot.Detection.Position) < RobotRadius * 1.5);
 
         if (shouldIgnore)
