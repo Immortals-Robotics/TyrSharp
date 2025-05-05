@@ -16,12 +16,6 @@ public partial class BallMerger
 
     private Timestamp? _lastBallUpdateTimestamp;
 
-    private static float PositionUncertaintyWeight(BallTracker ballTracker) =>
-        MathF.Pow(ballTracker.Filter.PositionUncertainty.Length() * ballTracker.Uncertainty, -MergePower);
-
-    private static float VelocityUncertaintyWeight(BallTracker ballTracker) =>
-        MathF.Pow(ballTracker.Filter.VelocityUncertainty.Length() * ballTracker.Uncertainty, -MergePower);
-
     public MergedBall? Process(List<BallTracker> ballTrackers, Timestamp timestamp, FilteredBall lastFilteredBall)
     {
         if (ballTrackers.Count == 0) return null;
@@ -77,7 +71,7 @@ public partial class BallMerger
 
     // Merges multiple ball trackers into a single merged ball,
     // weighted by their state uncertainty (less certain = less influence).
-    public static MergedBall Merge(IReadOnlyList<BallTracker> trackers, Timestamp timestamp)
+    private static MergedBall Merge(IReadOnlyList<BallTracker> trackers, Timestamp timestamp)
     {
         Assert.IsNotEmpty(trackers);
 
@@ -131,4 +125,10 @@ public partial class BallMerger
             LatestRawBall = lastRawBall,
         };
     }
+
+    private static float PositionUncertaintyWeight(BallTracker ballTracker) =>
+        MathF.Pow(ballTracker.Filter.PositionUncertainty.Length() * ballTracker.Uncertainty, -MergePower);
+
+    private static float VelocityUncertaintyWeight(BallTracker ballTracker) =>
+        MathF.Pow(ballTracker.Filter.VelocityUncertainty.Length() * ballTracker.Uncertainty, -MergePower);
 }
