@@ -1,7 +1,4 @@
-﻿using Tyr.Common.Data.Vision;
-using Tyr.Vision.Trajectory;
-
-namespace Tyr.Vision.Data;
+﻿namespace Tyr.Common.Vision.Data;
 
 public readonly record struct FilteredBall
 {
@@ -14,7 +11,7 @@ public readonly record struct FilteredBall
         if (timestamp <= Timestamp) return this;
 
         var dt = timestamp - Timestamp;
-        var trajectory = new BallFlat(State);
+        var trajectory = ServiceLocator.BallTrajectoryFactory.Flat(State);
 
         return new FilteredBall
         {

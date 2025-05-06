@@ -1,5 +1,6 @@
 ﻿using System.Numerics;
 using Tyr.Common.Config;
+using Tyr.Common.Vision.Data;
 using Tyr.Vision.Data;
 
 namespace Tyr.Vision.Tracking;

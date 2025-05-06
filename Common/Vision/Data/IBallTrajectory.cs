@@ -1,6 +1,6 @@
 ﻿using Tyr.Common.Time;
 
-namespace Tyr.Common.Data.Vision;
+namespace Tyr.Common.Vision.Data;
 
 /// <summary>
 /// Interface representing a ball trajectory over time

@@ -1,10 +1,9 @@
 ﻿using System.Numerics;
 using Tyr.Common.Config;
 using Tyr.Common.Data.Ssl.Vision.Geometry;
-using Tyr.Common.Data.Vision;
 using Tyr.Common.Dataflow;
-using Tyr.Common.Debug.Drawing;
 using Tyr.Common.Time;
+using Tyr.Common.Vision.Data;
 using Tyr.Vision.Data;
 using Tyr.Vision.Tracking;
 
@@ -62,8 +61,7 @@ public sealed partial class Vision
         }
 
         var frame = GenerateFilteredFrame();
-
-        //Hub.Vision.Publish(frame);
+        Hub.Vision.Publish(frame);
 
         foreach (var camera in _cameras.Values)
         {
@@ -73,7 +71,7 @@ public sealed partial class Vision
             DrawTrackedRobots(camera);
             DrawTrackedBalls(camera);
         }
-        
+
         DrawFilteredFrame(frame);
 
         _lastFilteredFrame = frame;
@@ -87,7 +85,7 @@ public sealed partial class Vision
 
         // prevent negative delta time
         timestamp = Timestamp.Max(_lastFilteredFrame.Timestamp, timestamp);
-        
+
         var robots = _robotMerger.Process(_cameras.Values, timestamp);
 
         var mergedBall = _ballMerger.Process(_cameras.Values, timestamp, _lastFilteredFrame.Ball);
@@ -130,40 +128,5 @@ public sealed partial class Vision
             Robots = robots,
         };
         return frame;
-    }
-
-    private static void DrawFilteredFrame(FilteredFrame frame)
-    {
-        Draw.DrawCircle(frame.Ball.State.Position.Xy(), 25f, Color.Orange400,
-            Options.Filled with { Thickness = 5f });
-
-        Plot.Plot($"ball velocity", frame.Ball.State.Velocity, "vel (mm/s)");
-
-        foreach (var robot in frame.Robots)
-        {
-            Draw.DrawRobot(robot.State.Position, robot.State.Angle, robot.Id,
-                Options.Filled with { Thickness = 10f });
-
-            Plot.Plot($"Robot {robot.Id} velocity", frame.Ball.State.Velocity, "vel (mm/s)");
-        }
-    }
-
-    private static void DrawTrackedBalls(Camera camera)
-    {
-        for (var index = 0; index < camera.Balls.Count; index++)
-        {
-            var tracker = camera.Balls[index];
-            Draw.DrawCircle(tracker.Filter.Position, 25f, Color.Orange400,
-                Options.Outline() with { Thickness = 5f });
-        }
-    }
-
-    private static void DrawTrackedRobots(Camera camera)
-    {
-        foreach (var (id, tracker) in camera.Robots)
-        {
-            Draw.DrawRobot(tracker.Position, tracker.Angle, id,
-                Options.Outline() with { Thickness = 10f });
-        }
     }
 }

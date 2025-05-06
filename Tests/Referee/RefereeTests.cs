@@ -1,16 +1,22 @@
 ﻿using Tyr.Common.Data;
-using Tyr.Common.Data.Referee;
+using Tyr.Common.Referee.Data;
 using Gc = Tyr.Common.Data.Ssl.Gc;
-using Tracker = Tyr.Common.Data.Ssl.Vision.Tracker;
+using Tyr.Common.Vision.Data;
 using Vector3 = System.Numerics.Vector3;
 
 namespace Tyr.Tests.Referee;
 
 public class RefereeTests
 {
-    private static Tracker.Frame FrameAt(Vector3 pos) => new()
+    private static FilteredFrame FrameAt(Vector3 pos) => new()
     {
-        Balls = [new Tracker.Ball { Position = pos }]
+        Ball = new FilteredBall
+        {
+            State = new BallState
+            {
+                Position = pos
+            }
+        }
     };
 
     private static void SimulateBallMovement(ref Tyr.Referee.Referee referee, float distance, int frames)
@@ -33,7 +39,7 @@ public class RefereeTests
         referee.Process(null,
             new Gc.Referee
             {
-                Command = Gc.Command.NormalStart, 
+                Command = Gc.Command.NormalStart,
                 CommandCounter = 2,
                 CurrentActionTimeRemainingMicroseconds = (long)(10 * 1e6)
             });

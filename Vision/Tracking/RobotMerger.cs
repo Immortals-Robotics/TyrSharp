@@ -1,9 +1,8 @@
 ﻿using System.Numerics;
 using Tyr.Common.Config;
 using Tyr.Common.Data.Ssl;
-using Tyr.Common.Data.Vision;
 using Tyr.Common.Math;
-using Tyr.Vision.Data;
+using Tyr.Common.Vision.Data;
 
 namespace Tyr.Vision.Tracking;
 

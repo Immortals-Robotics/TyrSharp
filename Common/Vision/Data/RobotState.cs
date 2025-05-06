@@ -1,7 +1,7 @@
 ﻿using System.Numerics;
 using Tyr.Common.Math;
 
-namespace Tyr.Common.Data.Vision;
+namespace Tyr.Common.Vision.Data;
 
 public readonly record struct RobotState
 {

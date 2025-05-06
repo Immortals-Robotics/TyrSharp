@@ -1,18 +1,22 @@
-﻿using Tracker = Tyr.Common.Data.Ssl.Vision.Tracker;
+﻿using Tyr.Common.Config;
 using Gc = Tyr.Common.Data.Ssl.Gc;
+using Tyr.Common.Vision.Data;
 using Tyr.Common.Dataflow;
 using Tyr.Common.Runner;
 
 namespace Tyr.Referee;
 
-public sealed class Runner : IDisposable
+[Configurable]
+public sealed partial class Runner : IDisposable
 {
+    [ConfigEntry] private static int TickRateHz { get; set; } = 100;
+
     private readonly Subscriber<Gc.Referee> _gcSubscriber;
-    private readonly Subscriber<Tracker.Frame> _visionSubscriber;
+    private readonly Subscriber<FilteredFrame> _visionSubscriber;
 
-    private readonly RunnerAsync _runner;
+    private readonly RunnerSync _runner;
 
-    private Tracker.Frame? _vision;
+    private FilteredFrame? _vision;
     private Gc.Referee? _gc;
 
     private readonly Referee _referee = new();
@@ -22,39 +26,29 @@ public sealed class Runner : IDisposable
         _gcSubscriber = Hub.RawReferee.Subscribe(Mode.All);
         _visionSubscriber = Hub.Vision.Subscribe(Mode.Latest);
 
-        _runner = new RunnerAsync(Tick, 0, ModuleName);
+        _runner = new RunnerSync(Tick, TickRateHz, ModuleName);
         _runner.Start();
     }
 
-    private async Task Tick(CancellationToken token)
+    private void Tick()
     {
-        await Task.WhenAny(ReceiveGc(token), ReceiveVision(token));
+        var shouldProcess = false;
 
-        if (_referee.Process(_vision, _gc))
+        if (_visionSubscriber.TryGetLatest(out var vision))
+        {
+            _vision = vision;
+            shouldProcess = true;
+        }
+
+        if (_gcSubscriber.Reader.TryRead(out var gc))
+        {
+            _gc = gc;
+            shouldProcess = true;
+        }
+
+        if (shouldProcess && _referee.Process(_vision, _gc))
         {
             Hub.Referee.Publish(_referee.State);
-        }
-    }
-
-    private async Task ReceiveGc(CancellationToken token)
-    {
-        try
-        {
-            _gc = await _gcSubscriber.Reader.ReadAsync(token);
-        }
-        catch (OperationCanceledException)
-        {
-        }
-    }
-
-    private async Task ReceiveVision(CancellationToken token)
-    {
-        try
-        {
-            _vision = await _visionSubscriber.Reader.ReadAsync(token);
-        }
-        catch (OperationCanceledException)
-        {
         }
     }
 

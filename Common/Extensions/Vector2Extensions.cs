@@ -24,7 +24,7 @@ public static class Vector2Extensions
 
     public static Vector2 WithLength(this Vector2 v, float length)
     {
-        if (Utils.ApproximatelyZero(length)) return Vector2.Zero;
+        if (Utils.ApproximatelyZero(v.LengthSquared())) return Vector2.Zero;
         return Vector2.Normalize(v) * length;
     }
 

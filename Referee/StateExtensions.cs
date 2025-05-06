@@ -1,6 +1,6 @@
 ﻿using Tyr.Common.Data;
-using Tyr.Common.Data.Referee;
 using Tyr.Common.Data.Ssl.Gc;
+using Tyr.Common.Referee.Data;
 using Tyr.Common.Time;
 
 namespace Tyr.Referee;

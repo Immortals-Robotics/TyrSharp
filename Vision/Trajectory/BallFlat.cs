@@ -1,6 +1,6 @@
 ﻿using System.Numerics;
-using Tyr.Common.Data.Vision;
 using Tyr.Common.Time;
+using Tyr.Common.Vision.Data;
 
 namespace Tyr.Vision.Trajectory;
 

@@ -4,7 +4,7 @@ using Tyr.Common.Data;
 using Tyr.Common.Data.Ssl;
 using Tyr.Common.Math;
 using Tyr.Common.Time;
-using Tyr.Vision.Data;
+using Tyr.Common.Vision.Data;
 using Tyr.Vision.Filter;
 
 namespace Tyr.Vision.Tracking;

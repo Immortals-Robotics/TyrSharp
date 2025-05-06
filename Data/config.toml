@@ -150,6 +150,9 @@ Enabled = true # default: True
 
 
 [Referee]
+[Referee.Runner]
+TickRateHz = 100 # default: 100
+
 [Referee.Referee]
 RequiredHys = 5 # default: 5
 OurRestartBallMoveDis = 150.0 # default: 150

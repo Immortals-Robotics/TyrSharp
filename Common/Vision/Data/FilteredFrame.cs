@@ -1,4 +1,4 @@
-﻿namespace Tyr.Vision.Data;
+﻿namespace Tyr.Common.Vision.Data;
 
 public record FilteredFrame
 {

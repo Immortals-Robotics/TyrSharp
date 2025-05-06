@@ -1,7 +1,6 @@
 ﻿using Tyr.Common.Data.Ssl;
-using Tyr.Common.Data.Vision;
 
-namespace Tyr.Vision.Data;
+namespace Tyr.Common.Vision.Data;
 
 public readonly record struct FilteredRobot
 {

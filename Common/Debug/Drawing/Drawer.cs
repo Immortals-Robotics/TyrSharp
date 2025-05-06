@@ -56,21 +56,6 @@ public sealed class Drawer(string moduleName) : IDisposable
         string name1, string? expression1,
         string name2, string? expression2,
         string name3, string? expression3,
-        string name4, string? expression4)
-    {
-        _stringBuilder.Clear();
-        _stringBuilder.AppendFormat("{0}: {1}, {2}: {3}, {4}: {5}, {6}: {7}",
-            name1, expression1,
-            name2, expression2,
-            name3, expression3,
-            name4, expression4);
-        return InternExpression(_stringBuilder.AsSpan());
-    }
-
-    private string MakeExpression(
-        string name1, string? expression1,
-        string name2, string? expression2,
-        string name3, string? expression3,
         string name4, string? expression4,
         string name5, string? expression5)
     {
