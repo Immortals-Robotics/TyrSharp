@@ -1,18 +1,23 @@
-﻿using Tracker = Tyr.Common.Data.Ssl.Vision.Tracker;
+﻿using Tyr.Common.Config;
 using Gc = Tyr.Common.Data.Ssl.Gc;
+using Tyr.Common.Vision.Data;
 using Tyr.Common.Dataflow;
 using Tyr.Common.Runner;
+using Tyr.Common.Time;
 
 namespace Tyr.Referee;
 
-public sealed class Runner : IDisposable
+[Configurable]
+public sealed partial class Runner : IDisposable
 {
+    [ConfigEntry] private static DeltaTime SleepTime { get; set; } = DeltaTime.FromMilliseconds(1);
+
     private readonly Subscriber<Gc.Referee> _gcSubscriber;
-    private readonly Subscriber<Tracker.Frame> _visionSubscriber;
+    private readonly Subscriber<FilteredFrame> _visionSubscriber;
 
-    private readonly RunnerAsync _runner;
+    private readonly RunnerSync _runner;
 
-    private Tracker.Frame? _vision;
+    private FilteredFrame? _vision;
     private Gc.Referee? _gc;
 
     private readonly Referee _referee = new();
@@ -22,40 +27,39 @@ public sealed class Runner : IDisposable
         _gcSubscriber = Hub.RawReferee.Subscribe(Mode.All);
         _visionSubscriber = Hub.Vision.Subscribe(Mode.Latest);
 
-        _runner = new RunnerAsync(Tick, 0, ModuleName);
+        _runner = new RunnerSync(Tick, 0, ModuleName);
         _runner.Start();
     }
 
-    private async Task Tick(CancellationToken token)
+    private bool Tick()
     {
-        await Task.WhenAny(ReceiveGc(token), ReceiveVision(token));
+        var newData = false;
 
-        if (_referee.Process(_vision, _gc))
+        if (_visionSubscriber.Reader.TryRead(out var vision))
         {
-            Hub.Referee.Publish(_referee.State);
+            _vision = vision;
+            newData = true;
         }
-    }
 
-    private async Task ReceiveGc(CancellationToken token)
-    {
-        try
+        if (_gcSubscriber.Reader.TryRead(out var gc))
         {
-            _gc = await _gcSubscriber.Reader.ReadAsync(token);
+            _gc = gc;
+            newData = true;
         }
-        catch (OperationCanceledException)
-        {
-        }
-    }
 
-    private async Task ReceiveVision(CancellationToken token)
-    {
-        try
+        if (!newData)
         {
-            _vision = await _visionSubscriber.Reader.ReadAsync(token);
+            Thread.Sleep(SleepTime.ToTimeSpan());
+            return false;
         }
-        catch (OperationCanceledException)
+
+        if (!_referee.Process(_vision, _gc))
         {
+            return false;
         }
+
+        Hub.Referee.Publish(_referee.State);
+        return true;
     }
 
     public void Dispose()

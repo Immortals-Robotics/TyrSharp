@@ -3,15 +3,15 @@ using Tyr.Common.Dataflow;
 
 namespace Tyr.Common.Debug.Plotting;
 
-public class Plotter(string moduleName)
+public class Plotter(string module)
 {
-    public void Plot<T>(string id, T value, string? title = null,
-        [CallerArgumentExpression("value")] string? valueExpression = null,
-        [CallerMemberName] string? memberName = null,
-        [CallerFilePath] string? filePath = null,
-        [CallerLineNumber] int lineNumber = 0)
+    public void Plot<T>(string id, T value, string? title = null, string? layer = null,
+        [CallerArgumentExpression("value")] string? expression = null,
+        [CallerMemberName] string? member = null,
+        [CallerFilePath] string? file = null,
+        [CallerLineNumber] int line = 0)
     {
-        var meta = Meta.GetOrCreate(moduleName, valueExpression, memberName, filePath, lineNumber);
+        var meta = Meta.GetOrCreate(module, layer, file, member, line, expression);
 
         id = string.Intern(id);
         title = title != null ? string.Intern(title) : null;

@@ -1,59 +1,70 @@
 ﻿using Cysharp.Text;
 using Hexa.NET.ImGui;
+using Tyr.Common.Config;
 using Tyr.Common.Debug;
+using Tyr.Common.Debug.Drawing;
 using Tyr.Gui.Backend;
 using StrSpan = System.ReadOnlySpan<char>;
 
 namespace Tyr.Gui.Data;
 
-public sealed class DebugFilter : IDisposable
+[Configurable]
+public sealed partial class DebugFilter(DebugFramer debugFramer) : IDisposable
 {
     // Dictionary to track the enabled state of each node in the tree
-    // Format: "module" or "module/file" or "module/file/function" or "module/file/function/line"
-    private readonly Dictionary<string, bool> _filterState = [];
-    private readonly Dictionary<string, bool>.AlternateLookup<StrSpan> _lookup;
+    // Format: "module" or "module/file" or "module/layer/file" or "module/layer/file/member" or "module/layer/file/member/line"
+    [ConfigEntry(StorageType.User, editable: false)]
+    private static Dictionary<string, bool> FilterState { get; set; } = [];
+
+    private readonly Dictionary<string, bool>.AlternateLookup<StrSpan> _lookup =
+        FilterState.GetAlternateLookup<StrSpan>();
+
+    private bool IsDebugLayer(string layer) =>
+        layer.StartsWith(Meta.DebugLayerPrefix, StringComparison.OrdinalIgnoreCase);
 
     private Utf16ValueStringBuilder _stringBuilder = ZString.CreateStringBuilder();
-    private readonly DebugFramer _debugFramer;
 
-    public DebugFilter(DebugFramer debugFramer)
-    {
-        _debugFramer = debugFramer;
-        _lookup = _filterState.GetAlternateLookup<StrSpan>();
-    }
+    private bool _dirty;
 
-    private StrSpan MakePath(string moduleName, string? filePath = null,
-        string? memberName = null, int? lineNumber = null)
+    private StrSpan MakePath(string module, string? layer = null,
+        string? file = null, string? member = null, int? line = null)
     {
         _stringBuilder.Clear();
 
-        if (filePath == null)
-            _stringBuilder.AppendFormat("{0}", moduleName);
-        else if (memberName == null)
-            _stringBuilder.AppendFormat("{0}/{1}", moduleName, filePath);
-        else if (lineNumber == null)
-            _stringBuilder.AppendFormat("{0}/{1}/{2}", moduleName, filePath, memberName);
+        if (layer == null)
+            _stringBuilder.AppendFormat("{0}", module);
+        else if (file == null)
+            _stringBuilder.AppendFormat("{0}/{1}", module, layer);
+        else if (member == null)
+            _stringBuilder.AppendFormat("{0}/{1}/{2}", module, layer, file);
+        else if (line == null)
+            _stringBuilder.AppendFormat("{0}/{1}/{2}/{3}", module, layer, file, member);
         else
-            _stringBuilder.AppendFormat("{0}/{1}/{2}/{3}", moduleName, filePath, memberName, lineNumber);
+            _stringBuilder.AppendFormat("{0}/{1}/{2}/{3}/{4}", module, layer, file, member, line);
 
+        _stringBuilder.Replace('.', '_');
         return _stringBuilder.AsSpan();
     }
 
     public bool IsEnabled(Meta meta) =>
-        IsEnabled(meta.ModuleName, meta.FilePath, meta.MemberName, meta.LineNumber);
+        IsEnabled(meta.Module, meta.Layer, meta.File, meta.Member, meta.Line);
 
-    public bool IsEnabled(string module, string? file = null, string? member = null, int? line = null)
+    public bool IsEnabled(string module, string? layer = null,
+        string? file = null, string? member = null, int? line = null)
     {
         if (!IsEnabledInternal(MakePath(module))) return false;
 
+        if (layer == null) return true;
+        if (!IsEnabledInternal(MakePath(module, layer))) return false;
+
         if (file == null) return true;
-        if (!IsEnabledInternal(MakePath(module, file))) return false;
+        if (!IsEnabledInternal(MakePath(module, layer, file))) return false;
 
         if (member == null) return true;
-        if (!IsEnabledInternal(MakePath(module, file, member))) return false;
+        if (!IsEnabledInternal(MakePath(module, layer, file, member))) return false;
 
         if (line == null) return true;
-        if (!IsEnabledInternal(MakePath(module, file, member, line.Value))) return false;
+        if (!IsEnabledInternal(MakePath(module, layer, file, member, line.Value))) return false;
 
         return true;
 
@@ -64,13 +75,20 @@ public sealed class DebugFilter : IDisposable
     {
         if (ImGui.Begin($"{IconFonts.FontAwesome6.Filter} Debug Filter"))
         {
+            _dirty = false;
+
             RegisterModules();
 
-            foreach (var (moduleName, framer) in _debugFramer.Modules)
+            foreach (var (moduleName, framer) in debugFramer.Modules)
             {
                 if (framer.MetaTree.Count == 0) continue;
 
                 DrawModuleNode(moduleName, framer);
+            }
+
+            if (_dirty)
+            {
+                Configurable.MarkChanged(StorageType.User);
             }
         }
 
@@ -80,21 +98,23 @@ public sealed class DebugFilter : IDisposable
     // Register all modules, files, and functions
     private void RegisterModules()
     {
-        foreach (var (module, framer) in _debugFramer.Modules)
+        foreach (var (module, framer) in debugFramer.Modules)
         {
-            _filterState.TryAdd(module, true);
-
-            foreach (var (file, functions) in framer.MetaTree)
+            _dirty |= FilterState.TryAdd(module, true);
+            foreach (var (layer, files) in framer.MetaTree)
             {
-                _lookup.TryAdd(MakePath(module, file), true);
-
-                foreach (var (function, items) in functions)
+                var defaultValue = !IsDebugLayer(layer);
+                _dirty |= _lookup.TryAdd(MakePath(module, layer), defaultValue);
+                foreach (var (file, functions) in files)
                 {
-                    _lookup.TryAdd(MakePath(module, file, function), true);
-
-                    foreach (var item in items)
+                    _dirty |= _lookup.TryAdd(MakePath(module, layer, file), true);
+                    foreach (var (member, items) in functions)
                     {
-                        _lookup.TryAdd(MakePath(module, file, function, item.Line), true);
+                        _dirty |= _lookup.TryAdd(MakePath(module, layer, file, member), true);
+                        foreach (var item in items)
+                        {
+                            _dirty |= _lookup.TryAdd(MakePath(module, layer, file, member, item.Line), true);
+                        }
                     }
                 }
             }
@@ -104,15 +124,15 @@ public sealed class DebugFilter : IDisposable
     private void DrawModuleNode(string module, ModuleDebugFramer framer)
     {
         // Get current state
-        var isEnabled = _filterState[module];
+        var isEnabled = FilterState[module];
 
         // Create tree node with checkbox
         ImGui.PushID(module);
         var isOpen = ImGui.TreeNode("");
         ImGui.SameLine();
-        ImGui.Checkbox($"{IconFonts.FontAwesome6.CubesStacked} {module}", ref isEnabled);
+        _dirty |= ImGui.Checkbox($"{IconFonts.FontAwesome6.CubesStacked} {module}", ref isEnabled);
 
-        _filterState[module] = isEnabled;
+        FilterState[module] = isEnabled;
 
         // Draw child nodes if open
         if (isOpen)
@@ -120,9 +140,9 @@ public sealed class DebugFilter : IDisposable
             ImGui.BeginDisabled(!isEnabled);
 
             // Draw files
-            foreach (var (filePath, functions) in framer.MetaTree)
+            foreach (var (layer, files) in framer.MetaTree)
             {
-                DrawFileNode(module, filePath, functions, isEnabled);
+                DrawLayerNode(module, layer, files, isEnabled);
             }
 
             ImGui.TreePop();
@@ -132,10 +152,62 @@ public sealed class DebugFilter : IDisposable
         ImGui.PopID();
     }
 
-    private void DrawFileNode(string module, string file,
+    private void DrawLayerNode(string module, string layer,
+        Dictionary<string, Dictionary<string, HashSet<MetaTreeItem>>> files, bool parentEnabled)
+    {
+        var path = MakePath(module, layer);
+
+        // Get current state
+        var isEnabled = parentEnabled && _lookup[path];
+
+        var emptyLayer = string.IsNullOrWhiteSpace(layer);
+
+        var isOpen = true;
+
+        if (!emptyLayer)
+        {
+            var debugLayer = IsDebugLayer(layer);
+            var layerName = debugLayer ? layer[Meta.DebugLayerPrefix.Length..] : layer;
+            // Create tree node with checkbox
+            ImGui.PushID(layer);
+            isOpen = ImGui.TreeNode("");
+            ImGui.SameLine();
+
+            ImGui.PushFont(FontRegistry.Instance.MonoFont);
+            if (debugLayer) ImGui.PushStyleColor(ImGuiCol.Text, Color.Yellow200);
+            _dirty |= ImGui.Checkbox($"{IconFonts.FontAwesome6.LayerGroup} {layerName}", ref isEnabled);
+            ImGui.PopFont();
+            if (debugLayer) ImGui.PopStyleColor();
+        }
+
+        if (parentEnabled)
+        {
+            _lookup[path] = isEnabled;
+        }
+
+        // Draw child nodes if open
+        if (isOpen)
+        {
+            ImGui.BeginDisabled(!isEnabled);
+
+            // Draw functions
+            foreach (var (file, functions) in files)
+            {
+                DrawFileNode(module, layer, file, functions, isEnabled);
+            }
+
+            ImGui.EndDisabled();
+
+            if (!emptyLayer) ImGui.TreePop();
+        }
+
+        if (!emptyLayer) ImGui.PopID();
+    }
+
+    private void DrawFileNode(string module, string layer, string file,
         Dictionary<string, HashSet<MetaTreeItem>> functions, bool parentEnabled)
     {
-        var path = MakePath(module, file);
+        var path = MakePath(module, layer, file);
 
         // Get current state
         var isEnabled = parentEnabled && _lookup[path];
@@ -148,7 +220,7 @@ public sealed class DebugFilter : IDisposable
         var isOpen = ImGui.TreeNode("");
         ImGui.SameLine();
         ImGui.PushFont(FontRegistry.Instance.MonoFont);
-        ImGui.Checkbox($"{IconFonts.FontAwesome6.FileCode} {displayName}", ref isEnabled);
+        _dirty |= ImGui.Checkbox($"{IconFonts.FontAwesome6.FileCode} {displayName}", ref isEnabled);
         ImGui.PopFont();
 
         // Show full path as tooltip
@@ -170,9 +242,9 @@ public sealed class DebugFilter : IDisposable
             ImGui.BeginDisabled(!isEnabled);
 
             // Draw functions
-            foreach (var (functionName, items) in functions)
+            foreach (var (member, items) in functions)
             {
-                DrawFunctionNode(module, file, functionName, items, isEnabled);
+                DrawMemberNode(module, layer, file, member, items, isEnabled);
             }
 
             ImGui.EndDisabled();
@@ -182,20 +254,20 @@ public sealed class DebugFilter : IDisposable
         ImGui.PopID();
     }
 
-    private void DrawFunctionNode(string module, string file, string function,
+    private void DrawMemberNode(string module, string layer, string file, string member,
         HashSet<MetaTreeItem> items, bool parentEnabled)
     {
-        var path = MakePath(module, file, function);
+        var path = MakePath(module, layer, file, member);
 
         // Get current state
         var isEnabled = parentEnabled && _lookup[path];
 
         // Create tree node with checkbox
-        ImGui.PushID(function);
+        ImGui.PushID(member);
         var isOpen = ImGui.TreeNode("");
         ImGui.SameLine();
         ImGui.PushFont(FontRegistry.Instance.MonoFont);
-        ImGui.Checkbox($"{IconFonts.FontAwesome6.Code} {function}()", ref isEnabled);
+        _dirty |= ImGui.Checkbox($"{IconFonts.FontAwesome6.Code} {member}()", ref isEnabled);
         ImGui.PopFont();
 
         if (parentEnabled)
@@ -211,7 +283,7 @@ public sealed class DebugFilter : IDisposable
             // Draw lines
             foreach (var item in items)
             {
-                DrawItemNode(module, file, function, item, isEnabled);
+                DrawItemNode(module, layer, file, member, item, isEnabled);
             }
 
             ImGui.EndDisabled();
@@ -221,10 +293,10 @@ public sealed class DebugFilter : IDisposable
         ImGui.PopID();
     }
 
-    private void DrawItemNode(string module, string file, string function, MetaTreeItem treeItem,
+    private void DrawItemNode(string module, string layer, string file, string member, MetaTreeItem treeItem,
         bool parentEnabled)
     {
-        var path = MakePath(module, file, function, treeItem.Line);
+        var path = MakePath(module, layer, file, member, treeItem.Line);
 
         // Get current state
         var isEnabled = parentEnabled && _lookup[path];
@@ -242,7 +314,7 @@ public sealed class DebugFilter : IDisposable
             _ => $"{IconFonts.FontAwesome6.Square}" // Default to square icon for other types
         };
 
-        ImGui.Checkbox($"{icon} Line {treeItem.Line}", ref isEnabled);
+        _dirty |= ImGui.Checkbox($"{icon} Line {treeItem.Line}", ref isEnabled);
 
         if (!string.IsNullOrWhiteSpace(treeItem.Expression) && ImGui.IsItemHovered(ImGuiHoveredFlags.ForTooltip))
         {

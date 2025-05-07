@@ -1,10 +1,6 @@
-using System.Numerics;
 using Hexa.NET.ImGui;
 using Tyr.Common.Config;
 using Tyr.Common.Debug.Drawing;
-using Tyr.Common.Math;
-using Tyr.Common.Network;
-using Tyr.Common.Time;
 using Tyr.Gui.Backend;
 
 namespace Tyr.Gui.Views;
@@ -208,82 +204,20 @@ public partial class ConfigsView
 
         // Value
         ImGui.TableNextColumn();
-        DrawFieldEditor(field);
+        ImGui.PushFont(FontRegistry.Instance.MonoFont);
+
+        var (changed, newVal) = DrawFieldEditor(field.Value);
+        if (changed)
+        {
+            field.Value = newVal!;
+            field.MarkChanged();
+        }
+
+        ImGui.PopFont();
 
         ImGui.EndDisabled();
 
         ImGui.PopID();
-    }
-
-    private void DrawFieldEditor(ConfigEntry field)
-    {
-        ImGui.PushFont(FontRegistry.Instance.MonoFont);
-        switch (field.Value)
-        {
-            case int intValue:
-                DrawFieldEditorInt(field, intValue);
-                break;
-
-            case float floatValue:
-                DrawFieldEditorFloat(field, floatValue);
-                break;
-
-            case double doubleValue:
-                DrawFieldEditorDouble(field, doubleValue);
-                break;
-
-            case bool boolValue:
-                DrawFieldEditorBool(field, boolValue);
-                break;
-            
-            case Vector2 vector2Value:
-                DrawFieldEditorVector2(field, vector2Value);
-                break;
-            
-            case Vector3 vector3Value:
-                DrawFieldEditorVector3(field, vector3Value);
-                break;
-            
-            case Vector4 vector4Value:
-                DrawFieldEditorVector4(field, vector4Value);
-                break;
-
-            case string stringValue:
-                DrawFieldEditorString(field, stringValue);
-                break;
-
-            case Address addressValue:
-                DrawFieldEditorAddress(field, addressValue);
-                break;
-
-            case Enum enumValue:
-                DrawFieldEditorEnum(field, enumValue);
-                break;
-
-            case Color colorValue:
-                DrawFieldEditorColor(field, colorValue);
-                break;
-
-            case Angle angleValue:
-                DrawFieldEditorAngle(field, angleValue);
-                break;
-
-            case DeltaTime deltaTimeValue:
-                DrawFieldEditorDeltaTime(field, deltaTimeValue);
-                break;
-            
-            case Timestamp timeValue:
-                DrawFieldEditorTime(field, timeValue);
-                break;
-
-            default:
-                // For other types, just display as string
-                Log.ZLogWarning($"Unsupported config type: {field.Type}");
-                ImGui.TextDisabled($"{field.Value}");
-                break;
-        }
-
-        ImGui.PopFont();
     }
 
     // Helper method to check if any children in the tree match the search

@@ -129,7 +129,7 @@ public sealed partial class FieldView : IDisposable
 
     private void DrawField()
     {
-        if (_fieldSizeSubscriber.TryGetLatest(out var fieldSize))
+        if (_fieldSizeSubscriber.Reader.TryRead(out var fieldSize))
         {
             _fieldSize = fieldSize;
             if (!_fieldSize.HasValue) return;

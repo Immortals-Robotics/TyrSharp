@@ -1,6 +1,11 @@
 ﻿using System.Numerics;
 using Tyr.Common.Config;
+using Tyr.Common.Data;
+using Tyr.Common.Data.Ssl;
+using Tyr.Common.Data.Ssl.Vision.Geometry;
 using Tyr.Common.Time;
+using Tyr.Common.Vision.Data;
+using Tyr.Vision.Tracking;
 
 namespace Tyr.Vision;
 
@@ -29,27 +34,25 @@ public partial class Camera(uint id)
     public DeltaTime DeltaTime => _frameTimeEstimator.DeltaTime ?? DeltaTime.Zero;
     public float Fps => (float)(1 / DeltaTime.Seconds);
 
-    public Dictionary<RobotId, Tracker.Robot> Robots { get; } = [];
-    public List<Tracker.Ball> Balls { get; } = [];
+    public Dictionary<RobotId, RobotTracker> Robots { get; } = [];
+    public List<BallTracker> Balls { get; } = [];
 
     private readonly DeltaTimeEstimator _frameTimeEstimator = new();
 
-    private CameraCalibration? _calibration;
-    private FieldSize? _fieldSize;
+    public CameraCalibration? Calibration { get; set; }
 
-    private float RobotRadius => _fieldSize?.MaxRobotRadius ?? 90f;
+    private float RobotRadius => Vision.FieldSize.MaxRobotRadius ?? 90f;
 
-    public void OnCalibration(CameraCalibration calibration)
+    public Vector2 ProjectToGround(Vector3 pos)
     {
-        _calibration = calibration;
+        if (!Calibration.HasValue) return pos.Xy();
+
+        var cameraPos = Calibration.Value.DerivedCameraWorld;
+        var scale = cameraPos.Z / (cameraPos.Z - pos.Z);
+        return cameraPos.Xy() + (pos - cameraPos).Xy() * scale;
     }
 
-    public void OnFieldSize(FieldSize fieldSize)
-    {
-        _fieldSize = fieldSize;
-    }
-
-    public void OnFrame(DetectionFrame frame, FilteredFrame lastFilteredFrame)
+    public void OnFrame(Detection.Frame frame, FilteredFrame lastFilteredFrame)
     {
         // frame id
         var expectedFrameId = FrameId == 0 ? frame.FrameNumber : FrameId + 1;
@@ -73,6 +76,16 @@ public partial class Camera(uint id)
         ProcessBalls(frame, lastFilteredFrame.Ball);
     }
 
+    public void DrawDebug(Timestamp timestamp)
+    {
+        Log.ZLogTrace($"Camera {Id} FPS: {Fps:F2}");
+        Plot.Plot($"cam[{Id}] fps", Fps, "fps");
+
+        DrawCalibration(timestamp);
+        DrawTrackedBalls(timestamp);
+        DrawTrackedRobots();
+    }
+
     private void Reset()
     {
         _frameTimeEstimator.Reset();
@@ -82,10 +95,10 @@ public partial class Camera(uint id)
 
     private bool IsOutside(Vector2 position)
     {
-        return _fieldSize.HasValue && !_fieldSize.Value.FieldRectangleWithBoundary.Inside(position);
+        return !Vision.FieldSize.FieldRectangleWithBoundary.Inside(position);
     }
 
-    private void ProcessRobots(DetectionFrame frame, IReadOnlyList<FilteredRobot> filteredRobots)
+    private void ProcessRobots(Detection.Frame frame, IReadOnlyList<FilteredRobot> filteredRobots)
     {
         // Remove trackers that are either too old or outside the field
         // can't directly remove from the dictionary while iterating over it, so we do it in two steps
@@ -124,8 +137,8 @@ public partial class Camera(uint id)
         // check if there are other robots very close by, could be a false vision detection then
         // we filter out the robot with the cam bots id before to allow trackers at the same location
         var shouldIgnore = filteredRobots.Any(filteredRobot =>
-            filteredRobot.Id == id &&
-            Vector2.Distance(filteredRobot.Position, robot.Detection.Position) < RobotRadius * 1.5);
+            filteredRobot.Id != id &&
+            Vector2.Distance(filteredRobot.State.Position, robot.Detection.Position) < RobotRadius * 1.5);
 
         if (shouldIgnore)
         {
@@ -146,9 +159,10 @@ public partial class Camera(uint id)
                 {
                     if (filtered.Id != id) continue;
 
-                    if (IsOutside(filtered.Position)) continue;
+                    if (IsOutside(filtered.State.Position)) continue;
 
-                    var close = Vector2.Distance(filtered.Position, robot.Detection.Position) < CopyTrackerMaxDistance;
+                    var close = Vector2.Distance(filtered.State.Position, robot.Detection.Position) <
+                                CopyTrackerMaxDistance;
                     if (!close) continue;
 
                     filteredRobot = filtered;
@@ -156,8 +170,8 @@ public partial class Camera(uint id)
                 }
 
                 tracker = filteredRobot != null
-                    ? new Tracker.Robot(robot, filteredRobot.Value, color) // on a different camera already 
-                    : new Tracker.Robot(robot, color); // completely new robot on the field
+                    ? new RobotTracker(this, robot, filteredRobot.Value, color) // on a different camera already 
+                    : new RobotTracker(this, robot, color); // completely new robot on the field
 
 
                 Robots.Add(id, tracker);
@@ -165,7 +179,7 @@ public partial class Camera(uint id)
         }
     }
 
-    private void ProcessBalls(DetectionFrame frame, FilteredBall? lastFilteredBall)
+    private void ProcessBalls(Detection.Frame frame, FilteredBall? lastFilteredBall)
     {
         // remove trackers of balls that have not been visible or were out of the field for too long
         Balls.RemoveAll(tracker =>
@@ -182,7 +196,7 @@ public partial class Camera(uint id)
         {
             var raw = new RawBall(detection, frame);
 
-            var consumed = Balls.Any(t => t.Update(raw, _fieldSize?.FieldRectangle));
+            var consumed = Balls.Any(t => t.Update(raw, Vision.FieldSize.FieldRectangle));
             if (consumed) continue;
 
             // This is a new ball, we need to create a new tracker for it
@@ -199,8 +213,8 @@ public partial class Camera(uint id)
             if (IsOutside(raw.Detection.Position)) continue;
 
             var tracker = lastFilteredBall.HasValue
-                ? new Tracker.Ball(raw, lastFilteredBall.Value)
-                : new Tracker.Ball(raw)
+                ? new BallTracker(this, raw, lastFilteredBall.Value)
+                : new BallTracker(this, raw)
                 {
                     MaxDistance = 500
                 };

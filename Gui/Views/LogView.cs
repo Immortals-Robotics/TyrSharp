@@ -68,7 +68,7 @@ public sealed partial class LogView(DebugFramer debugFramer, DebugFilter filter)
 
                         _filterTested += 1;
                         if (!_filter.PassFilter(log.Message) &&
-                            !_filter.PassFilter(log.Meta.ModuleName))
+                            !_filter.PassFilter(log.Meta.Module))
                             continue;
                         _filterPassed += 1;
 
@@ -133,7 +133,7 @@ public sealed partial class LogView(DebugFramer debugFramer, DebugFilter filter)
         ImGui.TextUnformatted(_stringBuilder.AsSpan());
 
         ImGui.TableNextColumn();
-        ImGui.TextUnformatted(log.Meta.ModuleName);
+        ImGui.TextUnformatted(log.Meta.Module);
 
         ImGui.TableNextColumn();
         ImGui.TextUnformatted(Debug.EnumCache<LogLevel>.GetName(log.Level));
@@ -141,11 +141,11 @@ public sealed partial class LogView(DebugFramer debugFramer, DebugFilter filter)
         ImGui.TableNextColumn();
         _stringBuilder.Clear();
         _stringBuilder.AppendFormat("{0}: {1}\0",
-            Debug.PathCache.GetFileName(log.Meta.FilePath), log.Meta.LineNumber);
+            Debug.PathCache.GetFileName(log.Meta.File), log.Meta.Line);
         ImGui.TextUnformatted(_stringBuilder.AsSpan());
 
         ImGui.TableNextColumn();
-        ImGui.TextUnformatted(log.Meta.MemberName);
+        ImGui.TextUnformatted(log.Meta.Member);
 
         ImGui.TableNextColumn();
         ImGui.TextUnformatted(log.Message);

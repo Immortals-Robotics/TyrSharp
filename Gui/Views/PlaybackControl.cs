@@ -9,6 +9,7 @@ public class PlaybackControl(DebugFramer debugFramer)
 {
     private float _time;
     private bool _live = true;
+    private float _endTime;
 
     public PlaybackTime Current => new(_live, debugFramer.StartTime, DeltaTime.FromSeconds(_time));
 
@@ -23,11 +24,14 @@ public class PlaybackControl(DebugFramer debugFramer)
             ImGui.Button($"{IconFonts.FontAwesome6.ForwardStep}");
             ImGui.SameLine();
 
-            if (_live) _time = (float)debugFramer.Duration.Seconds;
+            if (_live)
+            {
+                _endTime = _time = (float)debugFramer.Duration.Seconds;
+            }
 
             ImGui.PushFont(FontRegistry.Instance.MonoFont);
             if (_live) ImGui.BeginDisabled();
-            ImGui.SliderFloat("Time", ref _time, 0f, (float)debugFramer.Duration.Seconds, ImGuiSliderFlags.None);
+            ImGui.SliderFloat("Time", ref _time, 0f, _endTime, ImGuiSliderFlags.None);
             if (_live) ImGui.EndDisabled();
             ImGui.PopFont();
 

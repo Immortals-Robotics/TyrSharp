@@ -12,8 +12,8 @@ public static class Hub
     public static readonly BroadcastChannel<Data.Ssl.Gc.Referee> RawReferee = new();
 
     // our published data
-    public static readonly BroadcastChannel<Data.Ssl.Vision.Tracker.Frame> Vision = new();
-    public static readonly BroadcastChannel<Data.Referee.State> Referee = new();
+    public static readonly BroadcastChannel<Vision.Data.FilteredFrame> Vision = new();
+    public static readonly BroadcastChannel<Referee.Data.State> Referee = new();
     public static readonly BroadcastChannel<Data.Robot.Command[]> RobotCommands = new();
 
     // debug

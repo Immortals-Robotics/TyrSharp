@@ -1,6 +1,11 @@
-﻿using Tyr.Common.Config;
-using Tyr.Common.Debug.Drawing;
+﻿using System.Numerics;
+using Tyr.Common.Config;
+using Tyr.Common.Data.Ssl.Vision.Geometry;
+using Tyr.Common.Dataflow;
 using Tyr.Common.Time;
+using Tyr.Common.Vision.Data;
+using Tyr.Vision.Data;
+using Tyr.Vision.Tracking;
 
 namespace Tyr.Vision;
 
@@ -9,9 +14,14 @@ public sealed partial class Vision
 {
     [ConfigEntry] private static DeltaTime CameraTooOldTime { get; set; } = DeltaTime.FromSeconds(1f);
 
-    private readonly FilteredFrame _filteredFrame = new();
+    public static FieldSize FieldSize { get; set; } = FieldSize.DivisionA;
+
+    private FilteredFrame _lastFilteredFrame = new();
 
     private readonly Dictionary<uint, Camera> _cameras = [];
+
+    private readonly BallMerger _ballMerger = new();
+    private readonly RobotMerger _robotMerger = new();
 
     private Camera GetOrCreateCamera(uint id)
     {
@@ -26,26 +36,19 @@ public sealed partial class Vision
     /// Processes the latest batch of detection frames, calibrations, and field size.
     /// This method should be called once per tick.
     internal void Process(
-        IEnumerable<DetectionFrame> frames,
-        IEnumerable<CameraCalibration> calibrations,
-        FieldSize? fieldSize)
+        IReadOnlyList<Detection.Frame> frames,
+        IReadOnlyList<CameraCalibration> calibrations)
     {
         foreach (var calibration in calibrations)
         {
             var camera = GetOrCreateCamera(calibration.CameraId);
-            camera.OnCalibration(calibration);
+            camera.Calibration = calibration;
         }
 
-        if (fieldSize.HasValue)
+        foreach (var detection in frames)
         {
-            foreach (var camera in _cameras.Values)
-                camera.OnFieldSize(fieldSize.Value);
-        }
-
-        foreach (var frame in frames)
-        {
-            var camera = GetOrCreateCamera(frame.CameraId);
-            camera.OnFrame(frame, _filteredFrame);
+            var camera = GetOrCreateCamera(detection.CameraId);
+            camera.OnFrame(detection, _lastFilteredFrame);
         }
 
         // remove old cameras
@@ -57,36 +60,69 @@ public sealed partial class Vision
                 camera.Timestamp - averageTimestamp > CameraTooOldTime);
         }
 
+        var frame = GenerateFilteredFrame();
+        Hub.Vision.Publish(frame);
+
         foreach (var camera in _cameras.Values)
         {
-            Log.ZLogTrace($"Camera {camera.Id} FPS: {camera.Fps:F2}");
-            Plot.Plot($"cam[{camera.Id}] fps", camera.Fps, "fps");
-
-            DrawRobots(camera);
-            DrawBalls(camera);
+            camera.DrawDebug(frame.Timestamp);
         }
+
+        DrawFilteredFrame(frame);
+
+        _lastFilteredFrame = frame;
     }
 
-    private static void DrawBalls(Camera camera)
+    private FilteredFrame GenerateFilteredFrame()
     {
-        for (var index = 0; index < camera.Balls.Count; index++)
+        var timestamp = _cameras.Count > 0
+            ? _cameras.Values.Select(camera => camera.Timestamp).Max()
+            : Timestamp.Zero;
+
+        // prevent negative delta time
+        timestamp = Timestamp.Max(_lastFilteredFrame.Timestamp, timestamp);
+
+        var robots = _robotMerger.Process(_cameras.Values, timestamp);
+
+        var mergedBall = _ballMerger.Process(_cameras.Values, timestamp, _lastFilteredFrame.Ball);
+        FilteredBall ball;
+        if (mergedBall != null)
         {
-            var tracker = camera.Balls[index];
-            Draw.DrawCircle(tracker.Position, 25f, Color.Orange400,
-                Options.Filled with { Thickness = 5f });
-
-            Plot.Plot($"cam[{camera.Id}] ball[{index}]", tracker.Velocity, "vel (mm/s)");
+            ball = new FilteredBall()
+            {
+                Timestamp = timestamp,
+                State = new BallState()
+                {
+                    Position = mergedBall.Value.Position.Xyz(),
+                    Velocity = mergedBall.Value.Velocity.Xyz(),
+                    Acceleration = mergedBall.Value.Velocity.WithLength(-BallParameters.AccelerationRoll).Xyz(),
+                    SpinRadians = mergedBall.Value.Velocity / BallParameters.Radius
+                },
+                LastVisibleTimestamp = mergedBall.Value.LatestRawBall?.CaptureTimestamp ??
+                                       _lastFilteredFrame.Ball.LastVisibleTimestamp,
+            };
         }
-    }
-
-    private static void DrawRobots(Camera camera)
-    {
-        foreach (var (id, tracker) in camera.Robots)
+        else
         {
-            Draw.DrawRobot(tracker.Position, tracker.Angle, id,
-                Options.Filled with { Thickness = 10f });
-
-            Plot.Plot($"cam[{camera.Id}] robot[{id}]", tracker.Velocity, "vel (mm/s)");
+            ball = _lastFilteredFrame.Ball with
+            {
+                Timestamp = timestamp,
+                State = _lastFilteredFrame.Ball.State with
+                {
+                    Velocity = Vector3.Zero,
+                    Acceleration = Vector3.Zero,
+                    SpinRadians = Vector2.Zero,
+                },
+            };
         }
+
+        var frame = new FilteredFrame()
+        {
+            Id = _lastFilteredFrame.Id + 1,
+            Timestamp = timestamp,
+            Ball = ball,
+            Robots = robots,
+        };
+        return frame;
     }
 }

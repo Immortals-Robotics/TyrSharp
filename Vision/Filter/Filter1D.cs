@@ -91,10 +91,10 @@ public class Filter1D
         return Position + Velocity * (float)dt.Seconds;
     }
     
-    private float MeasurementError
+    public float MeasurementError
     {
         get => (float)_kalman.MeasurementNoiseCovariance[0, 0];
-        set => _kalman.MeasurementNoiseCovariance[0, 0] = value;
+        private set => _kalman.MeasurementNoiseCovariance[0, 0] = value;
     }
 
     public float PositionErrorCovariance

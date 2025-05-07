@@ -25,12 +25,6 @@ public sealed record Subscriber<T> : IDisposable
         return _list;
     }
 
-    public bool TryGetLatest(out T? item)
-    {
-        Assert.AreEqual(Mode.Latest, Mode);
-        return Reader.TryRead(out item);
-    }
-
     public void Dispose()
     {
         BroadcastChannel.Unsubscribe(this);

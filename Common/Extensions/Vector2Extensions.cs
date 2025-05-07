@@ -22,6 +22,13 @@ public static class Vector2Extensions
         return Vector2.Normalize(v) * clampedLength;
     }
 
+    public static Vector2 WithLength(this Vector2 v, float length)
+    {
+        if (Utils.ApproximatelyZero(v.LengthSquared())) return Vector2.Zero;
+        return Vector2.Normalize(v) * length;
+    }
+
+
     public static MathNet.Numerics.LinearAlgebra.Vector<double> AsMathNetVector(this Vector2 v)
     {
         var mathNetVector = MathNet.Numerics.LinearAlgebra.Vector<double>.Build.Dense(2);
@@ -32,4 +39,6 @@ public static class Vector2Extensions
 
     public static Vector2 ToVector2(this MathNet.Numerics.LinearAlgebra.Vector<double> v, int offset = 0) =>
         new((float)v[offset], (float)v[offset + 1]);
+
+    public static Vector3 Xyz(this Vector2 v) => new(v.X, v.Y, 0f);
 }

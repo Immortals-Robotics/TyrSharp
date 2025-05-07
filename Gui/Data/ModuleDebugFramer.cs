@@ -25,8 +25,8 @@ public class ModuleDebugFramer
     private int? _latestSealedFrameIndex;
     private int FirstUnsealedFrameIndex => _latestSealedFrameIndex.GetValueOrDefault(-1) + 1;
 
-    // file -> function -> MetaItem
-    public Dictionary<string, Dictionary<string, HashSet<MetaTreeItem>>> MetaTree { get; } = [];
+    // layer -> file -> function -> MetaItem
+    public Dictionary<string, Dictionary<string, Dictionary<string, HashSet<MetaTreeItem>>>> MetaTree { get; } = [];
 
     public Dictionary<string, Debug.Meta> Plots { get; } = [];
 
@@ -287,21 +287,27 @@ public class ModuleDebugFramer
 
     private void AddToMetaTree(Debug.Meta meta, MetaTreeItem.ItemType type)
     {
-        if (meta is { FilePath: not null, MemberName: not null })
+        if (meta is { File: not null, Member: not null })
         {
-            if (!MetaTree.TryGetValue(meta.FilePath, out var functionDict))
+            if (!MetaTree.TryGetValue(meta.Layer, out var fileDict))
+            {
+                fileDict = [];
+                MetaTree[meta.Layer] = fileDict;
+            }
+            
+            if (!fileDict.TryGetValue(meta.File, out var functionDict))
             {
                 functionDict = [];
-                MetaTree[meta.FilePath] = functionDict;
+                fileDict[meta.File] = functionDict;
             }
 
-            if (!functionDict.TryGetValue(meta.MemberName, out var lineSet))
+            if (!functionDict.TryGetValue(meta.Member, out var lineSet))
             {
                 lineSet = [];
-                functionDict[meta.MemberName] = lineSet;
+                functionDict[meta.Member] = lineSet;
             }
 
-            var item = MetaTreeItem.GetOrCreate(type, meta.LineNumber, meta.Expression);
+            var item = MetaTreeItem.GetOrCreate(type, meta.Line, meta.Expression);
             lineSet.Add(item);
         }
         else

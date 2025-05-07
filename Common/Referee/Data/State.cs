@@ -1,4 +1,6 @@
-﻿namespace Tyr.Common.Data.Referee;
+﻿using Tyr.Common.Data;
+
+namespace Tyr.Common.Referee.Data;
 
 public record State
 {
@@ -8,7 +10,7 @@ public record State
     public bool Ready { get; init; }
     public TeamColor Color { get; init; } = TeamColor.Unknown;
 
-    public Ssl.Gc.Referee Gc { get; init; } = new();
+    public Common.Data.Ssl.Gc.Referee Gc { get; init; } = new();
 
     public override string ToString()
     {

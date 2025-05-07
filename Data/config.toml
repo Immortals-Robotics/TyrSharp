@@ -1,3 +1,63 @@
+[Common]
+[Common.Network]
+[Common.Network.UdpServer]
+MaxPacketSize = 65536 # default: 65536
+
+[Common.Network.UdpClient]
+MaxPacketSize = 65536 # default: 65536
+
+[Common.Network.UdpReceiverConfigs]
+PollTimeout = 0.001 # default: 0.001000s
+
+
+[Common.Debug]
+[Common.Debug.Drawing]
+[Common.Debug.Drawing.Drawables]
+[Common.Debug.Drawing.Drawables.Point]
+# Size of the cross used to draw points
+DefaultSize = 25.0 # default: 25
+
+[Common.Debug.Drawing.Drawables.Robot]
+DefaultRadius = 90.0 # default: 90
+# Angle in degrees of the flat front of the robot
+FlatAngle = 45.0 # default: 45.00°
+TextSize = 135.0 # default: 135
+TextColor = "#09090BFF" # default: #09090BFF
+
+[Common.Debug.Drawing.Drawables.Arrow]
+DefaultHeadSize = 20.0 # default: 20
+
+
+
+[Common.Debug.Logging]
+[Common.Debug.Logging.Logging]
+# The level logs are filtered at the source. Anything below this will be rejected on the log call.
+Level = "Trace" # default: Debug
+
+
+[Common.Debug.Assertion]
+[Common.Debug.Assertion.Assert]
+Enabled = true # default: True
+
+
+
+[Common.Data]
+[Common.Data.CommonConfigs]
+# The variety of standard patterns that we can have is 16
+MaxRobots = 16 # default: 16
+# Hope it lasts
+ImmortalsIsTheBestTeam = true # default: True
+OurColor = "Unknown" # default: Unknown
+
+
+[Common.Config]
+[Common.Config.Storage]
+MaxLoadAttempts = 10 # default: 10
+LoadAttemptsDelay = 0.1 # default: 0.100000s
+DebounceDelay = 0.2 # default: 0.200000s
+
+
+
 [Gui]
 [Gui.Views]
 [Gui.Views.FieldView]
@@ -19,79 +79,74 @@ FontSize = 17 # default: 17
 
 [Gui.Rendering]
 [Gui.Rendering.DrawableRenderer]
-RobotTextSize = 135.0 # default: 135
-RobotTextColor = "#09090BFF" # default: #09090BFF
-# Angle in degrees of the flat front of the robot
-RobotFlatAngle = 45.0 # default: 45.00°
-RobotRadius = 90.0 # default: 90
-# Size of the cross used to draw points
-PointCrossSize = 10.0 # default: 10
-ArrowHeadSize = 20.0 # default: 20
 FilledOutlineColor = "#09090B7F" # default: #09090B7F
 
 
 
-[Common]
-[Common.Data]
-[Common.Data.CommonConfigs]
-# The variety of standard patterns that we can have is 16
-MaxRobots = 16 # default: 16
-# Hope it lasts
-ImmortalsIsTheBestTeam = true # default: True
-OurColor = "Unknown" # default: Unknown
-
-
-[Common.Config]
-[Common.Config.Storage]
-MaxLoadAttempts = 10 # default: 10
-LoadAttemptsDelay = 0.1 # default: 0.100000s
-DebounceDelay = 0.2 # default: 0.200000s
-
-
-[Common.Debug]
-[Common.Debug.Logging]
-[Common.Debug.Logging.Logging]
-# The level logs are filtered at the source. Anything below this will be rejected on the log call.
-Level = "Trace" # default: Debug
-
-
-[Common.Debug.Assertion]
-[Common.Debug.Assertion.Assert]
-Enabled = true # default: True
-
-
-
-
 [Vision]
-[Vision.Tracker]
-[Vision.Tracker.Ball]
+[Vision.Tracking]
+[Vision.Tracking.BallTracker]
 InitialCovariance = 1000.0 # default: 1000
 ModelError = 0.10000000149011612 # default: 0.1
 MeasurementError = 100.0 # default: 100
 # Maximum assumed ball speed in [mm/s] to filter outliers
 MaxLinearVelocity = 15000.0 # default: 15000
-# Factor to weight stdDeviation during tracker merging, reasonable range: 1.0 - 2.0. High values lead to more jitter
-MergePower = 1.5 # default: 1.5
 # Reciprocal health is used as uncertainty, increased on update, decreased on prediction
 MaxHealth = 20 # default: 20
 # How many updates are required until this tracker is grown up?
 GrownUpAge = 3 # default: 3
 
-[Vision.Tracker.Robot]
+[Vision.Tracking.RobotMerger]
+# Factor to weight stdDeviation during tracker merging, reasonable range: 1.0 - 2.0. High values lead to more jitter
+MergePower = 1.5 # default: 1.5
+
+[Vision.Tracking.BallMerger]
+# Factor to weight stdDeviation during tracker merging, reasonable range: 1.0 - 2.0. High values lead to more jitter
+MergePower = 1.5 # default: 1.5
+# Minimum search radius for cam balls around last known position [mm]
+MinSearchRadius = 300.0 # default: 300
+
+[Vision.Tracking.RobotTracker]
 InitialCovarianceXy = 100.0 # default: 100
 ModelErrorXy = 0.10000000149011612 # default: 0.1
 MeasurementErrorXy = 20.0 # default: 20
 InitialCovarianceW = 100.0 # default: 100
 ModelErrorW = 0.10000000149011612 # default: 0.1
 MeasurementErrorW = 2.0 # default: 2
-# Factor to weight stdDeviation during tracker merging, reasonable range: 1.0 - 2.0. High values lead to more jitter
-MergePower = 1.5 # default: 1.5
 # Maximum assumed robot speed in [mm/s] to filter outliers
 MaxLinearVelocity = 6000.0 # default: 6000
 # Maximum assumed angular robot speed in [deg/s] to filter outliers
 MaxAngularVelocity = 1700.0 # default: 1700
 # Reciprocal health is used as uncertainty, increased on update, decreased on prediction
 MaxHealth = 20 # default: 20
+
+
+[Vision.Data]
+[Vision.Data.BallParameters]
+# Radius of the ball in [mm]
+Radius = 21.0 # default: 21
+# Sliding acceleration in [mm/s^2], expected to be negative
+AccelerationSlide = -3000.0 # default: -3000
+# Rolling acceleration in [mm/s^2], expected to be negative
+AccelerationRoll = -260.0 # default: -260
+# Fraction of the initial velocity where the ball starts to roll
+KSwitch = 0.6399999856948853 # default: 0.64
+# Ball inertia distribution between 0.4 (massive sphere) and 0.66 (hollow sphere)
+InertiaDistribution = 0.5 # default: 0.5
+# Amount of spin transferred during a redirect.
+RedirectSpinFactor = 0.800000011920929 # default: 0.8
+# Restitution coefficient for redirected balls from a bot.
+RedirectRestitutionCoefficient = 0.20000000298023224 # default: 0.2
+# Chip kick velocity damping factor in XY direction for the first hop
+ChipDampingXyFirstHop = 0.800000011920929 # default: 0.8
+# Chip kick velocity damping factor in XY direction for all following hops
+ChipDampingXyOtherHops = 0.8500000238418579 # default: 0.85
+# Chip kick velocity damping factor in Z direction
+ChipDampingZ = 0.4699999988079071 # default: 0.47
+# If a chipped ball does not reach this height it is considered rolling [mm]
+MinHopHeight = 10.0 # default: 10
+# Max. ball height that can be intercepted by robots [mm]
+MaxInterceptableHeight = 150.0 # default: 150
 
 
 [Vision.Camera]
@@ -116,6 +171,9 @@ TickRateHz = 100 # default: 100
 
 
 [Referee]
+[Referee.Runner]
+SleepTime = 0.001 # default: 0.001000s
+
 [Referee.Referee]
 RequiredHys = 5 # default: 5
 OurRestartBallMoveDis = 150.0 # default: 150

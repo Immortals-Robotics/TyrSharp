@@ -15,6 +15,7 @@ public sealed partial class Storage : IDisposable
     public StorageType StorageType { get; }
 
     private bool _loading;
+    private bool _saving;
 
     private readonly FileSystemWatcher? _watcher;
     private DateTime _lastReadTime;
@@ -54,6 +55,8 @@ public sealed partial class Storage : IDisposable
 
     private void OnFileChanged()
     {
+        if (_saving) return;
+
         var newWriteTime = File.GetLastWriteTimeUtc(Path);
         if (newWriteTime <= _lastReadTime) return;
 
@@ -93,6 +96,10 @@ public sealed partial class Storage : IDisposable
             {
                 Log.ZLogError(e, $"Failed to load {StorageType} config file {Path}");
             }
+            finally
+            {
+                _loading = false;
+            }
         }
 
         Log.ZLogError($"Failed to load {StorageType} config file {Path} after {MaxLoadAttempts} attempts.");
@@ -103,7 +110,9 @@ public sealed partial class Storage : IDisposable
         try
         {
             var toml = Registry.ToToml(StorageType);
+            _saving = true;
             File.WriteAllText(Path, toml.SerializedValue);
+            _saving = false;
 
             _lastReadTime = File.GetLastWriteTimeUtc(Path);
 
@@ -112,6 +121,10 @@ public sealed partial class Storage : IDisposable
         catch (Exception e)
         {
             Log.ZLogError(e, $"Failed to save {StorageType} config file {Path}");
+        }
+        finally
+        {
+            _saving = false;
         }
     }
 

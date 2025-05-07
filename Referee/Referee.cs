@@ -1,8 +1,8 @@
 ﻿using System.Numerics;
 using Tyr.Common.Config;
-using Tracker = Tyr.Common.Data.Ssl.Vision.Tracker;
+using Tyr.Common.Referee.Data;
 using Gc = Tyr.Common.Data.Ssl.Gc;
-using Tyr.Common.Data.Referee;
+using Tyr.Common.Vision.Data;
 
 namespace Tyr.Referee;
 
@@ -13,14 +13,14 @@ public partial class Referee
     [ConfigEntry] private static float OurRestartBallMoveDis { get; set; } = 150.0f;
     [ConfigEntry] private static float DefaultBallMoveDis { get; set; } = 50.0f;
 
-    private Tracker.Frame _vision = new();
+    private FilteredFrame _vision = new();
 
     public State State { get; private set; } = new();
 
-    private Tracker.Ball? _lastBall;
+    private FilteredBall? _lastBall;
     private int _moveHysteresis;
 
-    public bool Process(Tracker.Frame? vision, Gc.Referee? gc)
+    public bool Process(FilteredFrame? vision, Gc.Referee? gc)
     {
         var oldState = State;
 
@@ -79,13 +79,8 @@ public partial class Referee
 
         _lastBall ??= _vision.Ball;
 
-        if (!_vision.Ball.HasValue || !_lastBall.HasValue)
-        {
-            return false;
-        }
-
         var requiredDis = State.OurRestart() ? OurRestartBallMoveDis : DefaultBallMoveDis;
-        var ballMoveDis = Vector3.Distance(_vision.Ball.Value.Position, _lastBall.Value.Position);
+        var ballMoveDis = Vector3.Distance(_vision.Ball.State.Position, _lastBall.Value.State.Position);
         if (ballMoveDis > requiredDis)
         {
             _moveHysteresis = int.Clamp(_moveHysteresis + 1, 0, RequiredHys);

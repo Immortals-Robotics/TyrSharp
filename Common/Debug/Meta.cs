@@ -4,40 +4,37 @@ namespace Tyr.Common.Debug;
 
 public record Meta
 {
-    public string ModuleName { get; }
+    public const string DebugLayerPrefix = "[debug]";
+    
+    public string Module { get; }
+    public string Layer { get; }
+    public string? File { get; }
+    public string? Member { get; }
+    public int Line { get; }
     public string? Expression { get; }
-    public string? MemberName { get; }
-    public string? FilePath { get; }
-    public int LineNumber { get; }
 
-    private Meta(string ModuleName,
-        string? Expression,
-        string? MemberName,
-        string? FilePath,
-        int LineNumber)
+    private Meta(string module, string layer,
+        string? file, string? member, int line, string? expression)
     {
-        this.ModuleName = ModuleName;
-        this.Expression = Expression;
-        this.MemberName = MemberName;
-        this.FilePath = FilePath;
-        this.LineNumber = LineNumber;
+        Module = module;
+        Layer = layer;
+        File = file;
+        Member = member;
+        Line = line;
+        Expression = expression;
     }
 
     // Cache for interned Meta instances
-    private static readonly ConcurrentDictionary<(string, string?, string?, string?, int), Meta> Cache = new();
+    private static readonly ConcurrentDictionary<(string, string, string?, string?, int, string?), Meta> Cache = [];
 
     // Factory method for getting interned instances
     public static Meta GetOrCreate(
-        string moduleName,
-        string? expression = null,
-        string? memberName = null,
-        string? filePath = null,
-        int lineNumber = 0)
+        string module, string? layer = null,
+        string? file = null, string? member = null, int line = 0, string? expression = null)
     {
-        var key = (moduleName, expression, memberName, filePath, lineNumber);
-
-        return Cache.GetOrAdd(key, k => new Meta(k.Item1, k.Item2, k.Item3, k.Item4, k.Item5));
+        var key = (module, layer ?? string.Empty, file, member, line, expression);
+        return Cache.GetOrAdd(key, k => new Meta(k.Item1, k.Item2, k.Item3, k.Item4, k.Item5, k.Item6));
     }
 
-    public static readonly Meta Empty = new(string.Empty, null, null, null, 0);
+    public static readonly Meta Empty = GetOrCreate(string.Empty);
 }
