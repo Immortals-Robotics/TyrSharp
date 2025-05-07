@@ -1,5 +1,6 @@
 ﻿using System.Collections;
 using System.Numerics;
+using System.Reflection;
 using Hexa.NET.ImGui;
 using Tyr.Common.Debug.Drawing;
 using Tyr.Common.Math;
@@ -30,16 +31,55 @@ public partial class ConfigsView
             Timestamp timeValue => (DrawFieldEditorTime(ref timeValue), timeValue),
             IDictionary dictionaryValue => (DrawFieldEditorDictionary(ref dictionaryValue), dictionaryValue),
             IList listValue => (DrawFieldEditorList(ref listValue), listValue),
-            _ => (DrawFieldEditorUnknown(obj), obj)
+            _ => (DrawFieldEditorObject(obj), obj)
         };
     }
 
-    private static bool DrawFieldEditorUnknown(object? obj)
+    private bool DrawFieldEditorObject(object? obj)
     {
-        // For other types, just display as string
-        Log.ZLogWarning($"Unsupported config type: {obj?.GetType().ToString() ?? "null"}");
-        ImGui.TextDisabled($"{obj}");
-        return false;
+        var type = obj?.GetType();
+        if (type == null || obj == null)
+        {
+            ImGui.TextDisabled("null");
+            return false;
+        }
+
+        var props = type.GetProperties(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
+        var dirty = false;
+
+        if (ImGui.CollapsingHeader(type.Name))
+        {
+            if (ImGui.BeginTable("props", 2, ImGuiTableFlags.BordersH))
+            {
+                ImGui.TableSetupColumn("Property", ImGuiTableColumnFlags.WidthStretch, 0.4f);
+                ImGui.TableSetupColumn("Value", ImGuiTableColumnFlags.WidthStretch, 0.6f);
+
+                foreach (var prop in props)
+                {
+                    if (!prop.CanRead || !prop.CanWrite) continue;
+
+                    ImGui.TableNextRow();
+                    ImGui.TableNextColumn();
+                    ImGui.Text(prop.Name);
+
+                    ImGui.TableNextColumn();
+                    ImGui.PushID(prop.Name);
+                    var value = prop.GetValue(obj);
+                    var (changed, newValue) = DrawFieldEditor(value);
+                    if (changed)
+                    {
+                        prop.SetValue(obj, newValue);
+                        dirty = true;
+                    }
+
+                    ImGui.PopID();
+                }
+
+                ImGui.EndTable();
+            }
+        }
+
+        return dirty;
     }
 
     private bool DrawFieldEditorDictionary(ref IDictionary dictionary)
@@ -103,9 +143,8 @@ public partial class ConfigsView
         {
             if (ImGui.BeginTable("array", 2, ImGuiTableFlags.BordersH))
             {
-                ImGui.TableSetupColumn("Index", ImGuiTableColumnFlags.WidthStretch, 0.3f);
-                ImGui.TableSetupColumn("Value", ImGuiTableColumnFlags.WidthStretch, 0.7f);
-                ImGui.TableHeadersRow();
+                ImGui.TableSetupColumn("Index", ImGuiTableColumnFlags.WidthFixed, ImGui.GetFontSize() * 2);
+                ImGui.TableSetupColumn("Value", ImGuiTableColumnFlags.WidthStretch, 1f);
 
                 for (var i = 0; i < list.Count; i++)
                 {

@@ -54,7 +54,15 @@ public class Configurable
         {
             if (entry.StorageType != storageType) continue;
 
-            table.Put(Registry.ConvertName($"{entry.Name}"), entry);
+            try
+            {
+                table.Put(Registry.ConvertName($"{entry.Name}"), entry);
+            }
+            catch (Exception exception)
+            {
+                Log.ZLogError(exception,
+                    $"Failed to serialize {entry.StorageType} config entry {entry.Name} of type {entry.Type} to TOML");
+            }
         }
 
         return table;
@@ -69,7 +77,15 @@ public class Configurable
             var key = Registry.ConvertName($"{entry.Name}");
             if (!table.TryGetValue(key, out var value)) continue;
 
-            entry.FromToml(value);
+            try
+            {
+                entry.FromToml(value);
+            }
+            catch (Exception exception)
+            {
+                Log.ZLogError(exception,
+                    $"Failed to parse {entry.StorageType} config entry {entry.Name} of type {entry.Type} from TOML");
+            }
         }
     }
 }
