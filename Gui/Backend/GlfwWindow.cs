@@ -11,7 +11,7 @@ internal class GlfwWindow : IDisposable
 
     static GlfwWindow() => GLFW.Init();
 
-    public GlfwWindow(string title, int w, int h, int? x = null, int? y = null, bool? maximized = null)
+    public GlfwWindow(string title, int width, int height, int? x = null, int? y = null, bool? maximized = null)
     {
         GLFW.WindowHint(GLFW.GLFW_CONTEXT_VERSION_MAJOR, 3);
         GLFW.WindowHint(GLFW.GLFW_CONTEXT_VERSION_MINOR, 2);
@@ -27,7 +27,10 @@ internal class GlfwWindow : IDisposable
             GLFW.WindowHint(GLFW.GLFW_MAXIMIZED, maximized.Value ? GLFW.GLFW_TRUE : GLFW.GLFW_FALSE);
         }
 
-        Handle = GLFW.CreateWindow(w, h, title, null, null);
+        if (width == 0) width = 1280;
+        if (height == 0) height = 720;
+
+        Handle = GLFW.CreateWindow(width, height, title, null, null);
         if (Handle.IsNull) throw new Exception("GLFW window failed");
         MakeContextCurrent();
         _gl = new GL(new BindingsContext(Handle));
