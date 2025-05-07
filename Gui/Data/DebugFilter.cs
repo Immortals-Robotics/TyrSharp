@@ -13,12 +13,14 @@ public sealed partial class DebugFilter(DebugFramer debugFramer) : IDisposable
 {
     // Dictionary to track the enabled state of each node in the tree
     // Format: "module" or "module/file" or "module/layer/file" or "module/layer/file/member" or "module/layer/file/member/line"
-    [ConfigEntry(StorageType.User)] private static Dictionary<string, bool> FilterState { get; set; } = [];
+    [ConfigEntry(StorageType.User, editable: false)]
+    private static Dictionary<string, bool> FilterState { get; set; } = [];
 
     private readonly Dictionary<string, bool>.AlternateLookup<StrSpan> _lookup =
         FilterState.GetAlternateLookup<StrSpan>();
-    
-    private bool IsDebugLayer(string layer) => layer.StartsWith(Meta.DebugLayerPrefix, StringComparison.OrdinalIgnoreCase);
+
+    private bool IsDebugLayer(string layer) =>
+        layer.StartsWith(Meta.DebugLayerPrefix, StringComparison.OrdinalIgnoreCase);
 
     private Utf16ValueStringBuilder _stringBuilder = ZString.CreateStringBuilder();
 

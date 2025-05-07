@@ -16,7 +16,7 @@ namespace Tyr.Common.Debug.Drawing;
 
 public sealed class Drawer(string module) : IDisposable
 {
-    private string? _layer = null;
+    private string? _layer;
 
     private Utf16ValueStringBuilder _stringBuilder = ZString.CreateStringBuilder();
     private readonly ConcurrentDictionary<int, string> _expressionCache = new();

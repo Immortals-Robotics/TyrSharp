@@ -3,8 +3,6 @@ using Tyr.Common.Config;
 using Tyr.Common.Data;
 using Tyr.Common.Data.Ssl;
 using Tyr.Common.Data.Ssl.Vision.Geometry;
-using Tyr.Common.Debug.Drawing;
-using Tyr.Common.Debug.Drawing.Drawables;
 using Tyr.Common.Time;
 using Tyr.Common.Vision.Data;
 using Tyr.Vision.Tracking;

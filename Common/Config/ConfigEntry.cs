@@ -34,6 +34,8 @@ public class ConfigEntry(PropertyInfo info, Configurable owner)
         }
     }
 
+    public void MarkChanged() => owner.MarkChanged(StorageType);
+
     public TomlValue ToToml()
     {
         var value = TomletMain.ValueFrom(Type, Value);

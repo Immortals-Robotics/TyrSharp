@@ -1,7 +1,5 @@
 ﻿using System.Numerics;
 using Tyr.Common.Config;
-using Tyr.Common.Debug.Drawing;
-using Tyr.Common.Debug.Drawing.Drawables;
 using Tyr.Common.Vision.Data;
 using Tyr.Vision.Filter;
 using Rectangle = Tyr.Common.Math.Shapes.Rectangle;
