@@ -78,13 +78,13 @@ public partial class Camera(uint id)
         ProcessBalls(frame, lastFilteredFrame.Ball);
     }
 
-    public void DrawDebug()
+    public void DrawDebug(Timestamp timestamp)
     {
         Log.ZLogTrace($"Camera {Id} FPS: {Fps:F2}");
         Plot.Plot($"cam[{Id}] fps", Fps, "fps");
 
-        DrawCalibration();
-        DrawTrackedBalls();
+        DrawCalibration(timestamp);
+        DrawTrackedBalls(timestamp);
         DrawTrackedRobots();
     }
 
@@ -225,7 +225,7 @@ public partial class Camera(uint id)
         }
     }
 
-    private void DrawCalibration()
+    private void DrawCalibration(Timestamp timestamp)
     {
         if (!Calibration.HasValue) return;
 
@@ -238,21 +238,24 @@ public partial class Camera(uint id)
             pos2d + new Vector2(0, 50), 150f,
             Color.Cyan300, TextAlignment.BottomCenter);
 
-        Draw.DrawText($"Fps: {Fps:F2}",
-            pos2d + new Vector2(100, 50), 100f,
-            Color.Cyan500, TextAlignment.MiddleLeft);
-
         Draw.DrawText($"Height: {pos3d.Z:F2}mm",
             pos2d + new Vector2(100, -50), 100f,
-            Color.Cyan500, TextAlignment.MiddleLeft);
+            Color.Cyan400, TextAlignment.MiddleLeft);
+
+        Draw.DrawText($"FPS: {Fps:F2}",
+            pos2d + new Vector2(100, 50), 100f,
+            Color.Cyan400, TextAlignment.MiddleLeft);
+
+        Draw.DrawText($"Behind: {(timestamp - Timestamp).Milliseconds:F2}ms",
+            pos2d + new Vector2(100, 150), 100f,
+            Color.Cyan400, TextAlignment.MiddleLeft);
     }
 
-    private void DrawTrackedBalls()
+    private void DrawTrackedBalls(Timestamp timestamp)
     {
         foreach (var tracker in Balls)
         {
-            Draw.DrawCircle(tracker.Filter.Position, 25f, Color.Orange400,
-                Options.Outline() with { Thickness = 5f });
+            tracker.DrawDebug(timestamp);
         }
     }
 

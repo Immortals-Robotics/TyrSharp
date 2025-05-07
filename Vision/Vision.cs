@@ -65,7 +65,7 @@ public sealed partial class Vision
 
         foreach (var camera in _cameras.Values)
         {
-            camera.DrawDebug();
+            camera.DrawDebug(frame.Timestamp);
         }
 
         DrawFilteredFrame(frame);

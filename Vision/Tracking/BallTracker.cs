@@ -1,8 +1,10 @@
 ﻿using System.Numerics;
 using Tyr.Common.Config;
-using Tyr.Common.Math.Shapes;
+using Tyr.Common.Debug.Drawing;
+using Tyr.Common.Debug.Drawing.Drawables;
 using Tyr.Common.Vision.Data;
 using Tyr.Vision.Filter;
+using Rectangle = Tyr.Common.Math.Shapes.Rectangle;
 
 namespace Tyr.Vision.Tracking;
 
@@ -44,7 +46,7 @@ public partial class BallTracker
     public BallTracker(Camera camera, RawBall ball)
     {
         Camera = camera;
-        
+
         Filter = new Filter2D(ball.Detection.Position,
             InitialCovariance, ModelError, MeasurementError,
             ball.CaptureTimestamp);
@@ -56,7 +58,7 @@ public partial class BallTracker
     public BallTracker(Camera camera, RawBall rawBall, FilteredBall filteredBall)
     {
         Camera = camera;
-        
+
         var velocity = filteredBall.State.Velocity.Xy()
             .ClampMagnitude(0f, MaxLinearVelocity);
 
@@ -109,5 +111,17 @@ public partial class BallTracker
         Updated = true;
 
         return true;
+    }
+
+    public void DrawDebug(Timestamp timestamp)
+    {
+        Draw.DrawCircle(Filter.Position, 60f, Color.Orange300,
+            Options.Outline() with { Thickness = 5f });
+
+        var uncertainty = Filter.PositionUncertainty.Length() * Uncertainty;
+        var behind = timestamp - LastUpdateTimestamp;
+        Draw.DrawText($"[{Camera.Id}] unc.: {uncertainty:F2}, dt: {behind.Milliseconds:F2}ms",
+            Filter.Position + new Vector2(70, Camera.Id * 60), 50f,
+            Color.Orange200, TextAlignment.BottomLeft);
     }
 }
