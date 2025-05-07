@@ -19,7 +19,7 @@ public sealed partial class Vision
 
     private static void DrawFilteredRobot(FilteredRobot robot)
     {
-        Draw.DrawRobot(robot.State.Position, robot.State.Angle, robot.Id,
+        Draw.DrawRobot(robot.State.Position, robot.State.Angle, robot.Id, null,
             Options.Filled with { Thickness = 10f });
 
         Plot.Plot($"Robot {robot.Id} velocity", robot.State.Velocity, "vel (mm/s)");

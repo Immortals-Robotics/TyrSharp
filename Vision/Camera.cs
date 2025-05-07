@@ -172,8 +172,8 @@ public partial class Camera(uint id)
                 }
 
                 tracker = filteredRobot != null
-                    ? new RobotTracker(robot, filteredRobot.Value, color) // on a different camera already 
-                    : new RobotTracker(robot, color); // completely new robot on the field
+                    ? new RobotTracker(this, robot, filteredRobot.Value, color) // on a different camera already 
+                    : new RobotTracker(this, robot, color); // completely new robot on the field
 
 
                 Robots.Add(id, tracker);
@@ -261,10 +261,9 @@ public partial class Camera(uint id)
 
     private void DrawTrackedRobots()
     {
-        foreach (var (id, tracker) in Robots)
+        foreach (var tracker in Robots.Values)
         {
-            Draw.DrawRobot(tracker.Position, tracker.Angle, id,
-                Options.Outline() with { Thickness = 10f });
+            tracker.DrawDebug(timestamp: Timestamp);
         }
     }
 }

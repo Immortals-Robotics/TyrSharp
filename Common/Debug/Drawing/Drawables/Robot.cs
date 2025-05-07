@@ -23,23 +23,23 @@ public readonly record struct Robot : IDrawable
     public Robot(Vector2 Position, Angle? Orientation = null, uint? Id = null, float? Radius = null)
     {
         this.Position = Position;
+        this.Radius = Radius ?? DefaultRadius;
         this.Orientation = Orientation;
         this.Id = Id;
-        this.Radius = Radius ?? DefaultRadius;
     }
 
     public Robot(Math.Shapes.Robot robot, uint? id = null)
-        : this(robot.Center, robot.Angle, id)
+        : this(robot.Center, robot.Angle, id, robot.Radius)
     {
     }
 
     public Robot(Data.Ssl.Vision.Detection.Robot robot, uint? id = null)
-        : this(robot.Position, robot.Orientation, id)
+        : this(robot.Position, robot.Orientation, id, DefaultRadius)
     {
     }
 
     public Robot(Data.Ssl.Vision.Tracker.Robot robot)
-        : this(robot.Position, robot.Angle, robot.Id.Id)
+        : this(robot.Position, robot.Angle, robot.Id.Id, DefaultRadius)
     {
     }
 }

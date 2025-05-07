@@ -289,7 +289,8 @@ public sealed class Drawer(string moduleName) : IDisposable
         Draw(arc, color, options, expression, memberName, filePath, lineNumber);
     }
 
-    public void DrawRobot(Vector2 position, Angle? orientation, uint? id, Color color, Options options = default,
+    public void DrawRobot(Vector2 position, Angle? orientation, uint? id, Color color, float? radius = null,
+        Options options = default,
         [CallerArgumentExpression(nameof(position))]
         string? positionExpression = null,
         [CallerArgumentExpression(nameof(orientation))]
@@ -299,7 +300,7 @@ public sealed class Drawer(string moduleName) : IDisposable
         [CallerFilePath] string? filePath = null,
         [CallerLineNumber] int lineNumber = 0)
     {
-        var robot = new Robot(position, orientation, id);
+        var robot = new Robot(position, orientation, id, radius);
 
         var expression = MakeExpression(
             nameof(position), positionExpression,
@@ -309,7 +310,8 @@ public sealed class Drawer(string moduleName) : IDisposable
         Draw(robot, color, options, expression, memberName, filePath, lineNumber);
     }
 
-    public void DrawRobot(Vector2 position, Angle? orientation, Data.Ssl.RobotId? id, Options options = default,
+    public void DrawRobot(Vector2 position, Angle? orientation, Data.Ssl.RobotId? id, float? radius = null,
+        Options options = default,
         [CallerArgumentExpression(nameof(position))]
         string? positionExpression = null,
         [CallerArgumentExpression(nameof(orientation))]
@@ -319,7 +321,7 @@ public sealed class Drawer(string moduleName) : IDisposable
         [CallerFilePath] string? filePath = null,
         [CallerLineNumber] int lineNumber = 0)
     {
-        var robot = new Robot(position, orientation, id?.Id);
+        var robot = new Robot(position, orientation, id?.Id, radius);
 
         var expression = MakeExpression(
             nameof(position), positionExpression,

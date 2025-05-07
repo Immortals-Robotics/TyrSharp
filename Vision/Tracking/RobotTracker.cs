@@ -2,6 +2,8 @@
 using Tyr.Common.Config;
 using Tyr.Common.Data;
 using Tyr.Common.Data.Ssl;
+using Tyr.Common.Debug.Drawing;
+using Tyr.Common.Debug.Drawing.Drawables;
 using Tyr.Common.Math;
 using Tyr.Common.Time;
 using Tyr.Common.Vision.Data;
@@ -42,7 +44,7 @@ public partial class RobotTracker
 
     public RobotId Id { get; }
 
-    public uint CameraId => LastRawRobot.CameraId;
+    public Camera Camera { get; }
 
     public Timestamp LastUpdateTimestamp => LastRawRobot.CaptureTimestamp;
 
@@ -57,8 +59,10 @@ public partial class RobotTracker
     public Angle Angle => Angle.FromRad(FilterW.Position);
     public Angle AngularVelocity => Angle.FromRad(FilterW.Velocity);
 
-    public RobotTracker(RawRobot raw, TeamColor color)
+    public RobotTracker(Camera camera, RawRobot raw, TeamColor color)
     {
+        Camera = camera;
+
         FilterXy = new Filter2D(raw.Detection.Position,
             InitialCovarianceXy, ModelErrorXy, MeasurementErrorXy,
             raw.CaptureTimestamp);
@@ -71,8 +75,10 @@ public partial class RobotTracker
         LastRawRobot = raw;
     }
 
-    public RobotTracker(RawRobot raw, FilteredRobot filtered, TeamColor color)
+    public RobotTracker(Camera camera, RawRobot raw, FilteredRobot filtered, TeamColor color)
     {
+        Camera = camera;
+
         FilterXy = new Filter2D(filtered.State.Position, filtered.State.Velocity,
             InitialCovarianceXy, ModelErrorXy, MeasurementErrorXy,
             raw.CaptureTimestamp);
@@ -140,5 +146,19 @@ public partial class RobotTracker
         LastRawRobot = robot;
 
         return true;
+    }
+
+    public void DrawDebug(Timestamp timestamp)
+    {
+        var outlineColor = Id.Team == TeamColor.Blue ? Color.Blue200 : Color.Yellow100;
+        var textColor = Id.Team == TeamColor.Blue ? Color.Blue200 : Color.Yellow50;
+
+        Draw.DrawRobot(Position, Angle, Id.Id, outlineColor, 120f, Options.Outline());
+
+        var uncertainty = FilterXy.PositionUncertainty.Length() * Uncertainty;
+        var behind = timestamp - LastUpdateTimestamp;
+        Draw.DrawText($"[{Camera.Id}] unc.: {uncertainty:F2}, dt: {behind.Milliseconds:F2}ms",
+            Position + new Vector2(130, Camera.Id * 60), 50f,
+            textColor, TextAlignment.BottomLeft);
     }
 }
