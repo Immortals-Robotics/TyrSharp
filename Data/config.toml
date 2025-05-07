@@ -10,6 +10,37 @@ MaxPacketSize = 65536 # default: 65536
 PollTimeout = 0.001 # default: 0.001000s
 
 
+[Common.Debug]
+[Common.Debug.Drawing]
+[Common.Debug.Drawing.Drawables]
+[Common.Debug.Drawing.Drawables.Point]
+# Size of the cross used to draw points
+DefaultSize = 25.0 # default: 25
+
+[Common.Debug.Drawing.Drawables.Robot]
+DefaultRadius = 90.0 # default: 90
+# Angle in degrees of the flat front of the robot
+FlatAngle = 45.0 # default: 45.00°
+TextSize = 135.0 # default: 135
+TextColor = "#09090BFF" # default: #09090BFF
+
+[Common.Debug.Drawing.Drawables.Arrow]
+DefaultHeadSize = 20.0 # default: 20
+
+
+
+[Common.Debug.Logging]
+[Common.Debug.Logging.Logging]
+# The level logs are filtered at the source. Anything below this will be rejected on the log call.
+Level = "Trace" # default: Debug
+
+
+[Common.Debug.Assertion]
+[Common.Debug.Assertion.Assert]
+Enabled = true # default: True
+
+
+
 [Common.Data]
 [Common.Data.CommonConfigs]
 # The variety of standard patterns that we can have is 16
@@ -24,19 +55,6 @@ OurColor = "Unknown" # default: Unknown
 MaxLoadAttempts = 10 # default: 10
 LoadAttemptsDelay = 0.1 # default: 0.100000s
 DebounceDelay = 0.2 # default: 0.200000s
-
-
-[Common.Debug]
-[Common.Debug.Logging]
-[Common.Debug.Logging.Logging]
-# The level logs are filtered at the source. Anything below this will be rejected on the log call.
-Level = "Trace" # default: Debug
-
-
-[Common.Debug.Assertion]
-[Common.Debug.Assertion.Assert]
-Enabled = true # default: True
-
 
 
 
@@ -61,14 +79,6 @@ FontSize = 17 # default: 17
 
 [Gui.Rendering]
 [Gui.Rendering.DrawableRenderer]
-RobotTextSize = 135.0 # default: 135
-RobotTextColor = "#09090BFF" # default: #09090BFF
-# Angle in degrees of the flat front of the robot
-RobotFlatAngle = 45.0 # default: 45.00°
-RobotRadius = 90.0 # default: 90
-# Size of the cross used to draw points
-PointCrossSize = 25.0 # default: 25
-ArrowHeadSize = 20.0 # default: 20
 FilledOutlineColor = "#09090B7F" # default: #09090B7F
 
 

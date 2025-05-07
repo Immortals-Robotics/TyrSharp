@@ -15,19 +15,6 @@ namespace Tyr.Gui.Rendering;
 [Configurable]
 internal partial class DrawableRenderer
 {
-    [ConfigEntry] private static float RobotTextSize { get; set; } = 135f;
-    [ConfigEntry] private static Color RobotTextColor { get; set; } = Color.Zinc950;
-
-    [ConfigEntry("Angle in degrees of the flat front of the robot")]
-    private static Angle RobotFlatAngle { get; set; } = Angle.FromDeg(45f);
-
-    [ConfigEntry] private static float RobotRadius { get; set; } = 90f;
-
-    [ConfigEntry("Size of the cross used to draw points")]
-    private static float PointCrossSize { get; set; } = 25f;
-
-    [ConfigEntry] private static float ArrowHeadSize { get; set; } = 20f;
-
     [ConfigEntry] private static Color FilledOutlineColor { get; set; } = Color.Zinc950.WithAlpha(0.5f);
 
     public Camera2D Camera { get; } = new();
@@ -102,7 +89,7 @@ internal partial class DrawableRenderer
         // Line part
         _drawList.AddLine(start, end, ImGui.ColorConvertFloat4ToU32(color), thickness);
 
-        var headSizeScreen = Camera.WorldToScreenLength(ArrowHeadSize);
+        var headSizeScreen = Camera.WorldToScreenLength(arrow.HeadSize);
         var dir = Vector2.Normalize(end - start);
         var perp = new Vector2(-dir.Y, dir.X); // perpendicular for triangle base
 
@@ -211,11 +198,11 @@ internal partial class DrawableRenderer
     {
         Assert.IsFalse(options.IsFilled);
 
-        var l1Start = Camera.WorldToScreen(point.Position + new Vector2(-PointCrossSize, -PointCrossSize));
-        var l1End = Camera.WorldToScreen(point.Position + new Vector2(PointCrossSize, PointCrossSize));
+        var l1Start = Camera.WorldToScreen(point.Position + new Vector2(-point.Size, -point.Size));
+        var l1End = Camera.WorldToScreen(point.Position + new Vector2(point.Size, point.Size));
 
-        var l2Start = Camera.WorldToScreen(point.Position + new Vector2(-PointCrossSize, PointCrossSize));
-        var l2End = Camera.WorldToScreen(point.Position + new Vector2(PointCrossSize, -PointCrossSize));
+        var l2Start = Camera.WorldToScreen(point.Position + new Vector2(-point.Size, point.Size));
+        var l2End = Camera.WorldToScreen(point.Position + new Vector2(point.Size, -point.Size));
 
         var thickness = Camera.WorldToScreenLength(options.Thickness);
 
@@ -246,22 +233,22 @@ internal partial class DrawableRenderer
     {
         if (robot.Orientation.HasValue)
         {
-            var arc = new Arc(robot.Position, RobotRadius,
-                robot.Orientation.Value + RobotFlatAngle,
-                robot.Orientation.Value + 2f * Angle.Pi - RobotFlatAngle,
+            var arc = new Arc(robot.Position, robot.Radius,
+                robot.Orientation.Value + Robot.FlatAngle,
+                robot.Orientation.Value + 2f * Angle.Pi - Robot.FlatAngle,
                 true);
             DrawArc(arc, color, options);
         }
         else
         {
-            var circle = new Circle(robot.Position, RobotRadius);
+            var circle = new Circle(robot.Position, robot.Radius);
             DrawCircle(circle, color, options);
         }
 
         if (robot.Id.HasValue)
         {
-            var text = new Text(robot.Id.Value.ToString(), robot.Position, RobotTextSize, TextAlignment.Center);
-            DrawText(text, RobotTextColor);
+            var text = new Text(robot.Id.Value.ToString(), robot.Position, Robot.TextSize, TextAlignment.Center);
+            DrawText(text, Robot.TextColor);
         }
     }
 
