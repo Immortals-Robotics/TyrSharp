@@ -24,7 +24,7 @@ internal partial class DrawableRenderer
     [ConfigEntry] private static float RobotRadius { get; set; } = 90f;
 
     [ConfigEntry("Size of the cross used to draw points")]
-    private static float PointCrossSize { get; set; } = 10f;
+    private static float PointCrossSize { get; set; } = 25f;
 
     [ConfigEntry] private static float ArrowHeadSize { get; set; } = 20f;
 
@@ -270,11 +270,25 @@ internal partial class DrawableRenderer
         var posScreen = Camera.WorldToScreen(text.Position);
         var sizeScreen = Camera.WorldToScreenLength(text.Size);
 
-        if (text.Alignment == TextAlignment.Center)
+        var sizeMul = sizeScreen / ImGui.GetFontSize();
+        var textSize = ImGui.CalcTextSize(text.Content) * sizeMul;
+
+        if ((text.Alignment & TextAlignment.HCenter) != 0)
         {
-            var sizeMul = sizeScreen / ImGui.GetFontSize();
-            var textSize = ImGui.CalcTextSize(text.Content) * sizeMul;
-            posScreen -= textSize * 0.5f;
+            posScreen.X -= textSize.X * 0.5f;
+        }
+        else if ((text.Alignment & TextAlignment.Right) != 0)
+        {
+            posScreen.X -= textSize.X;
+        }
+
+        if ((text.Alignment & TextAlignment.VCenter) != 0)
+        {
+            posScreen.Y -= textSize.Y * 0.5f;
+        }
+        else if ((text.Alignment & TextAlignment.Bottom) != 0)
+        {
+            posScreen.Y -= textSize.Y;
         }
 
         unsafe

@@ -388,7 +388,8 @@ public sealed class Drawer(string moduleName) : IDisposable
         Draw(path, color, options, pointsExpression, memberName, filePath, lineNumber);
     }
 
-    public void DrawText(string content, Vector2 position, float size, Color color, Options options = default,
+    public void DrawText(string content, Vector2 position, float size, Color color,
+        TextAlignment alignment = TextAlignment.Center, Options options = default,
         [CallerArgumentExpression(nameof(content))]
         string? contentExpression = null,
         [CallerArgumentExpression(nameof(position))]
@@ -399,7 +400,7 @@ public sealed class Drawer(string moduleName) : IDisposable
         [CallerFilePath] string? filePath = null,
         [CallerLineNumber] int lineNumber = 0)
     {
-        var text = new Text(content, position, size);
+        var text = new Text(content, position, size, alignment);
 
         var expression = MakeExpression(
             nameof(content), contentExpression,

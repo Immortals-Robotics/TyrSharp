@@ -20,23 +20,4 @@ public sealed partial class Vision
             Plot.Plot($"Robot {robot.Id} velocity", frame.Ball.State.Velocity, "vel (mm/s)");
         }
     }
-
-    private static void DrawTrackedBalls(Camera camera)
-    {
-        for (var index = 0; index < camera.Balls.Count; index++)
-        {
-            var tracker = camera.Balls[index];
-            Draw.DrawCircle(tracker.Filter.Position, 25f, Color.Orange400,
-                Options.Outline() with { Thickness = 5f });
-        }
-    }
-
-    private static void DrawTrackedRobots(Camera camera)
-    {
-        foreach (var (id, tracker) in camera.Robots)
-        {
-            Draw.DrawRobot(tracker.Position, tracker.Angle, id,
-                Options.Outline() with { Thickness = 10f });
-        }
-    }
 }

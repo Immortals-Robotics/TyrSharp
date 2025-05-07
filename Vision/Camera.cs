@@ -3,6 +3,8 @@ using Tyr.Common.Config;
 using Tyr.Common.Data;
 using Tyr.Common.Data.Ssl;
 using Tyr.Common.Data.Ssl.Vision.Geometry;
+using Tyr.Common.Debug.Drawing;
+using Tyr.Common.Debug.Drawing.Drawables;
 using Tyr.Common.Time;
 using Tyr.Common.Vision.Data;
 using Tyr.Vision.Tracking;
@@ -74,6 +76,16 @@ public partial class Camera(uint id)
         // detections
         ProcessRobots(frame, lastFilteredFrame.Robots);
         ProcessBalls(frame, lastFilteredFrame.Ball);
+    }
+
+    public void DrawDebug()
+    {
+        Log.ZLogTrace($"Camera {Id} FPS: {Fps:F2}");
+        Plot.Plot($"cam[{Id}] fps", Fps, "fps");
+
+        DrawCalibration();
+        DrawTrackedBalls();
+        DrawTrackedRobots();
     }
 
     private void Reset()
@@ -210,6 +222,46 @@ public partial class Camera(uint id)
                 };
 
             Balls.Add(tracker);
+        }
+    }
+
+    private void DrawCalibration()
+    {
+        if (!Calibration.HasValue) return;
+
+        var pos3d = Calibration.Value.DerivedCameraWorld;
+        var pos2d = pos3d.Xy();
+
+        Draw.DrawPoint(pos2d, Color.Cyan, Options.Outline(15));
+
+        Draw.DrawText(Id.ToString(),
+            pos2d + new Vector2(0, 50), 150f,
+            Color.Cyan300, TextAlignment.BottomCenter);
+
+        Draw.DrawText($"Fps: {Fps:F2}",
+            pos2d + new Vector2(100, 50), 100f,
+            Color.Cyan500, TextAlignment.MiddleLeft);
+
+        Draw.DrawText($"Height: {pos3d.Z:F2}mm",
+            pos2d + new Vector2(100, -50), 100f,
+            Color.Cyan500, TextAlignment.MiddleLeft);
+    }
+
+    private void DrawTrackedBalls()
+    {
+        foreach (var tracker in Balls)
+        {
+            Draw.DrawCircle(tracker.Filter.Position, 25f, Color.Orange400,
+                Options.Outline() with { Thickness = 5f });
+        }
+    }
+
+    private void DrawTrackedRobots()
+    {
+        foreach (var (id, tracker) in Robots)
+        {
+            Draw.DrawRobot(tracker.Position, tracker.Angle, id,
+                Options.Outline() with { Thickness = 10f });
         }
     }
 }

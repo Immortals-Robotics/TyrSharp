@@ -67,7 +67,7 @@ RobotTextColor = "#09090BFF" # default: #09090BFF
 RobotFlatAngle = 45.0 # default: 45.00°
 RobotRadius = 90.0 # default: 90
 # Size of the cross used to draw points
-PointCrossSize = 10.0 # default: 10
+PointCrossSize = 25.0 # default: 25
 ArrowHeadSize = 20.0 # default: 20
 FilledOutlineColor = "#09090B7F" # default: #09090B7F
 
