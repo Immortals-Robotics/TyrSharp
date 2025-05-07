@@ -29,14 +29,16 @@ public sealed partial class Runner : IDisposable
         _runner.Start();
     }
 
-    private void Tick()
+    private bool Tick()
     {
-        if (_fieldSizeSubscriber.TryGetLatest(out var fieldSize))
+        if (_fieldSizeSubscriber.Reader.TryRead(out var fieldSize))
         {
             Vision.FieldSize = fieldSize;
         }
 
         _vision.Process(_detectionSubscriber.All(), _calibrationSubscriber.All());
+
+        return true;
     }
 
     public void Dispose()

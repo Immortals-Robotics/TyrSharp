@@ -80,7 +80,7 @@ public sealed partial class Runner : IDisposable
         _runner.StartOnCurrentThread();
     }
 
-    private void Tick()
+    private bool Tick()
     {
         // update
         _framer.Tick();
@@ -140,6 +140,8 @@ public sealed partial class Runner : IDisposable
         {
             _runner.Stop();
         }
+
+        return true;
     }
 
     public void Dispose()

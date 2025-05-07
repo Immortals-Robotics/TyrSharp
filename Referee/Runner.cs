@@ -30,11 +30,11 @@ public sealed partial class Runner : IDisposable
         _runner.Start();
     }
 
-    private void Tick()
+    private bool Tick()
     {
         var shouldProcess = false;
 
-        if (_visionSubscriber.TryGetLatest(out var vision))
+        if (_visionSubscriber.Reader.TryRead(out var vision))
         {
             _vision = vision;
             shouldProcess = true;
@@ -46,10 +46,10 @@ public sealed partial class Runner : IDisposable
             shouldProcess = true;
         }
 
-        if (shouldProcess && _referee.Process(_vision, _gc))
-        {
-            Hub.Referee.Publish(_referee.State);
-        }
+        if (!shouldProcess || !_referee.Process(_vision, _gc)) return false;
+
+        Hub.Referee.Publish(_referee.State);
+        return true;
     }
 
     public void Dispose()

@@ -1,15 +1,17 @@
 ﻿using System.Net;
 using System.Net.Sockets;
 using ProtoBuf;
+using Tyr.Common.Config;
 
 namespace Tyr.Common.Network;
 
-public class UdpServer
+[Configurable]
+public sealed partial class UdpServer
 {
-    private const int MaxUdpPacketSize = 64 * 1024;
+    [ConfigEntry] private static int MaxPacketSize { get; set; } = 64 * 1024;
 
     private readonly System.Net.Sockets.UdpClient _socket = new(AddressFamily.InterNetwork);
-    private readonly byte[] _buffer = new byte[MaxUdpPacketSize];
+    private readonly byte[] _buffer = new byte[MaxPacketSize];
 
     public Span<byte> GetBuffer()
     {

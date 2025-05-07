@@ -9,7 +9,11 @@ public class RunnerSyncTests(ITestOutputHelper testOutputHelper)
     [Fact]
     public void Start_SetsIsRunningTrue()
     {
-        var runner = new RunnerSync(() => Thread.Sleep(10));
+        var runner = new RunnerSync(() =>
+        {
+            Thread.Sleep(10);
+            return true;
+        });
         runner.Start();
 
         Assert.True(runner.IsRunning);
@@ -19,19 +23,27 @@ public class RunnerSyncTests(ITestOutputHelper testOutputHelper)
     [Fact]
     public void Stop_SetsIsRunningFalse()
     {
-        var runner = new RunnerSync(() => Thread.Sleep(10));
+        var runner = new RunnerSync(() =>
+        {
+            Thread.Sleep(10);
+            return true;
+        });
         runner.Start();
         runner.Stop();
 
         Assert.False(runner.IsRunning);
     }
-    
+
     [Trait("Category", "Timing")]
     [Fact]
     public void Tick_IsCalledMultipleTimes()
     {
         var count = 0;
-        var runner = new RunnerSync(() => Interlocked.Increment(ref count));
+        var runner = new RunnerSync(() =>
+        {
+            Interlocked.Increment(ref count);
+            return true;
+        });
         runner.Start();
 
         Thread.Sleep(100); // let it tick a few times
@@ -39,13 +51,17 @@ public class RunnerSyncTests(ITestOutputHelper testOutputHelper)
 
         Assert.True(count > 2, $"Expected more ticks, got {count}");
     }
-    
+
     [Trait("Category", "Timing")]
     [Fact]
     public void TickRateHz_RespectsThrottling()
     {
         var count = 0;
-        var runner = new RunnerSync(() => Interlocked.Increment(ref count), tickRateHz: 10);
+        var runner = new RunnerSync(() =>
+        {
+            Interlocked.Increment(ref count);
+            return true;
+        }, tickRateHz: 10);
         runner.Start();
 
         Thread.Sleep(250); // ~2-3 ticks expected at 10Hz
@@ -75,6 +91,7 @@ public class RunnerSyncTests(ITestOutputHelper testOutputHelper)
         {
             lock (lockObj)
                 timestamps.Add(stopwatch.Elapsed.TotalMilliseconds);
+            return true;
         }, tickRateHz);
 
         runner.Start();
