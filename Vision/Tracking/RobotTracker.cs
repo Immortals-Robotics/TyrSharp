@@ -147,18 +147,4 @@ public partial class RobotTracker
 
         return true;
     }
-
-    public void DrawDebug(Timestamp timestamp)
-    {
-        var outlineColor = Id.Team == TeamColor.Blue ? Color.Blue200 : Color.Yellow100;
-        var textColor = Id.Team == TeamColor.Blue ? Color.Blue200 : Color.Yellow50;
-
-        Draw.DrawRobot(Position, Angle, Id.Id, outlineColor, 120f, Options.Outline());
-
-        var uncertainty = FilterXy.PositionUncertainty.Length() * Uncertainty;
-        var behind = timestamp - LastUpdateTimestamp;
-        Draw.DrawText($"[{Camera.Id}] unc.: {uncertainty:F2}, dt: {behind.Milliseconds:F2}ms",
-            Position + new Vector2(130, Camera.Id * 60), 50f,
-            textColor, TextAlignment.BottomLeft);
-    }
 }

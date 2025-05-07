@@ -7,14 +7,20 @@ namespace Tyr.Vision;
 
 public sealed partial class Vision
 {
+    private const string Layer = "Filtered";
+
     private static void DrawFilteredFrame(FilteredFrame frame)
     {
+        Draw.BeginLayer(Layer);
+
         DrawFilteredBall(frame.Ball);
 
         foreach (var robot in frame.Robots)
         {
             DrawFilteredRobot(robot);
         }
+
+        Draw.EndLayer();
     }
 
     private static void DrawFilteredRobot(FilteredRobot robot)

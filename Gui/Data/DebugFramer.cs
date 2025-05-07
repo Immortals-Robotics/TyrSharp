@@ -50,7 +50,7 @@ public class DebugFramer
             }
             else
             {
-                GetOrCreateModuleFramer(log.Meta.ModuleName).OnLog(log);
+                GetOrCreateModuleFramer(log.Meta.Module).OnLog(log);
             }
 
             dirty = true;
@@ -67,7 +67,7 @@ public class DebugFramer
             }
             else
             {
-                GetOrCreateModuleFramer(draw.Meta.ModuleName).OnDraw(draw);
+                GetOrCreateModuleFramer(draw.Meta.Module).OnDraw(draw);
             }
 
             dirty = true;
@@ -84,7 +84,7 @@ public class DebugFramer
             }
             else
             {
-                GetOrCreateModuleFramer(plot.Meta.ModuleName).OnPlot(plot);
+                GetOrCreateModuleFramer(plot.Meta.Module).OnPlot(plot);
             }
 
             dirty = true;

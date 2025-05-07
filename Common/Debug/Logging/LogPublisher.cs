@@ -8,7 +8,7 @@ public sealed class LogPublisher : IAsyncLogProcessor
     {
         var info = log.LogInfo;
 
-        var meta = Meta.GetOrCreate(info.Category.Name, null, info.MemberName, info.FilePath, info.LineNumber);
+        var meta = Meta.GetOrCreate(info.Category.Name, null, info.FilePath, info.MemberName, info.LineNumber);
         var timestamp = Timestamp.FromDateTimeOffset(info.Timestamp.Utc);
         var entry = new Entry(log.ToString(), info.LogLevel, meta, timestamp);
 

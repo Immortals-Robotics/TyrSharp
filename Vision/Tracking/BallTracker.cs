@@ -112,16 +112,4 @@ public partial class BallTracker
 
         return true;
     }
-
-    public void DrawDebug(Timestamp timestamp)
-    {
-        Draw.DrawCircle(Filter.Position, 60f, Color.Orange300,
-            Options.Outline() with { Thickness = 5f });
-
-        var uncertainty = Filter.PositionUncertainty.Length() * Uncertainty;
-        var behind = timestamp - LastUpdateTimestamp;
-        Draw.DrawText($"[{Camera.Id}] unc.: {uncertainty:F2}, dt: {behind.Milliseconds:F2}ms",
-            Filter.Position + new Vector2(70, Camera.Id * 60), 50f,
-            Color.Orange200, TextAlignment.BottomLeft);
-    }
 }
