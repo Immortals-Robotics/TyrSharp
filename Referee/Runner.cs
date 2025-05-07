@@ -3,13 +3,14 @@ using Gc = Tyr.Common.Data.Ssl.Gc;
 using Tyr.Common.Vision.Data;
 using Tyr.Common.Dataflow;
 using Tyr.Common.Runner;
+using Tyr.Common.Time;
 
 namespace Tyr.Referee;
 
 [Configurable]
 public sealed partial class Runner : IDisposable
 {
-    [ConfigEntry] private static int TickRateHz { get; set; } = 100;
+    [ConfigEntry] private static DeltaTime SleepTime { get; set; } = DeltaTime.FromMilliseconds(1);
 
     private readonly Subscriber<Gc.Referee> _gcSubscriber;
     private readonly Subscriber<FilteredFrame> _visionSubscriber;
@@ -26,27 +27,36 @@ public sealed partial class Runner : IDisposable
         _gcSubscriber = Hub.RawReferee.Subscribe(Mode.All);
         _visionSubscriber = Hub.Vision.Subscribe(Mode.Latest);
 
-        _runner = new RunnerSync(Tick, TickRateHz, ModuleName);
+        _runner = new RunnerSync(Tick, 0, ModuleName);
         _runner.Start();
     }
 
     private bool Tick()
     {
-        var shouldProcess = false;
+        var newData = false;
 
         if (_visionSubscriber.Reader.TryRead(out var vision))
         {
             _vision = vision;
-            shouldProcess = true;
+            newData = true;
         }
 
         if (_gcSubscriber.Reader.TryRead(out var gc))
         {
             _gc = gc;
-            shouldProcess = true;
+            newData = true;
         }
 
-        if (!shouldProcess || !_referee.Process(_vision, _gc)) return false;
+        if (!newData)
+        {
+            Thread.Sleep(SleepTime.ToTimeSpan());
+            return false;
+        }
+
+        if (!_referee.Process(_vision, _gc))
+        {
+            return false;
+        }
 
         Hub.Referee.Publish(_referee.State);
         return true;

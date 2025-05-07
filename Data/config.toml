@@ -162,7 +162,7 @@ TickRateHz = 100 # default: 100
 
 [Referee]
 [Referee.Runner]
-TickRateHz = 100 # default: 100
+SleepTime = 0.001 # default: 0.001000s
 
 [Referee.Referee]
 RequiredHys = 5 # default: 5
