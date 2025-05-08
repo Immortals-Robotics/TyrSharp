@@ -4,6 +4,7 @@ using Tyr.Common.Config;
 using Tyr.Common.Debug.Drawing;
 using Tyr.Common.Debug.Drawing.Drawables;
 using Tyr.Common.Math;
+using Tyr.Gui.Backend;
 using Tyr.Gui.Data;
 using Color = Tyr.Common.Debug.Drawing.Color;
 using Path = Tyr.Common.Debug.Drawing.Drawables.Path;
@@ -278,11 +279,17 @@ internal partial class DrawableRenderer
             posScreen.Y -= textSize.Y;
         }
 
+
+        var font = FontRegistry.Instance.GetFieldFont(sizeScreen);
+        ImGui.PushFont(font);
+
         unsafe
         {
             _drawList.AddText(ImGui.GetFont().Handle, sizeScreen, posScreen, ImGui.ColorConvertFloat4ToU32(color),
                 text.Content);
         }
+
+        ImGui.PopFont();
     }
 
     private void DrawTriangle(Triangle triangle, Color color, Options options)

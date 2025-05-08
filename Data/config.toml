@@ -75,6 +75,9 @@ MaxPoints = 500 # default: 500
 [Gui.Backend]
 [Gui.Backend.FontRegistry]
 FontSize = 17 # default: 17
+FieldFontMinSize = 10 # default: 10
+FieldFontMaxSize = 100 # default: 100
+FieldFontSizeStep = 5 # default: 5
 
 
 [Gui.Rendering]
