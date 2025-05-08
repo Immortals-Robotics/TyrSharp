@@ -7,7 +7,7 @@ namespace Tyr.Vision.Tracking;
 
 public partial class BallTracker
 {
-    private const string Layer = Meta.DebugLayerPrefix + "BallTracker";
+    private static readonly string Layer = Meta.DebugLayer("BallTracker");
 
     public void DrawDebug(Timestamp timestamp)
     {
