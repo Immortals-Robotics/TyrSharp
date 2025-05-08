@@ -12,7 +12,7 @@ public sealed partial class FontRegistry : IDisposable
 
     [ConfigEntry] private static int FieldFontMinSize { get; set; } = 10;
     [ConfigEntry] private static int FieldFontMaxSize { get; set; } = 100;
-    [ConfigEntry] private static int FieldFontCount { get; set; } = 10;
+    [ConfigEntry] private static int FieldFontCount { get; set; } = 5;
     [ConfigEntry] private static float FontSizeDistributionPow { get; set; } = 0.5f;
 
     public static FontRegistry Instance { get; private set; } = null!;
@@ -45,7 +45,7 @@ public sealed partial class FontRegistry : IDisposable
         var normalizedSize = (size - FieldFontMinSize) / (FieldFontMaxSize - FieldFontMinSize);
 
         var scaledSize = MathF.Pow(normalizedSize, FontSizeDistributionPow);
-        var index = (int)MathF.Round(scaledSize * (FieldFontCount - 1));
+        var index = (int)MathF.Ceiling(scaledSize * (FieldFontCount - 1));
         return int.Clamp(index, 0, _fieldFonts.Count - 1);
     }
 
@@ -54,7 +54,7 @@ public sealed partial class FontRegistry : IDisposable
         var normalizedIndex = index / (float)(FieldFontCount - 1);
         var scaledIndex = MathF.Pow(normalizedIndex, 1.0f / FontSizeDistributionPow); // Inverse of the power used above
         var size = FieldFontMinSize + scaledIndex * (FieldFontMaxSize - FieldFontMinSize);
-        return MathF.Round(size);
+        return MathF.Ceiling(size);
     }
 
     private readonly FontLoader _loader;
