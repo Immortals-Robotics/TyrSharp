@@ -12,7 +12,8 @@ public sealed partial class FontRegistry : IDisposable
 
     [ConfigEntry] private static int FieldFontMinSize { get; set; } = 10;
     [ConfigEntry] private static int FieldFontMaxSize { get; set; } = 100;
-    [ConfigEntry] private static int FieldFontSizeStep { get; set; } = 5;
+    [ConfigEntry] private static int FieldFontCount { get; set; } = 10;
+    [ConfigEntry] private static float FontSizeDistributionPow { get; set; } = 0.5f;
 
     public static FontRegistry Instance { get; private set; } = null!;
 
@@ -24,11 +25,36 @@ public sealed partial class FontRegistry : IDisposable
     public ImFontPtr UiFont { get; }
     public ImFontPtr MonoFont { get; }
 
-    public ImFontPtr GetFieldFont(float size)
+    /// returns a font and a size to use to render with it, given a target font
+    public (ImFontPtr, float) GetFieldFont(float size)
     {
-        var sizeInt = int.Clamp((int)Math.Round(size), FieldFontMinSize, FieldFontMaxSize);
-        var index = int.Clamp((sizeInt - FieldFontMinSize) / FieldFontSizeStep, 0, _fieldFonts.Count - 1);
-        return _fieldFonts[index];
+        var font = _fieldFonts[GetFontIndex(size)];
+
+        // adjust the size to get a constant text width at various sizes
+        // this offsets the variable font width / height ratio
+        var correctedSize = size * font.FontSize / (FieldFontAverageHeightToWidthRatio * font.FallbackAdvanceX);
+
+        return (font, correctedSize);
+    }
+
+    private float FieldFontAverageHeightToWidthRatio { get; }
+
+    private int GetFontIndex(float size)
+    {
+        size = float.Clamp(size, FieldFontMinSize, FieldFontMaxSize);
+        var normalizedSize = (size - FieldFontMinSize) / (FieldFontMaxSize - FieldFontMinSize);
+
+        var scaledSize = MathF.Pow(normalizedSize, FontSizeDistributionPow);
+        var index = (int)MathF.Round(scaledSize * (FieldFontCount - 1));
+        return int.Clamp(index, 0, _fieldFonts.Count - 1);
+    }
+
+    private static float GetFontSize(int index)
+    {
+        var normalizedIndex = index / (float)(FieldFontCount - 1);
+        var scaledIndex = MathF.Pow(normalizedIndex, 1.0f / FontSizeDistributionPow); // Inverse of the power used above
+        var size = FieldFontMinSize + scaledIndex * (FieldFontMaxSize - FieldFontMinSize);
+        return MathF.Round(size);
     }
 
     private readonly FontLoader _loader;
@@ -61,13 +87,18 @@ public sealed partial class FontRegistry : IDisposable
         ImGui.GetIO().FontDefault = UiFont;
 
         // load field fonts
-        for (var size = FieldFontMinSize; size <= FieldFontMaxSize; size += FieldFontSizeStep)
+        for (var idx = 0; idx < FieldFontCount; idx += 1)
         {
+            var size = GetFontSize(idx);
             var font = _loader
                 .Add(MonoFontFile, null, size, dpiScale)
                 .Load();
             _fieldFonts.Add(font);
+
+            FieldFontAverageHeightToWidthRatio += font.FontSize / font.FallbackAdvanceX;
         }
+
+        FieldFontAverageHeightToWidthRatio /= FieldFontCount;
 
         Assert.IsNull(Instance);
         Instance = this;

@@ -258,8 +258,11 @@ internal partial class DrawableRenderer
         var posScreen = Camera.WorldToScreen(text.Position);
         var sizeScreen = Camera.WorldToScreenLength(text.Size);
 
-        var sizeMul = sizeScreen / ImGui.GetFontSize();
-        var textSize = ImGui.CalcTextSize(text.Content) * sizeMul;
+        var (font, correctedSize) = FontRegistry.Instance.GetFieldFont(sizeScreen);
+
+        var textSize = ImGui.CalcTextSizeA(font, correctedSize,
+            float.PositiveInfinity, float.PositiveInfinity,
+            text.Content);
 
         if ((text.Alignment & TextAlignment.HCenter) != 0)
         {
@@ -279,17 +282,11 @@ internal partial class DrawableRenderer
             posScreen.Y -= textSize.Y;
         }
 
-
-        var font = FontRegistry.Instance.GetFieldFont(sizeScreen);
-        ImGui.PushFont(font);
-
         unsafe
         {
-            _drawList.AddText(ImGui.GetFont().Handle, sizeScreen, posScreen, ImGui.ColorConvertFloat4ToU32(color),
-                text.Content);
+            _drawList.AddText(font.Handle, correctedSize, posScreen,
+                ImGui.ColorConvertFloat4ToU32(color), text.Content);
         }
-
-        ImGui.PopFont();
     }
 
     private void DrawTriangle(Triangle triangle, Color color, Options options)
