@@ -4,6 +4,7 @@ using Tyr.Common.Config;
 using Tyr.Common.Debug.Drawing;
 using Tyr.Common.Debug.Drawing.Drawables;
 using Tyr.Common.Math;
+using Tyr.Gui.Backend;
 using Tyr.Gui.Data;
 using Color = Tyr.Common.Debug.Drawing.Color;
 using Path = Tyr.Common.Debug.Drawing.Drawables.Path;
@@ -257,8 +258,11 @@ internal partial class DrawableRenderer
         var posScreen = Camera.WorldToScreen(text.Position);
         var sizeScreen = Camera.WorldToScreenLength(text.Size);
 
-        var sizeMul = sizeScreen / ImGui.GetFontSize();
-        var textSize = ImGui.CalcTextSize(text.Content) * sizeMul;
+        var (font, correctedSize) = FontRegistry.Instance.GetFieldFont(sizeScreen);
+
+        var textSize = ImGui.CalcTextSizeA(font, correctedSize,
+            float.PositiveInfinity, float.PositiveInfinity,
+            text.Content);
 
         if ((text.Alignment & TextAlignment.HCenter) != 0)
         {
@@ -280,8 +284,8 @@ internal partial class DrawableRenderer
 
         unsafe
         {
-            _drawList.AddText(ImGui.GetFont().Handle, sizeScreen, posScreen, ImGui.ColorConvertFloat4ToU32(color),
-                text.Content);
+            _drawList.AddText(font.Handle, correctedSize, posScreen,
+                ImGui.ColorConvertFloat4ToU32(color), text.Content);
         }
     }
 

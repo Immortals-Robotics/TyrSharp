@@ -5,7 +5,9 @@ namespace Tyr.Common.Debug;
 public record Meta
 {
     public const string DebugLayerPrefix = "[debug]";
-    
+    public static string DebugLayer(string layer) => DebugLayerPrefix + layer;
+    public static bool IsDebugLayer(string layer) => layer.StartsWith(DebugLayerPrefix);
+
     public string Module { get; }
     public string Layer { get; }
     public string? File { get; }
@@ -24,16 +26,25 @@ public record Meta
         Expression = expression;
     }
 
+    private readonly record struct Key(
+        string Module,
+        string Layer,
+        string? File,
+        string? Member,
+        int Line,
+        string? Expression
+    );
+
     // Cache for interned Meta instances
-    private static readonly ConcurrentDictionary<(string, string, string?, string?, int, string?), Meta> Cache = [];
+    private static readonly ConcurrentDictionary<Key, Meta> Cache = [];
 
     // Factory method for getting interned instances
     public static Meta GetOrCreate(
         string module, string? layer = null,
         string? file = null, string? member = null, int line = 0, string? expression = null)
     {
-        var key = (module, layer ?? string.Empty, file, member, line, expression);
-        return Cache.GetOrAdd(key, k => new Meta(k.Item1, k.Item2, k.Item3, k.Item4, k.Item5, k.Item6));
+        var key = new Key(module, layer ?? string.Empty, file, member, line, expression);
+        return Cache.GetOrAdd(key, k => new Meta(k.Module, k.Layer, k.File, k.Member, k.Line, k.Expression));
     }
 
     public static readonly Meta Empty = GetOrCreate(string.Empty);

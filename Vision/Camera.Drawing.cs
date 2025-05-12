@@ -7,7 +7,7 @@ namespace Tyr.Vision;
 
 public partial class Camera
 {
-    private const string Layer = Meta.DebugLayerPrefix + "Camera";
+    private static readonly string Layer = Meta.DebugLayer("Camera");
 
     private void DrawCalibration(Timestamp timestamp)
     {

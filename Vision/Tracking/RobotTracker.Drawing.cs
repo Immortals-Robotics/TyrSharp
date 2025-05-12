@@ -8,7 +8,7 @@ namespace Tyr.Vision.Tracking;
 
 public partial class RobotTracker
 {
-    private const string Layer = Meta.DebugLayerPrefix + "RobotTracker";
+    private static readonly string Layer = Meta.DebugLayer("RobotTracker");
 
     public void DrawDebug(Timestamp timestamp)
     {

@@ -19,9 +19,6 @@ public sealed partial class DebugFilter(DebugFramer debugFramer) : IDisposable
     private readonly Dictionary<string, bool>.AlternateLookup<StrSpan> _lookup =
         FilterState.GetAlternateLookup<StrSpan>();
 
-    private bool IsDebugLayer(string layer) =>
-        layer.StartsWith(Meta.DebugLayerPrefix, StringComparison.OrdinalIgnoreCase);
-
     private Utf16ValueStringBuilder _stringBuilder = ZString.CreateStringBuilder();
 
     private bool _dirty;
@@ -103,7 +100,7 @@ public sealed partial class DebugFilter(DebugFramer debugFramer) : IDisposable
             _dirty |= FilterState.TryAdd(module, true);
             foreach (var (layer, files) in framer.MetaTree)
             {
-                var defaultValue = !IsDebugLayer(layer);
+                var defaultValue = !Meta.IsDebugLayer(layer);
                 _dirty |= _lookup.TryAdd(MakePath(module, layer), defaultValue);
                 foreach (var (file, functions) in files)
                 {
@@ -166,7 +163,7 @@ public sealed partial class DebugFilter(DebugFramer debugFramer) : IDisposable
 
         if (!emptyLayer)
         {
-            var debugLayer = IsDebugLayer(layer);
+            var debugLayer = Meta.IsDebugLayer(layer);
             var layerName = debugLayer ? layer[Meta.DebugLayerPrefix.Length..] : layer;
             // Create tree node with checkbox
             ImGui.PushID(layer);
