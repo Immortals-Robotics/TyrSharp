@@ -1,12 +1,37 @@
 # Tyr: God of valor and justice
 [![.NET](https://github.com/Immortals-Robotics/TyrSharp/actions/workflows/dotnet.yml/badge.svg)](https://github.com/Immortals-Robotics/TyrSharp/actions/workflows/dotnet.yml)
 
-Tyr is the robotics software stack powering Immortals, our RoboCup Small-Size League team. It's built in modern C#, using a modular architecture with clean threading, pub-sub communication, real-time simulation, and a DVR-style replay system.
+Tyr is the robotics software stack powering Immortals, our RoboCup Small-Size League team. This is a modern C# 13 / .NET 9 port of our original [C++ codebase](https://github.com/Immortals-Robotics/Tyr).
+
+⚠️ Work in progress, so far:
+
+- ✅ Common, Vision, Referee, and GUI are done
+- 🔜 Soccer is next
 
 ![Tyr GUI](Doc/gui.png)
 
 ## Building
-TODO: fill
+
+### Requirements
+- .NET 9 SDK
+- Rider or any IDE with C# support
+
+### Steps
+1 .Clone the repository
+```bash
+git clone https://github.com/Immortals-Robotics/TyrSharp.git
+cd TyrSharp
+```
+
+2. Restore dependencies
+```bash
+dotnet restore
+```
+
+3. Build the solution
+```bash
+dotnet build
+```
 
 ## Branching
 We use [Github flow](https://docs.github.com/en/get-started/using-github/github-flow) as our branching strategy. Direct commits to the `main` branch are disabled, the goal is to keep it stable and usable.
