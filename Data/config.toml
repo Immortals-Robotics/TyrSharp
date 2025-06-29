@@ -187,3 +187,14 @@ DefaultBallMoveDis = 50.0 # default: 50
 GcAddress = { Ip = "224.5.23.1", Port = 10003 } # default: 224.5.23.1:10003
 
 
+[Sender]
+[Sender.Runner]
+SleepTime = 0.001 # default: 0.001000s
+
+[Sender.Simulator]
+Enabled = false # default: False
+BlueAddress = { Ip = "127.0.0.1", Port = 10301 } # default: 127.0.0.1:10301
+YellowAddress = { Ip = "127.0.0.1", Port = 10302 } # default: 127.0.0.1:10302
+ChipAngle = 45.0 # default: 45.00°
+
+

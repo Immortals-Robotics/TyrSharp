@@ -32,6 +32,7 @@ public readonly record struct Angle
     }
 
     public static Angle Pi => FromRad(MathF.PI);
+    public static Angle Zero => FromRad(0f);
 
     // normalized to [-π, π]
     public float RadNormalized => MathF.IEEERemainder(Rad, 2f * MathF.PI);

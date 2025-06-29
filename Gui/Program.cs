@@ -5,6 +5,7 @@ using var userConfigs = new Config.Storage("user.toml", Config.StorageType.User)
 
 using var runner = new Tyr.Gui.Runner();
 
+using var sender = new Tyr.Sender.Runner();
 using var referee = new Tyr.Referee.Runner();
 using var vision = new Tyr.Vision.Runner();
 

@@ -28,6 +28,11 @@ public static class Vector2Extensions
         return Vector2.Normalize(v) * length;
     }
 
+    public static Vector2 Rotated(this Vector2 v, Angle angle)
+    {
+        var rotatedAngle = v.ToAngle() + angle;
+        return rotatedAngle.ToUnitVec() * v.Length();
+    }
 
     public static MathNet.Numerics.LinearAlgebra.Vector<double> AsMathNetVector(this Vector2 v)
     {
