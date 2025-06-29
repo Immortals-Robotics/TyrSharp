@@ -6,7 +6,7 @@ using Tyr.Common.Config;
 namespace Tyr.Common.Network;
 
 [Configurable]
-public sealed partial class UdpServer
+public sealed partial class UdpServer : IDisposable
 {
     [ConfigEntry] private static int MaxPacketSize { get; set; } = 64 * 1024;
 
@@ -18,7 +18,7 @@ public sealed partial class UdpServer
         return _buffer;
     }
 
-    public bool Send<T>(T message, Address address) where T : class
+    public bool Send<T>(T message, Address address)
     {
         try
         {
@@ -48,5 +48,10 @@ public sealed partial class UdpServer
             Log.ZLogError(ex, $"Send failed: {ex.Message}");
             return false;
         }
+    }
+
+    public void Dispose()
+    {
+        _socket.Dispose();
     }
 }
