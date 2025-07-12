@@ -1,18 +1,10 @@
 [Common]
-[Common.Network]
-[Common.Network.UdpServer]
-MaxPacketSize = 65536 # default: 65536
-
-[Common.Network.UdpClient]
-MaxPacketSize = 65536 # default: 65536
-
-[Common.Network.UdpReceiverConfigs]
-PollTimeout = 0.001 # default: 0.001000s
-
-
 [Common.Debug]
 [Common.Debug.Drawing]
 [Common.Debug.Drawing.Drawables]
+[Common.Debug.Drawing.Drawables.Arrow]
+DefaultHeadSize = 20.0 # default: 20
+
 [Common.Debug.Drawing.Drawables.Point]
 # Size of the cross used to draw points
 DefaultSize = 25.0 # default: 25
@@ -24,9 +16,11 @@ FlatAngle = 45.0 # default: 45.00°
 TextSize = 135.0 # default: 135
 TextColor = "#09090BFF" # default: #09090BFF
 
-[Common.Debug.Drawing.Drawables.Arrow]
-DefaultHeadSize = 20.0 # default: 20
 
+
+[Common.Debug.Assertion]
+[Common.Debug.Assertion.Assert]
+Enabled = true # default: True
 
 
 [Common.Debug.Logging]
@@ -35,10 +29,23 @@ DefaultHeadSize = 20.0 # default: 20
 Level = "Trace" # default: Debug
 
 
-[Common.Debug.Assertion]
-[Common.Debug.Assertion.Assert]
-Enabled = true # default: True
 
+[Common.Config]
+[Common.Config.Storage]
+MaxLoadAttempts = 10 # default: 10
+LoadAttemptsDelay = 0.1 # default: 0.100000s
+DebounceDelay = 0.2 # default: 0.200000s
+
+
+[Common.Network]
+[Common.Network.UdpClient]
+MaxPacketSize = 65536 # default: 65536
+
+[Common.Network.UdpReceiverConfigs]
+PollTimeout = 0.001 # default: 0.001000s
+
+[Common.Network.UdpServer]
+MaxPacketSize = 65536 # default: 65536
 
 
 [Common.Data]
@@ -50,81 +57,8 @@ ImmortalsIsTheBestTeam = true # default: True
 OurColor = "Unknown" # default: Unknown
 
 
-[Common.Config]
-[Common.Config.Storage]
-MaxLoadAttempts = 10 # default: 10
-LoadAttemptsDelay = 0.1 # default: 0.100000s
-DebounceDelay = 0.2 # default: 0.200000s
-
-
-
-[Gui]
-[Gui.Views]
-[Gui.Views.FieldView]
-ZoomFactor = 1.100000023841858 # default: 1.1
-LineColor = "#FFFFFFB2" # default: #FFFFFFB2
-
-[Gui.Views.PlotView]
-TimeAxisExtension = 5.0 # default: 5
-TimeAxisMinRange = 1.0 # default: 1
-TimeAxisMaxRange = 200.0 # default: 200
-YAxisMinRange = 1.0 # default: 1
-MaxPoints = 500 # default: 500
-
-
-[Gui.Backend]
-[Gui.Backend.FontRegistry]
-FontSize = 17 # default: 17
-FieldFontMinSize = 10 # default: 10
-FieldFontMaxSize = 100 # default: 100
-FieldFontCount = 5 # default: 5
-FontSizeDistributionPow = 0.5 # default: 0.5
-
-
-[Gui.Rendering]
-[Gui.Rendering.DrawableRenderer]
-FilledOutlineColor = "#09090B7F" # default: #09090B7F
-
-
 
 [Vision]
-[Vision.Tracking]
-[Vision.Tracking.BallTracker]
-InitialCovariance = 1000.0 # default: 1000
-ModelError = 0.10000000149011612 # default: 0.1
-MeasurementError = 100.0 # default: 100
-# Maximum assumed ball speed in [mm/s] to filter outliers
-MaxLinearVelocity = 15000.0 # default: 15000
-# Reciprocal health is used as uncertainty, increased on update, decreased on prediction
-MaxHealth = 20 # default: 20
-# How many updates are required until this tracker is grown up?
-GrownUpAge = 3 # default: 3
-
-[Vision.Tracking.RobotMerger]
-# Factor to weight stdDeviation during tracker merging, reasonable range: 1.0 - 2.0. High values lead to more jitter
-MergePower = 1.5 # default: 1.5
-
-[Vision.Tracking.BallMerger]
-# Factor to weight stdDeviation during tracker merging, reasonable range: 1.0 - 2.0. High values lead to more jitter
-MergePower = 1.5 # default: 1.5
-# Minimum search radius for cam balls around last known position [mm]
-MinSearchRadius = 300.0 # default: 300
-
-[Vision.Tracking.RobotTracker]
-InitialCovarianceXy = 100.0 # default: 100
-ModelErrorXy = 0.10000000149011612 # default: 0.1
-MeasurementErrorXy = 20.0 # default: 20
-InitialCovarianceW = 100.0 # default: 100
-ModelErrorW = 0.10000000149011612 # default: 0.1
-MeasurementErrorW = 2.0 # default: 2
-# Maximum assumed robot speed in [mm/s] to filter outliers
-MaxLinearVelocity = 6000.0 # default: 6000
-# Maximum assumed angular robot speed in [deg/s] to filter outliers
-MaxAngularVelocity = 1700.0 # default: 1700
-# Reciprocal health is used as uncertainty, increased on update, decreased on prediction
-MaxHealth = 20 # default: 20
-
-
 [Vision.Data]
 [Vision.Data.BallParameters]
 # Radius of the ball in [mm]
@@ -153,6 +87,50 @@ MinHopHeight = 10.0 # default: 10
 MaxInterceptableHeight = 150.0 # default: 150
 
 
+[Vision.Vision]
+CameraTooOldTime = 1.0 # default: 1.000000s
+
+[Vision.Tracking]
+[Vision.Tracking.BallTracker]
+InitialCovariance = 1000.0 # default: 1000
+ModelError = 0.10000000149011612 # default: 0.1
+MeasurementError = 100.0 # default: 100
+# Maximum assumed ball speed in [mm/s] to filter outliers
+MaxLinearVelocity = 15000.0 # default: 15000
+# Reciprocal health is used as uncertainty, increased on update, decreased on prediction
+MaxHealth = 20 # default: 20
+# How many updates are required until this tracker is grown up?
+GrownUpAge = 3 # default: 3
+
+[Vision.Tracking.BallMerger]
+# Factor to weight stdDeviation during tracker merging, reasonable range: 1.0 - 2.0. High values lead to more jitter
+MergePower = 1.5 # default: 1.5
+# Minimum search radius for cam balls around last known position [mm]
+MinSearchRadius = 300.0 # default: 300
+
+[Vision.Tracking.RobotTracker]
+InitialCovarianceXy = 100.0 # default: 100
+ModelErrorXy = 0.10000000149011612 # default: 0.1
+MeasurementErrorXy = 20.0 # default: 20
+InitialCovarianceW = 100.0 # default: 100
+ModelErrorW = 0.10000000149011612 # default: 0.1
+MeasurementErrorW = 2.0 # default: 2
+# Maximum assumed robot speed in [mm/s] to filter outliers
+MaxLinearVelocity = 6000.0 # default: 6000
+# Maximum assumed angular robot speed in [deg/s] to filter outliers
+MaxAngularVelocity = 1700.0 # default: 1700
+# Reciprocal health is used as uncertainty, increased on update, decreased on prediction
+MaxHealth = 20 # default: 20
+
+[Vision.Tracking.RobotMerger]
+# Factor to weight stdDeviation during tracker merging, reasonable range: 1.0 - 2.0. High values lead to more jitter
+MergePower = 1.5 # default: 1.5
+
+
+[Vision.SslVisionDataPublisher]
+VisionAddress = { Ip = "224.5.23.2", Port = 10006 } # default: 224.5.23.2:10006
+SimulatorAddress = { Ip = "224.5.23.2", Port = 10025 } # default: 224.5.23.2:10025
+
 [Vision.Camera]
 # Time after which an invisible ball is removed
 InvisibleLifetimeBall = 1.0 # default: 1.000000s
@@ -163,33 +141,190 @@ MaxBallTrackers = 10 # default: 10
 # Max. distance to copy state from filtered bot to new trackers
 CopyTrackerMaxDistance = 200.0 # default: 200
 
-[Vision.SslVisionDataPublisher]
-VisionAddress = { Ip = "224.5.23.2", Port = 10006 } # default: 224.5.23.2:10006
-SimulatorAddress = { Ip = "224.5.23.2", Port = 10025 } # default: 224.5.23.2:10025
-
-[Vision.Vision]
-CameraTooOldTime = 1.0 # default: 1.000000s
-
 [Vision.Runner]
 TickRateHz = 100 # default: 100
 
 
 [Referee]
-[Referee.Runner]
-SleepTime = 0.001 # default: 0.001000s
+[Referee.GcDataPublisher]
+GcAddress = { Ip = "224.5.23.1", Port = 10003 } # default: 224.5.23.1:10003
 
 [Referee.Referee]
 RequiredHys = 5 # default: 5
 OurRestartBallMoveDis = 150.0 # default: 150
 DefaultBallMoveDis = 50.0 # default: 50
 
-[Referee.GcDataPublisher]
-GcAddress = { Ip = "224.5.23.1", Port = 10003 } # default: 224.5.23.1:10003
+[Referee.Runner]
+SleepTime = 0.001 # default: 0.001000s
+
+
+[Gui]
+[Gui.Backend]
+[Gui.Backend.FontRegistry]
+FontSize = 17 # default: 17
+FieldFontMinSize = 10 # default: 10
+FieldFontMaxSize = 100 # default: 100
+FieldFontCount = 5 # default: 5
+FontSizeDistributionPow = 0.5 # default: 0.5
+
+
+[Gui.Rendering]
+[Gui.Rendering.DrawableRenderer]
+FilledOutlineColor = "#09090B7F" # default: #09090B7F
+
+
+[Gui.Views]
+[Gui.Views.PlotView]
+TimeAxisExtension = 5.0 # default: 5
+TimeAxisMinRange = 1.0 # default: 1
+TimeAxisMaxRange = 200.0 # default: 200
+YAxisMinRange = 1.0 # default: 1
+MaxPoints = 500 # default: 500
+
+[Gui.Views.FieldView]
+ZoomFactor = 1.100000023841858 # default: 1.1
+LineColor = "#FFFFFFB2" # default: #FFFFFFB2
+
 
 
 [Sender]
 [Sender.Runner]
 SleepTime = 0.001 # default: 0.001000s
+
+[Sender.ShootCalibration]
+
+[[Sender.ShootCalibration.ShootCoeffs]]
+X = 4.449999809265137
+Y = 2.5899999141693115
+
+[[Sender.ShootCalibration.ShootCoeffs]]
+X = 4.480000019073486
+Y = 2.5999999046325684
+
+[[Sender.ShootCalibration.ShootCoeffs]]
+X = 3.4200000762939453
+Y = 3.430000066757202
+
+[[Sender.ShootCalibration.ShootCoeffs]]
+X = 6.21999979019165
+Y = -0.4300000071525574
+
+[[Sender.ShootCalibration.ShootCoeffs]]
+X = 9.739999771118164
+Y = 12.800000190734863
+
+[[Sender.ShootCalibration.ShootCoeffs]]
+X = 4.460000038146973
+Y = 2.6600000858306885
+
+[[Sender.ShootCalibration.ShootCoeffs]]
+X = 9.739999771118164
+Y = 12.800000190734863
+
+[[Sender.ShootCalibration.ShootCoeffs]]
+X = 4.019999980926514
+Y = 3.380000114440918
+
+[[Sender.ShootCalibration.ShootCoeffs]]
+X = 1.0
+Y = 0.0
+
+[[Sender.ShootCalibration.ShootCoeffs]]
+X = 1.0
+Y = 0.0
+
+[[Sender.ShootCalibration.ShootCoeffs]]
+X = 1.0
+Y = 0.0
+
+[[Sender.ShootCalibration.ShootCoeffs]]
+X = 1.0
+Y = 0.0
+
+[[Sender.ShootCalibration.ShootCoeffs]]
+X = 1.0
+Y = 0.0
+
+[[Sender.ShootCalibration.ShootCoeffs]]
+X = 1.0
+Y = 0.0
+
+[[Sender.ShootCalibration.ShootCoeffs]]
+X = 1.0
+Y = 0.0
+
+[[Sender.ShootCalibration.ShootCoeffs]]
+X = 1.0
+Y = 0.0
+
+[[Sender.ShootCalibration.ChipCoeffs]]
+X = 1.0
+Y = 2.3250699043273926
+
+[[Sender.ShootCalibration.ChipCoeffs]]
+X = 0.7746099829673767
+Y = 2.8186099529266357
+
+[[Sender.ShootCalibration.ChipCoeffs]]
+X = 1.690619945526123
+Y = 1.5429199934005737
+
+[[Sender.ShootCalibration.ChipCoeffs]]
+X = 0.9056100249290466
+Y = 3.1300699710845947
+
+[[Sender.ShootCalibration.ChipCoeffs]]
+X = 1.0136699676513672
+Y = 1.7466700077056885
+
+[[Sender.ShootCalibration.ChipCoeffs]]
+X = 1.0136699676513672
+Y = 1.7466700077056885
+
+[[Sender.ShootCalibration.ChipCoeffs]]
+X = 1.456570029258728
+Y = 1.1877000331878662
+
+[[Sender.ShootCalibration.ChipCoeffs]]
+X = 1.0136699676513672
+Y = 1.7466700077056885
+
+[[Sender.ShootCalibration.ChipCoeffs]]
+X = 1.0
+Y = 0.0
+
+[[Sender.ShootCalibration.ChipCoeffs]]
+X = 1.0
+Y = 0.0
+
+[[Sender.ShootCalibration.ChipCoeffs]]
+X = 1.0
+Y = 0.0
+
+[[Sender.ShootCalibration.ChipCoeffs]]
+X = 1.0
+Y = 0.0
+
+[[Sender.ShootCalibration.ChipCoeffs]]
+X = 1.0
+Y = 0.0
+
+[[Sender.ShootCalibration.ChipCoeffs]]
+X = 1.0
+Y = 0.0
+
+[[Sender.ShootCalibration.ChipCoeffs]]
+X = 1.0
+Y = 0.0
+
+[[Sender.ShootCalibration.ChipCoeffs]]
+X = 1.0
+Y = 0.0
+
+
+[Sender.Nrf]
+Enabled = false # default: False
+Address = { Ip = "224.5.92.5", Port = 60005 } # default: 224.5.92.5:60005
 
 [Sender.Simulator]
 Enabled = false # default: False
