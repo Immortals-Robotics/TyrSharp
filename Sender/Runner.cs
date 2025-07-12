@@ -20,7 +20,8 @@ public sealed partial class Runner : IDisposable
     {
         _senders =
         [
-            new Simulator()
+            new Nrf(),
+            new Simulator(),
         ];
 
         _commandsSubscriber = Hub.Commands.Subscribe(Mode.All);

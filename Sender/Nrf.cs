@@ -14,7 +14,7 @@ public sealed partial class Nrf : ISender // TODO: this is untested, test at the
 
     private readonly UdpServer _udp = new();
     private Span<byte> Buffer => _udp.GetBuffer();
-    private int _buffIdx = 0;
+    private int _buffIdx;
 
     // TODO: probably not needed anymore
     private int _startup = 5;
