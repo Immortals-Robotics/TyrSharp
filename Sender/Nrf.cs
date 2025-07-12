@@ -6,7 +6,7 @@ using Tyr.Common.Sender.Data;
 namespace Tyr.Sender;
 
 [Configurable]
-public sealed partial class Nrf : ISender
+public sealed partial class Nrf : ISender // TODO: this is untested, test at the competition
 {
     [ConfigEntry] private static bool Enabled { get; set; } = false;
 
