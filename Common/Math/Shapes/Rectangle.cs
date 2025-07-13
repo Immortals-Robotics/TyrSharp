@@ -2,7 +2,7 @@
 
 namespace Tyr.Common.Math.Shapes;
 
-public readonly record struct Rectangle
+public readonly record struct Rectangle : IObstacleShape
 {
     public Vector2 Min { get; }
 

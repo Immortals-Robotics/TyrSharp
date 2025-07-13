@@ -2,7 +2,7 @@
 
 namespace Tyr.Common.Math.Shapes;
 
-public readonly record struct Circle
+public readonly record struct Circle : IObstacleShape
 {
     public Vector2 Center { get; init; }
     public float Radius { get; init; }
