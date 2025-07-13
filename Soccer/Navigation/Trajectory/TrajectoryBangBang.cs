@@ -2,7 +2,7 @@
 
 namespace Tyr.Soccer.Navigation.Trajectory;
 
-public static class BangBang
+public static class TrajectoryBangBang
 {
     private static float VelChangeToZero(float s0, float v0, float aMax)
     {
@@ -102,7 +102,7 @@ public static class BangBang
         return result;
     }
 
-    public static Trajectory1DPieced MakeBangBangTrajectory1D(
+    public static Trajectory1DPieced Make1D(
         float x0, float xTrg, float xd0,
         float xdMax, float xddMax)
     {
@@ -124,7 +124,7 @@ public static class BangBang
         }
     }
 
-    public static Trajectory2D MakeBangBangTrajectory(Vector2 s0, Vector2 v0, Vector2 s1, VelocityProfile profile)
+    public static Trajectory2D Make2D(Vector2 s0, Vector2 v0, Vector2 s1, VelocityProfile profile)
     {
         var accuracy = 1e-3f;
         var vmax = profile.Speed;
@@ -141,8 +141,8 @@ public static class BangBang
             var sA = MathF.Sin(alpha);
             var cA = MathF.Cos(alpha);
 
-            trajectoryX = MakeBangBangTrajectory1D(s0.X, s1.X, v0.X, vmax * cA, acc * cA);
-            trajectoryY = MakeBangBangTrajectory1D(s0.Y, s1.Y, v0.Y, vmax * sA, acc * sA);
+            trajectoryX = Make1D(s0.X, s1.X, v0.X, vmax * cA, acc * cA);
+            trajectoryY = Make1D(s0.Y, s1.Y, v0.Y, vmax * sA, acc * sA);
 
             var dx = trajectoryX.Duration;
             var dy = trajectoryY.Duration;

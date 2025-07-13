@@ -2,9 +2,9 @@
 
 namespace Tyr.Soccer.Navigation.Trajectory;
 
-public static class FullStop
+public static class Trajectory2DFullStop
 {
-    public static Trajectory2D MakeFullStopTrajectory(Vector2 p0, Vector2 v0, VelocityProfile profile)
+    public static Trajectory2D Make(Vector2 p0, Vector2 v0, VelocityProfile profile)
     {
         var trajectoryX = new Trajectory1DPieced();
         var trajectoryY = new Trajectory1DPieced();
