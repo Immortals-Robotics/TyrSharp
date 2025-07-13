@@ -23,6 +23,13 @@ DrawTimeStep = 0.10000000149011612 # default: 0.1
 
 
 
+[Soccer.TeamRunner]
+SleepTime = 0.001 # default: 0.001000s
+
+[Soccer.Runner]
+RunYellow = false # default: False
+RunBlue = true # default: False
+
 [Soccer.Robot]
 [Soccer.Robot.PhysicalStatus]
 

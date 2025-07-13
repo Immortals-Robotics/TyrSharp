@@ -1,36 +1,38 @@
-﻿using Tyr.Common.Dataflow;
-using Tyr.Common.Runner;
-using Vision = Tyr.Common.Vision.Data;
-using Referee = Tyr.Common.Referee.Data;
+﻿using Tyr.Common.Config;
+using Tyr.Common.Data;
 
 namespace Tyr.Soccer;
 
-public sealed class Runner : IDisposable
+[Configurable]
+public sealed partial class Runner : IDisposable
 {
-    private readonly Subscriber<Referee.State> _refereeSubscriber;
-    private readonly Subscriber<Vision.FilteredFrame> _visionSubscriber;
+    [ConfigEntry] private static bool RunYellow { get; set; } = false;
+    [ConfigEntry] private static bool RunBlue { get; set; } = false;
 
-    private readonly RunnerSync _runner;
+    private readonly TeamRunner _blueRunner;
+    private readonly TeamRunner _yellowRunner;
 
     public Runner()
     {
-        _refereeSubscriber = Hub.Referee.Subscribe(Mode.All);
-        _visionSubscriber = Hub.Vision.Subscribe(Mode.All);
+        _yellowRunner = new TeamRunner(TeamColor.Yellow);
+        _blueRunner = new TeamRunner(TeamColor.Blue);
 
-        _runner = new RunnerSync(Tick, 0, ModuleName);
-        _runner.Start();
+        UpdateRunners();
+        Configurable.OnUpdated += _ => UpdateRunners();
     }
 
-    private bool Tick()
+    private void UpdateRunners()
     {
-        return false;
+        if (RunYellow) _yellowRunner.Start();
+        else _yellowRunner.Stop();
+
+        if (RunBlue) _blueRunner.Start();
+        else _blueRunner.Stop();
     }
 
     public void Dispose()
     {
-        _refereeSubscriber.Dispose();
-        _visionSubscriber.Dispose();
-
-        _runner.Stop();
+        _blueRunner.Dispose();
+        _yellowRunner.Dispose();
     }
 }
