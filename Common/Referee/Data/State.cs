@@ -12,6 +12,8 @@ public record State
 
     public Common.Data.Ssl.Gc.Referee Gc { get; init; } = new();
 
+    public bool Restart => GameState is GameState.Kickoff or GameState.Penalty or GameState.FreeKick;
+
     public override string ToString()
     {
         return GameState switch

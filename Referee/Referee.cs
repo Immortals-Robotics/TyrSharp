@@ -10,8 +10,7 @@ namespace Tyr.Referee;
 public partial class Referee
 {
     [ConfigEntry] private static int RequiredHys { get; set; } = 5;
-    [ConfigEntry] private static float OurRestartBallMoveDis { get; set; } = 150.0f;
-    [ConfigEntry] private static float DefaultBallMoveDis { get; set; } = 50.0f;
+    [ConfigEntry] private static float BallMoveDis { get; set; } = 50.0f;
 
     private FilteredFrame _vision = new();
 
@@ -38,7 +37,7 @@ public partial class Referee
             OnNewCommand();
         }
 
-        if (State.Restart() && BallInPlay())
+        if (State.Restart && BallInPlay())
         {
             State = State with { GameState = GameState.Running };
         }
@@ -79,9 +78,8 @@ public partial class Referee
 
         _lastBall ??= _vision.Ball;
 
-        var requiredDis = State.OurRestart() ? OurRestartBallMoveDis : DefaultBallMoveDis;
         var ballMoveDis = Vector3.Distance(_vision.Ball.State.Position, _lastBall.Value.State.Position);
-        if (ballMoveDis > requiredDis)
+        if (ballMoveDis > BallMoveDis)
         {
             _moveHysteresis = int.Clamp(_moveHysteresis + 1, 0, RequiredHys);
         }
@@ -105,7 +103,7 @@ public partial class Referee
                 State = State with { GameState = GameState.Running };
                 break;
 
-            case Gc.Command.NormalStart when State.Restart():
+            case Gc.Command.NormalStart when State.Restart:
                 State = State with { Ready = true };
                 break;
 

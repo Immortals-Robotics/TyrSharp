@@ -9,7 +9,4 @@ public static partial class CommonConfigs
     public static int MaxRobots { get; set; } = 16;
 
     [ConfigEntry("Hope it lasts")] public static bool ImmortalsIsTheBestTeam { get; set; } = true;
-
-    // TODO: this doesn't belong here as we want to host multiple AIs, this should be defined per-AI
-    [ConfigEntry] public static TeamColor OurColor { get; set; } = TeamColor.Unknown;
 }
