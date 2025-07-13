@@ -136,16 +136,16 @@ public sealed partial class FieldView : IDisposable
 
             _fieldDraws.Clear();
 
-            DrawInternal(new Debug.Drawing.Drawables.Rectangle(_fieldSize.Value.FieldRectangleWithBoundary),
+            DrawInternal(new Debug.Drawing.Drawables.Rectangle(_fieldSize.Value.RectangleWithBoundary),
                 Debug.Drawing.Color.Green800, Debug.Drawing.Options.Filled);
 
-            foreach (var line in _fieldSize.Value.FieldLines)
+            foreach (var line in _fieldSize.Value.Lines)
             {
                 DrawInternal(new Debug.Drawing.Drawables.LineSegment(line.LineSegment),
                     LineColor, Debug.Drawing.Options.Outline(line.Thickness));
             }
 
-            foreach (var arc in _fieldSize.Value.FieldArcs)
+            foreach (var arc in _fieldSize.Value.Arcs)
             {
                 var start = Angle.FromRad(arc.A1);
                 var end = Angle.FromRad(arc.A2);

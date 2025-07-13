@@ -7,6 +7,23 @@ public static class Vector2Extensions
 {
     public static Angle ToAngle(this Vector2 vector2) => Angle.FromVector(vector2);
 
+    /// <summary>
+    /// Returns the angle between this vector and another vector
+    /// </summary>
+    public static Angle AngleWith(this Vector2 v, Vector2 other)
+    {
+        return (other - v).ToAngle();
+    }
+
+    /// <summary>
+    /// Returns the difference between the angles of two vectors
+    /// </summary>
+    public static Angle AngleDiff(this Vector2 v, Vector2 other)
+    {
+        return other.ToAngle() - v.ToAngle();
+    }
+
+
     // Returns the z-value of the cross product of two vectors.
     public static float Cross(this Vector2 v, Vector2 other)
     {
@@ -32,6 +49,11 @@ public static class Vector2Extensions
     {
         var rotatedAngle = v.ToAngle() + angle;
         return rotatedAngle.ToUnitVec() * v.Length();
+    }
+
+    public static Vector2 CircleAroundPoint(this Vector2 v, Angle angle, float radius)
+    {
+        return v + angle.ToUnitVec() * radius;
     }
 
     public static MathNet.Numerics.LinearAlgebra.Vector<double> AsMathNetVector(this Vector2 v)

@@ -41,7 +41,7 @@ public partial class Camera(uint id)
 
     public CameraCalibration? Calibration { get; set; }
 
-    private float RobotRadius => Vision.FieldSize.MaxRobotRadius ?? 90f;
+    private float RobotRadius => Vision.FieldSize.RobotRadius ?? 90f;
 
     public Vector2 ProjectToGround(Vector3 pos)
     {
@@ -95,7 +95,7 @@ public partial class Camera(uint id)
 
     private bool IsOutside(Vector2 position)
     {
-        return !Vision.FieldSize.FieldRectangleWithBoundary.Inside(position);
+        return !Vision.FieldSize.RectangleWithBoundary.Inside(position);
     }
 
     private void ProcessRobots(Detection.Frame frame, IReadOnlyList<FilteredRobot> filteredRobots)
@@ -196,7 +196,7 @@ public partial class Camera(uint id)
         {
             var raw = new RawBall(detection, frame);
 
-            var consumed = Balls.Any(t => t.Update(raw, Vision.FieldSize.FieldRectangle));
+            var consumed = Balls.Any(t => t.Update(raw, Vision.FieldSize.Rectangle));
             if (consumed) continue;
 
             // This is a new ball, we need to create a new tracker for it

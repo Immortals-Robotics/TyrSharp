@@ -35,15 +35,12 @@ public partial class Map
         var marginTotal = BaseMargin + margin;
 
         // TODO: convert this to an actual obstacle shape if needed
-        // TODO: enable after globals are there
-#if false
-        var fieldMargin = Field.Instance.BoundaryWidth - Field.Instance.RobotRadius + 10f;
-        if (MathF.Abs(point.X) > Field.Instance.Width + fieldMargin ||
-            MathF.Abs(point.Y) > Field.Instance.Height + fieldMargin)
+        var fieldMargin = Context.Field.BoundaryWidth - Context.Field.RobotRadius + 10f;
+        if (MathF.Abs(point.X) > Context.Field.Width + fieldMargin ||
+            MathF.Abs(point.Y) > Context.Field.Height + fieldMargin)
         {
             return true;
         }
-#endif
 
         var activePhysicality = Physicality & physicality;
 
