@@ -1,6 +1,4 @@
-﻿using System.Numerics;
-
-namespace Tyr.Soccer.Navigation.Trajectory;
+﻿namespace Tyr.Soccer.Navigation.Trajectory;
 
 public interface ITrajectory<out T>
 {

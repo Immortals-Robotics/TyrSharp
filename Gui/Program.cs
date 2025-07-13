@@ -8,6 +8,7 @@ using var runner = new Tyr.Gui.Runner();
 using var sender = new Tyr.Sender.Runner();
 using var referee = new Tyr.Referee.Runner();
 using var vision = new Tyr.Vision.Runner();
+using var soccer = new Tyr.Soccer.Runner();
 
 using var sslVisionPublisher = new Tyr.Vision.SslVisionDataPublisher();
 using var gcPublisher = new Tyr.Referee.GcDataPublisher();

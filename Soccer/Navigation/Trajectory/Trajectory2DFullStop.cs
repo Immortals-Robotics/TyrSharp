@@ -1,4 +1,5 @@
 ﻿using System.Numerics;
+using Tyr.Soccer.Robot;
 
 namespace Tyr.Soccer.Navigation.Trajectory;
 

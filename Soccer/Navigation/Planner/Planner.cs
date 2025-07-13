@@ -3,6 +3,7 @@ using Tyr.Common.Config;
 using Tyr.Common.Debug.Drawing;
 using Tyr.Soccer.Navigation.Obstacle;
 using Tyr.Soccer.Navigation.Trajectory;
+using Tyr.Soccer.Robot;
 
 namespace Tyr.Soccer.Navigation.Planner;
 

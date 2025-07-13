@@ -4,7 +4,7 @@ public class Trajectory1DPieced : ITrajectory<float>
 {
     private const int MaxParts = 3;
     private readonly Trajectory1DConstantAcc[] _pieces = new Trajectory1DConstantAcc[MaxParts];
-    private int _count = 0;
+    private int _count;
 
     private const int InvalidIdx = -1;
 

@@ -24,6 +24,11 @@ public partial class Map
         Draw.DrawCircle(circle, Color.Rose700.WithAlpha(0.5f));
     }
 
+    public void AddCircle(Vector2 center, float radius, Physicality physicality)
+    {
+        Add(new Circle() { Center = center, Radius = radius }, Physicality = physicality);
+    }
+
     public void Add(Rectangle rect, Physicality physicality)
     {
         _rects.Add(new Obstacle<Rectangle>(rect, physicality));

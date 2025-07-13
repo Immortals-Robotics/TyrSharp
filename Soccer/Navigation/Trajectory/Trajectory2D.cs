@@ -4,8 +4,8 @@ namespace Tyr.Soccer.Navigation.Trajectory;
 
 public record Trajectory2D : ITrajectory<Vector2>
 {
-    public required Trajectory1DPieced TrajectoryX { get; init; }
-    public required Trajectory1DPieced TrajectoryY { get; init; }
+    public Trajectory1DPieced TrajectoryX { get; init; } = new();
+    public Trajectory1DPieced TrajectoryY { get; init; } = new();
 
     public Vector2 GetPosition(float t)
     {
