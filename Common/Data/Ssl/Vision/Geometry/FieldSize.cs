@@ -11,7 +11,7 @@ public struct FieldSize
 {
     // TODO: these width and height namings are here to ease the port of our old code
     // they make no sense and should be changed to SSL's standard naming
-
+    
     /// <summary>
     /// Field length (distance between goal lines) in mm.
     /// </summary>

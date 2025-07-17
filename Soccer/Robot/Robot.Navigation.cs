@@ -25,7 +25,7 @@ public partial class Robot
     public Vector2 CurrentMotion =>
         Utils.ApproximatelyZero(Trajectory.Duration)
             ? Vector2.Zero
-            : Trajectory.GetVelocity((float)Context.DeltaTime.Seconds);
+            : Trajectory.GetVelocity((float)Context.Timer.DeltaTime.Seconds);
 
     public bool Navigated { get; private set; }
 
@@ -107,7 +107,7 @@ public partial class Robot
         _planner.Profile = profile;
         var intermediate = _planner.Plan(Position, CurrentMotion, target);
 
-        var margin = Context.Field.BoundaryWidth - Context.Field.RobotRadius!.Value;
+        var margin = Context.Field.BoundaryWidth - Context.RobotRadius;
         var maxX = Context.Field.Width + margin;
         var maxY = Context.Field.Height + margin;
 
@@ -131,7 +131,7 @@ public partial class Robot
 
             if (collisionImminent)
             {
-                Draw.DrawCircle(Position, Context.Field.RobotRadius.Value * 1.5f, Color.Red, Options.Outline(50f));
+                Draw.DrawCircle(Position, Context.RobotRadius * 1.5f, Color.Red, Options.Outline(50f));
                 trajectory = Trajectory2DFullStop.Make(Position, CurrentMotion, stopProfile);
             }
         }

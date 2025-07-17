@@ -2,8 +2,11 @@
 
 namespace Tyr.Common.Runner;
 
-public class RunnerSync(Func<bool> tick, int tickRateHz = 0, string? callingModule = null) : RunnerBase(tickRateHz)
+public class RunnerSync(int tickRateHz = 0, string? callingModule = null) : RunnerBase(tickRateHz)
 {
+    public required Func<bool>? Init { get; init; }
+    public required Func<bool> Tick { get; init; }
+    
     private Thread? _thread;
     private volatile bool _running;
 
@@ -20,7 +23,7 @@ public class RunnerSync(Func<bool> tick, int tickRateHz = 0, string? callingModu
         _thread = new Thread(Loop)
         {
             IsBackground = true,
-            Name = $"{tick.Method.DeclaringType?.FullName ?? "Unknown"}:{tick.Method.Name}"
+            Name = $"{Tick.Method.DeclaringType?.FullName ?? "Unknown"}:{Tick.Method.Name}"
         };
         _thread.Start();
     }
@@ -50,16 +53,19 @@ public class RunnerSync(Func<bool> tick, int tickRateHz = 0, string? callingModu
     {
         ModuleContext.Current.Value = callingModule;
 
+        var tickResult = false;
         while (_running)
         {
             var tickStart = Timer.Time;
             CurrentTickStartTimestamp = Timestamp.Now;
 
-            Timer.Update();
-            if (tick())
-            {
+            if (tickResult)
+                Timer.Update();
+
+            tickResult = Tick();
+
+            if (tickResult)
                 NewDebugFrame();
-            }
 
             if (TickRateHz <= 0) continue;
 

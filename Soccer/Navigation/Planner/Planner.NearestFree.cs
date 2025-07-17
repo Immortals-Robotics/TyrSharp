@@ -11,7 +11,7 @@ public partial class Planner
     private Vector2 NearestFree(Vector2 state, float margin)
     {
         // clamp the position to be inside the field
-        var fieldMargin = Context.Field.BoundaryWidth - Context.Field.RobotRadius!.Value;
+        var fieldMargin = Context.Field.BoundaryWidth - Context.RobotRadius;
         var maxX = Context.Field.Width + fieldMargin;
         var maxY = Context.Field.Height + fieldMargin;
 
@@ -52,7 +52,7 @@ public partial class Planner
 
     private Vector2 RandomState()
     {
-        var margin = Context.Field.BoundaryWidth - Context.Field.RobotRadius!.Value;
+        var margin = Context.Field.BoundaryWidth - Context.RobotRadius;
 
         var x = (_random.Get(-1f, 1f)) * (Context.Field.Width + margin);
         var y = (_random.Get(-1f, 1f)) * (Context.Field.Height + margin);

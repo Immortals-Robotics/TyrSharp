@@ -87,7 +87,7 @@ public partial class Planner
             return target;
         }
 
-        TrajectoryUtils.DrawTrajectory(bestTrajectory, Color.Blue300);
+        //TrajectoryUtils.DrawTrajectory(bestTrajectory, Color.Blue300);
 
         var first = bestTrajectory.First;
         var intermediateTarget = first.GetPosition(first.EndTime);

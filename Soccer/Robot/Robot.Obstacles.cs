@@ -15,7 +15,7 @@ public partial class Robot
     public static float CalculateRobotRadius(RobotState state)
     {
         var extensionFactor = MathF.Max(0.0f, (state.Velocity.Length() - 1000.0f) / 9000.0f);
-        return Context.Field.RobotRadius!.Value * (1.0f + extensionFactor);
+        return Context.RobotRadius * (1.0f + extensionFactor);
     }
 
     public static float CalculateOtherRadius(RobotState self, RobotState other)
@@ -28,7 +28,7 @@ public partial class Robot
         var dot = Vector2.Dot(velocityDiff, connection) - 300.0f;
 
         var extension = Math.Clamp(kMaxExtension * dot / kSpeedToReachMax, 0.0f, kMaxExtension);
-        return Context.Field.RobotRadius!.Value + extension;
+        return Context.RobotRadius + extension;
     }
 
     private void SetObstacles(NavigationFlags flags)
@@ -49,7 +49,7 @@ public partial class Robot
         var ballPlacementLine =
             Context.Referee.TheirBallPlacement() || flags.HasFlag(NavigationFlags.BallPlacementLine);
 
-        var robotRadius = noExtend ? Context.Field.RobotRadius!.Value : CalculateRobotRadius(State);
+        var robotRadius = noExtend ? Context.RobotRadius : CalculateRobotRadius(State);
         _obsMap.BaseMargin = robotRadius;
 
         // own robots
@@ -65,7 +65,7 @@ public partial class Robot
         // opponent robots
         foreach (var opp in Context.OppRobots)
         {
-            var radius = noExtend ? Context.Field.RobotRadius!.Value : CalculateOtherRadius(State, opp.State);
+            var radius = noExtend ? Context.RobotRadius : CalculateOtherRadius(State, opp.State);
             _obsMap.AddCircle(opp.State.Position, radius, Physicality.Physical);
         }
 
