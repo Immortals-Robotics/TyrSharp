@@ -23,7 +23,10 @@ public sealed partial class Simulator : ISender
     {
         if (!Enabled) return false;
 
-        var pbControl = new RobotControl();
+        var pbControl = new RobotControl()
+        {
+            RobotCommands = []
+        };
 
         foreach (var command in commands.Commands)
         {
@@ -52,7 +55,7 @@ public sealed partial class Simulator : ISender
                     LocalVelocity = new MoveLocalVelocity()
                     {
                         Forward = localVel.Y / 1000.0f,
-                        Left = localVel.X / 1000.0f,
+                        Left = -localVel.X / 1000.0f,
                         AngularRad = w,
                     },
                 },
