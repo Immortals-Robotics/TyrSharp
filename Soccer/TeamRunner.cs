@@ -23,20 +23,32 @@ public sealed partial class TeamRunner : IDisposable
     private Referee.State _referee = new();
     private FieldSize _field = FieldSize.DivisionA;
 
+    private readonly TeamColor _color;
     private readonly Ai _ai;
 
     public TeamRunner(TeamColor color)
     {
+        _color = color;
+        
         _refereeSubscriber = Hub.Referee.Subscribe(Mode.Latest);
-        _visionSubscriber = Hub.Vision.Subscribe(Mode.All);
+        _visionSubscriber = Hub.Vision.Subscribe(Mode.Latest);
         _fieldSizeSubscriber = Hub.FieldSize.Subscribe(Mode.Latest);
 
         _runner = new RunnerSync(Tick, 0, $"{ModuleName}{color}");
+        _runner.SetInit(Init);
+        
+        _ai = new Ai();
+    }
 
+    public void Start() => _runner.Start();
+    public void Stop() => _runner.Stop();
+
+    private bool Init()
+    {
         // set a default empty context
         Context.Data.Value = new ContextData()
         {
-            Color = color,
+            Color = _color,
             Ball = default,
             OppRobots = [],
             OwnRobots = [],
@@ -44,13 +56,12 @@ public sealed partial class TeamRunner : IDisposable
             Field = _field,
             Timer = _runner.Timer,
         };
-
-        _ai = new Ai();
+        
+        _ai.Init();
+        
+        return true;
     }
-
-    public void Start() => _runner.Start();
-    public void Stop() => _runner.Stop();
-
+    
     private bool Tick()
     {
         if (!_visionSubscriber.Reader.TryRead(out var vision))
@@ -68,6 +79,8 @@ public sealed partial class TeamRunner : IDisposable
         _ai.UpdateContext(vision, _referee, _field);
 
         _ai.Process();
+        
+        _ai.PublishCommands();
 
         return true;
     }

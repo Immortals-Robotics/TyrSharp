@@ -2,16 +2,19 @@
 
 namespace Tyr.Common.Runner;
 
-public class RunnerSync(int tickRateHz = 0, string? callingModule = null) : RunnerBase(tickRateHz)
+public class RunnerSync(Func<bool> tick, int tickRateHz = 0, string? callingModule = null) : RunnerBase(tickRateHz)
 {
-    public required Func<bool>? Init { get; init; }
-    public required Func<bool> Tick { get; init; }
-    
+    private Func<bool>? _init = null;
     private Thread? _thread;
     private volatile bool _running;
 
     public bool IsRunning => _running;
 
+    public void SetInit(Func<bool> init)
+    {
+        _init = init;
+    }
+    
     public void Start()
     {
         if (IsRunning) return;
@@ -23,7 +26,7 @@ public class RunnerSync(int tickRateHz = 0, string? callingModule = null) : Runn
         _thread = new Thread(Loop)
         {
             IsBackground = true,
-            Name = $"{Tick.Method.DeclaringType?.FullName ?? "Unknown"}:{Tick.Method.Name}"
+            Name = $"{tick.Method.DeclaringType?.FullName ?? "Unknown"}:{tick.Method.Name}"
         };
         _thread.Start();
     }
@@ -53,20 +56,24 @@ public class RunnerSync(int tickRateHz = 0, string? callingModule = null) : Runn
     {
         ModuleContext.Current.Value = callingModule;
 
-        var tickResult = false;
+        if (_init != null)
+        {
+            CurrentTickStartTimestamp = Timestamp.Now;
+            Timer.Update();
+            
+            if (_init()) NewDebugFrame();
+        }
+
+        var ticked = false;
         while (_running)
         {
             var tickStart = Timer.Time;
             CurrentTickStartTimestamp = Timestamp.Now;
 
-            if (tickResult)
-                Timer.Update();
-
-            tickResult = Tick();
-
-            if (tickResult)
-                NewDebugFrame();
-
+            if (ticked) Timer.Update();
+            
+            ticked = tick();
+            if (ticked) NewDebugFrame();
             if (TickRateHz <= 0) continue;
 
             var nextTick = tickStart + TickDuration;

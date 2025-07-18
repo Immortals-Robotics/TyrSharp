@@ -8,7 +8,7 @@ namespace Tyr.Soccer;
 
 public class Ai
 {
-    public Ai()
+    public void Init()
     {
         Assert.IsZero(Context.OwnRobots.Count);
         Context.OwnRobots.EnsureCapacity(CommonConfigs.MaxRobots);
@@ -17,7 +17,7 @@ public class Ai
             Context.OwnRobots.Add(new Robot.Robot());
         }
     }
-
+    
     public void UpdateContext(Vision.FilteredFrame vision, Referee.State referee, FieldSize field)
     {
         foreach (var robot in Context.OwnRobots)
