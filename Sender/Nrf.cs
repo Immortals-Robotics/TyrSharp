@@ -31,7 +31,8 @@ public sealed partial class Nrf : ISender // TODO: this is untested, test at the
 
         foreach (var command in commands.Commands)
         {
-            AppendCommand(command);
+            if (command.Halted) AppendHalt(command.VisionId);
+            else AppendCommand(command);
         }
 
         AppendDemoData();
@@ -50,12 +51,6 @@ public sealed partial class Nrf : ISender // TODO: this is untested, test at the
 
     private void AppendCommand(Command command)
     {
-        if (command.Halted)
-        {
-            AppendHalt(command.VisionId);
-            return;
-        }
-
         AppendByte((byte)command.VisionId);
 
         AppendByte(15); // length=15
@@ -91,6 +86,9 @@ public sealed partial class Nrf : ISender // TODO: this is untested, test at the
             AppendByte(0x00);
             AppendByte(0x00);
         }
+        
+        AppendByte(0x00);
+        AppendByte(0x00);
     }
 
     private void AppendHalt(int robotId)
