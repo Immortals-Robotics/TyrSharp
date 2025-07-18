@@ -106,6 +106,10 @@ public partial class Referee
             case Gc.Command.NormalStart when State.Restart:
                 State = State with { Ready = true };
                 break;
+            
+            case Gc.Command.NormalStart:
+                Log.ZLogWarning($"Received NormalStart when not in restart");
+                break;
 
             case Gc.Command.PrepareKickoffBlue:
             case Gc.Command.PrepareKickoffYellow:
