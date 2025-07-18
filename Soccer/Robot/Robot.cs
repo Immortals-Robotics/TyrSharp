@@ -45,7 +45,7 @@ public partial class Robot
     public bool Halted { get; private set; }
 
     public Vector2 TargetPosition { get; private set; }
-    public Angle TargetAngle { get; private set; }
+    public Angle TargetAngle { get; set; }
 
     public float DynamicBallObstacleRadius { get; set; }
 
