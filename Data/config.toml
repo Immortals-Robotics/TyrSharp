@@ -332,6 +332,8 @@ MaxPoints = 500 # default: 500
 
 [Gui.Views.FieldView]
 ZoomFactor = 1.100000023841858 # default: 1.1
+ZoomDefault = 0.10000000149011612 # default: 0.1
+ZoomLimitFactor = 10.0 # default: 10
 LineColor = "#FFFFFFB2" # default: #FFFFFFB2
 
 

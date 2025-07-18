@@ -16,6 +16,8 @@ namespace Tyr.Gui.Views;
 public sealed partial class FieldView : IDisposable
 {
     [ConfigEntry] private static float ZoomFactor { get; set; } = 1.1f;
+    [ConfigEntry] private static float ZoomDefault { get; set; } = 0.1f;
+    [ConfigEntry] private static float ZoomLimitFactor { get; set; } = 10f;
 
     [ConfigEntry]
     private static Debug.Drawing.Color LineColor { get; set; } = Debug.Drawing.Color.White.WithAlpha(0.7f);
@@ -40,7 +42,7 @@ public sealed partial class FieldView : IDisposable
         _timer.Start();
 
         _renderer.Camera.Position = Vector2.Zero;
-        _renderer.Camera.Zoom = 0.1f;
+        _renderer.Camera.Zoom = ZoomDefault;
     }
 
     public void Draw(PlaybackTime time)
@@ -63,6 +65,8 @@ public sealed partial class FieldView : IDisposable
                     var newZoom = ImGui.GetIO().MouseWheel > 0
                         ? _renderer.Camera.Zoom * ZoomFactor
                         : _renderer.Camera.Zoom / ZoomFactor;
+                    
+                    newZoom = Math.Clamp(newZoom, ZoomDefault / ZoomLimitFactor, ZoomDefault * ZoomLimitFactor);
 
                     var mouseScreen = ImGui.GetMousePos();
                     var mouseWorldBefore = _renderer.Camera.ScreenToWorld(mouseScreen);
@@ -78,6 +82,13 @@ public sealed partial class FieldView : IDisposable
                 {
                     var mouseDelta = ImGui.GetIO().MouseDelta;
                     _renderer.Camera.Position -= _renderer.Camera.ScreenToWorldDirection(mouseDelta);
+                }
+                
+                // reset
+                if (ImGui.IsKeyDown(ImGuiKey.F))
+                {
+                    _renderer.Camera.Zoom = ZoomDefault;
+                    _renderer.Camera.Position = Vector2.Zero;
                 }
             }
 
