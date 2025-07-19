@@ -33,17 +33,17 @@ public sealed partial class Vision
 
     private static void DrawFilteredBall(FilteredBall ball)
     {
-        Draw.DrawCircle(ball.State.Position.Xy(), 25f, Color.Orange400,
+        Draw.DrawCircle(ball.State.Position, 25f, Color.Orange400,
             Options.Filled with { Thickness = 5f });
 
         if (ball.State.IsChipped)
         {
             Draw.DrawText("chipped",
-                ball.State.Position.Xy() + new Vector2(0f, -70f), 50f,
+                ball.State.Position + new Vector2(0f, -70f), 50f,
                 Color.Orange200, TextAlignment.TopCenter);
         }
 
-        Plot.Plot($"ball position", ball.State.Position, "pos (mm)");
+        Plot.Plot($"ball position", ball.State.Position3D, "pos (mm)");
         Plot.Plot($"ball velocity", ball.State.Velocity, "vel (mm/s)");
     }
 }

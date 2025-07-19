@@ -82,10 +82,10 @@ public partial class Robot
         if (ballRadius > 0.0f)
         {
             _obsMap.Add(new Circle()
-                    { Center = Context.Ball.State.Position.Xy(), Radius = Context.Field.BallRadius!.Value },
+                    { Center = Context.Ball.State.Position, Radius = Context.Field.BallRadius!.Value },
                 Physicality.Physical);
             _obsMap.Add(new Circle()
-                    { Center = Context.Ball.State.Position.Xy(), Radius = ballRadius },
+                    { Center = Context.Ball.State.Position, Radius = ballRadius },
                 Physicality.Virtual);
         }
 
@@ -153,13 +153,13 @@ public partial class Robot
         if (ballPlacementLine)
         {
             var clearance = BallAreaRadius * 2.0f;
-            var ballToDest = Context.Referee.Gc.DesignatedPosition - Context.Ball.State.Position.Xy();
+            var ballToDest = Context.Referee.Gc.DesignatedPosition - Context.Ball.State.Position;
             var count = (int)MathF.Ceiling(ballToDest.Length() / (0.5f * clearance));
 
             for (var i = 0; i < count; i++)
             {
                 var t = i / (float)count;
-                var pos = Context.Ball.State.Position.Xy() + ballToDest * t;
+                var pos = Context.Ball.State.Position + ballToDest * t;
                 _obsMap.AddCircle(pos, clearance, Physicality.Virtual);
             }
         }

@@ -14,7 +14,7 @@ public class RefereeTests
         {
             State = new BallState
             {
-                Position = pos
+                Position3D = pos
             }
         }
     };

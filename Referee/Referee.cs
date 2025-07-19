@@ -78,7 +78,7 @@ public partial class Referee
 
         _lastBall ??= _vision.Ball;
 
-        var ballMoveDis = Vector3.Distance(_vision.Ball.State.Position, _lastBall.Value.State.Position);
+        var ballMoveDis = Vector3.Distance(_vision.Ball.State.Position3D, _lastBall.Value.State.Position3D);
         if (ballMoveDis > BallMoveDis)
         {
             _moveHysteresis = int.Clamp(_moveHysteresis + 1, 0, RequiredHys);

@@ -39,8 +39,8 @@ public partial class BallMerger
 
             // if the ball is airborne, project its position to the ground
             var searchPosition = lastFilteredBall.State.IsChipped
-                ? ballTracker.Camera.ProjectToGround(lastFilteredBall.State.Position)
-                : lastFilteredBall.State.Position.Xy();
+                ? ballTracker.Camera.ProjectToGround(lastFilteredBall.State.Position3D)
+                : lastFilteredBall.State.Position;
 
             var trackerPos = ballTracker.Filter.GetPosition(timestamp);
 

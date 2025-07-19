@@ -26,6 +26,11 @@ DrawTimeStep = 0.10000000149011612 # default: 0.1
 [Soccer.TeamRunner]
 SleepTime = 0.001 # default: 0.001000s
 
+[Soccer.Skills]
+[Soccer.Skills.DefenceWall]
+Radius = 550.0 # default: 550
+
+
 [Soccer.Runner]
 RunYellow = false # default: False
 RunBlue = false # default: False

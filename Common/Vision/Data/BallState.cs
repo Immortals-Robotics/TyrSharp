@@ -8,7 +8,9 @@ public readonly record struct BallState
     /// <summary>
     /// The 3D position of the ball in millimeters
     /// </summary>
-    public Vector3 Position { get; init; }
+    public Vector3 Position3D { get; init; }
+
+    public Vector2 Position => Position3D.Xy();
 
     /// <summary>
     /// The 3D velocity of the ball in millimeters per second
@@ -32,7 +34,7 @@ public readonly record struct BallState
     /// Returns true if the ball is in a chipped state
     /// by checking if it has any vertical position, velocity or acceleration
     /// </summary>
-    public bool IsChipped => Position.Z > 0 ||
+    public bool IsChipped => Position3D.Z > 0 ||
                              !Utils.ApproximatelyZero(Velocity.Z) ||
                              !Utils.ApproximatelyZero(Acceleration.Z);
 }

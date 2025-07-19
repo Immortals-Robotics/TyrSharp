@@ -44,7 +44,7 @@ public class BallFlat : IBallTrajectory
         }
 
         _switchVelocity = initial.Velocity.Xy() + _accelerationSlide * (float)_switchTime.Seconds;
-        _switchPosition = initial.Position.Xy() +
+        _switchPosition = initial.Position +
                           initial.Velocity.Xy() * (float)_switchTime.Seconds +
                           _accelerationSlide * (float)(0.5 * _switchTime.Seconds * _switchTime.Seconds);
 
@@ -59,7 +59,7 @@ public class BallFlat : IBallTrajectory
         {
             var timeSeconds = (float)time.Seconds;
 
-            var position = _initial.Position.Xy() +
+            var position = _initial.Position +
                            _initial.Velocity.Xy() * timeSeconds +
                            _accelerationSlide * (0.5f * timeSeconds * timeSeconds);
 
@@ -68,7 +68,7 @@ public class BallFlat : IBallTrajectory
 
             return new BallState
             {
-                Position = position.Xyz(),
+                Position3D = position.Xyz(),
                 Velocity = velocity.Xyz(),
                 Acceleration = _accelerationSlide.Xyz(),
                 SpinRadians = spinRadians
@@ -88,7 +88,7 @@ public class BallFlat : IBallTrajectory
 
             return new BallState
             {
-                Position = position.Xyz(),
+                Position3D = position.Xyz(),
                 Velocity = velocity.Xyz(),
                 Acceleration = _accelerationRoll.Xyz(),
                 SpinRadians = spinRadians

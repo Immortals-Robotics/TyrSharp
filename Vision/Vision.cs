@@ -93,7 +93,7 @@ public sealed partial class Vision
                 Timestamp = timestamp,
                 State = new BallState()
                 {
-                    Position = mergedBall.Value.Position.Xyz(),
+                    Position3D = mergedBall.Value.Position.Xyz(),
                     Velocity = mergedBall.Value.Velocity.Xyz(),
                     Acceleration = mergedBall.Value.Velocity.WithLength(-BallParameters.AccelerationRoll).Xyz(),
                     SpinRadians = mergedBall.Value.Velocity / BallParameters.Radius
