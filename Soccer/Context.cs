@@ -10,6 +10,7 @@ internal sealed record ContextData
 {
     internal required TeamColor Color { get; init; }
 
+    internal Timestamp VisionTime { get; init; }
     internal required Vision.FilteredBall Ball { get; init; }
     internal required List<Vision.FilteredRobot> OppRobots { get; init; }
     internal required List<Robot.Robot> OwnRobots { get; init; }
@@ -30,6 +31,8 @@ internal static class Context
     internal static TeamSide Side => Data.Value!.Referee.OurSide();
     internal static int SideSign => Side == TeamSide.Right ? 1 : -1;
 
+    internal static Timestamp VisionTime => Data.Value!.VisionTime;
+    internal static Timestamp Time => Data.Value!.VisionTime + Ai.VisionPredictionTime;
     internal static Vision.FilteredBall Ball => Data.Value!.Ball;
     internal static List<Vision.FilteredRobot> OppRobots => Data.Value!.OppRobots;
     internal static List<Robot.Robot> OwnRobots => Data.Value!.OwnRobots;

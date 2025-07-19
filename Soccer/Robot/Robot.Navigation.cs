@@ -25,7 +25,7 @@ public partial class Robot
     public Vector2 CurrentMotion =>
         Utils.ApproximatelyZero(Trajectory.Duration)
             ? Vector2.Zero
-            : Trajectory.GetVelocity((float)Context.Timer.DeltaTime.Seconds);
+            : Trajectory.GetVelocity((float)Context.Timer.DeltaTimeSmooth.Seconds);
 
     public bool Navigated { get; private set; }
 

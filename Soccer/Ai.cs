@@ -1,18 +1,28 @@
 ﻿using System.Numerics;
+using Tyr.Common.Config;
 using Tyr.Common.Data;
 using Tyr.Common.Data.Ssl;
 using Tyr.Common.Data.Ssl.Vision.Geometry;
 using Tyr.Common.Dataflow;
+using Tyr.Common.Debug.Drawing;
 using Tyr.Common.Math;
 using Tyr.Common.Sender.Data;
+using Tyr.Common.Time;
 using Tyr.Soccer.Robot;
+using Command = Tyr.Common.Sender.Data.Command;
 using Vision = Tyr.Common.Vision.Data;
 using Referee = Tyr.Common.Referee.Data;
 
 namespace Tyr.Soccer;
 
-public class Ai
+[Configurable]
+public partial class Ai
 {
+    [ConfigEntry] internal static DeltaTime VisionPredictionTime { get; set; } = DeltaTime.FromMilliseconds(120);
+
+    private readonly Dictionary<int, LinkedList<(Timestamp, Command)>> _commandHistories = [];
+    private LinkedList<(Timestamp, Command)> CommandHistory(int id) => _commandHistories[id];
+    
     public void Init()
     {
         Assert.IsZero(Context.OwnRobots.Count);
@@ -27,11 +37,15 @@ public class Ai
                     Id = new RobotId() {Team = Context.Color, Id = (uint)i},
                 }
             });
+            
+            _commandHistories[i] = [];
         }
     }
     
     public void UpdateContext(Vision.FilteredFrame vision, Referee.State referee, FieldSize field)
     {
+        var now = vision.Timestamp + VisionPredictionTime;
+        
         foreach (var robot in Context.OwnRobots)
         {
             robot.Filtered = robot.Filtered with { Quality = 0f };
@@ -39,15 +53,26 @@ public class Ai
 
         foreach (var filtered in vision.Robots.Where(robot => robot.Id.Team == Context.Color))
         {
-            Context.OwnRobots[(int)filtered.Id.Id!.Value].Filtered = filtered;
+            var id = (int)filtered.Id.Id!.Value;
+            var predicted = filtered.Extrapolate(now, CommandHistory(id));
+            Context.OwnRobots[id].Filtered = predicted;
+            
+            Draw.DrawRobot(predicted.State.Position, predicted.State.Angle, filtered.Id, options: Options.Outline());
         }
         
-        var oppRobots = vision.Robots.Where(robot => robot.Id.Team != Context.Color);
-
+        Context.OppRobots.Clear();
+        foreach (var filtered in vision.Robots.Where(robot => robot.Id.Team != Context.Color))
+        {
+            var predicted = filtered.Extrapolate(now);
+            Context.OppRobots.Add(predicted);
+            
+            Draw.DrawRobot(predicted.State.Position, predicted.State.Angle, filtered.Id, options: Options.Outline());
+        }
+        
         Context.Data.Value = Context.Data.Value! with
         {
-            Ball = vision.Ball,
-            OppRobots = oppRobots.ToList(),
+            VisionTime = vision.Timestamp,
+            Ball = vision.Ball.Extrapolate(now),
             Referee = referee,
             Field = field,
         };
@@ -55,9 +80,18 @@ public class Ai
 
     public void PublishCommands()
     {
+        // trim the history buffer
+        foreach (var (_, history) in _commandHistories)
+        {
+            while (history.First != null && history.First.Value.Item1 <= Context.VisionTime)
+            {
+                history.RemoveFirst();
+            }
+        }
+        
         var commands = new CommandsWrapper()
         {
-            Time = Context.Timer.Time,
+            Time = Context.Time,
             Color = Context.Color,
         };
         
@@ -66,7 +100,11 @@ public class Ai
             robot.WaitForNavigationJob();
             
             if (!robot.Seen)  continue;
-            commands.Commands.Add(robot.CurrentCommand);
+
+            var command = robot.CurrentCommand;
+            commands.Commands.Add(command);
+
+            CommandHistory(robot.Id).AddLast((Context.Time, command));
         }
         
         Hub.Commands.Publish(commands);
@@ -89,9 +127,10 @@ public class Ai
             }
             else
             {
-                robot.TargetAngle = Angle.Zero;
-                var x = Context.SideSign * robot.Id * 500f;
-                var y = Angle.FromRad((float)Context.Timer.Time.Seconds + robot.Id).Sin() * 1000f;
+                robot.TargetAngle = Angle.FromDeg(90f);
+                var x = -2000f;
+                var sin = MathF.Floor(Angle.FromRad((float)Context.Timer.Time.Seconds + robot.Id).Sin()); 
+                var y = (2f * sin + 1f) * 1500f;
                 robot.Navigate(new Vector2(x, y), VelocityProfile.Mamooli);
             }
         }
