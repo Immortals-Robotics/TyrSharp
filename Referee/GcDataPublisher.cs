@@ -15,6 +15,11 @@ public sealed partial class GcDataPublisher : IDisposable
     public GcDataPublisher()
     {
         _udpReceiver = new UdpReceiver<Gc.Referee>(GcAddress, OnData, "Gc");
+
+        Configurable.OnUpdated += _ =>
+        {
+            _udpReceiver?.ChangeAddress(GcAddress);
+        };
     }
 
     private void OnData(Gc.Referee data)

@@ -16,8 +16,10 @@ public sealed class UdpReceiver<T> : IDisposable where T : class
 {
     private readonly Action<T> _onData;
 
-    public UdpClient Client { get; }
+    public UdpClient Client { get; private set; }
     public RunnerSync Runner { get; }
+    
+    private Address? _newAddress;
 
     public UdpReceiver(Address address, Action<T> onData, string? callingModule = null)
     {
@@ -28,8 +30,21 @@ public sealed class UdpReceiver<T> : IDisposable where T : class
         Runner.Start();
     }
 
+    public void ChangeAddress(Address address)
+    {
+        _newAddress = address;
+    }
+
     private bool Tick()
     {
+        if (_newAddress != null)
+        {
+            Client.Dispose();
+            Client = new UdpClient(_newAddress);
+            _newAddress = null;
+            return false;
+        }
+        
         if (!Client.PollData(UdpReceiverConfigs.PollTimeout)) return false;
 
         var packet = Client.Receive<T>();
