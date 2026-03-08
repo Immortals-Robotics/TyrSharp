@@ -30,18 +30,10 @@
     </ItemGroup>
 
     <ItemGroup>
-      <None Update="Fonts\fa-solid-900.ttf">
-        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-      </None>
-      <None Update="Fonts\seguiemj.ttf">
-        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-      </None>
-      <None Update="Fonts\InterVariable.ttf">
-        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-      </None>
-      <None Update="Fonts\JetBrainsMono[wght].ttf">
-        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-      </None>
+      <EmbeddedResource Include="Fonts\fa-solid-900.ttf" />
+      <EmbeddedResource Include="Fonts\seguiemj.ttf" />
+      <EmbeddedResource Include="Fonts\InterVariable.ttf" />
+      <EmbeddedResource Include="Fonts\JetBrainsMono[wght].ttf" />
     </ItemGroup>
 
 </Project>

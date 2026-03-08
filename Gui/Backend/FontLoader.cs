@@ -1,4 +1,5 @@
 ﻿using System.Numerics;
+using System.Reflection;
 using Hexa.NET.ImGui;
 using Hexa.NET.ImGui.Utilities;
 
@@ -33,14 +34,17 @@ public sealed class FontLoader : IDisposable
         }
         else
         {
+            var assembly = typeof(FontLoader).Assembly;
+            var resourceName = GetEmbeddedResourceName(assembly, file);
+
             if (glyphRange != null)
             {
-                _currentBuilder.AddFontFromFileTTF(file, size,
+                _currentBuilder.AddFontFromEmbeddedResource(assembly, resourceName, size,
                     [glyphRange.Value.Item1, glyphRange.Value.Item2]);
             }
             else
             {
-                _currentBuilder.AddFontFromFileTTF(file, size);
+                _currentBuilder.AddFontFromEmbeddedResource(assembly, resourceName, size);
             }
 
             Log.ZLogInformation($"Loaded font {file}");
@@ -68,5 +72,10 @@ public sealed class FontLoader : IDisposable
         {
             fontBuilder.Dispose();
         }
+    }
+
+    private static string GetEmbeddedResourceName(Assembly assembly, string resourcePath)
+    {
+        return $"{assembly.GetName().Name}.{resourcePath.Replace('\\', '.').Replace('/', '.')}";
     }
 }
