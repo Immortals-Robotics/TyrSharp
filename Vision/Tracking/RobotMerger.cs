@@ -59,7 +59,7 @@ public partial class RobotMerger
 
         var position = Vector2.Zero;
         var velocity = Vector2.Zero;
-        var orientation = 0f;
+        var orientationVec = Vector2.Zero;
         var angularVelocity = 0f;
 
         // cyclic coordinates don't like mean calculations, we will work with offsets though
@@ -75,23 +75,26 @@ public partial class RobotMerger
 
             velocity += tracker.Velocity * VelocityUncertaintyWeight(tracker);
 
-            orientation += (tracker.GetAngle(timestamp) - orientationOffset).Rad *
-                           OrientationUncertaintyWeight(tracker);
+            orientationVec += tracker.GetAngle(timestamp).ToUnitVec() * OrientationUncertaintyWeight(tracker);
 
             angularVelocity += tracker.AngularVelocity.Rad * AngularVelocityUncertaintyWeight(tracker);
         }
 
         position /= totalPositionUncertainty;
         velocity /= totalVelocityUncertainty;
-        orientation /= totalOrientationUncertainty;
         angularVelocity /= totalAngularVelocityUncertainty;
+
+        if (Utils.ApproximatelyZero(orientationVec.LengthSquared()))
+        {
+            orientationVec = trackers[0].GetAngle(timestamp).ToUnitVec();
+        }
 
         var state = new RobotState
         {
             Position = position,
             Velocity = velocity,
-            Angle = Angle.FromRad(orientation) + orientationOffset,
-            AngularVelocity = Angle.FromRad(angularVelocity),
+            Angle = orientationVec.ToAngle(),
+            AngularVelocity = Angle.FromRad(angularVelocity)
         };
 
         return new FilteredRobot
