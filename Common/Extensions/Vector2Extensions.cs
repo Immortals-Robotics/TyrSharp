@@ -56,6 +56,13 @@ public static class Vector2Extensions
         return v + angle.ToUnitVec() * radius;
     }
 
+    public static Vector2 PointOnConnectingLine(this Vector2 v, Vector2 other, float distance)
+    {
+        var direction = other - v;
+        if (Utils.ApproximatelyZero(direction.LengthSquared())) return v;
+        return v + Vector2.Normalize(direction) * distance;
+    }
+
     public static MathNet.Numerics.LinearAlgebra.Vector<double> AsMathNetVector(this Vector2 v)
     {
         var mathNetVector = MathNet.Numerics.LinearAlgebra.Vector<double>.Build.Dense(2);

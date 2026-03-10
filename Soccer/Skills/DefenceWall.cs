@@ -6,17 +6,19 @@ using Tyr.Soccer.Robot;
 namespace Tyr.Soccer.Skills;
 
 [Configurable]
-public partial class DefenceWall(bool kickoff = false) : ISkill
+public partial class DefenceWall : ISkill
 {
     [ConfigEntry] private static float Radius { get; set; } = 550f;
 
+    public bool Kickoff { get; set; }
+    
     public void Execute(Robot.Robot robot)
     {
         var distance = 700.0f + Context.RobotRadius;
 
         var x = -Context.SideSign * Context.Ball.State.Position.X;
         var tetta = -0.000003f * x * x + 0.0016f * x + 90.0f;
-        if (kickoff)
+        if (Kickoff)
         {
             tetta = 14.0f;
         }

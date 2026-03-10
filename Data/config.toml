@@ -30,6 +30,14 @@ SleepTime = 0.001 # default: 0.001000s
 [Soccer.Skills.DefenceWall]
 Radius = 550.0 # default: 550
 
+[Soccer.Skills.MarkToBall]
+OppPredictTime = 0.15 # default: 0.150000s
+
+[Soccer.Skills.MarkToGoal]
+OppPredictTime = 0.15 # default: 0.150000s
+PenaltyAreaMark = false # default: False
+PenaltyAreaMarkDistance = 200.0 # default: 200
+
 
 [Soccer.Runner]
 RunYellow = false # default: False
@@ -141,7 +149,7 @@ Is3dPrinted = false
 [Soccer.Robot.VelocityProfile]
 Sooski = { Speed = 450.0, Acceleration = 1620.0 } # default: VelocityProfile { Speed = 450, Acceleration = 1620 }
 Aroom = { Speed = 900.0, Acceleration = 2160.0 } # default: VelocityProfile { Speed = 900, Acceleration = 2160 }
-Mamooli = { Speed = 3000.0, Acceleration = 3500.0 } # default: VelocityProfile { Speed = 3000, Acceleration = 3500 }
+Mamooli = { Speed = 2000.0, Acceleration = 3500.0 } # default: VelocityProfile { Speed = 3000, Acceleration = 3500 }
 Kharaki = { Speed = 3500.0, Acceleration = 4010.0 } # default: VelocityProfile { Speed = 3500, Acceleration = 4010 }
 
 [Soccer.Robot.Robot]
@@ -154,6 +162,11 @@ BreakSpeedThreshold = 500.0 # default: 500
 BallAreaRadius = 550.0 # default: 550
 PenaltyAreaExtensionBehindGoal = 300.0 # default: 300
 BigPenaltyAddition = 220.0 # default: 220
+
+
+[Soccer.Tactics]
+[Soccer.Tactics.Mark]
+Distance = 220.0 # default: 220
 
 
 
@@ -482,11 +495,11 @@ Y = 0.0
 
 
 [Sender.Nrf]
-Enabled = false # default: False
+Enabled = true # default: False
 Address = { Ip = "224.5.92.5", Port = 60005 } # default: 224.5.92.5:60005
 
 [Sender.Simulator]
-Enabled = false # default: False
+Enabled = true # default: False
 BlueAddress = { Ip = "127.0.0.1", Port = 10301 } # default: 127.0.0.1:10301
 YellowAddress = { Ip = "127.0.0.1", Port = 10302 } # default: 127.0.0.1:10302
 ChipAngle = 45.0 # default: 45.00°
