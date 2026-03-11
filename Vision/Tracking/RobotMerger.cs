@@ -62,10 +62,6 @@ public partial class RobotMerger
         var orientationVec = Vector2.Zero;
         var angularVelocity = 0f;
 
-        // cyclic coordinates don't like mean calculations, we will work with offsets though
-        // TODO: probably better to use the median as the offset
-        var orientationOffset = trackers[0].GetAngle(timestamp);
-
         // take all trackers and calculate their pos/vel sum weighted by uncertainty.
         // Trackers with high uncertainty have less influence on the merged result.
         foreach (var tracker in trackers)
