@@ -10,6 +10,10 @@ Tyr is the robotics software stack powering Immortals, our RoboCup Small-Size Le
 
 ![Tyr GUI](Doc/gui.png)
 
+## Documentation
+
+- [SSL Reference](Doc/SSL_REFERENCE.md) — RoboCup Small Size League rules, field specs, and the SSL-Vision / Game Controller / grSim communication stack.
+
 ## Building
 
 ### Requirements
