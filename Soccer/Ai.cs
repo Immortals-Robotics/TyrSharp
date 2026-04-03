@@ -1,4 +1,4 @@
-﻿﻿﻿﻿using System.Numerics;
+﻿using System.Numerics;
 using Tyr.Common.Config;
 using Tyr.Common.Data;
 using Tyr.Common.Data.Ssl;

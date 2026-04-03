@@ -17,11 +17,6 @@ public partial class Zone
     private Vector2 BestPos { get; set; }
     public double Score { get; set; }
 
-    public Zone()
-    {
-        Configurable.OnUpdated += _ => { Context.Knowledge.InitZones(); };
-    }
-
     public void UpdateScore(bool isDefending)
     {
         BestPos = Rect.Center;
