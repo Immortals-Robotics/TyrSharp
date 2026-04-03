@@ -19,6 +19,8 @@ internal sealed record ContextData
     internal required FieldSize Field { get; init; }
 
     internal required Timer Timer { get; init; }
+
+    internal required Knowledge.Knowledge Knowledge { get; init; }
 }
 
 internal static class Context
@@ -43,4 +45,6 @@ internal static class Context
     internal static float RobotRadius => Field.RobotRadius ?? 90f;
 
     internal static Timer Timer => Data.Value!.Timer;
+
+    internal static Knowledge.Knowledge Knowledge => Data.Value!.Knowledge;
 }

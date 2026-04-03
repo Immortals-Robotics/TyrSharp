@@ -3,9 +3,9 @@ using Tyr.Common.Vision.Data;
 
 namespace Tyr.Soccer.Knowledge;
 
-public static partial class Knowledge
+public partial class Knowledge
 {
-    public static FilteredRobot? FindKickerOpp(int? mask = null, float maxDis = 500.0f)
+    public FilteredRobot? FindKickerOpp(int? mask = null, float maxDis = 500.0f)
     {
         var minDis = maxDis;
         FilteredRobot? result = null;
@@ -17,7 +17,7 @@ public static partial class Knowledge
 
             var dis = Vector2.Distance(Context.Ball.State.Position, robot.State.Position);
             if (!(dis < minDis)) continue;
-            
+
             minDis = dis;
             result = robot;
         }

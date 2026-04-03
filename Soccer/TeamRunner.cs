@@ -1,4 +1,4 @@
-﻿using Tyr.Common.Config;
+﻿﻿using Tyr.Common.Config;
 using Tyr.Common.Data;
 using Tyr.Common.Data.Ssl.Vision.Geometry;
 using Tyr.Common.Dataflow;
@@ -26,17 +26,19 @@ public sealed partial class TeamRunner : IDisposable
     private readonly TeamColor _color;
     private readonly Ai _ai;
 
+    private readonly Knowledge.Knowledge _knowledge = new();
+
     public TeamRunner(TeamColor color)
     {
         _color = color;
-        
+
         _refereeSubscriber = Hub.Referee.Subscribe(Mode.Latest);
         _visionSubscriber = Hub.Vision.Subscribe(Mode.Latest);
         _fieldSizeSubscriber = Hub.FieldSize.Subscribe(Mode.Latest);
 
         _runner = new RunnerSync(Tick, 0, $"{ModuleName}{color}");
         _runner.SetInit(Init);
-        
+
         _ai = new Ai();
     }
 
@@ -55,13 +57,14 @@ public sealed partial class TeamRunner : IDisposable
             Referee = _referee,
             Field = _field,
             Timer = _runner.Timer,
+            Knowledge = _knowledge,
         };
-        
+
         _ai.Init();
-        
+
         return true;
     }
-    
+
     private bool Tick()
     {
         if (!_visionSubscriber.Reader.TryRead(out var vision))
@@ -79,7 +82,7 @@ public sealed partial class TeamRunner : IDisposable
         _ai.UpdateContext(vision, _referee, _field);
 
         _ai.Process();
-        
+
         _ai.PublishCommands();
 
         return true;

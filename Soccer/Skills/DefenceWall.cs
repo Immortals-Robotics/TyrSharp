@@ -11,7 +11,7 @@ public partial class DefenceWall : ISkill
     [ConfigEntry] private static float Radius { get; set; } = 550f;
 
     public bool Kickoff { get; set; }
-    
+
     public void Execute(Robot.Robot robot)
     {
         var distance = 700.0f + Context.RobotRadius;
@@ -22,11 +22,12 @@ public partial class DefenceWall : ISkill
         {
             tetta = 14.0f;
         }
+
         Log.ZLogDebug($"wall limit: {tetta}");
 
         Vector2 target;
 
-        var oppAttack = Knowledge.Knowledge.FindKickerOpp();
+        var oppAttack = Context.Knowledge.FindKickerOpp();
         if (oppAttack.HasValue)
         {
             Log.ZLogDebug($"{oppAttack}");
@@ -37,7 +38,7 @@ public partial class DefenceWall : ISkill
         else
         {
             target = Context.Ball.State.Position.CircleAroundPoint(
-                Context.Ball.State.Position.AngleWith(Context.Field.OwnGoal()), 
+                Context.Ball.State.Position.AngleWith(Context.Field.OwnGoal()),
                 distance);
         }
 
@@ -53,7 +54,7 @@ public partial class DefenceWall : ISkill
         if (isOut)
         {
             target = Context.Ball.State.Position.CircleAroundPoint(
-                Context.Ball.State.Position.AngleWith(Context.Field.OwnGoal()), 
+                Context.Ball.State.Position.AngleWith(Context.Field.OwnGoal()),
                 Radius + Context.RobotRadius);
         }
 

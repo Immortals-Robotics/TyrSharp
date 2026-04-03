@@ -1,4 +1,4 @@
-﻿using System.Numerics;
+﻿﻿﻿﻿using System.Numerics;
 using Tyr.Common.Config;
 using Tyr.Common.Data;
 using Tyr.Common.Data.Ssl;
@@ -22,7 +22,7 @@ public partial class Ai
 
     private readonly Dictionary<int, LinkedList<(Timestamp, Command)>> _commandHistories = [];
     private LinkedList<(Timestamp, Command)> CommandHistory(int id) => _commandHistories[id];
-    
+
     public void Init()
     {
         Assert.IsZero(Context.OwnRobots.Count);
@@ -33,19 +33,21 @@ public partial class Ai
             {
                 Filtered = new Vision.FilteredRobot
                 {
-                    Quality = 0f, 
-                    Id = new RobotId() {Team = Context.Color, Id = (uint)i},
+                    Quality = 0f,
+                    Id = new RobotId() { Team = Context.Color, Id = (uint)i },
                 }
             });
-            
+
             _commandHistories[i] = [];
         }
+
+        Context.Knowledge.InitZones();
     }
-    
+
     public void UpdateContext(Vision.FilteredFrame vision, Referee.State referee, FieldSize field)
     {
         var now = vision.Timestamp + VisionPredictionTime;
-        
+
         foreach (var robot in Context.OwnRobots)
         {
             robot.Filtered = robot.Filtered with { Quality = 0f };
@@ -56,19 +58,19 @@ public partial class Ai
             var id = (int)filtered.Id.Id!.Value;
             var predicted = filtered.Extrapolate(now, CommandHistory(id));
             Context.OwnRobots[id].Filtered = predicted;
-            
+
             Draw.DrawRobot(predicted.State.Position, predicted.State.Angle, filtered.Id, options: Options.Outline());
         }
-        
+
         Context.OppRobots.Clear();
         foreach (var filtered in vision.Robots.Where(robot => robot.Id.Team != Context.Color))
         {
             var predicted = filtered.Extrapolate(now);
             Context.OppRobots.Add(predicted);
-            
+
             Draw.DrawRobot(predicted.State.Position, predicted.State.Angle, filtered.Id, options: Options.Outline());
         }
-        
+
         Context.Data.Value = Context.Data.Value! with
         {
             VisionTime = vision.Timestamp,
@@ -88,35 +90,42 @@ public partial class Ai
                 history.RemoveFirst();
             }
         }
-        
+
         var commands = new CommandsWrapper()
         {
             Time = Context.Time,
             Color = Context.Color,
         };
-        
+
         foreach (var robot in Context.OwnRobots)
         {
             robot.WaitForNavigationJob();
-            
-            if (!robot.Seen)  continue;
+
+            if (!robot.Seen) continue;
 
             var command = robot.CurrentCommand;
             commands.Commands.Add(command);
 
             CommandHistory(robot.Id).AddLast((Context.Time, command));
         }
-        
+
         Hub.Commands.Publish(commands);
     }
 
     public void Process()
     {
         Log.ZLogDebug($"fps: {Context.Timer.FpsSmooth}");
-        
+
         foreach (var robot in Context.OwnRobots)
         {
             robot.Reset();
+        }
+
+
+        foreach (var zone in Context.Knowledge.Zones)
+        {
+            zone.UpdateScore(false);
+            zone.DrawZone();
         }
 
         foreach (var robot in Context.OwnRobots)
@@ -129,7 +138,7 @@ public partial class Ai
             {
                 robot.TargetAngle = Angle.FromDeg(90f);
                 var x = -2000f;
-                var sin = MathF.Floor(Angle.FromRad((float)Context.Timer.Time.Seconds + robot.Id).Sin()); 
+                var sin = MathF.Floor(Angle.FromRad((float)Context.Timer.Time.Seconds + robot.Id).Sin());
                 var y = (2f * sin + 1f) * 1500f;
                 robot.Navigate(new Vector2(x, y), VelocityProfile.Mamooli);
             }
