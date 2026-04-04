@@ -18,7 +18,7 @@ public class DetectedKick(
     public Vector2 KickPosition { get; init; } = kickPosition;
     public Timestamp Timestamp { get; init; } = timestamp;
     public bool IsFastDetection { get; init; } = isFastDetection;
-    List<MergedBall> BallStatesAfterKick { get; set; } = ballStatesAfterKick;
+    public IReadOnlyList<MergedBall> BallStatesAfterKick { get; init; } = ballStatesAfterKick;
 
 
     public Vector2? GetKickDirection()

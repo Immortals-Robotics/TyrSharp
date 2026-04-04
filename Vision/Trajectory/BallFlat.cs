@@ -36,7 +36,7 @@ public class BallFlat : IBallTrajectory
             _accelerationSlide = contactVelocity.WithLength(Data.BallParameters.AccelerationSlide);
             _accelerationSlideSpin = _accelerationSlide / (Data.BallParameters.Radius * Data.BallParameters.InertiaDistribution);
             var f = 1f / (1f + 1f / Data.BallParameters.InertiaDistribution);
-            var slideVel = (initial.SpinRadians * Data.BallParameters.Radius) - initial.Velocity.Xy() * f;
+            var slideVel = ((initial.SpinRadians * Data.BallParameters.Radius) - initial.Velocity.Xy()) * f;
 
             _switchTime = MathF.Abs(_accelerationSlide.X) > MathF.Abs(_accelerationSlide.Y)
                 ? DeltaTime.FromSeconds(slideVel.X / _accelerationSlide.X)

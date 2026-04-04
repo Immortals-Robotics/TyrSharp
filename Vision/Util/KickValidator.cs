@@ -101,41 +101,38 @@ public partial class KickValidator
             bestGroup = group;
         }
 
-        if ((bestGroup != null) && kickPos.HasValue)
+        if ((bestGroup == null) || !kickPos.HasValue) return null;
+
+        var numPoints = bestGroup.Count;
+
+        var matA = new DenseMatrix(numPoints, 2);
+        var b = new DenseVector(numPoints);
+
+        var firstBall = bestGroup[0].LatestRawBall!.Value;
+        for (var i = 0; i < numPoints; i++)
         {
-            var numPoints = bestGroup.Count;
+            var currentBall = bestGroup[i].LatestRawBall!.Value;
 
-            var matA = new DenseMatrix(numPoints, 2);
-            var b = new DenseVector(numPoints);
-
-            var firstBall = bestGroup[0].LatestRawBall!.Value;
-            for (var i = 0; i < numPoints; i++)
-            {
-                var currentBall = bestGroup[i].LatestRawBall!.Value;
-
-                matA[i, 0] = Vector2.Distance(currentBall.Detection.Position, kickPos.Value);
-                matA[i, 1] = 1.0;
-                b[i] = (currentBall.CaptureTimestamp - firstBall.CaptureTimestamp).Seconds;
-            }
-
-            try
-            {
-                var x = matA.QR().Solve(b);
-                var kickTimestamp = Timestamp.FromNanoseconds(
-                    firstBall.CaptureTimestamp.Nanoseconds + (long)(x[1] * 1e9));
-                return (kickTimestamp, kickPos.Value);
-            }
-            catch (ArgumentException)
-            {
-                return null;
-            }
-            catch (InvalidOperationException)
-            {
-                return null;
-            }
+            matA[i, 0] = Vector2.Distance(currentBall.Detection.Position, kickPos.Value);
+            matA[i, 1] = 1.0;
+            b[i] = (currentBall.CaptureTimestamp - firstBall.CaptureTimestamp).Seconds;
         }
 
-        return null;
+        try
+        {
+            var x = matA.QR().Solve(b);
+            var kickTimestamp = Timestamp.FromNanoseconds(
+                firstBall.CaptureTimestamp.Nanoseconds + (long)(x[1] * 1e9));
+            return (kickTimestamp, kickPos.Value);
+        }
+        catch (ArgumentException)
+        {
+            return null;
+        }
+        catch (InvalidOperationException)
+        {
+            return null;
+        }
     }
 
     private bool DistanceValidator(List<MergedBall> balls, List<FilteredRobot> robots)
