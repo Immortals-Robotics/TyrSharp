@@ -43,7 +43,18 @@ public readonly record struct Line
     public static Line FromSegment(LineSegment segment) => FromTwoPoints(segment.Start, segment.End);
 
     public float Slope => Utils.ApproximatelyZero(A) ? float.PositiveInfinity : -B / A;
-    public Vector2 Direction => Vector2.Normalize(new Vector2(-B, A));
+
+    public Vector2 Direction
+    {
+        get
+        {
+            var direction = new Vector2(A, -B);
+            return Utils.ApproximatelyZero(direction.LengthSquared())
+                ? Vector2.Zero
+                : Vector2.Normalize(direction);
+        }
+    }
+
     public Angle Angle => Angle.FromVector(Direction);
 
     public float Intercept => Utils.ApproximatelyZero(A) ? float.NaN : -C / A;
