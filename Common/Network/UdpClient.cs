@@ -19,10 +19,11 @@ public sealed partial class UdpClient : IDisposable
     private readonly IPEndPoint _listenEndpoint;
     private IPEndPoint? _lastReceiveEndpoint;
 
-    private readonly byte[] _buffer = new byte[MaxPacketSize];
+    private readonly byte[] _buffer;
 
     public UdpClient(Address address)
     {
+        _buffer = new byte[MaxPacketSize];
         _listenEndpoint = new IPEndPoint(IPAddress.Any, address.Port);
 
         _socket = new System.Net.Sockets.UdpClient();
@@ -54,7 +55,7 @@ public sealed partial class UdpClient : IDisposable
             _lastReceiveEndpoint ??= new IPEndPoint(IPAddress.Any, 0);
             EndPoint tempRemoteEp = _lastReceiveEndpoint;
 
-            var received = _socket.Client.ReceiveFrom(_buffer, MaxPacketSize, 0, ref tempRemoteEp);
+            var received = _socket.Client.ReceiveFrom(_buffer, _buffer.Length, 0, ref tempRemoteEp);
             _lastReceiveEndpoint = (IPEndPoint)tempRemoteEp;
 
             return _buffer.AsSpan(0, received);

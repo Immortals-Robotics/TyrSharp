@@ -133,7 +133,7 @@ public partial class PlotView(DebugFramer debugFramer, DebugFilter filter)
         ImGui.PopFont();
     }
 
-    private bool DrawPlot(PlaybackTime time, ModuleDebugFramer framer, string plotId)
+    private bool DrawPlot(PlaybackTime time, ModuleTimeline framer, string plotId)
     {
         if (ImPlot.BeginPlot("##plot"))
         {
@@ -207,7 +207,7 @@ public partial class PlotView(DebugFramer debugFramer, DebugFilter filter)
     }
 
     private (PlotDataType type, string? title) GatherData(
-        ModuleDebugFramer framer, string id,
+        ModuleTimeline framer, string id,
         Timestamp origin, DeltaTime min, DeltaTime max)
     {
         foreach (var list in _rawData) list.Clear();

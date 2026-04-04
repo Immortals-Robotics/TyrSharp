@@ -118,7 +118,7 @@ public sealed partial class DebugFilter(DebugFramer debugFramer) : IDisposable
         }
     }
 
-    private void DrawModuleNode(string module, ModuleDebugFramer framer)
+    private void DrawModuleNode(string module, ModuleTimeline framer)
     {
         // Get current state
         var isEnabled = FilterState[module];
