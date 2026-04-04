@@ -94,7 +94,6 @@ public partial class FastKickDetector : IKickDetector
 
         var vel1 = (ball1.Detection.Position - ball0.Detection.Position) * (float)(1.0 / dt1);
         var vel2 = (ball2.Detection.Position - ball1.Detection.Position) * (float)(1.0 / dt2);
-        Log.ZLogCritical($"Vel1: {vel1.Length()}, Vel2: {vel2.Length()}");
 
         if ((vel1.Length() > 10000) || (vel2.Length() > 10000))
         {
