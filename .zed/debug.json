@@ -1,0 +1,41 @@
+// Project-local debug tasks
+//
+// For more documentation on how to configure debug tasks,
+// see: https://zed.dev/docs/debugger
+[
+  {
+    "label": "debug: Gui",
+    "adapter": "netcoredbg",
+    "request": "launch",
+    "program": "${ZED_WORKTREE_ROOT}/Gui/bin/Debug/net10.0/Tyr.Gui.dll",
+    "args": ["Data/config.toml"],
+    "cwd": "${ZED_WORKTREE_ROOT}",
+    "build": {
+      "command": "dotnet",
+      "args": ["build", "${ZED_WORKTREE_ROOT}/Gui/Gui.csproj"],
+    },
+  },
+  {
+    "label": "debug: Cli",
+    "adapter": "netcoredbg",
+    "request": "launch",
+    "program": "${ZED_WORKTREE_ROOT}/Cli/bin/Debug/net10.0/Tyr.Cli.dll",
+    "args": ["Data/config.toml"],
+    "cwd": "${ZED_WORKTREE_ROOT}",
+    "build": {
+      "command": "dotnet",
+      "args": ["build", "${ZED_WORKTREE_ROOT}/Cli/Cli.csproj"],
+    },
+  },
+  {
+    "label": "debug: Tests",
+    "adapter": "netcoredbg",
+    "request": "launch",
+    "program": "${ZED_WORKTREE_ROOT}/Tests/bin/Debug/net10.0/Tyr.Tests.dll",
+    "cwd": "${ZED_WORKTREE_ROOT}",
+    "build": {
+      "command": "dotnet",
+      "args": ["build", "${ZED_WORKTREE_ROOT}/Tests/Tests.csproj"],
+    },
+  },
+]

@@ -1,7 +1,7 @@
 # Tyr: God of valor and justice
 [![.NET](https://github.com/Immortals-Robotics/TyrSharp/actions/workflows/dotnet.yml/badge.svg)](https://github.com/Immortals-Robotics/TyrSharp/actions/workflows/dotnet.yml)
 
-Tyr is the robotics software stack powering Immortals, our RoboCup Small-Size League team. This is a modern C# 13 / .NET 9 port of our original [C++ codebase](https://github.com/Immortals-Robotics/Tyr).
+Tyr is the robotics software stack powering Immortals, our RoboCup Small-Size League team. This is a modern C# 14 / .NET 10 port of our original [C++ codebase](https://github.com/Immortals-Robotics/Tyr).
 
 ⚠️ Work in progress, so far:
 
@@ -17,8 +17,8 @@ Tyr is the robotics software stack powering Immortals, our RoboCup Small-Size Le
 ## Building
 
 ### Requirements
-- .NET 9 SDK
-- Rider or any IDE with C# support
+- .NET 10 SDK
+- Rider, Zed, or any IDE with C# support
 
 ### Steps
 1 .Clone the repository
@@ -36,6 +36,34 @@ dotnet restore
 ```bash
 dotnet build
 ```
+
+## Zed IDE
+
+Project-local [tasks](.zed/tasks.json) and [debug configurations](.zed/debug.json) are included.
+
+### Tasks
+
+Open the task picker with `Ctrl+Shift+B` (or via command palette → `task: spawn`):
+
+| Task | Description |
+|---|---|
+| `build: solution` | Build the entire solution |
+| `build: <Project>` | Build a specific project (Common, Vision, Soccer, etc.) |
+| `run: Gui` | Run the GUI with `Data/config.toml` |
+| `run: Cli` | Run headless CLI with `Data/config.toml` |
+| `test: all` | Run all tests |
+| `test: filter` | Run tests matching a class/method name |
+| `clean: solution` | Clean build outputs |
+
+### Debugging
+
+Requires the [zed-netcoredbg](https://github.com/qwadrox/zed-netcoredbg) extension. Open the debug panel and choose a configuration:
+
+| Configuration | Description |
+|---|---|
+| `debug: Gui` | Build and debug the GUI |
+| `debug: Cli` | Build and debug the CLI |
+| `debug: Tests` | Build and debug the test suite |
 
 ## Branching
 We use [Github flow](https://docs.github.com/en/get-started/using-github/github-flow) as our branching strategy. Direct commits to the `main` branch are disabled, the goal is to keep it stable and usable.
