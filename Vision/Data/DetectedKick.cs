@@ -1,7 +1,7 @@
 using System.Numerics;
 using Tyr.Common.Data.Ssl;
-using Tyr.Common.Math;
 using Tyr.Common.Vision.Data;
+using Tyr.Vision.Util;
 
 namespace Tyr.Vision.Data;
 
@@ -24,39 +24,11 @@ public class DetectedKick(
     public Vector2? GetKickDirection()
     {
         var samples = BallStatesAfterKick
-            .Select(ballState => new
-            {
-                Position = ballState.LatestRawBall?.Detection.Position ?? ballState.Position,
-                Timestamp = ballState.LatestRawBall?.CaptureTimestamp ?? ballState.Timestamp
-            })
-            .OrderBy(sample => sample.Timestamp)
+            .OrderBy(ballState => ballState.LatestRawBall?.CaptureTimestamp ?? ballState.Timestamp)
+            .Select(ballState => ballState.LatestRawBall?.Detection.Position ?? ballState.Position)
             .ToList();
 
-        if (samples.Count < 2) return null;
-
-        var estimator = new OrthogonalRegressionLineEstimator(samples.Count);
-        foreach (var sample in samples)
-        {
-            estimator.AddSample(sample.Position.X, sample.Position.Y);
-        }
-
-        if (!estimator.Estimate.HasValue) return null;
-
-        var direction = estimator.Estimate.Value.Direction;
-        var travel = samples[^1].Position - samples[0].Position;
-
-        if (Utils.ApproximatelyZero(travel.LengthSquared()))
-        {
-            for (var i = 1; i < samples.Count; i++)
-            {
-                travel += samples[i].Position - samples[i - 1].Position;
-            }
-        }
-
-        if (Utils.ApproximatelyZero(direction.LengthSquared()) ||
-            Utils.ApproximatelyZero(travel.LengthSquared()))
-            return null;
-
-        return Vector2.Dot(direction, travel) < 0f ? -direction : direction;
+        var res = BallHelpers.GetKickDirection(samples, 2);
+        return res?.Item2;
     }
 }

@@ -62,7 +62,7 @@ public sealed partial class Vision
         if (kickDirection.HasValue && kickDirection.Value != Vector2.Zero)
         {
             Draw.DrawArrow(kick.KickPosition, kick.KickPosition + kickDirection.Value.WithLength(450f),
-                Color.Red500, Options.Outline(5f));
+                kick.IsFastDetection ? Color.Red500 : Color.Blue, Options.Outline(5f));
         }
 
         Draw.EndLayer();
