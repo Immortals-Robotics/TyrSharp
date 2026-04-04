@@ -11,7 +11,12 @@ public sealed partial class UdpServer : IDisposable
     [ConfigEntry] private static int MaxPacketSize { get; set; } = 64 * 1024;
 
     private readonly System.Net.Sockets.UdpClient _socket = new(AddressFamily.InterNetwork);
-    private readonly byte[] _buffer = new byte[MaxPacketSize];
+    private readonly byte[] _buffer;
+
+    public UdpServer()
+    {
+        _buffer = new byte[MaxPacketSize];
+    }
 
     public Span<byte> GetBuffer()
     {
@@ -36,6 +41,12 @@ public sealed partial class UdpServer : IDisposable
 
     public bool Send(int size, Address address)
     {
+        if (size > _buffer.Length)
+        {
+            Log.ZLogError($"Send size {size} exceeds buffer length {_buffer.Length}");
+            return false;
+        }
+
         try
         {
             var ip = IPAddress.Parse(address.Ip);

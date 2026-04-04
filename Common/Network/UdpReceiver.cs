@@ -19,7 +19,7 @@ public sealed class UdpReceiver<T> : IDisposable where T : class
     public UdpClient Client { get; private set; }
     public RunnerSync Runner { get; }
     
-    private Address? _newAddress;
+    private volatile Address? _newAddress;
 
     public UdpReceiver(Address address, Action<T> onData, string? callingModule = null)
     {
