@@ -123,7 +123,7 @@ public partial class PlotView(DebugFramer debugFramer, DebugFilter filter)
 
                 if (open)
                 {
-                    if (DrawPlot(time, framer, plotId)) continue;
+                    DrawPlot(time, framer, plotId);
                 }
 
                 ImGui.PopID();
@@ -133,7 +133,7 @@ public partial class PlotView(DebugFramer debugFramer, DebugFilter filter)
         ImGui.PopFont();
     }
 
-    private bool DrawPlot(PlaybackTime time, ModuleTimeline framer, string plotId)
+    private void DrawPlot(PlaybackTime time, ModuleTimeline framer, string plotId)
     {
         if (ImPlot.BeginPlot("##plot"))
         {
@@ -178,7 +178,11 @@ public partial class PlotView(DebugFramer debugFramer, DebugFilter filter)
             }
 
             var count = TimeList.Count;
-            if (count == 0) return true;
+            if (count == 0)
+            {
+                ImPlot.EndPlot();
+                return;
+            }
 
             switch (type)
             {
@@ -202,8 +206,6 @@ public partial class PlotView(DebugFramer debugFramer, DebugFilter filter)
 
             ImPlot.EndPlot();
         }
-
-        return false;
     }
 
     private (PlotDataType type, string? title) GatherData(
