@@ -1,5 +1,6 @@
 ﻿using System.Numerics;
 using Tyr.Common.Config;
+using Tyr.Common.Data.Robot;
 using Tyr.Common.Math;
 using Tyr.Common.Sender.Data;
 using Tyr.Common.Vision.Data;
@@ -50,6 +51,8 @@ public partial class Robot
     public float DynamicBallObstacleRadius { get; set; }
 
     public PhysicalStatus PhysicalStatus => PhysicalStatus.StatusArray[Id];
+
+    public HardwareStatus HardwareStatus { get; } = new();
 
     public void Reset()
     {

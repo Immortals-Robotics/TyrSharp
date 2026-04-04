@@ -1,4 +1,4 @@
-﻿﻿using Tyr.Common.Config;
+﻿using Tyr.Common.Config;
 using Tyr.Common.Data;
 using Tyr.Common.Data.Ssl.Vision.Geometry;
 using Tyr.Common.Dataflow;
@@ -17,6 +17,7 @@ public sealed partial class TeamRunner : IDisposable
     private readonly Subscriber<Referee.State> _refereeSubscriber;
     private readonly Subscriber<Vision.FilteredFrame> _visionSubscriber;
     private readonly Subscriber<FieldSize> _fieldSizeSubscriber;
+    private readonly Subscriber<Common.Data.Robot.StatusUpdate> _robotStatusSubscriber;
 
     private readonly RunnerSync _runner;
 
@@ -28,6 +29,9 @@ public sealed partial class TeamRunner : IDisposable
 
     private readonly Knowledge.Knowledge _knowledge = new();
 
+    // Robot ID learned from the first RobotInfo frame; -1 until known
+    private int _hwRobotId = -1;
+
     public TeamRunner(TeamColor color)
     {
         _color = color;
@@ -35,6 +39,7 @@ public sealed partial class TeamRunner : IDisposable
         _refereeSubscriber = Hub.Referee.Subscribe(Mode.Latest);
         _visionSubscriber = Hub.Vision.Subscribe(Mode.Latest);
         _fieldSizeSubscriber = Hub.FieldSize.Subscribe(Mode.Latest);
+        _robotStatusSubscriber = Hub.RobotStatus.Subscribe(Mode.All);
 
         _runner = new RunnerSync(Tick, 0, $"{ModuleName}{color}");
         _runner.SetInit(Init);
@@ -73,6 +78,20 @@ public sealed partial class TeamRunner : IDisposable
             return false;
         }
 
+        while (_robotStatusSubscriber.Reader.TryRead(out var statusUpdate))
+            ApplyRobotStatus(statusUpdate);
+
+        foreach (var robot in Context.OwnRobots.Where(r => r.HardwareStatus.Info != null))
+        {
+            var s = robot.HardwareStatus;
+            Log.ZLogDebug(
+                $"Robot {s.Info!.RobotId}: " +
+                $"battery={s.Power?.V24Voltage:F2}V " +
+                $"temp={s.Diag?.ImuTemp:F1}°C " +
+                $"ball={s.Info.BallDetected} " +
+                $"motors=[{string.Join(", ", s.Motors?.Motors.Select(m => $"{m.Target:F0}/{m.Actual:F0}") ?? [])}]");
+        }
+
         if (_refereeSubscriber.Reader.TryRead(out var referee))
             _referee = referee;
 
@@ -88,11 +107,23 @@ public sealed partial class TeamRunner : IDisposable
         return true;
     }
 
+    private void ApplyRobotStatus(Common.Data.Robot.StatusUpdate update)
+    {
+        // RobotInfo is the only frame that carries the robot ID — learn it first
+        if (update.Info is { } info)
+            _hwRobotId = (int)info.RobotId;
+
+        if (_hwRobotId < 0 || _hwRobotId >= Context.OwnRobots.Count) return;
+
+        Context.OwnRobots[_hwRobotId].HardwareStatus.Apply(update);
+    }
+
     public void Dispose()
     {
         _refereeSubscriber.Dispose();
         _visionSubscriber.Dispose();
         _fieldSizeSubscriber.Dispose();
+        _robotStatusSubscriber.Dispose();
 
         _runner.Stop();
     }
