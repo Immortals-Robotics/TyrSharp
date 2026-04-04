@@ -19,6 +19,9 @@ public sealed partial class Runner : IDisposable
     private readonly Subscriber<BallModels> _ballModelsSubscriber = Hub.BallModels.Subscribe(Mode.Latest);
     private readonly Subscriber<CameraCalibration> _calibrationSubscriber = Hub.CameraCalibration.Subscribe(Mode.All);
 
+    private FieldSize? _latestFieldSize;
+    private BallModels? _latestBallModels;
+
     private readonly RunnerSync _runner;
 
     private readonly Vision _vision = new();
@@ -36,12 +39,25 @@ public sealed partial class Runner : IDisposable
         if (_fieldSizeSubscriber.Reader.TryRead(out var fieldSize))
         {
             Vision.FieldSize = fieldSize;
-            BallParameters.Apply(fieldSize);
+            _latestFieldSize = fieldSize;
         }
 
         if (_ballModelsSubscriber.Reader.TryRead(out var ballModels))
         {
-            BallParameters.Apply(ballModels);
+            _latestBallModels = ballModels;
+        }
+
+        if (BallParameters.UseVisionBallParameters)
+        {
+            if (_latestFieldSize.HasValue)
+            {
+                BallParameters.Apply(_latestFieldSize.Value);
+            }
+
+            if (_latestBallModels.HasValue)
+            {
+                BallParameters.Apply(_latestBallModels.Value);
+            }
         }
 
         _vision.Process(_detectionSubscriber.All(), _calibrationSubscriber.All());

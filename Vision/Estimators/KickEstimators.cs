@@ -45,64 +45,36 @@ public partial class KickEstimators
         Timestamp timestamp,
         FilteredBall lastFilteredBall)
     {
-        Log.ZLogDebug(
-            $"KickEstimators.Process start: ts={timestamp.Seconds:F3}, estimators={_estimators.Count}, detectedKick={(detectedKick != null)}, mergedBall={(ball != null)}, latestRawBall={(ball?.LatestRawBall != null)}");
-
         EnqueueWithLimit(_filteredBallHistory, lastFilteredBall, FilteredBallHistorySize);
 
         if (ball?.LatestRawBall is { } latestBall)
         {
-            Log.ZLogDebug(
-                $"KickEstimators.Process forwarding raw ball to estimators: cam={latestBall.CameraId}, frame={latestBall.FrameNumber}, estimators={_estimators.Count}");
             foreach (var estimator in _estimators)
             {
                 estimator.AddCamBall(latestBall);
             }
-        }
-        else
-        {
-            Log.ZLogDebug($"KickEstimators.Process no latest raw ball to forward to estimators");
         }
 
         var finishedEstimators = _estimators
             .Where(estimator => estimator.IsDone(mergedRobots, timestamp))
             .ToList();
 
-        Log.ZLogDebug(
-            $"KickEstimators.Process finished estimators: {finishedEstimators.Count} / {_estimators.Count}");
-
         if ((_lastBestEstimator != null) && finishedEstimators.Contains(_lastBestEstimator))
         {
             // Keep the flat estimator set coherent: once the active one finishes, drop the whole group.
-            Log.ZLogDebug($"KickEstimators.Process active estimator finished; clearing estimator group");
             _estimators.Clear();
         }
         else
         {
-            if (finishedEstimators.Count > 0)
-            {
-                Log.ZLogDebug(
-                    $"KickEstimators.Process removing finished estimators while keeping active group: {finishedEstimators.Count}");
-            }
-
             _estimators.RemoveAll(estimator => finishedEstimators.Contains(estimator));
         }
 
         if (detectedKick != null)
         {
-            Log.ZLogDebug(
-                $"KickEstimators.Process enqueue detected kick: robot={detectedKick.RobotId}, ts={detectedKick.Timestamp.Seconds:F3}, pos={detectedKick.KickPosition}");
             EnqueueWithLimit(_kickEventHistory, detectedKick, KickEventHistorySize);
-        }
-        else
-        {
-            Log.ZLogDebug($"KickEstimators.Process no detected kick this tick");
         }
 
         UpdateEstimators(detectedKick);
-
-        Log.ZLogDebug(
-            $"KickEstimators.Process end: estimators={_estimators.Count}, lastBestEstimatorSet={_lastBestEstimator != null}, lastKickTs={_lastKickTimestamp.Seconds:F3}");
 
         return new KickEstimatorsUpdateResult(
             GetBestKickFitResult(timestamp));
@@ -122,43 +94,28 @@ public partial class KickEstimators
         var kickDirection = kickEvent?.GetKickDirection();
         if (!kickDirection.HasValue || (kickEvent == null))
         {
-            Log.ZLogDebug(
-                $"KickEstimators.UpdateEstimators skipped: kickEvent={(kickEvent != null)}, hasDirection={kickDirection.HasValue}");
             return;
         }
 
         var flatEstimator = _estimators.FirstOrDefault();
-        Log.ZLogDebug(
-            $"KickEstimators.UpdateEstimators start: currentEstimators={_estimators.Count}, hasLastBest={_lastBestEstimator != null}, kickTs={kickEvent.Timestamp.Seconds:F3}");
 
         if (_lastBestEstimator != null)
         {
             var lastFit = _lastBestEstimator.GetFitResult();
             if ((lastFit != null) && ShouldSpawnNewEstimator(lastFit, kickEvent, kickDirection.Value))
             {
-                Log.ZLogDebug(
-                    $"KickEstimators.UpdateEstimators spawning new estimator because kick deviates from last fit");
                 flatEstimator = new DirectKickEstimator(kickEvent, _filteredBallHistory.ToList());
-            }
-            else
-            {
-                Log.ZLogDebug(
-                    $"KickEstimators.UpdateEstimators reusing current estimator group: lastFitExists={(lastFit != null)}");
             }
         }
 
         if (flatEstimator == null)
         {
-            Log.ZLogDebug($"KickEstimators.UpdateEstimators creating first estimator for kick");
             flatEstimator = new DirectKickEstimator(kickEvent, _filteredBallHistory.ToList());
         }
 
         _estimators.Clear();
         _estimators.Add(flatEstimator);
         _lastKickTimestamp = kickEvent.Timestamp;
-
-        Log.ZLogDebug(
-            $"KickEstimators.UpdateEstimators end: estimators={_estimators.Count}, lastKickTs={_lastKickTimestamp.Seconds:F3}");
     }
 
     private static bool ShouldSpawnNewEstimator(
@@ -190,9 +147,6 @@ public partial class KickEstimators
             .Where(estimator => estimator.GetFitResult() is { AvgDistance: > 0.0 })
             .MinBy(estimator => estimator.GetFitResult()!.AvgDistance);
 
-        Log.ZLogDebug(
-            $"KickEstimators.GetBestKickFitResult start: estimators={_estimators.Count}, candidateBest={(bestEstimator != null)}, hasLastBest={_lastBestEstimator != null}");
-
         if (bestEstimator != null)
         {
             var bestFit = bestEstimator.GetFitResult()!;
@@ -204,43 +158,33 @@ public partial class KickEstimators
                 || (bestEstimator == _lastBestEstimator)
                 || (bestFit.AvgDistance < (lastBestFit.AvgDistance * (1.0 - EstimatorSwitchHysteresis))))
             {
-                Log.ZLogDebug(
-                    $"KickEstimators.GetBestKickFitResult promoting estimator: avgDistance={bestFit.AvgDistance:F3}");
                 _lastBestEstimator = bestEstimator;
             }
         }
         else
         {
-            Log.ZLogDebug($"KickEstimators.GetBestKickFitResult no candidate best estimator");
             _lastBestEstimator = null;
         }
 
         if (_lastBestEstimator == null)
         {
-            Log.ZLogDebug($"KickEstimators.GetBestKickFitResult returning null because no last best estimator");
             return null;
         }
 
         var lastBest = _lastBestEstimator.GetFitResult();
         if (lastBest == null)
         {
-            Log.ZLogDebug($"KickEstimators.GetBestKickFitResult returning null because last best has no fit");
             return null;
         }
 
         if ((timestamp - _lastKickTimestamp).Seconds > 0.5)
         {
-            Log.ZLogDebug(
-                $"KickEstimators.GetBestKickFitResult pruning worse estimators after 0.5s window: tsSinceKick={(timestamp - _lastKickTimestamp).Seconds:F3}");
             _estimators.RemoveAll(estimator =>
             {
                 var fit = estimator.GetFitResult();
                 return (fit != null) && (fit.AvgDistance > lastBest.AvgDistance);
             });
         }
-
-        Log.ZLogDebug(
-            $"KickEstimators.GetBestKickFitResult returning fit: avgDistance={lastBest.AvgDistance:F3}, solver={lastBest.SolverName}");
         return lastBest;
     }
 

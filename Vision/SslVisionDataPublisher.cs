@@ -38,7 +38,6 @@ public sealed partial class SslVisionDataPublisher : IDisposable
 
             if (data.Geometry.BallModels.HasValue)
             {
-                Log.ZLogCritical($"ball models: {data.Geometry.BallModels.Value.StraightTwoPhase.Value.AccRoll}");
                 Hub.BallModels.Publish(data.Geometry.BallModels.Value);
             }
         }

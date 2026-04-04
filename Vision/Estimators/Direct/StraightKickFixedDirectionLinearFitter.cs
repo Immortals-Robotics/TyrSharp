@@ -14,7 +14,7 @@ public class StraightKickFixedDirectionLinearFitter
 
         var numRecords = ballRecords.Count;
         var tZero = ballRecords[0].CaptureTimestamp;
-        double acc = BallParameters.EffectiveAccelerationSlide;
+        double acc = BallParameters.AccelerationSlide;
 
         List<Vector2> groundPos = ballRecords
             .Select(record => record.Detection.Position)

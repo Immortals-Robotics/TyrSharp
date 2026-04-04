@@ -104,9 +104,6 @@ public sealed partial class Vision
         var kickEstimatorsUpdateResult =
             _ballHelpers.KickEstimators.Process(kick, mergedBall, robots, timestamp, _lastFilteredFrame.Ball);
 
-        Log.ZLogDebug(
-            $"Vision.GenerateFilteredFrame estimator update: mergedBall={(mergedBall != null)}, kick={(kick != null)}, estimators={_ballHelpers.KickEstimators.ActiveEstimators.Count}, hasBestFit={(kickEstimatorsUpdateResult.BestFitResult != null)}");
-
         var bestKickFitResult = kickEstimatorsUpdateResult.BestFitResult;
 
         FilteredBall ball;
@@ -158,9 +155,9 @@ public sealed partial class Vision
                         Position3D = mergedBall.Value.Position.Xyz(),
                         Velocity = mergedBall.Value.Velocity.Xyz(),
                         Acceleration = mergedBall.Value.Velocity
-                            .WithLength(-BallParameters.EffectiveAccelerationRoll)
+                            .WithLength(-BallParameters.AccelerationRoll)
                             .Xyz(),
-                        SpinRadians = mergedBall.Value.Velocity / BallParameters.EffectiveRadius
+                        SpinRadians = mergedBall.Value.Velocity / BallParameters.Radius
                     }
                 };
             }

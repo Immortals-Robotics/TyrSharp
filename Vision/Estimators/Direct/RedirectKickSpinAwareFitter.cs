@@ -97,7 +97,7 @@ public class RedirectKickSpinAwareFitter
     private bool IsNotRedirect()
     {
         // If the inbound spin corresponds to less than 1m/s surface speed, treat it as a normal straight kick.
-        return (_initialSpin * BallParameters.EffectiveRadius).Length() <= 1000f;
+        return (_initialSpin * BallParameters.Radius).Length() <= 1000f;
     }
 
     private static Vector2? GetKickDirection(List<RawBall> ballRecords)
