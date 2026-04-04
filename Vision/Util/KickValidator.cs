@@ -135,7 +135,7 @@ public partial class KickValidator
             }
         }
 
-        return default;
+        return null;
     }
 
     private bool DistanceValidator(List<MergedBall> balls, List<FilteredRobot> robots)
