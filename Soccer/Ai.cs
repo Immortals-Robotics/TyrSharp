@@ -78,6 +78,18 @@ public partial class Ai
             Referee = referee,
             Field = field,
         };
+
+        // Draw ball trajectory for next 5 seconds
+        var ballTrajectoryDuration = DeltaTime.FromSeconds(5);
+        var trajectorySteps = 50;
+        var stepTime = ballTrajectoryDuration / trajectorySteps;
+
+        for (var i = 0; i < trajectorySteps; i++)
+        {
+            var futureTime = now + stepTime * i;
+            var futureBall = vision.Ball.Extrapolate(futureTime);
+            Draw.DrawCircle(futureBall.State.Position, 20f, Color.Red, options: Options.Outline());
+        }
     }
 
     public void PublishCommands()
@@ -130,7 +142,7 @@ public partial class Ai
 
         foreach (var robot in Context.OwnRobots)
         {
-            if (!robot.Seen)
+            if (!robot.Seen || true)
             {
                 robot.Halt();
             }
