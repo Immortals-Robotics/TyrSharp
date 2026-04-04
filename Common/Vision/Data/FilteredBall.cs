@@ -16,7 +16,9 @@ public readonly record struct FilteredBall
         return new FilteredBall
         {
             Timestamp = timestamp,
-            LastVisibleTimestamp = LastVisibleTimestamp + dt, // TODO: why + dt?
+            LastVisibleTimestamp =
+                LastVisibleTimestamp +
+                dt, // TODO: why + dt? + Mhmmd: shouldn't it be Timestamp? and we never used it in the place that we Extrapolate
             State = trajectory.GetState(dt)
         };
     }

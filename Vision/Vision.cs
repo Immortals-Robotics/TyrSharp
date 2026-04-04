@@ -6,6 +6,7 @@ using Tyr.Common.Time;
 using Tyr.Common.Vision.Data;
 using Tyr.Vision.Data;
 using Tyr.Vision.Tracking;
+using Tyr.Vision.Util;
 
 namespace Tyr.Vision;
 
@@ -18,10 +19,13 @@ public sealed partial class Vision
 
     private FilteredFrame _lastFilteredFrame = new();
 
+    private BallHelpers _ballHelpers = new();
+
     private readonly Dictionary<uint, Camera> _cameras = [];
 
     private readonly BallMerger _ballMerger = new();
     private readonly RobotMerger _robotMerger = new();
+
 
     private Camera GetOrCreateCamera(uint id)
     {
@@ -85,6 +89,18 @@ public sealed partial class Vision
         var robots = _robotMerger.Process(_cameras.Values, timestamp);
 
         var mergedBall = _ballMerger.Process(_cameras.Values, timestamp, _lastFilteredFrame.Ball);
+
+        var kick = _ballHelpers.DetectKick(mergedBall, robots);
+
+        if (kick != null)
+        {
+            var kickDirection = kick.GetKickDirection();
+
+            DrawDetectedKick(kick, kickDirection);
+            Log.ZLogDebug(
+                $"Detected kick by {kick.RobotId} at {kick.KickPosition}, dir: {kickDirection}, ts: {kick.Timestamp.Seconds:F3}, fast: {kick.IsFastDetection}");
+        }
+
         FilteredBall ball;
         if (mergedBall != null)
         {
@@ -95,8 +111,10 @@ public sealed partial class Vision
                 {
                     Position3D = mergedBall.Value.Position.Xyz(),
                     Velocity = mergedBall.Value.Velocity.Xyz(),
-                    Acceleration = mergedBall.Value.Velocity.WithLength(-BallParameters.AccelerationRoll).Xyz(),
-                    SpinRadians = mergedBall.Value.Velocity / BallParameters.Radius
+                    Acceleration =
+                        mergedBall.Value.Velocity.WithLength(-BallParameters.AccelerationRoll)
+                            .Xyz(), // Todo: this should be changed
+                    SpinRadians = mergedBall.Value.Velocity / BallParameters.Radius // Todo: this should be changed
                 },
                 LastVisibleTimestamp = mergedBall.Value.LatestRawBall?.CaptureTimestamp ??
                                        _lastFilteredFrame.Ball.LastVisibleTimestamp,
@@ -104,6 +122,7 @@ public sealed partial class Vision
         }
         else
         {
+            // Todo: Why? , maybe reset helpers?
             ball = _lastFilteredFrame.Ball with
             {
                 Timestamp = timestamp,

@@ -2,6 +2,7 @@
 using Tyr.Common.Debug.Drawing;
 using Tyr.Common.Debug.Drawing.Drawables;
 using Tyr.Common.Vision.Data;
+using Tyr.Vision.Data;
 
 namespace Tyr.Vision;
 
@@ -45,5 +46,25 @@ public sealed partial class Vision
 
         Plot.Plot($"ball position", ball.State.Position3D, "pos (mm)");
         Plot.Plot($"ball velocity", ball.State.Velocity, "vel (mm/s)");
+    }
+
+    private static void DrawDetectedKick(DetectedKick kick, Vector2? kickDirection)
+    {
+        Draw.BeginLayer(Layer);
+
+        Draw.DrawCircle(kick.KickPosition, 70f, Color.Red400, Options.Outline(20f));
+        Draw.DrawRobot(kick.RobotState.Position, kick.RobotState.Angle, kick.RobotId,
+            options: Options.Outline(20f));
+        Draw.DrawText($"kick {kick.RobotId}",
+            kick.KickPosition + new Vector2(0f, -90f), 50f,
+            Color.Red200, TextAlignment.TopCenter);
+
+        if (kickDirection.HasValue && kickDirection.Value != Vector2.Zero)
+        {
+            Draw.DrawArrow(kick.KickPosition, kick.KickPosition + kickDirection.Value.WithLength(450f),
+                Color.Red500, Options.Outline(5f));
+        }
+
+        Draw.EndLayer();
     }
 }
