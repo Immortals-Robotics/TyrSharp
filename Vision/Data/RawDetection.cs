@@ -14,7 +14,7 @@ public readonly record struct RawDetection<T> where T : Detection.IObject
     public Timestamp CaptureTimestamp { get; }
     public Timestamp SentTimestamp { get; }
     public Timestamp? CameraCaptureTimestamp { get; }
-
+ 
     public bool IsBall => typeof(T) == typeof(Detection.Ball);
     public bool IsRobot => typeof(T) == typeof(Detection.Robot);
 

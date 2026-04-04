@@ -21,22 +21,23 @@ public class BallFlat : IBallTrajectory
         _initial = initial;
 
         // compute relative velocity of ball to ground surface, if ball is rolling this is close to zero
-        var contactVelocity = initial.Velocity.Xy() - initial.SpinRadians * Data.BallParameters.Radius;
+        var contactVelocity = initial.Velocity.Xy() - initial.SpinRadians * Data.BallParameters.EffectiveRadius;
 
         if (contactVelocity.Length() < 0.01f)
         {
             // ball is rolling
-            _accelerationSlide = initial.Velocity.Xy().WithLength(Data.BallParameters.AccelerationRoll);
-            _accelerationSlideSpin = _accelerationSlide / Data.BallParameters.Radius;
+            _accelerationSlide = initial.Velocity.Xy().WithLength(Data.BallParameters.EffectiveAccelerationRoll);
+            _accelerationSlideSpin = _accelerationSlide / Data.BallParameters.EffectiveRadius;
             _switchTime = DeltaTime.Zero;
         }
         else
         {
             // ball is sliding
-            _accelerationSlide = contactVelocity.WithLength(Data.BallParameters.AccelerationSlide);
-            _accelerationSlideSpin = _accelerationSlide / (Data.BallParameters.Radius * Data.BallParameters.InertiaDistribution);
+            _accelerationSlide = contactVelocity.WithLength(Data.BallParameters.EffectiveAccelerationSlide);
+            _accelerationSlideSpin = _accelerationSlide /
+                                     (Data.BallParameters.EffectiveRadius * Data.BallParameters.InertiaDistribution);
             var f = 1f / (1f + 1f / Data.BallParameters.InertiaDistribution);
-            var slideVel = ((initial.SpinRadians * Data.BallParameters.Radius) - initial.Velocity.Xy()) * f;
+            var slideVel = ((initial.SpinRadians * Data.BallParameters.EffectiveRadius) - initial.Velocity.Xy()) * f;
 
             _switchTime = MathF.Abs(_accelerationSlide.X) > MathF.Abs(_accelerationSlide.Y)
                 ? DeltaTime.FromSeconds(slideVel.X / _accelerationSlide.X)
@@ -48,12 +49,21 @@ public class BallFlat : IBallTrajectory
                           initial.Velocity.Xy() * (float)_switchTime.Seconds +
                           _accelerationSlide * (float)(0.5 * _switchTime.Seconds * _switchTime.Seconds);
 
-        _accelerationRoll = _switchVelocity.WithLength(Data.BallParameters.AccelerationRoll);
+        _accelerationRoll = _switchVelocity.WithLength(Data.BallParameters.EffectiveAccelerationRoll);
     }
 
     public BallState GetState(DeltaTime time)
     {
-        if (time.Seconds <= 0f) return _initial;
+        if (time.Seconds < 0f)
+        {
+            return new BallState
+            {
+                Position3D = _initial.Position3D,
+                Velocity = _initial.Velocity,
+                Acceleration = Vector3.Zero,
+                SpinRadians = _initial.SpinRadians
+            };
+        }
 
         if (time < _switchTime)
         {
@@ -74,31 +84,34 @@ public class BallFlat : IBallTrajectory
                 SpinRadians = spinRadians
             };
         }
-        else
-        {
-            var t2 = DeltaTime.Min(time, RestTime()) - _switchTime;
-            var t2Seconds = (float)t2.Seconds;
 
-            var position = _switchPosition +
+        var t2 = time - _switchTime;
+        if (time > RestTime())
+        {
+            t2 = RestTime() - _switchTime;
+        }
+
+        var t2Seconds = (float)t2.Seconds;
+
+        var rollPosition = _switchPosition +
                            _switchVelocity * t2Seconds +
                            _accelerationRoll * (0.5f * t2Seconds * t2Seconds);
 
-            var velocity = _switchVelocity + _accelerationRoll * t2Seconds;
-            var spinRadians = velocity / Data.BallParameters.Radius;
+        var rollVelocity = _switchVelocity + _accelerationRoll * t2Seconds;
+        var rollSpinRadians = rollVelocity / Data.BallParameters.EffectiveRadius;
 
-            return new BallState
-            {
-                Position3D = position.Xyz(),
-                Velocity = velocity.Xyz(),
-                Acceleration = _accelerationRoll.Xyz(),
-                SpinRadians = spinRadians
-            };
-        }
+        return new BallState
+        {
+            Position3D = rollPosition.Xyz(),
+            Velocity = rollVelocity.Xyz(),
+            Acceleration = _accelerationRoll.Xyz(),
+            SpinRadians = rollSpinRadians
+        };
     }
 
     private DeltaTime RestTime()
     {
-        var tStop = DeltaTime.FromSeconds(-_switchVelocity.LengthSquared() / Data.BallParameters.AccelerationRoll);
+        var tStop = DeltaTime.FromSeconds(-_switchVelocity.Length() / Data.BallParameters.EffectiveAccelerationRoll);
         return _switchTime + tStop;
     }
 }

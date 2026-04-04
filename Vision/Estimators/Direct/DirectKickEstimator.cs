@@ -5,7 +5,6 @@ using Tyr.Common.Extensions;
 using Tyr.Common.Math.Shapes;
 using Tyr.Common.Time;
 using Tyr.Common.Vision.Data;
-using Tyr.Vision.Calibrators;
 using Tyr.Vision.Data;
 using Tyr.Vision.Trajectory;
 using Tyr.Vision.Util;
@@ -62,6 +61,9 @@ public partial class DirectKickEstimator
             ? new RedirectKickSpinAwareFitter(kick.RobotState.Angle, ballStateAtKick.Value)
             : new RedirectKickSpinAwareFitter(kick.RobotState.Angle);
 
+        Log.ZLogDebug(
+            $"DirectKickEstimator[{GetHashCode():X8}] created: rawBalls={rawBalls.Count}, filteredHistory={(filteredBalls?.Count ?? 0)}, avgKickSpeed={avgKickSpeed:F2}, hasBallStateAtKick={ballStateAtKick.HasValue}");
+
         RunSolvers();
     }
 
@@ -104,6 +106,8 @@ public partial class DirectKickEstimator
 
     public void AddCamBall(RawBall newRecord)
     {
+        Log.ZLogDebug(
+            $"DirectKickEstimator[{GetHashCode():X8}].AddCamBall: cam={newRecord.CameraId}, frame={newRecord.FrameNumber}, ts={newRecord.CaptureTimestamp.Seconds:F3}, recordsBefore={_records.Count}, allRecordsBefore={_allRecords.Count}");
         _records.Add(newRecord);
         _allRecords.Add(newRecord);
 
@@ -113,58 +117,38 @@ public partial class DirectKickEstimator
 
     public DirectKickFitResult? GetFitResult() => _fitResult;
 
-    public List<IKickModelIdentification> GetModelIdentifications()
-    {
-        List<IKickModelIdentification> result = [];
-
-        if (_allRecords.Count < 20)
-        {
-            return result;
-        }
-
-        var timeAfterKick = _allRecords[0].CaptureTimestamp + DeltaTime.FromSeconds(0.5);
-        var usedRecords = _allRecords
-            .Where(record => (record.CaptureTimestamp < timeAfterKick)
-                             || Tyr.Vision.Vision.FieldSize.Rectangle.Inside(record.Detection.Position, -100f))
-            .ToList();
-
-        var straightResult = new StraightBallModelCalibrator().Calibrate(usedRecords);
-        if (straightResult != null)
-        {
-            result.Add(straightResult);
-        }
-
-        var redirectResult = _solverRedirect.IdentifyModel(usedRecords);
-        if (redirectResult != null)
-        {
-            result.Add(redirectResult);
-        }
-
-        return result;
-    }
-
     public bool IsDone(List<FilteredRobot> mergedRobots, Timestamp timestamp)
     {
         if (_allRecords.Count == 0)
+        {
+            Log.ZLogDebug($"DirectKickEstimator[{GetHashCode():X8}].IsDone=false: no records");
             return false;
+        }
 
         if (((_allRecords[^1].CaptureTimestamp - _allRecords[0].CaptureTimestamp).Seconds) < 0.1)
         {
+            Log.ZLogDebug(
+                $"DirectKickEstimator[{GetHashCode():X8}].IsDone=false: record span={(_allRecords[^1].CaptureTimestamp - _allRecords[0].CaptureTimestamp).Seconds:F3} < 0.1");
             return false;
         }
 
         if ((_allRecords.Count > 20) && IsMaxDirectionErrorExceeded(_allRecords))
         {
+            Log.ZLogDebug(
+                $"DirectKickEstimator[{GetHashCode():X8}].IsDone=true: max direction error exceeded");
             return true;
         }
 
         if (_fitResult == null)
         {
+            Log.ZLogDebug($"DirectKickEstimator[{GetHashCode():X8}].IsDone=false: no fit result");
             return false;
         }
 
         if (_fitResult.AvgDistance > MaxFittingError)
         {
+            Log.ZLogDebug(
+                $"DirectKickEstimator[{GetHashCode():X8}].IsDone=true: avgDistance={_fitResult.AvgDistance:F3} > max={MaxFittingError:F3}");
             return true;
         }
 
@@ -176,10 +160,24 @@ public partial class DirectKickEstimator
 
         if (minDistToRobot < Tyr.Vision.Vision.FieldSize.RobotRadius.GetValueOrDefault(90f))
         {
+            Log.ZLogDebug(
+                $"DirectKickEstimator[{GetHashCode():X8}].IsDone=true: ball reached robot, minDist={minDistToRobot:F3}");
             return true;
         }
 
-        return !Tyr.Vision.Vision.FieldSize.Rectangle.Inside(posNow, 100f);
+        var insideField = Tyr.Vision.Vision.FieldSize.Rectangle.Inside(posNow, 100f);
+        if (!insideField)
+        {
+            Log.ZLogDebug(
+                $"DirectKickEstimator[{GetHashCode():X8}].IsDone=true: ball left field at {posNow}");
+        }
+        else
+        {
+            Log.ZLogDebug(
+                $"DirectKickEstimator[{GetHashCode():X8}].IsDone=false: fit ok, inside field, minDistToRobot={minDistToRobot:F3}, avgDistance={_fitResult.AvgDistance:F3}");
+        }
+
+        return !insideField;
     }
 
     private static FilteredBall? TryGetBallStateAtKick(DetectedKick kick, IReadOnlyList<FilteredBall> filteredBalls)
@@ -216,6 +214,8 @@ public partial class DirectKickEstimator
             return;
         }
 
+        Log.ZLogDebug(
+            $"DirectKickEstimator[{GetHashCode():X8}].PruneRecords removing index {_pruneIndex} from {_records.Count} records");
         _records.RemoveAt(_pruneIndex);
         _pruneIndex++;
 
@@ -227,29 +227,60 @@ public partial class DirectKickEstimator
 
     private void RunSolvers()
     {
+        Log.ZLogDebug(
+            $"DirectKickEstimator[{GetHashCode():X8}].RunSolvers start: records={_records.Count}, allRecords={_allRecords.Count}");
         var results = new List<DirectKickFitResult>();
 
         var sliding = StraightKickFixedDirectionLinearFitter.Solve(_records);
         if (sliding != null)
         {
+            Log.ZLogDebug(
+                $"DirectKickEstimator[{GetHashCode():X8}].RunSolvers linear solver succeeded");
             results.Add(GenerateFitResult(sliding));
+        }
+        else
+        {
+            Log.ZLogDebug(
+                $"DirectKickEstimator[{GetHashCode():X8}].RunSolvers linear solver returned null");
         }
 
         var full = _solverFull.Solve(_records);
         if (full != null)
         {
+            Log.ZLogDebug(
+                $"DirectKickEstimator[{GetHashCode():X8}].RunSolvers nonlinear solver succeeded");
             results.Add(GenerateFitResult(full));
+        }
+        else
+        {
+            Log.ZLogDebug(
+                $"DirectKickEstimator[{GetHashCode():X8}].RunSolvers nonlinear solver returned null");
         }
 
         var redirect = _solverRedirect.Solve(_records);
         if (redirect != null)
         {
+            Log.ZLogDebug(
+                $"DirectKickEstimator[{GetHashCode():X8}].RunSolvers redirect solver succeeded");
             var redirectFit = GenerateFitResult(redirect);
-            results.Add(redirectFit with { AvgDistance = redirectFit.AvgDistance * 0.5 });
+            results.Add(new DirectKickFitResult(
+                redirectFit.GroundProjection,
+                redirectFit.AvgDistance * 0.5,
+                redirectFit.Trajectory,
+                redirectFit.KickTimestamp,
+                redirectFit.SolverName));
+        }
+        else
+        {
+            Log.ZLogDebug(
+                $"DirectKickEstimator[{GetHashCode():X8}].RunSolvers redirect solver returned null");
         }
 
         _activeSolvers = results;
         _fitResult = results.MinBy(result => result.AvgDistance);
+
+        Log.ZLogDebug(
+            $"DirectKickEstimator[{GetHashCode():X8}].RunSolvers end: activeSolvers={_activeSolvers.Count}, hasBestFit={_fitResult != null}, bestAvgDistance={_fitResult?.AvgDistance}");
     }
 
     private DirectKickFitResult GenerateFitResult(SolvedKick result)
@@ -286,7 +317,7 @@ public partial class DirectKickEstimator
             .Select(ball => ball.Detection.Position)
             .ToList();
 
-        var lastLine = BallHelpers.GetKickDirection(lastRecords);
+        var lastLine = BallHelpers.GetKickDirectionByRegressionLine(lastRecords);
         _fitLastLine = lastLine?.Item1;
 
         if ((lastLine == null) || (_fitResult == null))
@@ -308,19 +339,4 @@ public partial class DirectKickEstimator
         return angleDeg > MaxDirectionErrorDegrees;
     }
 
-    public sealed record DirectKickFitResult(
-        IReadOnlyList<Vector2> GroundProjection,
-        double AvgDistance,
-        IBallTrajectory Trajectory,
-        Timestamp KickTimestamp,
-        string SolverName)
-    {
-        public Vector2 KickPosition => Trajectory.GetState(DeltaTime.Zero).Position;
-        public Vector3 KickVelocity => Trajectory.GetState(DeltaTime.Zero).Velocity;
-
-        public BallState GetState(Timestamp timestamp)
-        {
-            return Trajectory.GetState(timestamp - KickTimestamp);
-        }
-    }
 }

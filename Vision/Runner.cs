@@ -3,6 +3,7 @@ using Tyr.Common.Config;
 using Tyr.Common.Data.Ssl.Vision.Geometry;
 using Tyr.Common.Dataflow;
 using Tyr.Common.Runner;
+using Tyr.Vision.Data;
 using Tyr.Vision.Trajectory;
 
 namespace Tyr.Vision;
@@ -15,6 +16,7 @@ public sealed partial class Runner : IDisposable
     private readonly Subscriber<Detection.Frame> _detectionSubscriber = Hub.RawDetection.Subscribe(Mode.All);
 
     private readonly Subscriber<FieldSize> _fieldSizeSubscriber = Hub.FieldSize.Subscribe(Mode.Latest);
+    private readonly Subscriber<BallModels> _ballModelsSubscriber = Hub.BallModels.Subscribe(Mode.Latest);
     private readonly Subscriber<CameraCalibration> _calibrationSubscriber = Hub.CameraCalibration.Subscribe(Mode.All);
 
     private readonly RunnerSync _runner;
@@ -34,6 +36,12 @@ public sealed partial class Runner : IDisposable
         if (_fieldSizeSubscriber.Reader.TryRead(out var fieldSize))
         {
             Vision.FieldSize = fieldSize;
+            BallParameters.Apply(fieldSize);
+        }
+
+        if (_ballModelsSubscriber.Reader.TryRead(out var ballModels))
+        {
+            BallParameters.Apply(ballModels);
         }
 
         _vision.Process(_detectionSubscriber.All(), _calibrationSubscriber.All());

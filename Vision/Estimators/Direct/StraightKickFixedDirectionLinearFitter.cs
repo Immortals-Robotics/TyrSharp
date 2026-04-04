@@ -14,13 +14,13 @@ public class StraightKickFixedDirectionLinearFitter
 
         var numRecords = ballRecords.Count;
         var tZero = ballRecords[0].CaptureTimestamp;
-        double acc = BallParameters.AccelerationSlide;
+        double acc = BallParameters.EffectiveAccelerationSlide;
 
         List<Vector2> groundPos = ballRecords
             .Select(record => record.Detection.Position)
             .ToList();
 
-        var estimated = BallHelpers.GetKickDirection(groundPos);
+        var estimated = BallHelpers.GetKickDirectionByRegressionLine(groundPos);
         if (estimated == null)
             return null;
         var (_, dir) = estimated.Value;

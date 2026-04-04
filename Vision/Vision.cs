@@ -101,39 +101,71 @@ public sealed partial class Vision
                 $"Detected kick by {kick.RobotId} at {kick.KickPosition}, dir: {kickDirection}, ts: {kick.Timestamp.Seconds:F3}, fast: {kick.IsFastDetection}");
         }
 
+        var kickEstimatorsUpdateResult =
+            _ballHelpers.KickEstimators.Process(kick, mergedBall, robots, timestamp, _lastFilteredFrame.Ball);
+
+        Log.ZLogDebug(
+            $"Vision.GenerateFilteredFrame estimator update: mergedBall={(mergedBall != null)}, kick={(kick != null)}, estimators={_ballHelpers.KickEstimators.ActiveEstimators.Count}, hasBestFit={(kickEstimatorsUpdateResult.BestFitResult != null)}");
+
+        var bestKickFitResult = kickEstimatorsUpdateResult.BestFitResult;
+
         FilteredBall ball;
-        if (mergedBall != null)
+        if (mergedBall == null)
         {
-            ball = new FilteredBall()
+            ball = new FilteredBall
             {
                 Timestamp = timestamp,
-                State = new BallState()
+                LastVisibleTimestamp = _lastFilteredFrame.Ball.LastVisibleTimestamp,
+                State = new BallState
                 {
-                    Position3D = mergedBall.Value.Position.Xyz(),
-                    Velocity = mergedBall.Value.Velocity.Xyz(),
-                    Acceleration =
-                        mergedBall.Value.Velocity.WithLength(-BallParameters.AccelerationRoll)
-                            .Xyz(), // Todo: this should be changed
-                    SpinRadians = mergedBall.Value.Velocity / BallParameters.Radius // Todo: this should be changed
-                },
-                LastVisibleTimestamp = mergedBall.Value.LatestRawBall?.CaptureTimestamp ??
-                                       _lastFilteredFrame.Ball.LastVisibleTimestamp,
+                    Position3D = _lastFilteredFrame.Ball.State.Position3D,
+                    Velocity = Vector3.Zero,
+                    Acceleration = Vector3.Zero,
+                    SpinRadians = Vector2.Zero
+                }
             };
         }
         else
         {
-            // Todo: Why? , maybe reset helpers?
-            ball = _lastFilteredFrame.Ball with
+            var lastVisibleTimestamp = mergedBall.Value.LatestRawBall?.CaptureTimestamp
+                                       ?? _lastFilteredFrame.Ball.LastVisibleTimestamp;
+
+            if (bestKickFitResult != null)
             {
-                Timestamp = timestamp,
-                State = _lastFilteredFrame.Ball.State with
+                var stateNow = bestKickFitResult.GetState(timestamp);
+                var position3D = stateNow.IsChipped
+                    ? stateNow.Position3D
+                    : mergedBall.Value.Position.Xyz();
+
+                ball = new FilteredBall
                 {
-                    Velocity = Vector3.Zero,
-                    Acceleration = Vector3.Zero,
-                    SpinRadians = Vector2.Zero,
-                },
-            };
+                    Timestamp = timestamp,
+                    LastVisibleTimestamp = lastVisibleTimestamp,
+                    State = stateNow with
+                    {
+                        Position3D = position3D
+                    }
+                };
+            }
+            else
+            {
+                ball = new FilteredBall
+                {
+                    Timestamp = timestamp,
+                    LastVisibleTimestamp = lastVisibleTimestamp,
+                    State = new BallState
+                    {
+                        Position3D = mergedBall.Value.Position.Xyz(),
+                        Velocity = mergedBall.Value.Velocity.Xyz(),
+                        Acceleration = mergedBall.Value.Velocity
+                            .WithLength(-BallParameters.EffectiveAccelerationRoll)
+                            .Xyz(),
+                        SpinRadians = mergedBall.Value.Velocity / BallParameters.EffectiveRadius
+                    }
+                };
+            }
         }
+
 
         var frame = new FilteredFrame()
         {

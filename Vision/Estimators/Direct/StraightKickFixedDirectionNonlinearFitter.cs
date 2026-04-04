@@ -32,7 +32,7 @@ public class StraightKickFixedDirectionNonlinearFitter
             .Select(record => record.Detection.Position)
             .ToList();
 
-        var estimated = BallHelpers.GetKickDirection(groundPos);
+        var estimated = BallHelpers.GetKickDirectionByRegressionLine(groundPos);
         if (estimated == null)
             return null;
 

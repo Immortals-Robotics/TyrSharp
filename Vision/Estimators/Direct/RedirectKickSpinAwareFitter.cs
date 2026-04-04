@@ -39,45 +39,6 @@ public class RedirectKickSpinAwareFitter
         _kickingBotOrientation = kickingBotOrientation;
     }
 
-    public RedirectKickModelIdentification? IdentifyModel(List<RawBall> ballRecords)
-    {
-        if (ballRecords.Count == 0 || IsNotRedirect())
-            return null;
-
-        var kickDirection = _fixedKickDirection ?? GetKickDirection(ballRecords);
-        if (kickDirection == null)
-            return null;
-
-        ComputeFixedKickDirection(ballRecords);
-        EnsureInitialGuess(ballRecords, kickDirection.Value);
-
-        var tZero = ballRecords[0].CaptureTimestamp;
-        var minError = double.MaxValue;
-        var minFactor = 0d;
-
-        for (var factor = 0d; factor <= 1.0 + (SpinFactorStep * 0.5); factor += SpinFactorStep)
-        {
-            var result = SolveNonlinear(ballRecords, kickDirection.Value, _initialSpin * (float)factor);
-            if (!(result.Error < minError)) continue;
-            minError = result.Error;
-            minFactor = factor;
-        }
-
-        var solved = SolveNonlinear(ballRecords, kickDirection.Value, _initialSpin * (float)minFactor);
-        var inboundVelocity = _initialSpin * BallParameters.Radius;
-
-        return new RedirectKickModelIdentification(
-            new Vector3(solved.KickVelocity.X, solved.KickVelocity.Y, 0f),
-            solved.KickPosition,
-            tZero,
-            minFactor,
-            Angle.FromVector(-_initialSpin) - _kickingBotOrientation,
-            inboundVelocity.Length(),
-            Angle.FromVector(solved.KickVelocity) - _kickingBotOrientation,
-            solved.KickVelocity.Length(),
-            ballRecords.Count);
-    }
-
     public SolvedKick? Solve(List<RawBall> ballRecords)
     {
         if (ballRecords.Count == 0 || IsNotRedirect())
@@ -136,12 +97,12 @@ public class RedirectKickSpinAwareFitter
     private bool IsNotRedirect()
     {
         // If the inbound spin corresponds to less than 1m/s surface speed, treat it as a normal straight kick.
-        return (_initialSpin * BallParameters.Radius).Length() <= 1000f;
+        return (_initialSpin * BallParameters.EffectiveRadius).Length() <= 1000f;
     }
 
     private static Vector2? GetKickDirection(List<RawBall> ballRecords)
     {
-        var estimated = BallHelpers.GetKickDirection(ballRecords
+        var estimated = BallHelpers.GetKickDirectionByRegressionLine(ballRecords
             .Select(record => record.Detection.Position)
             .ToList());
         return estimated?.Item2;
@@ -209,21 +170,6 @@ public class RedirectKickSpinAwareFitter
         var error = model.Value(point);
 
         return new NonlinearSolveResult(kickPosition, kickVelocity, error);
-    }
-
-    public sealed record RedirectKickModelIdentification(
-        Vector3 KickVelocity,
-        Vector2 KickPosition,
-        Timestamp KickTimestamp,
-        double SpinFactor,
-        Angle InAngle,
-        double InSpeed,
-        Angle OutAngle,
-        double OutSpeed,
-        int SampleAmount) : IKickModelIdentification
-    {
-        public Vector2 InVelocity => InAngle.ToUnitVec() * (float)InSpeed;
-        public Vector2 OutVelocity => OutAngle.ToUnitVec() * (float)OutSpeed;
     }
 
     private sealed record NonlinearSolveResult(Vector2 KickPosition, Vector2 KickVelocity, double Error);

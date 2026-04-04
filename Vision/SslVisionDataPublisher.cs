@@ -18,11 +18,8 @@ public sealed partial class SslVisionDataPublisher : IDisposable
 
     public SslVisionDataPublisher()
     {
-        Configurable.OnUpdated += _ =>
-        {
-            _udpReceiver?.ChangeAddress(Address);
-        };
-        
+        Configurable.OnUpdated += _ => { _udpReceiver?.ChangeAddress(Address); };
+
         _udpReceiver = new UdpReceiver<WrapperPacket>(Address, OnData, "SslVision");
         Log.ZLogInformation($"SSL Vision Data publisher initialized on {Address}.");
     }
@@ -40,7 +37,10 @@ public sealed partial class SslVisionDataPublisher : IDisposable
                 Hub.CameraCalibration.Publish(calibration);
 
             if (data.Geometry.BallModels.HasValue)
+            {
+                Log.ZLogCritical($"ball models: {data.Geometry.BallModels.Value.StraightTwoPhase.Value.AccRoll}");
                 Hub.BallModels.Publish(data.Geometry.BallModels.Value);
+            }
         }
     }
 
