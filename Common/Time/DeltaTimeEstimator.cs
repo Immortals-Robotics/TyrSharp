@@ -19,7 +19,7 @@ public sealed class DeltaTimeEstimator
     /// </summary>
     public int Stride { get; init; } = 10;
 
-    private readonly LineEstimator _estimator;
+    private readonly LinearRegressionLineEstimator _estimator;
 
     // Offset is used to normalize frame IDs and timestamps to smaller deltas,
     // improving numerical stability for regression. All samples are stored as
@@ -36,7 +36,7 @@ public sealed class DeltaTimeEstimator
 
     public DeltaTimeEstimator()
     {
-        _estimator = new LineEstimator(HistoryCount);
+        _estimator = new LinearRegressionLineEstimator(HistoryCount);
     }
 
     /// <summary>
