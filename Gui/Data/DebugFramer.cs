@@ -12,17 +12,17 @@ public class DebugFramer
 
     private readonly Subscriber<Debug.Frame> _frameSubscriber = Hub.Frames.Subscribe(Mode.All);
 
-    public Dictionary<string, ModuleDebugFramer> Modules { get; } = [];
+    public Dictionary<string, ModuleTimeline> Modules { get; } = [];
 
     public Timestamp StartTime { get; private set; }
     public Timestamp EndTime { get; private set; }
     public DeltaTime Duration => EndTime - StartTime;
 
-    private ModuleDebugFramer GetOrCreateModuleFramer(string moduleName)
+    private ModuleTimeline GetOrCreateModuleFramer(string moduleName)
     {
         if (!Modules.TryGetValue(moduleName, out var moduleFramer))
         {
-            moduleFramer = new ModuleDebugFramer();
+            moduleFramer = new ModuleTimeline();
             Modules[moduleName] = moduleFramer;
         }
 
