@@ -190,15 +190,27 @@ public class ModuleTimeline
     {
         if (_frames.Count == 0) return null;
 
-        for (var index = FirstUnsealedFrameIndex; index < _frames.Count; index++)
+        var left = FirstUnsealedFrameIndex;
+        var right = _frames.Count - 1;
+
+        // The last frame may not have EndTimestamp set yet (not IsDefined),
+        // so shrink the search range to only defined frames.
+        while (right >= left && !_frames[right].IsDefined)
+            right--;
+
+        if (right < left) return null;
+
+        while (left <= right)
         {
-            Assert.IsFalse(_frames[index].IsSealed);
+            var mid = left + (right - left) / 2;
+            var frame = _frames[mid];
 
-            // we don't know the time range of this frame yet, so we can't assign it
-            if (!_frames[index].IsDefined) break;
-
-            if (_frames[index].StartTimestamp <= time && time <= _frames[index].EndTimestamp)
-                return _frames[index];
+            if (time < frame.StartTimestamp)
+                right = mid - 1;
+            else if (time > frame.EndTimestamp)
+                left = mid + 1;
+            else
+                return frame;
         }
 
         return null;
