@@ -1,4 +1,5 @@
 ﻿using System.Numerics;
+using Tyr.Common;
 using Tyr.Common.Config;
 using Tyr.Common.Data;
 using Tyr.Common.Data.Ssl;
@@ -89,6 +90,12 @@ public partial class Ai
             var futureTime = now + stepTime * i;
             var futureBall = vision.Ball.Extrapolate(futureTime);
             Draw.DrawCircle(futureBall.State.Position, 20f, Color.Red, options: Options.Outline());
+        }
+
+        var touchdown = vision.Ball.GetNextTouchdown();
+        if (touchdown.HasValue)
+        {
+            Draw.DrawPoint(touchdown.Value.Position, Color.Black);
         }
     }
 

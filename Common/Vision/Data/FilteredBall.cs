@@ -6,6 +6,14 @@ public readonly record struct FilteredBall
     public Timestamp LastVisibleTimestamp { get; init; }
     public BallState State { get; init; }
 
+    public BallTouchdown? GetNextTouchdown()
+    {
+        var trajectory = ServiceLocator.BallTrajectoryFactory.FromState(State);
+        return trajectory is IBallTouchdownTrajectory touchdownTrajectory
+            ? touchdownTrajectory.GetNextTouchdown()
+            : null;
+    }
+
     public FilteredBall Extrapolate(Timestamp timestamp)
     {
         if (timestamp <= Timestamp) return this;

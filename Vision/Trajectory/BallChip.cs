@@ -6,7 +6,7 @@ using Tyr.Vision.Data;
 
 namespace Tyr.Vision.Trajectory;
 
-public class BallChip : IBallTrajectory
+public class BallChip : IBallTrajectory, IBallTouchdownTrajectory
 {
     private const float Gravity = 9810f;
 
@@ -49,6 +49,30 @@ public class BallChip : IBallTrajectory
     public static BallChip FromKick(Vector2 kickPosition, Vector3 kickVelocity, Vector2 kickSpin)
     {
         return new BallChip(kickPosition, kickVelocity, kickSpin);
+    }
+
+    public BallTouchdown? GetNextTouchdown()
+    {
+        var airborne = (_initialPosition.Z > 0f) || (_initialVelocity.Z > 0f);
+        if (!airborne)
+        {
+            return null;
+        }
+
+        var discriminant = (_initialVelocity.Z * _initialVelocity.Z) + (2f * Gravity * _initialPosition.Z);
+        if (discriminant < 0f)
+        {
+            return null;
+        }
+
+        var touchdownTimeSeconds = (_initialVelocity.Z + MathF.Sqrt(discriminant)) / Gravity;
+        if (touchdownTimeSeconds <= 0f)
+        {
+            return null;
+        }
+
+        var touchdownPosition = _initialPosition.Xy() + (_initialVelocity.Xy() * touchdownTimeSeconds);
+        return new BallTouchdown(touchdownPosition, DeltaTime.FromSeconds(touchdownTimeSeconds));
     }
 
     public BallState GetState(DeltaTime time)
