@@ -12,7 +12,7 @@ using Tyr.Vision.Util;
 namespace Tyr.Vision.Estimators.Direct;
 
 [Configurable]
-public partial class DirectKickEstimator
+public partial class DirectKickEstimator : IKickEstimator
 {
     [ConfigEntry("Max fitting error until this estimator is dropped [mm]")]
     private static double MaxFittingError { get; set; } = 100.0;
@@ -27,11 +27,12 @@ public partial class DirectKickEstimator
     private readonly List<RawBall> _allRecords = [];
     private readonly StraightKickFixedDirectionNonlinearFitter _solverFull;
     private readonly RedirectKickSpinAwareFitter _solverRedirect;
+    private readonly BallTrajectoryFactory _trajectoryFactory = new();
 
     private int _pruneIndex = 1;
     private Line? _fitLastLine;
-    private DirectKickFitResult? _fitResult;
-    private List<DirectKickFitResult> _activeSolvers = [];
+    private KickFitResult? _fitResult;
+    private List<KickFitResult> _activeSolvers = [];
 
     public DirectKickEstimator(DetectedKick kick, IReadOnlyList<FilteredBall>? filteredBalls = null)
     {
@@ -64,9 +65,10 @@ public partial class DirectKickEstimator
         RunSolvers();
     }
 
-    public DirectKickFitResult? FitResult => _fitResult;
-    public IReadOnlyList<DirectKickFitResult> ActiveSolvers => _activeSolvers;
+    public KickFitResult? FitResult => _fitResult;
+    public IReadOnlyList<KickFitResult> ActiveSolvers => _activeSolvers;
     public Line? FitLastLine => _fitLastLine;
+    public KickEstimatorType Type => KickEstimatorType.Flat;
 
     public static double GetKickSpeed(IReadOnlyList<RawBall> balls, Vector2 kickPos)
     {
@@ -110,7 +112,7 @@ public partial class DirectKickEstimator
         RunSolvers();
     }
 
-    public DirectKickFitResult? GetFitResult() => _fitResult;
+    public KickFitResult? GetFitResult() => _fitResult;
 
     public bool IsDone(List<FilteredRobot> mergedRobots, Timestamp timestamp)
     {
@@ -198,7 +200,7 @@ public partial class DirectKickEstimator
 
     private void RunSolvers()
     {
-        var results = new List<DirectKickFitResult>();
+        var results = new List<KickFitResult>();
 
         var sliding = StraightKickFixedDirectionLinearFitter.Solve(_records);
         if (sliding != null)
@@ -216,7 +218,7 @@ public partial class DirectKickEstimator
         if (redirect != null)
         {
             var redirectFit = GenerateFitResult(redirect);
-            results.Add(new DirectKickFitResult(
+            results.Add(new KickFitResult(
                 redirectFit.GroundProjection,
                 redirectFit.AvgDistance * 0.5,
                 redirectFit.Trajectory,
@@ -228,16 +230,13 @@ public partial class DirectKickEstimator
         _fitResult = results.MinBy(result => result.AvgDistance);
     }
 
-    private DirectKickFitResult GenerateFitResult(SolvedKick result)
+    private KickFitResult GenerateFitResult(SolvedKick result)
     {
         var ground = new List<Vector2>(_records.Count);
-        var trajectory = new BallFlat(new BallState
-        {
-            Position3D = result.Position.Xyz(),
-            Velocity = result.Velocity,
-            Acceleration = Vector3.Zero,
-            SpinRadians = result.Spin
-        });
+        var trajectory = _trajectoryFactory.FromKickedBall(
+            result.Position,
+            result.Velocity,
+            result.Spin);
 
         double error = 0;
         foreach (var ball in _records)
@@ -252,7 +251,7 @@ public partial class DirectKickEstimator
             error /= _records.Count;
         }
 
-        return new DirectKickFitResult(ground, error, trajectory, result.Timestamp, result.Name);
+        return new KickFitResult(ground, error, trajectory, result.Timestamp, result.Name);
     }
 
     private bool IsMaxDirectionErrorExceeded(IReadOnlyList<RawBall> records)

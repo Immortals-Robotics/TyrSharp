@@ -11,7 +11,7 @@ public readonly record struct FilteredBall
         if (timestamp <= Timestamp) return this;
 
         var dt = timestamp - Timestamp;
-        var trajectory = ServiceLocator.BallTrajectoryFactory.Flat(State);
+        var trajectory = ServiceLocator.BallTrajectoryFactory.FromState(State);
 
         return new FilteredBall
         {

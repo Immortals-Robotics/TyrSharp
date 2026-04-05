@@ -4,7 +4,7 @@ using Tyr.Common.Vision.Data;
 
 namespace Tyr.Vision.Data;
 
-public sealed class DirectKickFitResult(
+public sealed class KickFitResult(
     IReadOnlyList<Vector2> groundProjection,
     double avgDistance,
     IBallTrajectory trajectory,

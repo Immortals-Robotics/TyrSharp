@@ -7,6 +7,7 @@ using Tyr.Common.Time;
 using Tyr.Common.Vision.Data;
 using Tyr.Vision.Data;
 using Tyr.Vision.Tracking;
+using Tyr.Vision.Util;
 
 namespace Tyr.Vision;
 
@@ -60,9 +61,7 @@ public partial class Camera(uint id)
     {
         if (!Calibration.HasValue) return pos.Xy();
 
-        var cameraPos = Calibration.Value.DerivedCameraWorld;
-        var scale = cameraPos.Z / (cameraPos.Z - pos.Z);
-        return cameraPos.Xy() + (pos - cameraPos).Xy() * scale;
+        return BallProjection.ProjectToGround(pos, Calibration.Value.DerivedCameraWorld);
     }
 
     public void OnFrame(Detection.Frame frame, FilteredFrame lastFilteredFrame)

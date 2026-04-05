@@ -102,7 +102,15 @@ public sealed partial class Vision
         }
 
         var kickEstimatorsUpdateResult =
-            _ballHelpers.KickEstimators.Process(kick, mergedBall, robots, timestamp, _lastFilteredFrame.Ball);
+            _ballHelpers.KickEstimators.Process(
+                kick,
+                mergedBall,
+                robots,
+                _cameras.Values
+                    .Where(camera => camera.Calibration.HasValue)
+                    .ToDictionary(camera => camera.Id, camera => camera.Calibration!.Value),
+                timestamp,
+                _lastFilteredFrame.Ball);
 
         var bestKickFitResult = kickEstimatorsUpdateResult.BestFitResult;
 

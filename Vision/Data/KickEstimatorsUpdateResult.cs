@@ -1,6 +1,6 @@
 namespace Tyr.Vision.Data;
 
-public sealed class KickEstimatorsUpdateResult(DirectKickFitResult? bestFitResult)
+public sealed class KickEstimatorsUpdateResult(KickFitResult? bestFitResult)
 {
-    public DirectKickFitResult? BestFitResult { get; init; } = bestFitResult;
+    public KickFitResult? BestFitResult { get; init; } = bestFitResult;
 }

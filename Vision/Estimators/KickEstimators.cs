@@ -1,9 +1,11 @@
 using System.Numerics;
+using Tyr.Common.Data.Ssl.Vision.Geometry;
 using Tyr.Common.Config;
 using Tyr.Common.Extensions;
 using Tyr.Common.Time;
 using Tyr.Common.Vision.Data;
 using Tyr.Vision.Data;
+using Tyr.Vision.Estimators.Chip;
 using Tyr.Vision.Estimators.Direct;
 
 namespace Tyr.Vision.Estimators;
@@ -26,22 +28,39 @@ public partial class KickEstimators
     [ConfigEntry("Maximum number of filtered ball states to keep for estimator warm-start history")]
     private static int FilteredBallHistorySize { get; set; } = 20;
 
-    private readonly List<DirectKickEstimator> _estimators = [];
+    private readonly List<IKickEstimator> _estimators = [];
     private readonly Queue<DetectedKick> _kickEventHistory = [];
     private readonly Queue<FilteredBall> _filteredBallHistory = [];
 
-    private DirectKickEstimator? _lastBestEstimator;
+    private IKickEstimator? _lastBestEstimator;
     private Timestamp _lastKickTimestamp = Timestamp.Zero;
 
-    public IReadOnlyList<DirectKickEstimator> ActiveEstimators => _estimators;
+    public IReadOnlyList<IKickEstimator> ActiveEstimators => _estimators;
     public IReadOnlyList<DetectedKick> KickEventHistory => _kickEventHistory.ToList();
     public IReadOnlyList<FilteredBall> FilteredBallHistory => _filteredBallHistory.ToList();
-    public DirectKickEstimator? LastBestEstimator => _lastBestEstimator;
+    public IKickEstimator? LastBestEstimator => _lastBestEstimator;
 
     public KickEstimatorsUpdateResult Process(
         DetectedKick? detectedKick,
         MergedBall? ball,
         List<FilteredRobot> mergedRobots,
+        Timestamp timestamp,
+        FilteredBall lastFilteredBall)
+    {
+        return Process(
+            detectedKick,
+            ball,
+            mergedRobots,
+            new Dictionary<uint, CameraCalibration>(),
+            timestamp,
+            lastFilteredBall);
+    }
+
+    public KickEstimatorsUpdateResult Process(
+        DetectedKick? detectedKick,
+        MergedBall? ball,
+        List<FilteredRobot> mergedRobots,
+        IReadOnlyDictionary<uint, CameraCalibration> cameraCalibrations,
         Timestamp timestamp,
         FilteredBall lastFilteredBall)
     {
@@ -74,7 +93,7 @@ public partial class KickEstimators
             EnqueueWithLimit(_kickEventHistory, detectedKick, KickEventHistorySize);
         }
 
-        UpdateEstimators(detectedKick);
+        UpdateEstimators(detectedKick, cameraCalibrations, timestamp);
 
         return new KickEstimatorsUpdateResult(
             GetBestKickFitResult(timestamp));
@@ -89,7 +108,10 @@ public partial class KickEstimators
         _lastKickTimestamp = Timestamp.Zero;
     }
 
-    private void UpdateEstimators(DetectedKick? kickEvent)
+    private void UpdateEstimators(
+        DetectedKick? kickEvent,
+        IReadOnlyDictionary<uint, CameraCalibration> cameraCalibrations,
+        Timestamp timestamp)
     {
         var kickDirection = kickEvent?.GetKickDirection();
         if (!kickDirection.HasValue || (kickEvent == null))
@@ -97,7 +119,19 @@ public partial class KickEstimators
             return;
         }
 
-        var flatEstimator = _estimators.FirstOrDefault();
+        var chipEstimator = _estimators.FirstOrDefault(estimator => estimator.Type == KickEstimatorType.Chip);
+        var flatEstimator = _estimators.FirstOrDefault(estimator => estimator.Type == KickEstimatorType.Flat);
+
+        if ((chipEstimator != null) && (chipEstimator == _lastBestEstimator)
+            && (chipEstimator.GetFitResult()?.GetState(timestamp).IsChipped == true))
+        {
+            return;
+        }
+
+        if ((chipEstimator == null) && !kickEvent.IsFastDetection)
+        {
+            chipEstimator = new ChipKickEstimator(cameraCalibrations, kickEvent);
+        }
 
         if (_lastBestEstimator != null)
         {
@@ -115,11 +149,15 @@ public partial class KickEstimators
 
         _estimators.Clear();
         _estimators.Add(flatEstimator);
+        if (chipEstimator != null)
+        {
+            _estimators.Add(chipEstimator);
+        }
         _lastKickTimestamp = kickEvent.Timestamp;
     }
 
     private static bool ShouldSpawnNewEstimator(
-        DirectKickFitResult lastFit,
+        KickFitResult lastFit,
         DetectedKick kickEvent,
         Vector2 kickDirection)
     {
@@ -141,7 +179,7 @@ public partial class KickEstimators
                || (positionDeviation > SpawnPositionDeviation);
     }
 
-    private DirectKickFitResult? GetBestKickFitResult(Timestamp timestamp)
+    private KickFitResult? GetBestKickFitResult(Timestamp timestamp)
     {
         var bestEstimator = _estimators
             .Where(estimator => estimator.GetFitResult() is { AvgDistance: > 0.0 })
@@ -155,8 +193,9 @@ public partial class KickEstimators
 
             if (noLastBestEstimator
                 || (lastBestFit == null)
-                || (bestEstimator == _lastBestEstimator)
-                || (bestFit.AvgDistance < (lastBestFit.AvgDistance * (1.0 - EstimatorSwitchHysteresis))))
+                || ((bestEstimator != _lastBestEstimator)
+                    && (bestFit.AvgDistance < (lastBestFit.AvgDistance * (1.0 - EstimatorSwitchHysteresis))))
+                || ((_lastBestEstimator != null) && (_lastBestEstimator.Type == bestEstimator.Type)))
             {
                 _lastBestEstimator = bestEstimator;
             }
