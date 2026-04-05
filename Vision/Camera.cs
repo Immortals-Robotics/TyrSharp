@@ -200,7 +200,7 @@ public partial class Camera(uint id)
             frame.CaptureTime - tracker.LastUpdateTimestamp > InvisibleLifetimeBall ||
             frame.CaptureTime - tracker.LastInFieldTimestamp > InvisibleLifetimeBall);
 
-        var collisionShapes = GetRobotCollisionShapes(mergedRobots, frame.CaptureTime);
+        var collisionShapes = GetRobotCollisionShapes(mergedRobots);
         var airborne = lastFilteredBall.HasValue && lastFilteredBall.Value.State.Position3D.Z > MaxHeightForCollision;
 
         // do a prediction on all trackers
@@ -240,19 +240,17 @@ public partial class Camera(uint id)
         }
     }
 
-    private List<RobotCollisionShape> GetRobotCollisionShapes(IReadOnlyList<FilteredRobot> mergedRobots,
-        Timestamp timestamp)
+    private List<RobotCollisionShape> GetRobotCollisionShapes(IReadOnlyList<FilteredRobot> mergedRobots)
     {
         List<RobotCollisionShape> shapes = [];
 
         foreach (var robot in mergedRobots)
         {
-            var predicted = robot.Extrapolate(timestamp);
             shapes.Add(new RobotCollisionShape
             {
-                Position = predicted.State.Position,
-                Orientation = predicted.State.Angle,
-                Velocity = predicted.State.Velocity,
+                Position = robot.State.Position,
+                Orientation = robot.State.Angle,
+                Velocity = robot.State.Velocity,
                 Radius = RobotRadius,
                 CenterToDribbler = Math.Min(RobotCenterToDribbler, RobotRadius),
                 MaxCircleLoss = MaxBallBotHullLoss,
