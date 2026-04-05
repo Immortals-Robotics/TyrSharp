@@ -4,74 +4,159 @@ namespace Tyr.Common.Math.Shapes;
 
 public readonly record struct Robot
 {
+    private const float DefaultCenterToDribblerFactor = 75f / 90f;
+    private const float DefaultKickerDepth = 150f;
+    private const float BoundaryTolerance = 1e-3f;
+
     public Vector2 Center { get; init; }
     public float Radius { get; init; }
     public Angle Angle { get; init; }
+    public float CenterToDribbler { get; init; }
 
-    private static readonly Angle HalfArcAngle = Angle.FromDeg(50f);
-    private const float KickerDepth = 150f;
+    public readonly float FrontDistance => EffectiveCenterToDribbler;
+    public readonly float EffectiveCenterToDribbler =>
+        System.Math.Clamp(
+            CenterToDribbler > 0f
+                ? CenterToDribbler
+                : Radius * DefaultCenterToDribblerFactor,
+            0f,
+            Radius);
 
-    public readonly float FrontDistance => Radius * HalfArcAngle.Cos();
+    public readonly Vector2 KickerCenter => GetKickerCenterPos(Center, Angle, EffectiveCenterToDribbler);
 
-    public readonly bool CanKick(Vector2 point, float kickerDepth = KickerDepth)
+    public readonly float KickerWidth =>
+        2f * MathF.Sqrt(MathF.Max(0f, Radius * Radius - EffectiveCenterToDribbler * EffectiveCenterToDribbler));
+
+    public static Vector2 GetKickerCenterPos(Vector2 center, Angle angle, float centerToDribbler)
     {
-        var p1 = Center + (Angle + HalfArcAngle).ToUnitVec() * Radius - Angle.ToUnitVec() * kickerDepth * 0.5f;
-        var p2 = Center + (Angle - HalfArcAngle).ToUnitVec() * Radius - Angle.ToUnitVec() * kickerDepth * 0.5f;
-        var p3 = Center + (Angle - HalfArcAngle).ToUnitVec() * Radius + Angle.ToUnitVec() * kickerDepth;
-        var p4 = Center + (Angle + HalfArcAngle).ToUnitVec() * Radius + Angle.ToUnitVec() * kickerDepth;
+        return center + angle.ToUnitVec() * centerToDribbler;
+    }
 
-        var v1 = point - p1;
-        var v2 = point - p2;
-        var v3 = point - p3;
-        var v4 = point - p4;
+    public readonly bool CanKick(Vector2 point, float kickerDepth = DefaultKickerDepth)
+    {
+        return IsPointInKickerZone(point, kickerDepth);
+    }
 
-        var cross1 = (p2 - p1).Cross(v1);
-        var cross2 = (p3 - p2).Cross(v2);
-        var cross3 = (p4 - p3).Cross(v3);
-        var cross4 = (p1 - p4).Cross(v4);
+    public readonly bool IsPointInKickerZone(Vector2 point, float zoneLength)
+    {
+        return IsPointInKickerZone(point, zoneLength, KickerWidth);
+    }
 
-        var s1 = Utils.SignInt(cross1);
-        var s2 = Utils.SignInt(cross2);
-        var s3 = Utils.SignInt(cross3);
-        var s4 = Utils.SignInt(cross4);
+    public readonly bool IsPointInKickerZone(Vector2 point, float zoneLength, float zoneWidth)
+    {
+        var forward = Angle.ToUnitVec();
+        var lateral = new Vector2(-forward.Y, forward.X);
+        var relative = point - Center;
 
-        return s1 == s2 && s2 == s3 && s3 == s4;
+        var leadDistance = Vector2.Dot(relative, forward);
+        if (leadDistance <= 0f)
+        {
+            return false;
+        }
+
+        if (leadDistance < EffectiveCenterToDribbler || leadDistance > EffectiveCenterToDribbler + zoneLength)
+        {
+            return false;
+        }
+
+        var lateralDistance = MathF.Abs(Vector2.Dot(relative, lateral));
+        return lateralDistance <= zoneWidth * 0.5f;
     }
 
     public readonly LineSegment GetFrontLine()
     {
-        var p1 = Center + (Angle + HalfArcAngle).ToUnitVec() * Radius;
-        var p2 = Center + (Angle - HalfArcAngle).ToUnitVec() * Radius;
+        if (Radius <= 0f)
+        {
+            return new LineSegment { Start = Center, End = Center };
+        }
+
+        var angleToCorner = Angle.FromRad(MathF.Acos(System.Math.Clamp(EffectiveCenterToDribbler / Radius, -1f, 1f)));
+        var p1 = Center + (Angle + angleToCorner).ToUnitVec() * Radius;
+        var p2 = Center + (Angle - angleToCorner).ToUnitVec() * Radius;
         return new LineSegment { Start = p1, End = p2 };
     }
 
-    public float Distance(Vector2 point)
+    public readonly float Distance(Vector2 point)
     {
-        var rel = point - Center;
-        var dis = rel.Length();
-
-        var start = Angle - HalfArcAngle;
-        var end = Angle + HalfArcAngle;
-        var inFront = rel.ToAngle().IsBetween(start, end);
-
-        return inFront
-            ? dis - FrontDistance
-            : dis - Radius;
+        var closestBoundary = ClosestBoundaryPoint(point);
+        var distance = Vector2.Distance(point, closestBoundary);
+        return Contains(point) ? -distance : distance;
     }
 
-    public bool Inside(Vector2 point, float margin = 0) => Distance(point) < margin;
-
-    public Vector2 NearestOutside(Vector2 point, float margin = 0)
+    public readonly bool Inside(Vector2 point, float margin = 0)
     {
-        var distance = Distance(point);
+        return margin <= 0f
+            ? Contains(point)
+            : WithMargin(margin).Contains(point);
+    }
 
-        if (distance >= margin) return point;
+    public readonly Vector2 NearestOutside(Vector2 point, float margin = 0)
+    {
+        var robot = margin <= 0f ? this : WithMargin(margin);
+        return robot.Contains(point)
+            ? robot.ClosestBoundaryPoint(point)
+            : point;
+    }
 
-        var direction = point - Center;
+    public readonly Robot WithMargin(float margin)
+    {
+        if (Radius <= 0f)
+        {
+            return this;
+        }
 
-        var extra = margin - distance;
-        var newLength = direction.Length() + extra;
+        var factor = (Radius + margin) / Radius;
+        if (factor <= 0f)
+        {
+            return this with { Radius = 0f, CenterToDribbler = 0f };
+        }
 
-        return Vector2.Normalize(direction) * newLength + Center;
+        return this with
+        {
+            Radius = Radius * factor,
+            CenterToDribbler = EffectiveCenterToDribbler * factor
+        };
+    }
+
+    private readonly bool Contains(Vector2 point)
+    {
+        if (Vector2.Distance(Center, point) > Radius + BoundaryTolerance)
+        {
+            return false;
+        }
+
+        return !IsPointInKickerZone(point, Radius) || GetFrontLine().Distance(point) <= BoundaryTolerance;
+    }
+
+    private readonly Vector2 ClosestBoundaryPoint(Vector2 point)
+    {
+        var frontLine = GetFrontLine();
+        var closestFrontPoint = frontLine.ClosestPoint(point);
+
+        var radialDirection = point - Center;
+        var closestCirclePoint = Utils.ApproximatelyZero(radialDirection.LengthSquared())
+            ? KickerCenter
+            : Center + Vector2.Normalize(radialDirection) * Radius;
+
+        if (ProjectsOnto(frontLine, point) &&
+            Vector2.DistanceSquared(point, closestFrontPoint) <= Vector2.DistanceSquared(point, closestCirclePoint))
+        {
+            return closestFrontPoint;
+        }
+
+        return closestCirclePoint;
+    }
+
+    private static bool ProjectsOnto(LineSegment segment, Vector2 point)
+    {
+        var direction = segment.End - segment.Start;
+        var lengthSquared = direction.LengthSquared();
+        if (Utils.ApproximatelyZero(lengthSquared))
+        {
+            return false;
+        }
+
+        var t = Vector2.Dot(point - segment.Start, direction) / lengthSquared;
+        return t >= 0f && t <= 1f;
     }
 }

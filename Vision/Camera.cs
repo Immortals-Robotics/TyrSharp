@@ -5,6 +5,7 @@ using Tyr.Common.Data.Ssl;
 using Tyr.Common.Data.Ssl.Vision.Geometry;
 using Tyr.Common.Time;
 using Tyr.Common.Vision.Data;
+using Tyr.Vision.Data;
 using Tyr.Vision.Tracking;
 
 namespace Tyr.Vision;
@@ -23,6 +24,18 @@ public partial class Camera(uint id)
 
     [ConfigEntry("Max. distance to copy state from filtered bot to new trackers")]
     private static float CopyTrackerMaxDistance { get; set; } = 200f;
+
+    [ConfigEntry("Maximum speed loss against the robot hull during ball collisions")]
+    private static float MaxBallBotHullLoss { get; set; } = 0.6f;
+
+    [ConfigEntry("Maximum speed loss against the robot front during ball collisions")]
+    private static float MaxBallBotFrontLoss { get; set; } = 1.0f;
+
+    [ConfigEntry("Maximum filtered ball height where robot collisions are considered")]
+    private static float MaxHeightForCollision { get; set; } = 130f;
+
+    [ConfigEntry("Fallback distance from robot center to dribbler when no robot-specific geometry is available")]
+    private static float RobotCenterToDribbler { get; set; } = 75f;
 
     public uint Id { get; } = id;
 
@@ -73,7 +86,7 @@ public partial class Camera(uint id)
 
         // detections
         ProcessRobots(frame, lastFilteredFrame.Robots);
-        ProcessBalls(frame, lastFilteredFrame.Ball);
+        ProcessBalls(frame, lastFilteredFrame.Ball, lastFilteredFrame.Robots);
     }
 
     public void DrawDebug(Timestamp timestamp)
@@ -179,15 +192,19 @@ public partial class Camera(uint id)
         }
     }
 
-    private void ProcessBalls(Detection.Frame frame, FilteredBall? lastFilteredBall)
+    private void ProcessBalls(Detection.Frame frame, FilteredBall? lastFilteredBall,
+        IReadOnlyList<FilteredRobot> mergedRobots)
     {
         // remove trackers of balls that have not been visible or were out of the field for too long
         Balls.RemoveAll(tracker =>
             frame.CaptureTime - tracker.LastUpdateTimestamp > InvisibleLifetimeBall ||
             frame.CaptureTime - tracker.LastInFieldTimestamp > InvisibleLifetimeBall);
 
+        var collisionShapes = GetRobotCollisionShapes(mergedRobots, frame.CaptureTime);
+        var airborne = lastFilteredBall.HasValue && lastFilteredBall.Value.State.Position3D.Z > MaxHeightForCollision;
+
         // do a prediction on all trackers
-        foreach (var ball in Balls) ball.Predict(frame.CaptureTime);
+        foreach (var ball in Balls) ball.Predict(frame.CaptureTime, collisionShapes, airborne);
 
         if (frame.Balls.Count > 0) LastBallOnCamTimestamp = Timestamp;
 
@@ -221,5 +238,28 @@ public partial class Camera(uint id)
 
             Balls.Add(tracker);
         }
+    }
+
+    private List<RobotCollisionShape> GetRobotCollisionShapes(IReadOnlyList<FilteredRobot> mergedRobots,
+        Timestamp timestamp)
+    {
+        List<RobotCollisionShape> shapes = [];
+
+        foreach (var robot in mergedRobots)
+        {
+            var predicted = robot.Extrapolate(timestamp);
+            shapes.Add(new RobotCollisionShape
+            {
+                Position = predicted.State.Position,
+                Orientation = predicted.State.Angle,
+                Velocity = predicted.State.Velocity,
+                Radius = RobotRadius,
+                CenterToDribbler = Math.Min(RobotCenterToDribbler, RobotRadius),
+                MaxCircleLoss = MaxBallBotHullLoss,
+                MaxFrontLoss = MaxBallBotFrontLoss
+            });
+        }
+
+        return shapes;
     }
 }

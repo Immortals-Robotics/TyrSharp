@@ -1,4 +1,5 @@
 ﻿using System.Numerics;
+using MathNet.Numerics.LinearAlgebra;
 using Tyr.Common.Math;
 using Tyr.Common.Time;
 
@@ -75,6 +76,18 @@ public class Filter2D
     public void Correct(Vector2 position)
     {
         _kalman.Correct(position.AsMathNetVector());
+    }
+
+    public void SetVelocity(Vector2 velocity)
+    {
+        Velocity = velocity;
+    }
+
+    public void ResetCovariance(float covariance)
+    {
+        _kalman.ErrorCovariance = Matrix<double>.Build.DenseIdentity(4) * covariance;
+        _kalman.ErrorCovariance[2, 2] = covariance * covariance;
+        _kalman.ErrorCovariance[3, 3] = covariance * covariance;
     }
 
     public Vector2 Position

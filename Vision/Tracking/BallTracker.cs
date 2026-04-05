@@ -1,6 +1,7 @@
 ﻿using System.Numerics;
 using Tyr.Common.Config;
 using Tyr.Common.Vision.Data;
+using Tyr.Vision.Data;
 using Tyr.Vision.Filter;
 using Rectangle = Tyr.Common.Math.Shapes.Rectangle;
 
@@ -68,8 +69,13 @@ public partial class BallTracker
         LastRawBall = rawBall;
     }
 
-    public void Predict(Timestamp timestamp)
+    public void Predict(Timestamp timestamp, IReadOnlyList<RobotCollisionShape> robots, bool airborne)
     {
+        if (!airborne)
+        {
+            ProcessCollisions(robots);
+        }
+
         Filter.Predict(timestamp);
 
         _health = Math.Clamp(_health - 1, 1, MaxHealth);
@@ -109,5 +115,25 @@ public partial class BallTracker
         Updated = true;
 
         return true;
+    }
+
+    private void ProcessCollisions(IReadOnlyList<RobotCollisionShape> robots)
+    {
+        foreach (var robot in robots)
+        {
+            var result = robot.GetCollision(Filter.Position, Filter.Velocity);
+            if (result.Location == RobotCollisionLocation.None)
+            {
+                continue;
+            }
+
+            Filter.ResetCovariance(InitialCovariance);
+            if (!result.BallReflectedVelocity.HasValue)
+            {
+                continue;
+            }
+
+            Filter.SetVelocity(result.BallReflectedVelocity.Value);
+        }
     }
 }
