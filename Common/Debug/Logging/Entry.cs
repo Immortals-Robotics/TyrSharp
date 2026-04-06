@@ -1,15 +1,27 @@
-﻿using Microsoft.Extensions.Logging;
+﻿using MemoryPack;
+using Microsoft.Extensions.Logging;
 
-namespace Tyr.Common.Debug.Logging;
-
-public readonly record struct Entry(
-    string Message,
-    LogLevel Level,
-    Meta Meta,
-    Timestamp Timestamp
-) : IEntry
+namespace Tyr.Common.Debug.Logging
 {
-    public static Entry Empty => new(string.Empty, LogLevel.None, Meta.Empty, Timestamp.Now);
+    [MemoryPackable]
+    public partial record struct Entry : IEntry
+    {
+        public required string Message { get; init; }
+        public LogLevel Level { get; init; }
+        public required Meta Meta { get; init; }
 
-    public bool IsEmpty => Level == LogLevel.None;
+        public Time.Timestamp Timestamp { get; init; }
+
+        [MemoryPackIgnore]
+        public static Entry Empty => new Entry
+        {
+            Message = string.Empty,
+            Level = LogLevel.None,
+            Meta = Meta.Empty,
+            Timestamp = Timestamp.Now
+        };
+
+        [MemoryPackIgnore]
+        public bool IsEmpty => Level == LogLevel.None;
+    }
 }

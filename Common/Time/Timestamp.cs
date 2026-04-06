@@ -1,13 +1,15 @@
-﻿using Tomlet;
+﻿using MemoryPack;
+using Tomlet;
 using Tomlet.Models;
 
 namespace Tyr.Common.Time;
 
-public readonly record struct Timestamp : IComparable<Timestamp>
+[MemoryPackable]
+public partial record struct Timestamp : IComparable<Timestamp>
 {
     public long Nanoseconds { get; }
 
-    static Timestamp()
+    static partial void StaticConstructor()
     {
         TomletMain.RegisterMapper(
             time => new TomlLong(time.Nanoseconds),
@@ -29,19 +31,31 @@ public readonly record struct Timestamp : IComparable<Timestamp>
 
     public DateTime ToDateTime() => DateTime.UnixEpoch.AddTicks(Nanoseconds / TimeSpan.NanosecondsPerTick);
 
+    [MemoryPackIgnore]
     public static Timestamp Zero => new(0);
+    [MemoryPackIgnore]
     public static Timestamp MaxValue => new(long.MaxValue);
+    [MemoryPackIgnore]
     public static Timestamp Now => FromDateTime(DateTime.UtcNow);
 
+    [MemoryPackIgnore]
     public double Hours => Seconds / 3600;
+    [MemoryPackIgnore]
     public double Minutes => Seconds / 60;
+    [MemoryPackIgnore]
     public double Seconds => Nanoseconds / 1e9;
+    [MemoryPackIgnore]
     public double Milliseconds => Nanoseconds / 1e6;
+    [MemoryPackIgnore]
     public double Microseconds => Nanoseconds / 1e3;
-
+    
+    [MemoryPackIgnore]
     public double NormalizedHours => Minutes / 60 % 24;
+    [MemoryPackIgnore]
     public double NormalizedMinutes => Minutes % 60;
+    [MemoryPackIgnore]
     public double NormalizedSeconds => Seconds % 60;
+    [MemoryPackIgnore]
     public double NormalizedMilliseconds => Milliseconds % 1000;
 
     public static Timestamp Min(Timestamp a, Timestamp b) => a < b ? a : b;

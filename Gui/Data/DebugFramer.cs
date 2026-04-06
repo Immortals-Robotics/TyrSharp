@@ -4,7 +4,7 @@ using Debug = Tyr.Common.Debug;
 
 namespace Tyr.Gui.Data;
 
-public class DebugFramer
+public class DebugFramer : IDisposable
 {
     private readonly Subscriber<Debug.Logging.Entry> _logSubscriber = Hub.Logs.Subscribe(Mode.All);
     private readonly Subscriber<Debug.Drawing.Command> _drawSubscriber = Hub.Draws.Subscribe(Mode.All);
@@ -12,12 +12,24 @@ public class DebugFramer
 
     private readonly Subscriber<Debug.Frame> _frameSubscriber = Hub.Frames.Subscribe(Mode.All);
 
+    private readonly DebugDatabase _db;
+    private readonly DebugDbViewer _dbViewer;
+    
     public Dictionary<string, ModuleTimeline> Modules { get; } = [];
 
     public Timestamp StartTime { get; private set; }
     public Timestamp EndTime { get; private set; }
     public DeltaTime Duration => EndTime - StartTime;
 
+    public DebugFramer()
+    {
+        _db = new DebugDatabase("debug_session");
+        
+        _dbViewer = new DebugDbViewer(_db, port: 9000)
+            .Register<Debug.Logging.Entry>();
+        _dbViewer.Start();
+    }
+    
     private ModuleTimeline GetOrCreateModuleTimeline(string moduleName)
     {
         if (!Modules.TryGetValue(moduleName, out var moduleFramer))
@@ -50,6 +62,7 @@ public class DebugFramer
             }
             else
             {
+                _db.Append(log);
                 GetOrCreateModuleTimeline(log.Meta.Module).OnLog(log);
             }
 
@@ -89,6 +102,9 @@ public class DebugFramer
 
             dirty = true;
         }
+        
+        var logsQuery = _db.Query<Debug.Logging.Entry>("Vision", Timestamp.Now - DeltaTime.FromMilliseconds(20), Timestamp.Now);
+        Console.WriteLine(logsQuery.Count());
 
         // update time ranges if anything has changed
         if (dirty)
@@ -106,5 +122,16 @@ public class DebugFramer
 
             StartTime = Timestamp.Clamp(StartTime, Timestamp.Zero, EndTime);
         }
+    }
+
+    public void Dispose()
+    {
+        _dbViewer.Dispose();
+        _db.Dispose();
+        
+        _logSubscriber.Dispose();
+        _drawSubscriber.Dispose();
+        _plotSubscriber.Dispose();
+        _frameSubscriber.Dispose();
     }
 }

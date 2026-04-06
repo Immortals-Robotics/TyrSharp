@@ -1,0 +1,568 @@
+﻿using System.Net;
+using System.Text;
+using System.Text.Json;
+using Tyr.Common.Debug;
+
+namespace Tyr.Gui.Data;
+
+/// <summary>
+/// Embeddable HTTP server that exposes the DebugDatabase as a browsable table UI.
+/// Uses HttpListener — no ASP.NET Core dependency.
+///
+/// Usage:
+///   var db = new DebugDatabase("/tmp/debug_session");
+///   var viewer = new DebugDbViewer(db, port: 9000)
+///       .Register&lt;LogEntry&gt;()
+///       .Register&lt;DrawEntry&gt;();
+///   viewer.Start();
+///   // Open http://localhost:9000 in a browser
+/// </summary>
+public sealed class DebugDbViewer : IDisposable
+{
+    private readonly DebugDatabase _db;
+    private readonly int _port;
+    private readonly Dictionary<string, RegisteredType> _types = new();
+
+    private HttpListener? _listener;
+    private CancellationTokenSource? _cts;
+    private Thread? _thread;
+
+    private static readonly JsonSerializerOptions JsonOpts = new()
+    {
+        PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+    };
+
+    public DebugDbViewer(DebugDatabase db, int port = 9000)
+    {
+        _db = db;
+        _port = port;
+    }
+
+    public DebugDbViewer Register<T>() where T : IEntry
+    {
+        var name = typeof(T).Name;
+        _types[name] = new RegisteredType
+        {
+            Name = name,
+            Query = (module, t0, t1) =>
+            {
+                IEnumerable<T> results = module is null
+                    ? _db.QueryAll<T>(t0, t1)
+                    : _db.Query<T>(module, t0, t1);
+                return results.Select(EntryToRow);
+            },
+            GetFields = GetFieldNames<T>,
+        };
+        return this;
+    }
+
+    public void Start()
+    {
+        _cts = new CancellationTokenSource();
+        _listener = new HttpListener();
+
+        // Try wildcard first, fall back to localhost if it fails (needs elevation on Windows)
+        try
+        {
+            _listener.Prefixes.Add($"http://+:{_port}/");
+            _listener.Start();
+        }
+        catch (HttpListenerException)
+        {
+            _listener.Close();
+            _listener = new HttpListener();
+            _listener.Prefixes.Add($"http://localhost:{_port}/");
+            _listener.Start();
+        }
+
+        _thread = new Thread(ListenLoop)
+        {
+            IsBackground = true,
+            Name = "DebugDbViewer",
+        };
+        _thread.Start();
+    }
+
+    private void ListenLoop()
+    {
+        while (_cts is { IsCancellationRequested: false })
+        {
+            HttpListenerContext ctx;
+            try
+            {
+                ctx = _listener!.GetContext();
+            }
+            catch (HttpListenerException) { break; }
+            catch (ObjectDisposedException) { break; }
+
+            try
+            {
+                HandleRequest(ctx);
+            }
+            catch (Exception ex)
+            {
+                try { Respond(ctx, 500, "text/plain", Encoding.UTF8.GetBytes(ex.ToString())); }
+                catch { /* swallow */ }
+            }
+        }
+    }
+
+    private void HandleRequest(HttpListenerContext ctx)
+    {
+        var path = ctx.Request.Url?.AbsolutePath ?? "/";
+        var qs = ctx.Request.QueryString;
+
+        switch (path)
+        {
+            case "/":
+                Respond(ctx, 200, "text/html; charset=utf-8", Encoding.UTF8.GetBytes(HtmlPage()));
+                break;
+
+            case "/api/types":
+                RespondJson(ctx, _types.Keys.ToArray());
+                break;
+
+            case "/api/fields":
+            {
+                var type = qs["type"];
+                if (type is null || !_types.TryGetValue(type, out var reg))
+                { Respond(ctx, 404, "text/plain", "not found"u8.ToArray()); break; }
+                RespondJson(ctx, reg.GetFields());
+                break;
+            }
+
+            case "/api/query":
+            {
+                var type = qs["type"];
+                if (type is null || !_types.TryGetValue(type, out var reg))
+                { Respond(ctx, 404, "text/plain", "not found"u8.ToArray()); break; }
+
+                var module = qs["module"];
+                if (string.IsNullOrEmpty(module)) module = null;
+
+                var t0    = long.TryParse(qs["t0"], out var v0) ? v0 : 0L;
+                var t1    = long.TryParse(qs["t1"], out var v1) ? v1 : long.MaxValue;
+                var limit = int.TryParse(qs["limit"], out var lv) ? lv : 10_000;
+
+                var rows = reg.Query(module, Timestamp.FromNanoseconds(t0), Timestamp.FromNanoseconds(t1)).Take(limit).ToArray();
+                RespondJson(ctx, rows);
+                break;
+            }
+
+            default:
+                Respond(ctx, 404, "text/plain", "not found"u8.ToArray());
+                break;
+        }
+    }
+
+    private static void Respond(HttpListenerContext ctx, int status, string contentType, byte[] body)
+    {
+        ctx.Response.StatusCode = status;
+        ctx.Response.ContentType = contentType;
+        ctx.Response.ContentLength64 = body.Length;
+        ctx.Response.Headers.Add("Access-Control-Allow-Origin", "*");
+        ctx.Response.OutputStream.Write(body);
+        ctx.Response.Close();
+    }
+
+    private static void RespondJson(HttpListenerContext ctx, object data)
+    {
+        var json = JsonSerializer.SerializeToUtf8Bytes(data, JsonOpts);
+        Respond(ctx, 200, "application/json", json);
+    }
+
+    private static string[] GetFieldNames<T>()
+    {
+        return typeof(T).GetProperties()
+            .Where(p => p.Name != nameof(IEntry.Meta))
+            .Select(p => p.Name)
+            .Concat(["Module", "Layer", "File", "Member", "Line", "Expression"])
+            .ToArray();
+    }
+
+    private static Dictionary<string, object?> EntryToRow<T>(T entry) where T : IEntry
+    {
+        var row = new Dictionary<string, object?>();
+        foreach (var prop in typeof(T).GetProperties())
+        {
+            if (prop.Name == nameof(IEntry.Meta))
+            {
+                var src = entry.Meta;
+                row["Module"]     = src.Module;
+                row["Layer"]      = src.Layer;
+                row["File"]       = src.File;
+                row["Member"]     = src.Member;
+                row["Line"]       = src.Line;
+                row["Expression"] = src.Expression;
+            }
+            else
+            {
+                row[prop.Name] = prop.GetValue(entry);
+            }
+        }
+        return row;
+    }
+
+    private sealed class RegisteredType
+    {
+        public required string Name { get; init; }
+        public required Func<string?, Timestamp, Timestamp, IEnumerable<Dictionary<string, object?>>> Query { get; init; }
+        public required Func<string[]> GetFields { get; init; }
+    }
+
+    private string HtmlPage() => """
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>DebugDb Viewer</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap');
+
+  :root {
+    --bg:         #0c0c0e;
+    --bg-surface: #141418;
+    --bg-raised:  #1c1c22;
+    --bg-hover:   #24242c;
+    --border:     #2a2a35;
+    --border-dim: #1e1e28;
+    --text:       #e0e0e6;
+    --text-dim:   #7a7a8c;
+    --text-muted: #50505e;
+    --accent:     #6ee7b7;
+    --accent-dim: #2d6b55;
+    --blue:       #60a5fa;
+    --mono:       'JetBrains Mono', monospace;
+    --sans:       'IBM Plex Sans', system-ui, sans-serif;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: var(--sans);
+    background: var(--bg);
+    color: var(--text);
+    font-size: 13px;
+    line-height: 1.5;
+  }
+
+  .app {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    overflow: hidden;
+  }
+
+  header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 16px;
+    background: var(--bg-surface);
+    border-bottom: 1px solid var(--border-dim);
+    flex-shrink: 0;
+  }
+
+  header h1 {
+    font-family: var(--mono);
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--accent);
+    letter-spacing: -0.5px;
+  }
+
+  header h1 span { color: var(--text-dim); font-weight: 400; }
+
+  .toolbar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 16px;
+    background: var(--bg-surface);
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+    flex-wrap: wrap;
+  }
+
+  .toolbar label {
+    font-size: 11px;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    font-weight: 600;
+  }
+
+  .toolbar select, .toolbar input {
+    font-family: var(--mono);
+    font-size: 12px;
+    padding: 5px 8px;
+    background: var(--bg-raised);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    color: var(--text);
+    outline: none;
+  }
+
+  .toolbar select:focus, .toolbar input:focus { border-color: var(--accent-dim); }
+  .toolbar input::placeholder { color: var(--text-muted); }
+  .toolbar select { cursor: pointer; }
+  .toolbar .sep { width: 1px; height: 20px; background: var(--border); margin: 0 4px; }
+
+  button.query-btn {
+    font-family: var(--mono);
+    font-size: 12px;
+    font-weight: 600;
+    padding: 5px 14px;
+    background: var(--accent-dim);
+    color: var(--accent);
+    border: 1px solid var(--accent-dim);
+    border-radius: 4px;
+    cursor: pointer;
+  }
+
+  button.query-btn:hover { background: #347a60; border-color: var(--accent); }
+
+  .status {
+    margin-left: auto;
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text-muted);
+  }
+
+  .status .count { color: var(--accent); }
+
+  .table-wrap { flex: 1; overflow: auto; }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-family: var(--mono);
+    font-size: 12px;
+  }
+
+  thead { position: sticky; top: 0; z-index: 10; }
+
+  th {
+    background: var(--bg-raised);
+    padding: 7px 10px;
+    text-align: left;
+    font-weight: 600;
+    font-size: 11px;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+    border-bottom: 2px solid var(--border);
+    white-space: nowrap;
+    user-select: none;
+    cursor: pointer;
+  }
+
+  th:hover { color: var(--text); }
+
+  td {
+    padding: 4px 10px;
+    border-bottom: 1px solid var(--border-dim);
+    white-space: nowrap;
+    max-width: 500px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  tr:hover td { background: var(--bg-hover); }
+  td:first-child { color: var(--blue); }
+
+  .empty {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    color: var(--text-muted);
+    font-size: 14px;
+    font-family: var(--sans);
+  }
+
+  .filter-input {
+    font-family: var(--mono);
+    font-size: 11px;
+    padding: 3px 6px;
+    background: var(--bg);
+    border: 1px solid var(--border-dim);
+    border-radius: 3px;
+    color: var(--text);
+    width: 100%;
+    outline: none;
+  }
+
+  .filter-input:focus { border-color: var(--accent-dim); }
+  th .filter-input { margin-top: 4px; display: block; }
+
+  ::-webkit-scrollbar { width: 8px; height: 8px; }
+  ::-webkit-scrollbar-track { background: var(--bg); }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+  ::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <h1>DebugDb<span> viewer</span></h1>
+  </header>
+
+  <div class="toolbar">
+    <label for="type-sel">Type</label>
+    <select id="type-sel"></select>
+    <div class="sep"></div>
+
+    <label for="mod-input">Module</label>
+    <input id="mod-input" type="text" placeholder="all" style="width:130px">
+    <div class="sep"></div>
+
+    <label for="t0-input">t0</label>
+    <input id="t0-input" type="text" placeholder="0" style="width:120px">
+    <label for="t1-input">t1</label>
+    <input id="t1-input" type="text" placeholder="max" style="width:120px">
+    <div class="sep"></div>
+
+    <label for="limit-input">Limit</label>
+    <input id="limit-input" type="text" placeholder="10000" style="width:80px" value="10000">
+
+    <button class="query-btn" id="query-btn">Query</button>
+    <div class="status" id="status"></div>
+  </div>
+
+  <div class="table-wrap" id="table-wrap">
+    <div class="empty" id="empty-msg">Select a type and click Query</div>
+  </div>
+</div>
+
+<script>
+const $ = s => document.querySelector(s);
+const api = path => fetch(path).then(r => r.json());
+
+let fields = [], rows = [], sortCol = null, sortAsc = true, colFilters = {};
+
+async function init() {
+  const types = await api('/api/types');
+  const sel = $('#type-sel');
+  types.forEach(t => {
+    const o = document.createElement('option');
+    o.value = t; o.textContent = t;
+    sel.appendChild(o);
+  });
+  $('#query-btn').onclick = runQuery;
+  document.querySelectorAll('.toolbar input').forEach(el => {
+    el.addEventListener('keydown', e => { if (e.key === 'Enter') runQuery(); });
+  });
+}
+
+async function runQuery() {
+  const type = $('#type-sel').value;
+  if (!type) return;
+
+  const module = $('#mod-input').value || '';
+  const t0 = $('#t0-input').value || '0';
+  const t1 = $('#t1-input').value || '9223372036854775807';
+  const limit = $('#limit-input').value || '10000';
+
+  const params = new URLSearchParams({ type, t0, t1, limit });
+  if (module) params.set('module', module);
+
+  const ts = performance.now();
+  [fields, rows] = await Promise.all([
+    api('/api/fields?type=' + type),
+    api('/api/query?' + params),
+  ]);
+  const elapsed = (performance.now() - ts).toFixed(0);
+
+  colFilters = {};
+  sortCol = null;
+  renderTable();
+  $('#status').innerHTML = '<span class="count">' + rows.length + '</span> rows · ' + elapsed + 'ms';
+}
+
+function renderTable() {
+  const wrap = $('#table-wrap');
+  const empty = $('#empty-msg');
+  if (empty) empty.remove();
+
+  let filtered = rows;
+  for (const [col, val] of Object.entries(colFilters)) {
+    if (!val) continue;
+    const lv = val.toLowerCase();
+    filtered = filtered.filter(r => {
+      const c = r[col];
+      return c !== null && c !== undefined && String(c).toLowerCase().includes(lv);
+    });
+  }
+
+  if (sortCol !== null) {
+    const key = fields[sortCol];
+    filtered = [...filtered].sort((a, b) => {
+      const va = a[key], vb = b[key];
+      if (va == null && vb == null) return 0;
+      if (va == null) return 1;
+      if (vb == null) return -1;
+      if (typeof va === 'number' && typeof vb === 'number')
+        return sortAsc ? va - vb : vb - va;
+      return sortAsc ? String(va).localeCompare(String(vb)) : String(vb).localeCompare(String(va));
+    });
+  }
+
+  let h = '<table><thead><tr>';
+  fields.forEach((f, i) => {
+    const arrow = sortCol === i ? (sortAsc ? ' ↑' : ' ↓') : '';
+    h += '<th data-idx="' + i + '">' + f + arrow +
+         '<input class="filter-input" data-col="' + f +
+         '" placeholder="filter…" value="' + (colFilters[f] || '') + '"></th>';
+  });
+  h += '</tr></thead><tbody>';
+
+  for (const row of filtered) {
+    h += '<tr>';
+    for (const f of fields) {
+      const v = row[f];
+      h += '<td data-col="' + f + '">' + esc(v === null || v === undefined ? '' : String(v)) + '</td>';
+    }
+    h += '</tr>';
+  }
+  h += '</tbody></table>';
+  wrap.innerHTML = h;
+
+  wrap.querySelectorAll('th').forEach(th => {
+    th.addEventListener('click', e => {
+      if (e.target.classList.contains('filter-input')) return;
+      const idx = parseInt(th.dataset.idx);
+      if (sortCol === idx) sortAsc = !sortAsc;
+      else { sortCol = idx; sortAsc = true; }
+      renderTable();
+    });
+  });
+
+  wrap.querySelectorAll('.filter-input').forEach(inp => {
+    inp.addEventListener('input', () => {
+      colFilters[inp.dataset.col] = inp.value;
+      renderTable();
+      const el = wrap.querySelector('.filter-input[data-col="' + inp.dataset.col + '"]');
+      if (el) { el.focus(); el.selectionStart = el.selectionEnd = el.value.length; }
+    });
+    inp.addEventListener('click', e => e.stopPropagation());
+  });
+}
+
+function esc(s) { return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+init();
+</script>
+</body>
+</html>
+""";
+
+    public void Dispose()
+    {
+        _cts?.Cancel();
+        _listener?.Stop();
+        _listener?.Close();
+        _thread?.Join(timeout: TimeSpan.FromSeconds(2));
+    }
+}

@@ -29,7 +29,7 @@ public sealed class LogPublisher : IAsyncLogProcessor
             message = log.ToString();
         }
 
-        var entry = new Entry(message, info.LogLevel, meta, timestamp);
+        var entry = new Entry{Message = message, Level = info.LogLevel, Meta = meta, Timestamp = timestamp};
 
         Hub.Logs.Publish(entry);
 

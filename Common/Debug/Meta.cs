@@ -1,30 +1,21 @@
 ﻿using System.Collections.Concurrent;
+using MemoryPack;
 
 namespace Tyr.Common.Debug;
 
-public record Meta
+[MemoryPackable]
+public partial record struct Meta
 {
     public const string DebugLayerPrefix = "[debug]";
     public static string DebugLayer(string layer) => DebugLayerPrefix + layer;
     public static bool IsDebugLayer(string layer) => layer.StartsWith(DebugLayerPrefix);
 
-    public string Module { get; }
-    public string Layer { get; }
-    public string? File { get; }
-    public string? Member { get; }
-    public int Line { get; }
-    public string? Expression { get; }
-
-    private Meta(string module, string layer,
-        string? file, string? member, int line, string? expression)
-    {
-        Module = module;
-        Layer = layer;
-        File = file;
-        Member = member;
-        Line = line;
-        Expression = expression;
-    }
+    public required string Module   { get; init; }
+    public required string Layer    { get; init; }
+    public string?         File     { get; init; }
+    public string?         Member   { get; init; }
+    public int             Line     { get; init; }
+    public string?         Expression { get; init; }
 
     private readonly record struct Key(
         string Module,
@@ -44,7 +35,12 @@ public record Meta
         string? file = null, string? member = null, int line = 0, string? expression = null)
     {
         var key = new Key(module, layer ?? string.Empty, file, member, line, expression);
-        return Cache.GetOrAdd(key, k => new Meta(k.Module, k.Layer, k.File, k.Member, k.Line, k.Expression));
+        return Cache.GetOrAdd(key,
+            k => new Meta
+            {
+                Module = k.Module, Layer = k.Layer, File = k.File, Member = k.Member, Line = k.Line,
+                Expression = k.Expression
+            });
     }
 
     public static readonly Meta Empty = GetOrCreate(string.Empty);
