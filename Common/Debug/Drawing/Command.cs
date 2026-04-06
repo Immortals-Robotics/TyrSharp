@@ -6,7 +6,7 @@ public readonly record struct Command(
     Options Options,
     Meta Meta,
     Timestamp Timestamp
-)
+) : IEntry
 {
     public static Command Empty => new(null!, Color.Black, new Options(), Meta.Empty, Timestamp.Now);
 

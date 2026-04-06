@@ -7,7 +7,7 @@ public record Entry(
     LogLevel Level,
     Meta Meta,
     Timestamp Timestamp
-)
+) : IEntry
 {
     public static Entry Empty => new(string.Empty, LogLevel.None, Meta.Empty, Timestamp.Now);
 

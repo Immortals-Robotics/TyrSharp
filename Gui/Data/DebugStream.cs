@@ -1,24 +1,16 @@
-using Tyr.Common.Time;
-
 namespace Tyr.Gui.Data;
 
-public class DebugStream<T>
+public class DebugStream<T> where T : Common.Debug.IEntry
 {
     private readonly Queue<T> _unassigned = [];
 
-    private readonly Func<T, Timestamp> _getTimestamp;
-    private readonly Func<T, bool> _isEmpty;
     private readonly Action<FrameData, T> _addToFrame;
 
     public Timestamp? LatestAssignedTimestamp { get; private set; }
 
     public DebugStream(
-        Func<T, Timestamp> getTimestamp,
-        Func<T, bool> isEmpty,
         Action<FrameData, T> addToFrame)
     {
-        _getTimestamp = getTimestamp;
-        _isEmpty = isEmpty;
         _addToFrame = addToFrame;
     }
 
@@ -28,14 +20,14 @@ public class DebugStream<T>
         Func<Timestamp, FrameData?> getFillFrame,
         Action sealFrames)
     {
-        var timestamp = _getTimestamp(item);
+        var timestamp = item.Timestamp;
 
         if (isUnassignable(timestamp)) return;
 
         var frame = getFillFrame(timestamp);
         if (frame is not null)
         {
-            if (!_isEmpty(item))
+            if (!item.IsEmpty)
                 _addToFrame(frame, item);
 
             LatestAssignedTimestamp = timestamp;
@@ -54,7 +46,7 @@ public class DebugStream<T>
         while (_unassigned.Count > 0)
         {
             var item = _unassigned.Peek();
-            var timestamp = _getTimestamp(item);
+            var timestamp = item.Timestamp;
 
             if (isUnassignable(timestamp))
             {
@@ -70,7 +62,7 @@ public class DebugStream<T>
 
             _unassigned.Dequeue();
 
-            if (!_isEmpty(item))
+            if (!item.IsEmpty)
                 _addToFrame(fillFrame, item);
 
             LatestAssignedTimestamp = timestamp;

@@ -48,39 +48,30 @@ public class ModuleTimeline
         _getFillFrame = GetFillFrame;
         _sealFrames = SealFrames;
 
-        _logs = new DebugStream<Debug.Logging.Entry>(
-            e => e.Timestamp,
-            e => e.IsEmpty,
-            (frame, e) =>
-            {
-                frame.Logs.Add(e);
-                AddToMetaTree(e.Meta, MetaTreeItem.ItemType.Log);
-            });
+        _logs = new DebugStream<Debug.Logging.Entry>((frame, e) =>
+        {
+            frame.Logs.Add(e);
+            AddToMetaTree(e.Meta, MetaTreeItem.ItemType.Log);
+        });
 
-        _draws = new DebugStream<Debug.Drawing.Command>(
-            d => d.Timestamp,
-            d => d.IsEmpty,
-            (frame, d) =>
-            {
-                frame.Draws.Add(d);
-                AddToMetaTree(d.Meta, MetaTreeItem.ItemType.Draw);
-            });
+        _draws = new DebugStream<Debug.Drawing.Command>((frame, d) =>
+        {
+            frame.Draws.Add(d);
+            AddToMetaTree(d.Meta, MetaTreeItem.ItemType.Draw);
+        });
 
-        _plots = new DebugStream<Debug.Plotting.Command>(
-            p => p.Timestamp,
-            p => p.IsEmpty,
-            (frame, p) =>
+        _plots = new DebugStream<Debug.Plotting.Command>((frame, p) =>
+        {
+            if (!frame.Plots.TryAdd(p.Id, p))
             {
-                if (!frame.Plots.TryAdd(p.Id, p))
-                {
-                    Log.ZLogWarning($"Dropping duplicate plot with id {p.Id} to frame {frame.StartTimestamp}");
-                }
-                else
-                {
-                    Plots[p.Id] = p.Meta;
-                    AddToMetaTree(p.Meta, MetaTreeItem.ItemType.Plot);
-                }
-            });
+                Log.ZLogWarning($"Dropping duplicate plot with id {p.Id} to frame {frame.StartTimestamp}");
+            }
+            else
+            {
+                Plots[p.Id] = p.Meta;
+                AddToMetaTree(p.Meta, MetaTreeItem.ItemType.Plot);
+            }
+        });
     }
 
     private int GetFrameIndex(Timestamp time)

@@ -18,7 +18,7 @@ public class DebugFramer
     public Timestamp EndTime { get; private set; }
     public DeltaTime Duration => EndTime - StartTime;
 
-    private ModuleTimeline GetOrCreateModuleFramer(string moduleName)
+    private ModuleTimeline GetOrCreateModuleTimeline(string moduleName)
     {
         if (!Modules.TryGetValue(moduleName, out var moduleFramer))
         {
@@ -35,7 +35,7 @@ public class DebugFramer
 
         while (_frameSubscriber.Reader.TryRead(out var frame))
         {
-            GetOrCreateModuleFramer(frame.ModuleName).OnFrame(frame);
+            GetOrCreateModuleTimeline(frame.ModuleName).OnFrame(frame);
             dirty = true;
         }
 
@@ -50,7 +50,7 @@ public class DebugFramer
             }
             else
             {
-                GetOrCreateModuleFramer(log.Meta.Module).OnLog(log);
+                GetOrCreateModuleTimeline(log.Meta.Module).OnLog(log);
             }
 
             dirty = true;
@@ -67,7 +67,7 @@ public class DebugFramer
             }
             else
             {
-                GetOrCreateModuleFramer(draw.Meta.Module).OnDraw(draw);
+                GetOrCreateModuleTimeline(draw.Meta.Module).OnDraw(draw);
             }
 
             dirty = true;
@@ -84,7 +84,7 @@ public class DebugFramer
             }
             else
             {
-                GetOrCreateModuleFramer(plot.Meta.Module).OnPlot(plot);
+                GetOrCreateModuleTimeline(plot.Meta.Module).OnPlot(plot);
             }
 
             dirty = true;
