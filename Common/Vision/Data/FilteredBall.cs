@@ -19,7 +19,6 @@ public readonly record struct FilteredBall
         if (timestamp <= Timestamp) return this;
 
         var dt = timestamp - Timestamp;
-        var trajectory = ServiceLocator.BallTrajectoryFactory.FromState(State);
 
         return new FilteredBall
         {
@@ -27,7 +26,7 @@ public readonly record struct FilteredBall
             LastVisibleTimestamp =
                 LastVisibleTimestamp +
                 dt, // TODO: why + dt? + Mhmmd: shouldn't it be Timestamp? and we never used it in the place that we Extrapolate
-            State = trajectory.GetState(dt)
+            State = ServiceLocator.BallTrajectoryFactory.GetStateAt(State, dt)
         };
     }
 }

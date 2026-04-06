@@ -6,7 +6,7 @@ using Tyr.Vision.Data;
 
 namespace Tyr.Vision.Trajectory;
 
-public class BallChip : IBallTrajectory, IBallTouchdownTrajectory
+public readonly struct BallChip : IBallTrajectory, IBallTouchdownTrajectory
 {
     private const float Gravity = 9810f;
 
@@ -196,4 +196,5 @@ public class BallChip : IBallTrajectory, IBallTouchdownTrajectory
             BallParameters.ChipDampingXyFirstHop,
             BallParameters.ChipDampingZ);
     }
+
 }

@@ -4,7 +4,7 @@ using Tyr.Common.Vision.Data;
 
 namespace Tyr.Vision.Trajectory;
 
-public class BallFlat : IBallTrajectory
+public readonly struct BallFlat : IBallTrajectory
 {
     private readonly BallState _initial;
 
@@ -114,4 +114,5 @@ public class BallFlat : IBallTrajectory
         var tStop = DeltaTime.FromSeconds(-_switchVelocity.Length() / Data.BallParameters.AccelerationRoll);
         return _switchTime + tStop;
     }
+
 }

@@ -1,5 +1,6 @@
 ﻿using System.Numerics;
 using Tyr.Common.Extensions;
+using Tyr.Common.Time;
 using Tyr.Common.Vision;
 using Tyr.Common.Vision.Data;
 
@@ -17,6 +18,18 @@ public class BallTrajectoryFactory : IBallTrajectoryFactory
         return initial.IsChipped
             ? new BallChip(initial)
             : new BallFlat(initial);
+    }
+
+    public BallState GetStateAt(BallState initial, DeltaTime dt)
+    {
+        if (initial.IsChipped)
+        {
+            var chip = new BallChip(initial);
+            return chip.GetState(dt);
+        }
+
+        var flat = new BallFlat(initial);
+        return flat.GetState(dt);
     }
 
     public IBallTrajectory FromKickedBall(Vector2 position, Vector3 velocity, Vector2 spin)
