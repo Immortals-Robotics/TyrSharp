@@ -26,6 +26,8 @@ public sealed partial class Vision
     private readonly BallMerger _ballMerger = new();
     private readonly RobotMerger _robotMerger = new();
 
+    private readonly Dictionary<uint, CameraCalibration>
+        _cameraCalibrations = new(2); // 2 cameras are being used normally
 
     private Camera GetOrCreateCamera(uint id)
     {
@@ -101,14 +103,19 @@ public sealed partial class Vision
                 $"Detected kick by {kick.RobotId} at {kick.KickPosition}, dir: {kickDirection}, ts: {kick.Timestamp.Seconds:F3}, fast: {kick.IsFastDetection}");
         }
 
+        _cameraCalibrations.Clear();
+        foreach (var camera in _cameras.Values)
+        {
+            if (camera.Calibration.HasValue)
+                _cameraCalibrations[camera.Id] = camera.Calibration.Value;
+        }
+
         var kickEstimatorsUpdateResult =
             _ballHelpers.KickEstimators.Process(
                 kick,
                 mergedBall,
                 robots,
-                _cameras.Values
-                    .Where(camera => camera.Calibration.HasValue)
-                    .ToDictionary(camera => camera.Id, camera => camera.Calibration!.Value),
+                _cameraCalibrations,
                 timestamp,
                 _lastFilteredFrame.Ball);
 
