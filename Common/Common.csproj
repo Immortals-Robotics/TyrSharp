@@ -8,6 +8,7 @@
         <AssemblyName>Tyr.Common</AssemblyName>
         <IsPackable>false</IsPackable>
         <LangVersion>14</LangVersion>
+        <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     </PropertyGroup>
 
     <ItemGroup>

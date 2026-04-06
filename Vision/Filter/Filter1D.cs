@@ -16,6 +16,8 @@ public class Filter1D
 
     private readonly float _modelError;
     private readonly KalmanFilter _kalman;
+    
+    private readonly NumFlat.Vec<double> _position = [0.0];
 
     /// <summary>
     /// Initialize with pos-only measurement, zero velocity.
@@ -68,8 +70,8 @@ public class Filter1D
     /// </summary>
     public void Correct(float position)
     {
-        NumFlat.Vec<double> vector = [position];
-        _kalman.Correct(vector);
+        _position[0] = position;
+        _kalman.Correct(_position);
     }
 
     public float Position

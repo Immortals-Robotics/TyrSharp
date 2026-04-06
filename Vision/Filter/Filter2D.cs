@@ -1,5 +1,4 @@
 ﻿using System.Numerics;
-using MathNet.Numerics.LinearAlgebra;
 using Tyr.Common.Math;
 using Tyr.Common.Time;
 
@@ -18,6 +17,8 @@ public class Filter2D
 
     private readonly float _modelError;
     private readonly KalmanFilter _kalman;
+
+    private readonly NumFlat.Vec<double> _position = [0.0, 0.0];
 
     /// <summary>
     /// Initialize with pos-only measurement (x, y), zero velocity.
@@ -75,7 +76,9 @@ public class Filter2D
     /// </summary>
     public void Correct(Vector2 position)
     {
-        _kalman.Correct(position.ToNumFlatVector());
+        _position[0] = position.X;
+        _position[1] = position.Y;
+        _kalman.Correct(_position);
     }
 
     public void SetVelocity(Vector2 velocity)

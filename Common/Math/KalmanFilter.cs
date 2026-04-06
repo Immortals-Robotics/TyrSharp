@@ -1,4 +1,5 @@
 ﻿using System.Diagnostics.CodeAnalysis;
+using MatFlat;
 using NumFlat;
 
 namespace Tyr.Common.Math;
@@ -26,6 +27,8 @@ public class KalmanFilter(int numStates, int numMeasurements, int numControl)
     private readonly Mat<double> _tempMat2 = new(numStates, numStates);
     private readonly Vec<double> _innovation = new(numMeasurements);
     private readonly Mat<double> _S = new(numMeasurements, numMeasurements);
+    private readonly Mat<double> _qrQ = new Mat<double>(numMeasurements, numMeasurements);
+    private readonly Mat<double> _qrR = new Mat<double>(numMeasurements, numMeasurements);
     private readonly Mat<double> _tempMeasMat = new(numMeasurements, numStates);
     private readonly Mat<double> _KT = new(numMeasurements, numStates);
     private readonly Mat<double> _K = new(numStates, numMeasurements);
@@ -71,7 +74,7 @@ public class KalmanFilter(int numStates, int numMeasurements, int numControl)
     }
 
     // Incorporates a measurement into the current state estimate.
-    public void Correct(Vec<double> measurement)
+    public unsafe void Correct(Vec<double> measurement)
     {
         var hm = MeasurementMatrix;
 
@@ -87,7 +90,28 @@ public class KalmanFilter(int numStates, int numMeasurements, int numControl)
 
         // K = P·Hᵀ·S⁻¹  via  Kᵀ = S⁻¹·H·Pᵀ
         Mat.Mul(hm, _errorCovariance, _tempMeasMat, transposeX: false, transposeY: true); // H·Pᵀ (m×n)
-        _S.Qr().Solve(_tempMeasMat, _KT);                                                 // Kᵀ = S⁻¹·H·Pᵀ (m×n)
+        
+        // Kᵀ = S⁻¹·H·Pᵀ (m×n)
+        QrDecompositionDouble.Decompose(_S, _qrQ, _qrR);
+
+        var cols1 = _tempMeasMat.Cols;
+        var cols2 = _KT.Cols;
+        fixed (double* a = &_qrR.Memory.Span.GetPinnableReference())
+        {
+            for (var index = 0; index < cols2.Count; ++index)
+            {
+                var b1 = cols1[index];
+                var destination1 = cols2[index];
+
+                Mat.Mul(in _qrQ, in b1, in destination1, true);
+                fixed (double* x = &destination1.Memory.Span.GetPinnableReference())
+                {
+                    Blas.SolveTriangular(Uplo.Upper, Transpose.NoTrans, _qrR.RowCount, a, _qrR.Stride, x,
+                        destination1.Stride);
+                }
+            }
+        }
+
         Mat.Transpose(_KT, _K);                                                            // K (n×m)
 
         // x̂ = x̂ + K·ν

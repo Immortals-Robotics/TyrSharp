@@ -63,22 +63,6 @@ public static class Vector2Extensions
         return v + Vector2.Normalize(direction) * distance;
     }
 
-    public static MathNet.Numerics.LinearAlgebra.Vector<double> ToMathNetVector(this Vector2 v)
-    {
-        var mathNetVector = MathNet.Numerics.LinearAlgebra.Vector<double>.Build.Dense(2);
-        mathNetVector[0] = v.X;
-        mathNetVector[1] = v.Y;
-        return mathNetVector;
-    }
-    
-    public static NumFlat.Vec<double> ToNumFlatVector(this Vector2 v)
-    {
-        return [v.X, v.Y];
-    }
-
-    public static Vector2 ToVector2(this MathNet.Numerics.LinearAlgebra.Vector<double> v, int offset = 0) =>
-        new((float)v[offset], (float)v[offset + 1]);
-    
     public static Vector2 ToVector2(this NumFlat.Vec<double> v, int offset = 0) =>
         new((float)v[offset], (float)v[offset + 1]);
 
