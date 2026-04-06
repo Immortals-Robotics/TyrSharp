@@ -27,6 +27,10 @@ public class ModuleTimeline
     private int? _latestSealedFrameIndex;
     private int FirstUnsealedFrameIndex => _latestSealedFrameIndex.GetValueOrDefault(-1) + 1;
 
+    private readonly Func<Timestamp, bool> _isUnassignable;
+    private readonly Func<Timestamp, FrameData?> _getFillFrame;
+    private readonly Action _sealFrames;
+
     // layer -> file -> function -> MetaItem
     public Dictionary<string, Dictionary<string, Dictionary<string, HashSet<MetaTreeItem>>>> MetaTree { get; } = [];
 
@@ -40,6 +44,10 @@ public class ModuleTimeline
 
     public ModuleTimeline()
     {
+        _isUnassignable = IsUnassignable;
+        _getFillFrame = GetFillFrame;
+        _sealFrames = SealFrames;
+
         _logs = new DebugStream<Debug.Logging.Entry>(
             e => e.Timestamp,
             e => e.IsEmpty,
@@ -136,21 +144,21 @@ public class ModuleTimeline
 
         _frames.Add(new FrameData { StartTimestamp = frame.StartTimestamp });
 
-        _logs.DrainQueue(IsUnassignable, GetFillFrame);
-        _draws.DrainQueue(IsUnassignable, GetFillFrame);
-        _plots.DrainQueue(IsUnassignable, GetFillFrame);
+        _logs.DrainQueue(_isUnassignable, _getFillFrame);
+        _draws.DrainQueue(_isUnassignable, _getFillFrame);
+        _plots.DrainQueue(_isUnassignable, _getFillFrame);
 
         SealFrames();
     }
 
     public void OnLog(Debug.Logging.Entry log) =>
-        _logs.OnItem(log, IsUnassignable, GetFillFrame, SealFrames);
+        _logs.OnItem(log, _isUnassignable, _getFillFrame, _sealFrames);
 
     public void OnDraw(Debug.Drawing.Command draw) =>
-        _draws.OnItem(draw, IsUnassignable, GetFillFrame, SealFrames);
+        _draws.OnItem(draw, _isUnassignable, _getFillFrame, _sealFrames);
 
     public void OnPlot(Debug.Plotting.Command plot) =>
-        _plots.OnItem(plot, IsUnassignable, GetFillFrame, SealFrames);
+        _plots.OnItem(plot, _isUnassignable, _getFillFrame, _sealFrames);
 
     private void AddToMetaTree(Debug.Meta meta, MetaTreeItem.ItemType type)
     {
@@ -228,9 +236,9 @@ public class ModuleTimeline
 
             if (!sealable) break;
 
-            _frames[index].Logs.TrimExcess();
+            /*_frames[index].Logs.TrimExcess();
             _frames[index].Draws.TrimExcess();
-            _frames[index].Plots.TrimExcess();
+            _frames[index].Plots.TrimExcess();*/
 
             _frames[index].IsSealed = true;
             _latestSealedFrameIndex = index;
