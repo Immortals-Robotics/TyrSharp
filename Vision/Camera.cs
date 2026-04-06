@@ -57,6 +57,8 @@ public partial class Camera(uint id)
 
     private float RobotRadius => Vision.FieldSize.RobotRadius ?? 90f;
 
+    private List<RobotCollisionShape> _shapes = new(22); // Max 22 robots
+
     public Vector2 ProjectToGround(Vector3 pos)
     {
         if (!Calibration.HasValue) return pos.Xy();
@@ -241,11 +243,11 @@ public partial class Camera(uint id)
 
     private List<RobotCollisionShape> GetRobotCollisionShapes(IReadOnlyList<FilteredRobot> mergedRobots)
     {
-        List<RobotCollisionShape> shapes = [];
+        _shapes.Clear();
 
         foreach (var robot in mergedRobots)
         {
-            shapes.Add(new RobotCollisionShape
+            _shapes.Add(new RobotCollisionShape
             {
                 Position = robot.State.Position,
                 Orientation = robot.State.Angle,
@@ -257,6 +259,6 @@ public partial class Camera(uint id)
             });
         }
 
-        return shapes;
+        return _shapes;
     }
 }
