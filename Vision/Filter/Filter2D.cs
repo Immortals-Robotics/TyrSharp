@@ -86,10 +86,10 @@ public class Filter2D
     public void ResetCovariance(float covariance)
     {
         _kalman.ErrorCovariance.Fill(0.0);
-        _kalman.MeasurementNoiseCovariance[0, 0] = covariance;
-        _kalman.MeasurementNoiseCovariance[1, 1] = covariance;
-        _kalman.MeasurementNoiseCovariance[2, 2] = covariance * covariance;
-        _kalman.MeasurementNoiseCovariance[3, 3] = covariance * covariance;
+        _kalman.ErrorCovariance[0, 0] = covariance;
+        _kalman.ErrorCovariance[1, 1] = covariance;
+        _kalman.ErrorCovariance[2, 2] = covariance * covariance;
+        _kalman.ErrorCovariance[3, 3] = covariance * covariance;
     }
 
     public Vector2 Position
