@@ -103,31 +103,44 @@ public partial class PlotView(DebugFramer debugFramer, DebugFilter filter)
     {
         ImGui.PushFont(FontRegistry.Instance.MonoFont);
 
-        foreach (var framer in debugFramer.Modules.Values)
+        foreach (var (moduleName, framer) in debugFramer.Modules)
         {
-            foreach (var (plotId, plotMeta) in framer.Plots)
+            var anyVisible = framer.Plots.Any(kv =>
+                filter.IsEnabled(kv.Value) && _filter.PassFilter(kv.Key));
+
+            if (!anyVisible) continue;
+
+            ImGui.PushID(moduleName);
+            var sectionOpen = ImGui.CollapsingHeader(moduleName, ImGuiTreeNodeFlags.DefaultOpen);
+            if (sectionOpen)
             {
-                if (!filter.IsEnabled(plotMeta)) continue;
-
-                _filterTested += 1;
-                if (!_filter.PassFilter(plotId)) continue;
-                _filterPassed += 1;
-
-                ImGui.PushID(plotId);
-
-                var open = ImGui.CollapsingHeader(plotId);
-                ImGui.SameLine();
-                ImGui.TextUnformatted("   ");
-                ImGui.SameLine();
-                ImGui.TextDisabled(plotMeta.Expression);
-
-                if (open)
+                ImGui.Indent();
+                foreach (var (plotId, plotMeta) in framer.Plots)
                 {
-                    DrawPlot(time, framer, plotId);
-                }
+                    if (!filter.IsEnabled(plotMeta)) continue;
 
-                ImGui.PopID();
+                    _filterTested += 1;
+                    if (!_filter.PassFilter(plotId)) continue;
+                    _filterPassed += 1;
+
+                    ImGui.PushID(plotId);
+
+                    var open = ImGui.CollapsingHeader(plotId);
+                    ImGui.SameLine();
+                    ImGui.TextUnformatted("   ");
+                    ImGui.SameLine();
+                    ImGui.TextDisabled(plotMeta.Expression);
+
+                    if (open)
+                    {
+                        DrawPlot(time, framer, plotId);
+                    }
+
+                    ImGui.PopID();
+                }
+                ImGui.Unindent();
             }
+            ImGui.PopID();
         }
 
         ImGui.PopFont();
