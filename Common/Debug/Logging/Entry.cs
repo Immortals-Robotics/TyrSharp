@@ -2,7 +2,7 @@
 
 namespace Tyr.Common.Debug.Logging;
 
-public record Entry(
+public readonly record struct Entry(
     string Message,
     LogLevel Level,
     Meta Meta,
