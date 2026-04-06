@@ -17,7 +17,9 @@ public partial class SlowKickDetector : IKickDetector
 
     private Timestamp _lastKickTs;
     private readonly List<MergedFrame> _frames = [];
-
+    private readonly List<MergedBall> _balls = new(HistorySize);
+    private readonly Dictionary<RobotId, List<FilteredRobot>> _robotsMap = [];
+    private readonly List<List<FilteredRobot>> _listPool = [];
 
     private readonly KickValidator _kickValidator = new KickValidator();
 
@@ -42,40 +44,61 @@ public partial class SlowKickDetector : IKickDetector
 
     private DetectedKick? Detect()
     {
-        List<MergedBall> balls = _frames
-            .Select(f => f.Ball)
-            .ToList();
+        _balls.Clear();
+        foreach (var f in _frames) _balls.Add(f.Ball);
 
-        Dictionary<RobotId, List<FilteredRobot>> robotsMap = _frames
-            .SelectMany(f => f.Robots)
-            .GroupBy(r => r.Id)
-            .ToDictionary(g => g.Key, g => g.ToList());
+        foreach (var list in _robotsMap.Values) { list.Clear(); _listPool.Add(list); }
+        _robotsMap.Clear();
 
-        // remove bots from checklist if no full history is available (new bot)
-        robotsMap = robotsMap.Where(e => e.Value.Count >= HistorySize).ToDictionary(e => e.Key, e => e.Value);
+        foreach (var frame in _frames)
+        {
+            foreach (var robot in frame.Robots)
+            {
+                if (!_robotsMap.TryGetValue(robot.Id, out var list))
+                {
+                    if (_listPool.Count > 0)
+                    {
+                        list = _listPool[^1];
+                        _listPool.RemoveAt(_listPool.Count - 1);
+                    }
+                    else
+                    {
+                        list = [];
+                    }
+                    _robotsMap[robot.Id] = list;
+                }
+                list.Add(robot);
+            }
+        }
 
-        // remove bots from checklist which are too far away
-        robotsMap = robotsMap.Where(e => Vector2.Distance(e.Value[0].State.Position, balls[0].Position) <= 1000)
-            .ToDictionary(e => e.Key, e => e.Value);
+        var firstBallPos = _balls[0].Position;
+        List<FilteredRobot>? kickedBot = null;
+        foreach (var robots in _robotsMap.Values)
+        {
+            if (robots.Count < HistorySize) continue; // no full history (new bot)
+            if (Vector2.Distance(robots[0].State.Position, firstBallPos) > 1000) continue; // too far away
+            if (!_kickValidator.Validate(_balls, robots)) continue;
+            kickedBot = robots;
+            break;
+        }
 
-
-        var kickedBot = robotsMap.Values.FirstOrDefault(robots => _kickValidator.Validate(balls, robots));
-
-        if ((kickedBot != null) && (Math.Abs((balls[0].Timestamp - _lastKickTs).Seconds) > MinDeltaTime))
+        if (kickedBot != null && (Math.Abs((_balls[0].Timestamp - _lastKickTs).Seconds) > MinDeltaTime))
         {
             var robot = kickedBot[0];
             Log.ZLogDebug($"Kick detected, Bot: {robot.Id}");
 
+            // Snapshot _balls since DetectedKick stores it by reference
+            var ballSnapshot = _balls.ToList();
             var kick = new DetectedKick(
                 robot.Id,
                 robot.State,
-                balls[0].Position,
-                balls[0].Timestamp,
+                _balls[0].Position,
+                _balls[0].Timestamp,
                 false,
-                balls);
-            _lastKickTs = balls[0].Timestamp;
+                ballSnapshot);
+            _lastKickTs = _balls[0].Timestamp;
 
-            var backtrack = _kickValidator.DirectionBacktrack(balls, kickedBot);
+            var backtrack = _kickValidator.DirectionBacktrack(_balls, kickedBot);
             if (!backtrack.HasValue) return kick;
             Log.ZLogDebug($"Backtrack possible");
             kick = new DetectedKick(
@@ -84,7 +107,7 @@ public partial class SlowKickDetector : IKickDetector
                 backtrack.Value.Item2,
                 backtrack.Value.Item1,
                 false,
-                balls);
+                ballSnapshot);
             _lastKickTs = backtrack.Value.Item1;
 
             return kick;
