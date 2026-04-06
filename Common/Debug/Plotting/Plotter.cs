@@ -5,6 +5,13 @@ namespace Tyr.Common.Debug.Plotting;
 
 public class Plotter(string module)
 {
+    public void Plot<T>(InternedStringHandler id, T value, string? title = null, string? layer = null,
+        [CallerArgumentExpression("value")] string? expression = null,
+        [CallerMemberName] string? member = null,
+        [CallerFilePath] string? file = null,
+        [CallerLineNumber] int line = 0)
+        => Plot(id.ToInternedString(), value, title, layer, expression, member, file, line);
+
     public void Plot<T>(string id, T value, string? title = null, string? layer = null,
         [CallerArgumentExpression("value")] string? expression = null,
         [CallerMemberName] string? member = null,
