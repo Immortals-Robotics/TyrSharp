@@ -75,7 +75,7 @@ public class Filter2D
     /// </summary>
     public void Correct(Vector2 position)
     {
-        _kalman.Correct(position.AsMathNetVector());
+        _kalman.Correct(position.ToNumFlatVector());
     }
 
     public void SetVelocity(Vector2 velocity)
@@ -85,9 +85,11 @@ public class Filter2D
 
     public void ResetCovariance(float covariance)
     {
-        _kalman.ErrorCovariance = Matrix<double>.Build.DenseIdentity(4) * covariance;
-        _kalman.ErrorCovariance[2, 2] = covariance * covariance;
-        _kalman.ErrorCovariance[3, 3] = covariance * covariance;
+        _kalman.ErrorCovariance.Fill(0.0);
+        _kalman.MeasurementNoiseCovariance[0, 0] = covariance;
+        _kalman.MeasurementNoiseCovariance[1, 1] = covariance;
+        _kalman.MeasurementNoiseCovariance[2, 2] = covariance * covariance;
+        _kalman.MeasurementNoiseCovariance[3, 3] = covariance * covariance;
     }
 
     public Vector2 Position

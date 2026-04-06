@@ -68,8 +68,7 @@ public class Filter1D
     /// </summary>
     public void Correct(float position)
     {
-        var vector = MathNet.Numerics.LinearAlgebra.Vector<double>.Build.Dense(1);
-        vector[0] = position;
+        NumFlat.Vec<double> vector = [position];
         _kalman.Correct(vector);
     }
 
