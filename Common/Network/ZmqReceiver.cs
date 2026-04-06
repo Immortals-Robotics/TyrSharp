@@ -1,6 +1,6 @@
-﻿using System.Runtime.InteropServices;
 using NetMQ;
 using NetMQ.Sockets;
+using ProtoBuf;
 using Tyr.Common.Config;
 using Tyr.Common.Runner;
 using Tyr.Common.Time;
@@ -13,20 +13,26 @@ public static partial class ZmqReceiverConfigs
     [ConfigEntry] public static DeltaTime PollTimeout { get; set; } = DeltaTime.FromMilliseconds(10);
 }
 
-public sealed class ZmqReceiver<T> : IDisposable where T : struct
+// Protobuf-based ZMQ subscriber. Use this for proto3 messages (class types).
+// Supply a custom deserializer to handle non-standard framing (e.g. a leading topic byte).
+public sealed class ZmqReceiver<T> : IDisposable where T : class
 {
     private readonly Action<T> _onData;
+    private readonly Func<byte[][], T> _deserializer;
     private SubscriberSocket? _socket;
     private Address _currentAddress;
     private volatile Address? _newAddress;
+    private List<byte[]> _frames = [];
 
-    public RunnerSync Runner { get; }
+    private RunnerSync Runner { get; }
 
-    public ZmqReceiver(Address address, Action<T> onData, string? callingModule = null)
+    public ZmqReceiver(Address address, Action<T> onData, string? callingModule = null,
+        Func<byte[][], T>? deserializer = null)
     {
         _onData = onData;
+        _deserializer = deserializer ?? (frames => Serializer.Deserialize<T>(new ReadOnlySpan<byte>(frames[0])));
         _currentAddress = address;
-        
+
         Connect(address);
 
         Runner = new RunnerSync(Tick, 0, callingModule);
@@ -44,7 +50,7 @@ public sealed class ZmqReceiver<T> : IDisposable where T : struct
         _socket = new SubscriberSocket();
         _socket.Connect($"tcp://{address}");
         _socket.SubscribeToAnyTopic();
-        Log.ZLogInformation($"ZMQ connected to {address}");
+        Log.ZLogInformation($"ZMQ (proto) connected to {address}");
     }
 
     private bool Tick()
@@ -59,12 +65,13 @@ public sealed class ZmqReceiver<T> : IDisposable where T : struct
 
         if (_socket == null) return false;
 
-        if (!_socket.TryReceiveFrameBytes(ZmqReceiverConfigs.PollTimeout.ToTimeSpan(), out var bytes))
+        _frames.Clear();
+        if (!_socket.TryReceiveMultipartBytes(ZmqReceiverConfigs.PollTimeout.ToTimeSpan(), ref _frames))
             return false;
 
         try
         {
-            var data = BytesToStruct(bytes);
+            var data = _deserializer(_frames.ToArray());
             Log.ZLogTrace($"Received {typeof(T).Name} from {_currentAddress}");
             _onData(data);
             return true;
@@ -73,24 +80,6 @@ public sealed class ZmqReceiver<T> : IDisposable where T : struct
         {
             Log.ZLogError(ex, $"Failed to deserialize {typeof(T).Name}");
             return false;
-        }
-    }
-
-    private static T BytesToStruct(byte[] bytes)
-    {
-        var expected = Marshal.SizeOf<T>();
-        if (bytes.Length < expected)
-            throw new InvalidDataException(
-                $"Expected {expected} bytes for {typeof(T).Name}, got {bytes.Length}");
-
-        var handle = GCHandle.Alloc(bytes, GCHandleType.Pinned);
-        try
-        {
-            return Marshal.PtrToStructure<T>(handle.AddrOfPinnedObject());
-        }
-        finally
-        {
-            handle.Free();
         }
     }
 

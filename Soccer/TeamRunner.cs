@@ -1,4 +1,5 @@
-﻿using Tyr.Common.Config;
+﻿using System.Numerics;
+using Tyr.Common.Config;
 using Tyr.Common.Data;
 using Tyr.Common.Data.Ssl.Vision.Geometry;
 using Tyr.Common.Dataflow;
@@ -83,13 +84,27 @@ public sealed partial class TeamRunner : IDisposable
 
         foreach (var robot in Context.OwnRobots.Where(r => r.HardwareStatus.Info != null))
         {
-            var s = robot.HardwareStatus;
+            var status = robot.HardwareStatus;
+
+            Plot.Plot($"Robot {status.Info?.RobotId} battery", status.Power?.V24Voltage ?? 0f);
+            Plot.Plot($"Robot {status.Info?.RobotId} gyro", new Vector3(status.Imu?.GyroX ?? 0f, status.Imu?.GyroY ?? 0f, status.Imu?.GyroZ ?? 0f));
+            Plot.Plot($"Robot {status.Info?.RobotId} accelometer", new Vector3(status.Imu?.AccelX ?? 0f, status.Imu?.AccelY ?? 0f, status.Imu?.AccelZ ?? 0f));
+
+            if (status.Motors?.Motors != null)
+            {
+                for (var i = 0; i < status.Motors.Motors.Count; i++)
+                {
+                    Plot.Plot($"Robot {status.Info?.RobotId} motor {i}",
+                       new Vector2(status.Motors.Motors[i].Actual, status.Motors.Motors[i].Target));
+                }
+            }
+
             Log.ZLogDebug(
-                $"Robot {s.Info!.RobotId}: " +
-                $"battery={s.Power?.V24Voltage:F2}V " +
-                $"temp={s.Diag?.ImuTemp:F1}°C " +
-                $"ball={s.Info.BallDetected} " +
-                $"motors=[{string.Join(", ", s.Motors?.Motors.Select(m => $"{m.Target:F0}/{m.Actual:F0}") ?? [])}]");
+                $"Robot {status.Info!.RobotId}: " +
+                $"battery={status.Power?.V24Voltage:F2}V " +
+                $"temp={status.Diag?.ImuTemp:F1}°C " +
+                $"ball={status.Info.BallDetected} " +
+                $"motors=[{string.Join(", ", status.Motors?.Motors.Select(m => $"{m.Target:F0}/{m.Actual:F0}") ?? [])}]");
         }
 
         if (_refereeSubscriber.Reader.TryRead(out var referee))

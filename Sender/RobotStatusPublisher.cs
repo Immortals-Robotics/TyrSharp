@@ -10,12 +10,13 @@ namespace Tyr.Sender;
 public sealed partial class RobotStatusPublisher : IDisposable
 {
     [ConfigEntry] private static Address RobotStatusAddress { get; set; } = new() { Ip = "localhost", Port = 5555 };
+    [ConfigEntry] private static int TickRateHz { get; set; } = 100;
 
-    private readonly ZmqProtoReceiver<StatusUpdate> _zmqReceiver;
+    private readonly ZmqReceiver<StatusUpdate> _zmqReceiver;
 
     public RobotStatusPublisher()
     {
-        _zmqReceiver = new ZmqProtoReceiver<StatusUpdate>(RobotStatusAddress, OnData, "RobotStatus",
+        _zmqReceiver = new ZmqReceiver<StatusUpdate>(RobotStatusAddress, OnData, "RobotStatus",
             deserializer: Deserialize);
 
         Configurable.OnUpdated += _ =>
