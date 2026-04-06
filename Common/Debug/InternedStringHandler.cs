@@ -1,5 +1,6 @@
 using System.Collections.Concurrent;
 using System.Runtime.CompilerServices;
+using System.Text;
 using Cysharp.Text;
 
 namespace Tyr.Common.Debug;
@@ -53,5 +54,20 @@ internal static class InternedStringCache
         if (Cache.TryGetValue(hash, out var existing))
             return existing;
         return Cache.GetOrAdd(hash, string.Intern(new string(span)));
+    }
+
+    /// <summary>
+    /// Returns a cached interned string for a UTF-8 <paramref name="utf8Span"/>.
+    /// Decodes to a stack-allocated char buffer (up to 512 chars) then delegates to
+    /// <see cref="GetOrAdd(ReadOnlySpan{char})"/>. Zero heap allocations on cache hit.
+    /// </summary>
+    public static string GetOrAdd(ReadOnlySpan<byte> utf8Span)
+    {
+        var maxCharCount = Encoding.UTF8.GetMaxCharCount(utf8Span.Length);
+        Span<char> charSpan = maxCharCount <= 512
+            ? stackalloc char[maxCharCount]
+            : new char[maxCharCount];
+        var charCount = Encoding.UTF8.GetChars(utf8Span, charSpan);
+        return GetOrAdd(charSpan[..charCount]);
     }
 }
