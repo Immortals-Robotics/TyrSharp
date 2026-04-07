@@ -1,5 +1,6 @@
-﻿using System.Buffers;
+using System.Buffers;
 using System.Collections.Concurrent;
+using System.Diagnostics;
 using System.Runtime.InteropServices;
 using MemoryPack;
 using Tyr.Common.Debug;
@@ -35,6 +36,8 @@ public sealed class DebugDb : IDebugDb
     private readonly Lock _internLock = new();
 
     [ThreadStatic] private static ArrayBufferWriter<byte>? _serializeBuffer;
+    private long _lastEntryTimestamp = long.MinValue;
+    private long _lastFrameTimestamp = long.MinValue;
 
     public DebugDb(string directory)
     {
@@ -46,22 +49,32 @@ public sealed class DebugDb : IDebugDb
         _sources.Reload(_strings);
         _frames = new FrameBucket(directory);
 
-        // Rebuild module id cache from existing string pool
-        // Module strings are interned with all other strings, but we track which
-        // string ids correspond to modules via the source location table
+        // Rebuild module id cache from existing storage.
         RebuildModuleCache();
     }
 
     private void RebuildModuleCache()
     {
-        var count = _sources.Count;
-        for (int i = 0; i < count; i++)
+        var sourceCount = _sources.Count;
+        for (int i = 0; i < sourceCount; i++)
         {
             var isl = _sources.GetInternal(i);
-            var moduleName = _strings.Get(isl.ModuleId);
-            if (moduleName is not null)
-                _moduleIdCache.TryAdd(moduleName, isl.ModuleId);
+            AddModuleToCache(isl.ModuleId);
         }
+
+        var frameCount = _frames.RecordCount;
+        for (int i = 0; i < frameCount; i++)
+        {
+            var frame = _frames.GetRecord(i);
+            AddModuleToCache(frame.ModuleId);
+        }
+    }
+
+    private void AddModuleToCache(int moduleId)
+    {
+        var moduleName = _strings.Get(moduleId);
+        if (moduleName is not null)
+            _moduleIdCache.TryAdd(moduleName, moduleId);
     }
 
     /// <summary>
@@ -82,6 +95,7 @@ public sealed class DebugDb : IDebugDb
     public void Append<T>(T entry) where T : IEntry
     {
         var bucket = GetOrCreateBucket<T>();
+        WarnIfTimestampDecreases(ref _lastEntryTimestamp, entry.Timestamp.Nanoseconds, $"entry append for {typeof(T).FullName}");
 
         int sourceId;
         int moduleId;
@@ -166,6 +180,8 @@ public sealed class DebugDb : IDebugDb
 
     public void AppendFrame(Frame frame)
     {
+        WarnIfTimestampDecreases(ref _lastFrameTimestamp, frame.StartTimestamp.Nanoseconds, $"frame append for module '{frame.ModuleName}'");
+
         int moduleId;
         lock (_internLock)
         {
@@ -251,5 +267,24 @@ public sealed class DebugDb : IDebugDb
         _frames.Dispose();
         _sources.Dispose();
         _strings.Dispose();
+    }
+
+    [Conditional("DEBUG")]
+    private static void WarnIfTimestampDecreases(ref long lastTimestamp, long timestamp, string streamName)
+    {
+        while (true)
+        {
+            var previous = Interlocked.Read(ref lastTimestamp);
+            if (timestamp < previous)
+            {
+                Trace.WriteLine(
+                    $"DebugDb warning: non-monotonic timestamp in {streamName}. Previous={previous}, Current={timestamp}. " +
+                    "Range queries assume append order is timestamp-sorted.");
+                return;
+            }
+
+            if (Interlocked.CompareExchange(ref lastTimestamp, timestamp, previous) == previous)
+                return;
+        }
     }
 }

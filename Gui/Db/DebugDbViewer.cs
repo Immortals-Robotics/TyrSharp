@@ -41,6 +41,8 @@ public sealed class DebugDbViewer : IDisposable
 
     public DebugDbViewer Register<T>() where T : IEntry
     {
+        _db.RegisterType<T>();
+
         var name = typeof(T).Name;
         _types[name] = new RegisteredType
         {
