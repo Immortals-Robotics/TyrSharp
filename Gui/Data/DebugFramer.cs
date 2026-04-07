@@ -1,5 +1,6 @@
 ﻿using Tyr.Common.Dataflow;
 using Tyr.Common.Time;
+using Tyr.Gui.Db;
 using Debug = Tyr.Common.Debug;
 
 namespace Tyr.Gui.Data;
@@ -12,7 +13,7 @@ public class DebugFramer : IDisposable
 
     private readonly Subscriber<Debug.Frame> _frameSubscriber = Hub.Frames.Subscribe(Mode.All);
 
-    private readonly DebugDatabase _db;
+    private readonly DebugDb _db;
     private readonly DebugDbViewer _dbViewer;
     
     public Dictionary<string, ModuleTimeline> Modules { get; } = [];
@@ -23,7 +24,8 @@ public class DebugFramer : IDisposable
 
     public DebugFramer()
     {
-        _db = new DebugDatabase("debug_session");
+        _db = new DebugDb("debug_session")
+            .RegisterType<Debug.Logging.Entry>();
         
         _dbViewer = new DebugDbViewer(_db, port: 9000)
             .Register<Debug.Logging.Entry>();
@@ -104,7 +106,10 @@ public class DebugFramer : IDisposable
         }
         
         var logsQuery = _db.Query<Debug.Logging.Entry>("Vision", Timestamp.Now - DeltaTime.FromMilliseconds(20), Timestamp.Now);
-        Console.WriteLine(logsQuery.Count());
+        foreach (var log in logsQuery)
+        {
+            Console.WriteLine(log.Message);
+        }
 
         // update time ranges if anything has changed
         if (dirty)

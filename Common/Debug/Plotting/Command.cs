@@ -1,6 +1,6 @@
 namespace Tyr.Common.Debug.Plotting;
 
-public readonly record struct Command(
+public record struct Command(
     string Id,
     object Value,
     string? Title,

@@ -8,7 +8,9 @@ namespace Tyr.Common.Debug.Logging
     {
         public required string Message { get; init; }
         public LogLevel Level { get; init; }
-        public required Meta Meta { get; init; }
+        
+        [MemoryPackIgnore]
+        public Meta Meta { get; set; }
 
         public Time.Timestamp Timestamp { get; init; }
 

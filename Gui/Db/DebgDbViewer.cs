@@ -3,7 +3,7 @@ using System.Text;
 using System.Text.Json;
 using Tyr.Common.Debug;
 
-namespace Tyr.Gui.Data;
+namespace Tyr.Gui.Db;
 
 /// <summary>
 /// Embeddable HTTP server that exposes the DebugDatabase as a browsable table UI.
@@ -19,7 +19,7 @@ namespace Tyr.Gui.Data;
 /// </summary>
 public sealed class DebugDbViewer : IDisposable
 {
-    private readonly DebugDatabase _db;
+    private readonly DebugDb _db;
     private readonly int _port;
     private readonly Dictionary<string, RegisteredType> _types = new();
 
@@ -32,7 +32,7 @@ public sealed class DebugDbViewer : IDisposable
         PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
     };
 
-    public DebugDbViewer(DebugDatabase db, int port = 9000)
+    public DebugDbViewer(DebugDb db, int port = 9000)
     {
         _db = db;
         _port = port;
