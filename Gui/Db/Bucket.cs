@@ -42,6 +42,7 @@ internal sealed class Bucket : IDisposable
     private long _blobsCapacity;
 
     private readonly Lock _writeLock = new();
+    private readonly List<(MemoryMappedViewAccessor Accessor, MemoryMappedFile Mmf)> _retired = [];
 
     public unsafe int RecordCount => Volatile.Read(ref Unsafe.AsRef<int>(_recordsPtr));
     public unsafe int BlobOffset  => Volatile.Read(ref Unsafe.AsRef<int>(_recordsPtr + 4));
@@ -68,12 +69,12 @@ internal sealed class Bucket : IDisposable
     private unsafe void InitMmap()
     {
         _recordsMmf = MemoryMappedFile.CreateFromFile(
-            _recordsPath, FileMode.Create, null, _recordsCapacity);
+            _recordsPath, FileMode.OpenOrCreate, null, _recordsCapacity);
         _recordsAccessor = _recordsMmf.CreateViewAccessor(0, _recordsCapacity);
         _recordsAccessor.SafeMemoryMappedViewHandle.AcquirePointer(ref _recordsPtr);
 
         _blobsMmf = MemoryMappedFile.CreateFromFile(
-            _blobsPath, FileMode.Create, null, _blobsCapacity);
+            _blobsPath, FileMode.OpenOrCreate, null, _blobsCapacity);
         _blobsAccessor = _blobsMmf.CreateViewAccessor(0, _blobsCapacity);
         _blobsAccessor.SafeMemoryMappedViewHandle.AcquirePointer(ref _blobsPtr);
     }
@@ -113,20 +114,28 @@ internal sealed class Bucket : IDisposable
 
     private unsafe void Grow(long neededRecords, long neededBlobs)
     {
-        _recordsAccessor.SafeMemoryMappedViewHandle.ReleasePointer();
-        _recordsAccessor.Dispose();
-        _recordsMmf.Dispose();
-
-        _blobsAccessor.SafeMemoryMappedViewHandle.ReleasePointer();
-        _blobsAccessor.Dispose();
-        _blobsMmf.Dispose();
+        // Retire old mappings — readers may still hold pointers into them.
+        // They will be disposed when the Bucket itself is disposed.
+        _retired.Add((_recordsAccessor, _recordsMmf));
+        _retired.Add((_blobsAccessor, _blobsMmf));
 
         while (_recordsCapacity < neededRecords) _recordsCapacity *= 2;
         while (_blobsCapacity < neededBlobs)     _blobsCapacity   *= 2;
 
-        _recordsPtr = null;
-        _blobsPtr   = null;
-        InitMmap();
+        // Create new, larger mappings over the same files (OpenOrCreate extends without truncating)
+        _recordsMmf = MemoryMappedFile.CreateFromFile(
+            _recordsPath, FileMode.OpenOrCreate, null, _recordsCapacity);
+        _recordsAccessor = _recordsMmf.CreateViewAccessor(0, _recordsCapacity);
+        byte* rp = null;
+        _recordsAccessor.SafeMemoryMappedViewHandle.AcquirePointer(ref rp);
+        _recordsPtr = rp;
+
+        _blobsMmf = MemoryMappedFile.CreateFromFile(
+            _blobsPath, FileMode.OpenOrCreate, null, _blobsCapacity);
+        _blobsAccessor = _blobsMmf.CreateViewAccessor(0, _blobsCapacity);
+        byte* bp = null;
+        _blobsAccessor.SafeMemoryMappedViewHandle.AcquirePointer(ref bp);
+        _blobsPtr = bp;
     }
 
     public unsafe InternalRecord GetRecord(int index)
@@ -170,6 +179,13 @@ internal sealed class Bucket : IDisposable
 
     public unsafe void Dispose()
     {
+        foreach (var (accessor, mmf) in _retired)
+        {
+            accessor.SafeMemoryMappedViewHandle.ReleasePointer();
+            accessor.Dispose();
+            mmf.Dispose();
+        }
+
         _recordsAccessor.SafeMemoryMappedViewHandle.ReleasePointer();
         _recordsAccessor.Dispose();
         _recordsMmf.Dispose();

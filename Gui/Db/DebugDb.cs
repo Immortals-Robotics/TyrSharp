@@ -148,21 +148,13 @@ public sealed class DebugDb : IDebugDb
         if (entry is null)
             return default;
 
-        Meta source;
-        lock (_internLock)
-        {
-            source = _sources.Get(record.SourceLocationId, _strings);
-        }
-        entry.Meta = source;
+        entry.Meta = _sources.Get(record.SourceLocationId, _strings);
         return entry;
     }
 
     public Meta GetSourceLocation(int id)
     {
-        lock (_internLock)
-        {
-            return _sources.Get(id, _strings);
-        }
+        return _sources.Get(id, _strings);
     }
 
     public void Dispose()

@@ -42,7 +42,7 @@ internal sealed class MappedSourceLocationTable : IDisposable
 
     public unsafe MappedSourceLocationTable(string path)
     {
-        _mmf = MemoryMappedFile.CreateFromFile(path, FileMode.Create, null, FileCapacity);
+        _mmf = MemoryMappedFile.CreateFromFile(path, FileMode.OpenOrCreate, null, FileCapacity);
         _accessor = _mmf.CreateViewAccessor(0, FileCapacity);
         byte* p = null;
         _accessor.SafeMemoryMappedViewHandle.AcquirePointer(ref p);
@@ -76,6 +76,8 @@ internal sealed class MappedSourceLocationTable : IDisposable
     public unsafe int Intern(Meta loc, MappedStringPool strings)
     {
         if (_map.TryGetValue(loc, out var id)) return id;
+
+        Assert.IsTrue(Count < MaxLocations);
 
         var isl = new InternalSourceLocation
         {

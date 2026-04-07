@@ -41,7 +41,7 @@ internal sealed class MappedStringPool : IDisposable
 
     public unsafe MappedStringPool(string path)
     {
-        _mmf = MemoryMappedFile.CreateFromFile(path, FileMode.Create, null, FileCapacity);
+        _mmf = MemoryMappedFile.CreateFromFile(path, FileMode.OpenOrCreate, null, FileCapacity);
         _accessor = _mmf.CreateViewAccessor(0, FileCapacity);
         byte* p = null;
         _accessor.SafeMemoryMappedViewHandle.AcquirePointer(ref p);
@@ -75,6 +75,7 @@ internal sealed class MappedStringPool : IDisposable
         if (_map.TryGetValue(value, out var id)) return id;
 
         id = _list.Count;
+        Assert.IsTrue(id < MaxStrings);
         _list.Add(value);
         _map[value] = id;
 
@@ -95,8 +96,7 @@ internal sealed class MappedStringPool : IDisposable
         }
 
         // Write string bytes
-        Encoding.UTF8.GetBytes(value).AsSpan().CopyTo(
-            new Span<byte>(_ptr + dataOffset, utf8.Length));
+        utf8.AsSpan().CopyTo(new Span<byte>(_ptr + dataOffset, utf8.Length));
 
         // Write index entry
         var entry = new StringPoolEntry { Offset = dataOffset, Length = utf8.Length };
