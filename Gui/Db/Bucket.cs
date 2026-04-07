@@ -66,15 +66,19 @@ internal sealed class Bucket : IDisposable
         }
     }
 
+    private static MemoryMappedFile OpenMmf(string path, long capacity)
+    {
+        var fs = new FileStream(path, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.ReadWrite);
+        return MemoryMappedFile.CreateFromFile(fs, null, capacity, MemoryMappedFileAccess.ReadWrite, HandleInheritability.None, leaveOpen: false);
+    }
+
     private unsafe void InitMmap()
     {
-        _recordsMmf = MemoryMappedFile.CreateFromFile(
-            _recordsPath, FileMode.OpenOrCreate, null, _recordsCapacity);
+        _recordsMmf = OpenMmf(_recordsPath, _recordsCapacity);
         _recordsAccessor = _recordsMmf.CreateViewAccessor(0, _recordsCapacity);
         _recordsAccessor.SafeMemoryMappedViewHandle.AcquirePointer(ref _recordsPtr);
 
-        _blobsMmf = MemoryMappedFile.CreateFromFile(
-            _blobsPath, FileMode.OpenOrCreate, null, _blobsCapacity);
+        _blobsMmf = OpenMmf(_blobsPath, _blobsCapacity);
         _blobsAccessor = _blobsMmf.CreateViewAccessor(0, _blobsCapacity);
         _blobsAccessor.SafeMemoryMappedViewHandle.AcquirePointer(ref _blobsPtr);
     }
@@ -122,16 +126,14 @@ internal sealed class Bucket : IDisposable
         while (_recordsCapacity < neededRecords) _recordsCapacity *= 2;
         while (_blobsCapacity < neededBlobs)     _blobsCapacity   *= 2;
 
-        // Create new, larger mappings over the same files (OpenOrCreate extends without truncating)
-        _recordsMmf = MemoryMappedFile.CreateFromFile(
-            _recordsPath, FileMode.OpenOrCreate, null, _recordsCapacity);
+        // Create new, larger mappings over the same files
+        _recordsMmf = OpenMmf(_recordsPath, _recordsCapacity);
         _recordsAccessor = _recordsMmf.CreateViewAccessor(0, _recordsCapacity);
         byte* rp = null;
         _recordsAccessor.SafeMemoryMappedViewHandle.AcquirePointer(ref rp);
         _recordsPtr = rp;
 
-        _blobsMmf = MemoryMappedFile.CreateFromFile(
-            _blobsPath, FileMode.OpenOrCreate, null, _blobsCapacity);
+        _blobsMmf = OpenMmf(_blobsPath, _blobsCapacity);
         _blobsAccessor = _blobsMmf.CreateViewAccessor(0, _blobsCapacity);
         byte* bp = null;
         _blobsAccessor.SafeMemoryMappedViewHandle.AcquirePointer(ref bp);

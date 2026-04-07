@@ -41,7 +41,8 @@ internal sealed class MappedStringPool : IDisposable
 
     public unsafe MappedStringPool(string path)
     {
-        _mmf = MemoryMappedFile.CreateFromFile(path, FileMode.OpenOrCreate, null, FileCapacity);
+        var fs = new FileStream(path, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.ReadWrite);
+        _mmf = MemoryMappedFile.CreateFromFile(fs, null, FileCapacity, MemoryMappedFileAccess.ReadWrite, HandleInheritability.None, leaveOpen: false);
         _accessor = _mmf.CreateViewAccessor(0, FileCapacity);
         byte* p = null;
         _accessor.SafeMemoryMappedViewHandle.AcquirePointer(ref p);
