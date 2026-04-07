@@ -1,4 +1,5 @@
-﻿using System.Collections.Concurrent;
+﻿using System.Buffers;
+using System.Collections.Concurrent;
 using System.Runtime.InteropServices;
 using MemoryPack;
 using Tyr.Common.Debug;
@@ -31,6 +32,8 @@ public sealed class DebugDb : IDebugDb
 
     // Single lock for interning (cold path)
     private readonly Lock _internLock = new();
+
+    [ThreadStatic] private static ArrayBufferWriter<byte>? _serializeBuffer;
 
     public DebugDb(string directory)
     {
@@ -87,7 +90,9 @@ public sealed class DebugDb : IDebugDb
         }
         _moduleIdCache.TryAdd(entry.Meta.Module, moduleId);
 
-        var blob = MemoryPackSerializer.Serialize(entry);
+        var buffer = _serializeBuffer ??= new ArrayBufferWriter<byte>();
+        buffer.ResetWrittenCount();
+        MemoryPackSerializer.Serialize(buffer, entry);
 
         var record = new InternalRecord
         {
@@ -96,7 +101,7 @@ public sealed class DebugDb : IDebugDb
             SourceLocationId = sourceId,
         };
 
-        bucket.Append(record, blob);
+        bucket.Append(record, buffer.WrittenSpan);
     }
 
     public IEnumerable<T> Query<T>(string module, Timestamp t0, Timestamp t1) where T : IEntry
