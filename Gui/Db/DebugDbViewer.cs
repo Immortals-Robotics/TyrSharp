@@ -149,6 +149,42 @@ public sealed class DebugDbViewer : IDisposable
                 break;
             }
 
+            case "/api/frames":
+            {
+                var module = qs["module"];
+                if (string.IsNullOrEmpty(module))
+                { Respond(ctx, 400, "text/plain", "module required"u8.ToArray()); break; }
+
+                var t0    = long.TryParse(qs["t0"], out var v0) ? v0 : 0L;
+                var t1    = long.TryParse(qs["t1"], out var v1) ? v1 : long.MaxValue;
+                var limit = int.TryParse(qs["limit"], out var lv) ? lv : 10_000;
+
+                var frames = _db.QueryFrames(module, Timestamp.FromNanoseconds(t0), Timestamp.FromNanoseconds(t1))
+                    .Take(limit)
+                    .Select(f => new { moduleName = f.ModuleName, startTimestamp = f.StartTimestamp.Nanoseconds })
+                    .ToArray();
+                RespondJson(ctx, frames);
+                break;
+            }
+
+            case "/api/frame-at":
+            {
+                var module = qs["module"];
+                if (string.IsNullOrEmpty(module))
+                { Respond(ctx, 400, "text/plain", "module required"u8.ToArray()); break; }
+
+                if (!long.TryParse(qs["t"], out var t))
+                { Respond(ctx, 400, "text/plain", "t required"u8.ToArray()); break; }
+
+                var result = _db.GetFrameAt(module, Timestamp.FromNanoseconds(t));
+                if (result is null)
+                { RespondJson(ctx, new { found = false }); break; }
+
+                var (start, end) = result.Value;
+                RespondJson(ctx, new { found = true, start = start.Nanoseconds, end = end.Nanoseconds });
+                break;
+            }
+
             default:
                 Respond(ctx, 404, "text/plain", "not found"u8.ToArray());
                 break;
@@ -323,6 +359,57 @@ public sealed class DebugDbViewer : IDisposable
 
   button.query-btn:hover { background: #347a60; border-color: var(--accent); }
 
+  .tabs {
+    display: flex;
+    gap: 0;
+    padding: 0 16px;
+    background: var(--bg-surface);
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+  }
+
+  .tab {
+    font-family: var(--mono);
+    font-size: 12px;
+    font-weight: 500;
+    padding: 8px 16px;
+    background: none;
+    border: none;
+    border-bottom: 2px solid transparent;
+    color: var(--text-dim);
+    cursor: pointer;
+  }
+
+  .tab:hover { color: var(--text); }
+  .tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+
+  .tab-panel { display: none; flex-direction: column; flex: 1; overflow: hidden; }
+  .tab-panel.active { display: flex; }
+
+  .frame-lookup {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 16px;
+    background: var(--bg-raised);
+    border-bottom: 1px solid var(--border-dim);
+  }
+
+  .frame-lookup label { font-size: 11px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.5px; font-weight: 600; }
+  .frame-lookup input { font-family: var(--mono); font-size: 12px; padding: 5px 8px; background: var(--bg); border: 1px solid var(--border); border-radius: 4px; color: var(--text); outline: none; }
+  .frame-lookup input:focus { border-color: var(--accent-dim); }
+
+  .frame-result {
+    padding: 8px 16px;
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--text-dim);
+    background: var(--bg-surface);
+    border-bottom: 1px solid var(--border-dim);
+  }
+
+  .frame-result .found { color: var(--accent); }
+
   .status {
     margin-left: auto;
     font-family: var(--mono);
@@ -409,37 +496,90 @@ public sealed class DebugDbViewer : IDisposable
     <h1>DebugDb<span> viewer</span></h1>
   </header>
 
-  <div class="toolbar">
-    <label for="type-sel">Type</label>
-    <select id="type-sel"></select>
-    <div class="sep"></div>
-
-    <label for="mod-input">Module</label>
-    <input id="mod-input" type="text" placeholder="all" style="width:130px">
-    <div class="sep"></div>
-
-    <label for="t0-input">t0</label>
-    <input id="t0-input" type="text" placeholder="0" style="width:120px">
-    <label for="t1-input">t1</label>
-    <input id="t1-input" type="text" placeholder="max" style="width:120px">
-    <div class="sep"></div>
-
-    <label for="limit-input">Limit</label>
-    <input id="limit-input" type="text" placeholder="10000" style="width:80px" value="10000">
-
-    <button class="query-btn" id="query-btn">Query</button>
-    <div class="status" id="status"></div>
+  <div class="tabs">
+    <button class="tab active" data-tab="entries">Entries</button>
+    <button class="tab" data-tab="frames">Frames</button>
   </div>
 
-  <div class="table-wrap" id="table-wrap">
-    <div class="empty" id="empty-msg">Select a type and click Query</div>
+  <div class="tab-panel active" id="panel-entries">
+    <div class="toolbar">
+      <label for="type-sel">Type</label>
+      <select id="type-sel"></select>
+      <div class="sep"></div>
+
+      <label for="mod-input">Module</label>
+      <input id="mod-input" type="text" placeholder="all" style="width:130px">
+      <div class="sep"></div>
+
+      <label for="t0-input">t0</label>
+      <input id="t0-input" type="text" placeholder="0" style="width:120px">
+      <label for="t1-input">t1</label>
+      <input id="t1-input" type="text" placeholder="max" style="width:120px">
+      <div class="sep"></div>
+
+      <label for="limit-input">Limit</label>
+      <input id="limit-input" type="text" placeholder="10000" style="width:80px" value="10000">
+
+      <button class="query-btn" id="query-btn">Query</button>
+      <div class="status" id="status"></div>
+    </div>
+
+    <div class="table-wrap" id="table-wrap">
+      <div class="empty" id="empty-msg">Select a type and click Query</div>
+    </div>
+  </div>
+
+  <div class="tab-panel" id="panel-frames">
+    <div class="toolbar">
+      <label for="fr-mod-input">Module</label>
+      <input id="fr-mod-input" type="text" placeholder="required" style="width:130px">
+      <div class="sep"></div>
+
+      <label for="fr-t0-input">t0</label>
+      <input id="fr-t0-input" type="text" placeholder="0" style="width:120px">
+      <label for="fr-t1-input">t1</label>
+      <input id="fr-t1-input" type="text" placeholder="max" style="width:120px">
+      <div class="sep"></div>
+
+      <label for="fr-limit-input">Limit</label>
+      <input id="fr-limit-input" type="text" placeholder="10000" style="width:80px" value="10000">
+
+      <button class="query-btn" id="fr-query-btn">Query Frames</button>
+      <div class="status" id="fr-status"></div>
+    </div>
+
+    <div class="frame-lookup">
+      <label for="fr-at-mod">Module</label>
+      <input id="fr-at-mod" type="text" placeholder="required" style="width:130px">
+      <div class="sep"></div>
+      <label for="fr-at-t">Timestamp</label>
+      <input id="fr-at-t" type="text" placeholder="nanoseconds" style="width:160px">
+      <button class="query-btn" id="fr-at-btn">Find Frame</button>
+      <div class="frame-result" id="fr-at-result"></div>
+    </div>
+
+    <div class="table-wrap" id="fr-table-wrap">
+      <div class="empty">Enter a module name and click Query Frames</div>
+    </div>
   </div>
 </div>
 
 <script>
 const $ = s => document.querySelector(s);
+const $$ = s => document.querySelectorAll(s);
 const api = path => fetch(path).then(r => r.json());
 
+// ─── Tabs ──────────────────────────────────────────────────────────────
+$$('.tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    $$('.tab').forEach(t => t.classList.remove('active'));
+    $$('.tab-panel').forEach(p => p.classList.remove('active'));
+    tab.classList.add('active');
+    $('#panel-' + tab.dataset.tab).classList.add('active');
+  });
+});
+
+// ─── Entries tab ───────────────────────────────────────────────────────
 let fields = [], rows = [], sortCol = null, sortAsc = true, colFilters = {};
 
 async function init() {
@@ -451,9 +591,18 @@ async function init() {
     sel.appendChild(o);
   });
   $('#query-btn').onclick = runQuery;
-  document.querySelectorAll('.toolbar input').forEach(el => {
+  $('#panel-entries .toolbar').querySelectorAll('input').forEach(el => {
     el.addEventListener('keydown', e => { if (e.key === 'Enter') runQuery(); });
   });
+
+  // Frames tab
+  $('#fr-query-btn').onclick = runFramesQuery;
+  $('#fr-at-btn').onclick = runFrameAt;
+  $('#panel-frames .toolbar').querySelectorAll('input').forEach(el => {
+    el.addEventListener('keydown', e => { if (e.key === 'Enter') runFramesQuery(); });
+  });
+  $('#fr-at-mod').addEventListener('keydown', e => { if (e.key === 'Enter') runFrameAt(); });
+  $('#fr-at-t').addEventListener('keydown', e => { if (e.key === 'Enter') runFrameAt(); });
 }
 
 async function runQuery() {
@@ -550,7 +699,104 @@ function renderTable() {
   });
 }
 
-function esc(s) { return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+// ─── Frames tab ────────────────────────────────────────────────────────
+let frFrames = [], frSortCol = null, frSortAsc = true;
+const frFields = ['moduleName', 'startTimestamp'];
+
+async function runFramesQuery() {
+  const module = $('#fr-mod-input').value;
+  if (!module) return;
+
+  const t0 = $('#fr-t0-input').value || '0';
+  const t1 = $('#fr-t1-input').value || '9223372036854775807';
+  const limit = $('#fr-limit-input').value || '10000';
+
+  const params = new URLSearchParams({ module, t0, t1, limit });
+  const ts = performance.now();
+  frFrames = await api('/api/frames?' + params);
+  const elapsed = (performance.now() - ts).toFixed(0);
+
+  frSortCol = null;
+  renderFramesTable();
+  $('#fr-status').innerHTML = '<span class="count">' + frFrames.length + '</span> frames · ' + elapsed + 'ms';
+}
+
+function renderFramesTable() {
+  const wrap = $('#fr-table-wrap');
+  wrap.querySelectorAll('.empty')?.forEach(e => e.remove());
+
+  let data = [...frFrames];
+  if (frSortCol !== null) {
+    const key = frFields[frSortCol];
+    data.sort((a, b) => {
+      const va = a[key], vb = b[key];
+      if (va == null && vb == null) return 0;
+      if (va == null) return 1;
+      if (vb == null) return -1;
+      if (typeof va === 'number' && typeof vb === 'number')
+        return frSortAsc ? va - vb : vb - va;
+      return frSortAsc ? String(va).localeCompare(String(vb)) : String(vb).localeCompare(String(va));
+    });
+  }
+
+  let h = '<table><thead><tr>';
+  h += '<th>#</th>';
+  h += '<th data-idx="0">Module' + (frSortCol === 0 ? (frSortAsc ? ' ↑' : ' ↓') : '') + '</th>';
+  h += '<th data-idx="1">Start' + (frSortCol === 1 ? (frSortAsc ? ' ↑' : ' ↓') : '') + '</th>';
+  h += '<th>Duration (ms)</th>';
+  h += '</tr></thead><tbody>';
+
+  for (let idx = 0; idx < data.length; idx++) {
+    const f = data[idx];
+    const durNs = idx + 1 < data.length ? data[idx + 1].startTimestamp - f.startTimestamp : null;
+    const dur = durNs !== null ? fmtDurMs(durNs) : '';
+    h += '<tr><td>' + idx + '</td><td>' + esc(f.moduleName) + '</td><td title="' + f.startTimestamp + ' ns">' + fmtTs(f.startTimestamp) + '</td><td>' + dur + '</td></tr>';
+  }
+  h += '</tbody></table>';
+  wrap.innerHTML = h;
+
+  wrap.querySelectorAll('th[data-idx]').forEach(th => {
+    th.addEventListener('click', () => {
+      const idx = parseInt(th.dataset.idx);
+      if (frSortCol === idx) frSortAsc = !frSortAsc;
+      else { frSortCol = idx; frSortAsc = true; }
+      renderFramesTable();
+    });
+  });
+}
+
+async function runFrameAt() {
+  const module = $('#fr-at-mod').value;
+  const t = $('#fr-at-t').value;
+  if (!module || !t) return;
+
+  const result = await api('/api/frame-at?module=' + encodeURIComponent(module) + '&t=' + t);
+  const el = $('#fr-at-result');
+  if (result.found) {
+    const durMs = fmtDurMs(result.end - result.start);
+    el.innerHTML = '<span class="found">start:</span> ' + fmtTs(result.start)
+      + ' <span class="found">end:</span> ' + fmtTs(result.end)
+      + ' <span class="found">duration:</span> ' + durMs + ' ms';
+  } else {
+    el.textContent = 'No frame found at that timestamp';
+  }
+}
+
+function esc(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+// Nanoseconds since Unix epoch → "HH:MM:SS.mmm"
+function fmtTs(ns) {
+  const ms = Number(BigInt(ns) / 1000000n);
+  const d = new Date(ms);
+  const hh = String(d.getHours()).padStart(2, '0');
+  const mm = String(d.getMinutes()).padStart(2, '0');
+  const ss = String(d.getSeconds()).padStart(2, '0');
+  const ml = String(d.getMilliseconds()).padStart(3, '0');
+  return hh + ':' + mm + ':' + ss + '.' + ml;
+}
+
+// Duration in nanoseconds → milliseconds string
+function fmtDurMs(ns) { return (ns / 1e6).toFixed(2); }
 
 init();
 </script>

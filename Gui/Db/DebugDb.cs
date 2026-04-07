@@ -26,6 +26,7 @@ public sealed class DebugDb : IDebugDb
     private readonly MappedStringPool _strings;
     private readonly MappedSourceLocationTable _sources;
     private readonly ConcurrentDictionary<Type, Bucket> _buckets = new();
+    private readonly FrameBucket _frames;
 
     // Module name → interned string id (for query filtering)
     private readonly ConcurrentDictionary<string, int> _moduleIdCache = new();
@@ -43,6 +44,7 @@ public sealed class DebugDb : IDebugDb
         _strings = new MappedStringPool(Path.Combine(directory, "strings.pool"));
         _sources = new MappedSourceLocationTable(Path.Combine(directory, "sources.table"));
         _sources.Reload(_strings);
+        _frames = new FrameBucket(directory);
 
         // Rebuild module id cache from existing string pool
         // Module strings are interned with all other strings, but we track which
@@ -162,10 +164,91 @@ public sealed class DebugDb : IDebugDb
         return _sources.Get(id, _strings);
     }
 
+    public void AppendFrame(Frame frame)
+    {
+        int moduleId;
+        lock (_internLock)
+        {
+            moduleId = _strings.Intern(frame.ModuleName);
+        }
+        _moduleIdCache.TryAdd(frame.ModuleName, moduleId);
+
+        _frames.Append(new InternalFrame
+        {
+            Timestamp = frame.StartTimestamp.Nanoseconds,
+            ModuleId  = moduleId,
+        });
+    }
+
+    public IEnumerable<Frame> QueryFrames(string module, Timestamp t0, Timestamp t1)
+    {
+        if (!_moduleIdCache.TryGetValue(module, out var moduleId))
+            yield break;
+
+        var count = _frames.RecordCount;
+        var lo = _frames.LowerBound(t0.Nanoseconds, count);
+        var hi = _frames.UpperBound(t1.Nanoseconds, count);
+
+        for (int i = lo; i < hi; i++)
+        {
+            var record = _frames.GetRecord(i);
+            if (record.ModuleId != moduleId)
+                continue;
+
+            yield return new Frame
+            {
+                ModuleName     = module,
+                StartTimestamp = Timestamp.FromNanoseconds(record.Timestamp),
+            };
+        }
+    }
+
+    public (Timestamp Start, Timestamp End)? GetFrameAt(string module, Timestamp t)
+    {
+        if (!_moduleIdCache.TryGetValue(module, out var moduleId))
+            return null;
+
+        var count = _frames.RecordCount;
+        if (count == 0)
+            return null;
+
+        // Find the insertion point for t, then scan backwards for the frame start
+        var pos = _frames.UpperBound(t.Nanoseconds, count);
+
+        // Scan backwards from pos to find the last frame of this module with timestamp <= t
+        int startIdx = -1;
+        for (int i = pos - 1; i >= 0; i--)
+        {
+            var record = _frames.GetRecord(i);
+            if (record.ModuleId == moduleId)
+            {
+                startIdx = i;
+                break;
+            }
+        }
+
+        if (startIdx < 0)
+            return null;
+
+        var start = Timestamp.FromNanoseconds(_frames.GetRecord(startIdx).Timestamp);
+
+        // Scan forward from startIdx+1 to find the next frame of this module (= end boundary)
+        for (int i = startIdx + 1; i < count; i++)
+        {
+            var record = _frames.GetRecord(i);
+            if (record.ModuleId == moduleId)
+                return (start, Timestamp.FromNanoseconds(record.Timestamp));
+        }
+
+        // Last frame of this module — open-ended, return MaxValue
+        return (start, Timestamp.MaxValue);
+    }
+
     public void Dispose()
     {
         foreach (var bucket in _buckets.Values)
             bucket.Dispose();
+        _frames.Dispose();
         _sources.Dispose();
         _strings.Dispose();
     }

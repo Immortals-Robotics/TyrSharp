@@ -49,6 +49,7 @@ public class DebugFramer : IDisposable
 
         while (_frameSubscriber.Reader.TryRead(out var frame))
         {
+            _db.AppendFrame(frame);
             GetOrCreateModuleTimeline(frame.ModuleName).OnFrame(frame);
             dirty = true;
         }
