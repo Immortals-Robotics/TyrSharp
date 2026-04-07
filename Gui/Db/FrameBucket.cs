@@ -41,7 +41,7 @@ internal sealed class FrameBucket : IDisposable
     public FrameBucket(string directory)
     {
         _path = Path.Combine(directory, "frames.data");
-        _capacity = DefaultCapacity;
+        _capacity = Math.Max(DefaultCapacity, File.Exists(_path) ? new FileInfo(_path).Length : 0);
 
         InitMmap();
 

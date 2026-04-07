@@ -52,8 +52,8 @@ internal sealed class Bucket : IDisposable
         _recordsPath = Path.Combine(directory, $"{typeName}.records");
         _blobsPath   = Path.Combine(directory, $"{typeName}.blobs");
 
-        _recordsCapacity = DefaultRecordsCapacity;
-        _blobsCapacity   = DefaultBlobsCapacity;
+        _recordsCapacity = Math.Max(DefaultRecordsCapacity, FileSize(_recordsPath));
+        _blobsCapacity   = Math.Max(DefaultBlobsCapacity, FileSize(_blobsPath));
 
         InitMmap();
 
@@ -65,6 +65,9 @@ internal sealed class Bucket : IDisposable
             Grow(HeaderSize + (long)rc * RecordSize, bo);
         }
     }
+
+    private static long FileSize(string path) =>
+        File.Exists(path) ? new FileInfo(path).Length : 0;
 
     private static MemoryMappedFile OpenMmf(string path, long capacity)
     {
