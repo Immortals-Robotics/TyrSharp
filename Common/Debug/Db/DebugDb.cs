@@ -3,9 +3,8 @@ using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using MemoryPack;
-using Tyr.Common.Debug;
 
-namespace Tyr.Gui.Db;
+namespace Tyr.Common.Debug.Db;
 
 // ─── Internal fixed-size record stored in the .records mmap ─────────────────
 

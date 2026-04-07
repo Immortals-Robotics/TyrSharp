@@ -1,8 +1,8 @@
 using System.Diagnostics;
 using Microsoft.Extensions.Logging;
 using Tyr.Common.Debug;
+using Tyr.Common.Debug.Db;
 using Tyr.Common.Time;
-using Tyr.Gui.Db;
 using Entry = Tyr.Common.Debug.Logging.Entry;
 
 namespace Tyr.Tests.Gui.Db;

@@ -1,6 +1,6 @@
 ﻿using Tyr.Common.Dataflow;
+using Tyr.Common.Debug.Db;
 using Tyr.Common.Time;
-using Tyr.Gui.Db;
 using Debug = Tyr.Common.Debug;
 
 namespace Tyr.Gui.Data;

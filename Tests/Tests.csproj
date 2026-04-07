@@ -23,7 +23,6 @@
 
     <ItemGroup>
         <ProjectReference Include="..\Common\Common.csproj"/>
-        <ProjectReference Include="..\Gui\Gui.csproj"/>
         <ProjectReference Include="..\Referee\Referee.csproj"/>
         <ProjectReference Include="..\Soccer\Soccer.csproj"/>
         <ProjectReference Include="..\Vision\Vision.csproj"/>

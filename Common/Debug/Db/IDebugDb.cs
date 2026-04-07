@@ -1,6 +1,4 @@
-using Tyr.Common.Debug;
-
-namespace Tyr.Gui.Db;
+namespace Tyr.Common.Debug.Db;
 
 public interface IDebugDb : IDisposable
 {

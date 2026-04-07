@@ -2,7 +2,7 @@ using System.IO.MemoryMappedFiles;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
-namespace Tyr.Gui.Db;
+namespace Tyr.Common.Debug.Db;
 
 // ─── Mmap'd append-only frame storage ──────────────────────────────────────
 //
@@ -41,7 +41,7 @@ internal sealed class FrameBucket : IDisposable
     public FrameBucket(string directory)
     {
         _path = Path.Combine(directory, "frames.data");
-        _capacity = Math.Max(DefaultCapacity, File.Exists(_path) ? new FileInfo(_path).Length : 0);
+        _capacity = System.Math.Max(DefaultCapacity, File.Exists(_path) ? new FileInfo(_path).Length : 0);
 
         InitMmap();
 

@@ -1,9 +1,8 @@
 ﻿using System.IO.MemoryMappedFiles;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using Tyr.Common.Debug;
 
-namespace Tyr.Gui.Db;
+namespace Tyr.Common.Debug.Db;
 
 // ─── Interned source location as a fixed-size struct (all strings → int ids) ─
 

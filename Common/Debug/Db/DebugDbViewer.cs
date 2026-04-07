@@ -2,9 +2,8 @@
 using System.Net;
 using System.Text;
 using System.Text.Json;
-using Tyr.Common.Debug;
 
-namespace Tyr.Gui.Db;
+namespace Tyr.Common.Debug.Db;
 
 /// <summary>
 /// Embeddable HTTP server that exposes the DebugDatabase as a browsable table UI.

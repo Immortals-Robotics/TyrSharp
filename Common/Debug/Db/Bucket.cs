@@ -2,7 +2,7 @@
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
-namespace Tyr.Gui.Db;
+namespace Tyr.Common.Debug.Db;
 
 // ─── Per-type memory-mapped bucket ──────────────────────────────────────────
 //
@@ -52,8 +52,8 @@ internal sealed class Bucket : IDisposable
         _recordsPath = Path.Combine(directory, $"{typeName}.records");
         _blobsPath   = Path.Combine(directory, $"{typeName}.blobs");
 
-        _recordsCapacity = Math.Max(DefaultRecordsCapacity, FileSize(_recordsPath));
-        _blobsCapacity   = Math.Max(DefaultBlobsCapacity, FileSize(_blobsPath));
+        _recordsCapacity = System.Math.Max(DefaultRecordsCapacity, FileSize(_recordsPath));
+        _blobsCapacity   = System.Math.Max(DefaultBlobsCapacity, FileSize(_blobsPath));
 
         InitMmap();
 
