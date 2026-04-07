@@ -1,6 +1,7 @@
 ﻿using System.Diagnostics;
 using System.Net;
 using System.Numerics;
+using System.Reflection;
 using System.Text;
 using System.Text.Json;
 using Tyr.Common.Debug.Plotting;
@@ -222,7 +223,7 @@ public sealed class DebugDbViewer : IDisposable
 
     private static string[] GetFieldNames<T>()
     {
-        return typeof(T).GetProperties()
+        return GetVisibleProperties(typeof(T))
             .Where(p => p.Name != nameof(IEntry.Meta))
             .Select(p => p.Name)
             .Concat(["Module", "Layer", "File", "Member", "Line", "Expression"])
@@ -232,7 +233,7 @@ public sealed class DebugDbViewer : IDisposable
     private static Dictionary<string, object?> EntryToRow<T>(T entry) where T : IEntry
     {
         var row = new Dictionary<string, object?>();
-        foreach (var prop in typeof(T).GetProperties())
+        foreach (var prop in GetVisibleProperties(typeof(T)))
         {
             if (prop.Name == nameof(IEntry.Meta))
             {
@@ -252,6 +253,13 @@ public sealed class DebugDbViewer : IDisposable
         return row;
     }
 
+    private static IEnumerable<PropertyInfo> GetVisibleProperties(Type type)
+    {
+        return type.GetProperties(BindingFlags.Instance | BindingFlags.Public)
+            .Where(p => p.GetIndexParameters().Length == 0)
+            .Where(p => p.Name != nameof(IEntry.IsEmpty));
+    }
+
     private static string GetRegisteredTypeName(Type type)
     {
         const string debugNamespacePrefix = "Tyr.Common.Debug.";
@@ -267,8 +275,10 @@ public sealed class DebugDbViewer : IDisposable
         return value switch
         {
             null => null,
-            string or bool or byte or sbyte or short or ushort or int or uint or long or ulong
-                or Half or float or double or decimal => value,
+            string or bool or byte or sbyte or short or ushort or int or uint or long or ulong or decimal => value,
+            Half half => NormalizeFloatingPoint((float)half),
+            float single => NormalizeFloatingPoint(single),
+            double number => NormalizeFloatingPoint(number),
             Enum e => e.ToString(),
             Timestamp timestamp => timestamp.Nanoseconds,
             DeltaTime deltaTime => deltaTime.Nanoseconds,
@@ -284,7 +294,7 @@ public sealed class DebugDbViewer : IDisposable
         return value.Kind switch
         {
             PlotValueKind.None => null,
-            PlotValueKind.Number => value.Number,
+            PlotValueKind.Number => NormalizeFloatingPoint(value.Number),
             PlotValueKind.Boolean => value.Boolean,
             PlotValueKind.Vector2 => FormatVector(value.X, value.Y),
             PlotValueKind.Vector3 => FormatVector(value.X, value.Y, value.Z),
@@ -292,9 +302,28 @@ public sealed class DebugDbViewer : IDisposable
         };
     }
 
-    private static string FormatVector(float x, float y) => $"({x}, {y})";
+    private static object NormalizeFloatingPoint(double value)
+    {
+        if (double.IsNaN(value))
+            return "NaN";
 
-    private static string FormatVector(float x, float y, float z) => $"({x}, {y}, {z})";
+        if (double.IsPositiveInfinity(value))
+            return "Infinity";
+
+        if (double.IsNegativeInfinity(value))
+            return "-Infinity";
+
+        return value;
+    }
+
+    private static string FormatVector(float x, float y) =>
+        $"({FormatVectorComponent(x)}, {FormatVectorComponent(y)})";
+
+    private static string FormatVector(float x, float y, float z) =>
+        $"({FormatVectorComponent(x)}, {FormatVectorComponent(y)}, {FormatVectorComponent(z)})";
+
+    private static string FormatVectorComponent(float value) =>
+        NormalizeFloatingPoint(value).ToString() ?? string.Empty;
 
     private sealed class RegisteredType
     {
@@ -626,7 +655,11 @@ const $ = s => document.querySelector(s);
 const $$ = s => document.querySelectorAll(s);
 async function api(path) {
   const r = await fetch(path);
-  const data = await r.json();
+  const text = await r.text();
+  if (!r.ok) {
+    throw new Error('HTTP ' + r.status + ' ' + r.statusText + '\n' + text);
+  }
+  const data = text ? JSON.parse(text) : {};
   data._queryMs = r.headers.get('X-Query-Ms');
   return data;
 }
@@ -668,31 +701,37 @@ async function init() {
 }
 
 async function runQuery() {
-  const type = $('#type-sel').value;
-  if (!type) return;
+  try {
+    const type = $('#type-sel').value;
+    if (!type) return;
 
-  const module = $('#mod-input').value || '';
-  const t0 = $('#t0-input').value || '0';
-  const t1 = $('#t1-input').value || '9223372036854775807';
-  const limit = $('#limit-input').value || '10000';
+    const module = $('#mod-input').value || '';
+    const t0 = $('#t0-input').value || '0';
+    const t1 = $('#t1-input').value || '9223372036854775807';
+    const limit = $('#limit-input').value || '10000';
 
-  const params = new URLSearchParams({ type, t0, t1, limit });
-  if (module) params.set('module', module);
+    const params = new URLSearchParams({ type, t0, t1, limit });
+    if (module) params.set('module', module);
 
-  const ts = performance.now();
-  [fields, rows] = await Promise.all([
-    api('/api/fields?type=' + type),
-    api('/api/query?' + params),
-  ]);
-  const elapsed = (performance.now() - ts).toFixed(0);
+    const ts = performance.now();
+    [fields, rows] = await Promise.all([
+      api('/api/fields?type=' + type),
+      api('/api/query?' + params),
+    ]);
+    const elapsed = (performance.now() - ts).toFixed(0);
 
-  const serverMs = rows._queryMs;
-  delete rows._queryMs;
+    const serverMs = rows._queryMs;
+    delete rows._queryMs;
 
-  colFilters = {};
-  sortCol = null;
-  renderTable();
-  $('#status').innerHTML = '<span class="count">' + rows.length + '</span> rows · query ' + serverMs + 'ms · total ' + elapsed + 'ms';
+    colFilters = {};
+    sortCol = null;
+    renderTable();
+    $('#status').innerHTML = '<span class="count">' + rows.length + '</span> rows · query ' + serverMs + 'ms · total ' + elapsed + 'ms';
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    $('#table-wrap').innerHTML = '<pre class="empty" style="align-items:flex-start; justify-content:flex-start; padding:16px; white-space:pre-wrap;">' + esc(message) + '</pre>';
+    $('#status').textContent = 'Query failed';
+  }
 }
 
 function renderTable() {
@@ -769,24 +808,30 @@ let frFrames = [], frSortCol = null, frSortAsc = true;
 const frFields = ['moduleName', 'startTimestamp'];
 
 async function runFramesQuery() {
-  const module = $('#fr-mod-input').value;
-  if (!module) return;
+  try {
+    const module = $('#fr-mod-input').value;
+    if (!module) return;
 
-  const t0 = $('#fr-t0-input').value || '0';
-  const t1 = $('#fr-t1-input').value || '9223372036854775807';
-  const limit = $('#fr-limit-input').value || '10000';
+    const t0 = $('#fr-t0-input').value || '0';
+    const t1 = $('#fr-t1-input').value || '9223372036854775807';
+    const limit = $('#fr-limit-input').value || '10000';
 
-  const params = new URLSearchParams({ module, t0, t1, limit });
-  const ts = performance.now();
-  frFrames = await api('/api/frames?' + params);
-  const elapsed = (performance.now() - ts).toFixed(0);
+    const params = new URLSearchParams({ module, t0, t1, limit });
+    const ts = performance.now();
+    frFrames = await api('/api/frames?' + params);
+    const elapsed = (performance.now() - ts).toFixed(0);
 
-  const serverMs = frFrames._queryMs;
-  delete frFrames._queryMs;
+    const serverMs = frFrames._queryMs;
+    delete frFrames._queryMs;
 
-  frSortCol = null;
-  renderFramesTable();
-  $('#fr-status').innerHTML = '<span class="count">' + frFrames.length + '</span> frames · query ' + serverMs + 'ms · total ' + elapsed + 'ms';
+    frSortCol = null;
+    renderFramesTable();
+    $('#fr-status').innerHTML = '<span class="count">' + frFrames.length + '</span> frames · query ' + serverMs + 'ms · total ' + elapsed + 'ms';
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    $('#fr-table-wrap').innerHTML = '<pre class="empty" style="align-items:flex-start; justify-content:flex-start; padding:16px; white-space:pre-wrap;">' + esc(message) + '</pre>';
+    $('#fr-status').textContent = 'Query failed';
+  }
 }
 
 function renderFramesTable() {
@@ -834,20 +879,25 @@ function renderFramesTable() {
 }
 
 async function runFrameAt() {
-  const module = $('#fr-at-mod').value;
-  const t = $('#fr-at-t').value;
-  if (!module || !t) return;
+  try {
+    const module = $('#fr-at-mod').value;
+    const t = $('#fr-at-t').value;
+    if (!module || !t) return;
 
-  const result = await api('/api/frame-at?module=' + encodeURIComponent(module) + '&t=' + t);
-  const el = $('#fr-at-result');
-  const qMs = result._queryMs ? ' (query ' + result._queryMs + 'ms)' : '';
-  if (result.found) {
-    const durMs = fmtDurMs(result.end - result.start);
-    el.innerHTML = '<span class="found">start:</span> ' + fmtTs(result.start)
-      + ' <span class="found">end:</span> ' + fmtTs(result.end)
-      + ' <span class="found">duration:</span> ' + durMs + ' ms' + qMs;
-  } else {
-    el.textContent = 'No frame found at that timestamp' + qMs;
+    const result = await api('/api/frame-at?module=' + encodeURIComponent(module) + '&t=' + t);
+    const el = $('#fr-at-result');
+    const qMs = result._queryMs ? ' (query ' + result._queryMs + 'ms)' : '';
+    if (result.found) {
+      const durMs = fmtDurMs(result.end - result.start);
+      el.innerHTML = '<span class="found">start:</span> ' + fmtTs(result.start)
+        + ' <span class="found">end:</span> ' + fmtTs(result.end)
+        + ' <span class="found">duration:</span> ' + durMs + ' ms' + qMs;
+    } else {
+      el.textContent = 'No frame found at that timestamp' + qMs;
+    }
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    $('#fr-at-result').textContent = message;
   }
 }
 
