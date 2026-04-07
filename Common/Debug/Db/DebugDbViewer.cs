@@ -1,7 +1,10 @@
 ﻿using System.Diagnostics;
 using System.Net;
+using System.Numerics;
 using System.Text;
 using System.Text.Json;
+using Tyr.Common.Debug.Plotting;
+using Tyr.Common.Time;
 
 namespace Tyr.Common.Debug.Db;
 
@@ -42,7 +45,7 @@ public sealed class DebugDbViewer : IDisposable
     {
         _db.RegisterType<T>();
 
-        var name = typeof(T).Name;
+        var name = GetRegisteredTypeName(typeof(T));
         _types[name] = new RegisteredType
         {
             Name = name,
@@ -243,11 +246,55 @@ public sealed class DebugDbViewer : IDisposable
             }
             else
             {
-                row[prop.Name] = prop.GetValue(entry);
+                row[prop.Name] = NormalizeCellValue(prop.GetValue(entry));
             }
         }
         return row;
     }
+
+    private static string GetRegisteredTypeName(Type type)
+    {
+        const string debugNamespacePrefix = "Tyr.Common.Debug.";
+
+        if (type.FullName is { } fullName && fullName.StartsWith(debugNamespacePrefix, StringComparison.Ordinal))
+            return fullName[debugNamespacePrefix.Length..];
+
+        return type.FullName ?? type.Name;
+    }
+
+    private static object? NormalizeCellValue(object? value)
+    {
+        return value switch
+        {
+            null => null,
+            string or bool or byte or sbyte or short or ushort or int or uint or long or ulong
+                or Half or float or double or decimal => value,
+            Enum e => e.ToString(),
+            Timestamp timestamp => timestamp.Nanoseconds,
+            DeltaTime deltaTime => deltaTime.Nanoseconds,
+            Vector2 vector2 => FormatVector(vector2.X, vector2.Y),
+            Vector3 vector3 => FormatVector(vector3.X, vector3.Y, vector3.Z),
+            PlotValue plotValue => FormatPlotValue(plotValue),
+            _ => value.ToString()
+        };
+    }
+
+    private static object? FormatPlotValue(PlotValue value)
+    {
+        return value.Kind switch
+        {
+            PlotValueKind.None => null,
+            PlotValueKind.Number => value.Number,
+            PlotValueKind.Boolean => value.Boolean,
+            PlotValueKind.Vector2 => FormatVector(value.X, value.Y),
+            PlotValueKind.Vector3 => FormatVector(value.X, value.Y, value.Z),
+            _ => value.ToString()
+        };
+    }
+
+    private static string FormatVector(float x, float y) => $"({x}, {y})";
+
+    private static string FormatVector(float x, float y, float z) => $"({x}, {y}, {z})";
 
     private sealed class RegisteredType
     {

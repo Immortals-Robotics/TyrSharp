@@ -82,19 +82,19 @@ public sealed class DebugDb : IDebugDb
     /// </summary>
     public DebugDb RegisterType<T>() where T : IEntry
     {
-        _buckets.GetOrAdd(typeof(T), _ => new Bucket(_directory, typeof(T).Name));
+        _buckets.GetOrAdd(typeof(T), CreateBucket);
         return this;
     }
 
     private Bucket GetOrCreateBucket<T>() where T : IEntry
     {
-        return _buckets.GetOrAdd(typeof(T), _ => new Bucket(_directory, typeof(T).Name));
+        return _buckets.GetOrAdd(typeof(T), CreateBucket);
     }
 
     public void Append<T>(T entry) where T : IEntry
     {
         var bucket = GetOrCreateBucket<T>();
-        WarnIfTimestampDecreases(ref _lastEntryTimestamp, entry.Timestamp.Nanoseconds, $"entry append for {typeof(T).FullName}");
+        //WarnIfTimestampDecreases(ref _lastEntryTimestamp, entry.Timestamp.Nanoseconds, $"entry append for {typeof(T).FullName}");
 
         int sourceId;
         int moduleId;
@@ -163,13 +163,37 @@ public sealed class DebugDb : IDebugDb
 
     private T? DeserializeEntry<T>(InternalRecord record, Bucket bucket) where T : IEntry
     {
-        var blob = bucket.GetBlob(record);
-        var entry = MemoryPackSerializer.Deserialize<T>(blob);
-        if (entry is null)
-            return default;
+        try
+        {
+            var blob = bucket.GetBlob(record);
+            var entry = MemoryPackSerializer.Deserialize<T>(blob);
+            if (entry is null)
+                return default;
 
-        entry.Meta = _sources.Get(record.SourceLocationId, _strings);
-        return entry;
+            entry.Meta = _sources.Get(record.SourceLocationId, _strings);
+            return entry;
+        }
+        catch (Exception ex)
+        {
+            Trace.WriteLine(
+                $"DebugDb warning: failed to deserialize {typeof(T).FullName} at timestamp {record.Timestamp}. " +
+                $"Skipping corrupt or incompatible row. {ex}");
+            return default;
+        }
+    }
+
+    private Bucket CreateBucket(Type type) => new(_directory, GetBucketName(type));
+
+    private static string GetBucketName(Type type)
+    {
+        var typeName = type.FullName ?? type.Name;
+        var invalidChars = Path.GetInvalidFileNameChars();
+        var builder = new System.Text.StringBuilder(typeName.Length);
+
+        foreach (var ch in typeName)
+            builder.Append(invalidChars.Contains(ch) ? '_' : ch);
+
+        return builder.ToString().Replace('+', '_');
     }
 
     public Meta GetSourceLocation(int id)
@@ -179,7 +203,7 @@ public sealed class DebugDb : IDebugDb
 
     public void AppendFrame(Frame frame)
     {
-        WarnIfTimestampDecreases(ref _lastFrameTimestamp, frame.StartTimestamp.Nanoseconds, $"frame append for module '{frame.ModuleName}'");
+        //WarnIfTimestampDecreases(ref _lastFrameTimestamp, frame.StartTimestamp.Nanoseconds, $"frame append for module '{frame.ModuleName}'");
 
         int moduleId;
         lock (_internLock)

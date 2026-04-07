@@ -1,9 +1,13 @@
 using System.Diagnostics;
+using System.Numerics;
 using Microsoft.Extensions.Logging;
 using Tyr.Common.Debug;
 using Tyr.Common.Debug.Db;
+using Tyr.Common.Debug.Plotting;
 using Tyr.Common.Time;
+using DrawingCommand = Tyr.Common.Debug.Drawing.Command;
 using Entry = Tyr.Common.Debug.Logging.Entry;
+using PlotCommand = Tyr.Common.Debug.Plotting.Command;
 
 namespace Tyr.Tests.Gui.Db;
 
@@ -103,6 +107,70 @@ public sealed class DebugDbTests
 #else
             Assert.DoesNotContain("non-monotonic timestamp", listener.Messages, StringComparison.OrdinalIgnoreCase);
 #endif
+        }
+        finally
+        {
+            Directory.Delete(directory, recursive: true);
+        }
+    }
+
+    [Fact]
+    public void PlotCommands_RoundTripThroughDebugDb()
+    {
+        var directory = CreateTempDirectory();
+
+        try
+        {
+            using (var db = new DebugDb(directory).RegisterType<PlotCommand>())
+            {
+                db.Append(new PlotCommand
+                {
+                    Id = "velocity",
+                    Value = PlotValue.From(new Vector3(1, 2, 3)),
+                    Title = "vel (mm/s)",
+                    Meta = Meta.GetOrCreate("Vision", layer: "TestLayer", file: "DebugDbTests.cs", member: nameof(PlotCommands_RoundTripThroughDebugDb), line: 1),
+                    Timestamp = Timestamp.FromNanoseconds(42),
+                });
+            }
+
+            using var reopened = new DebugDb(directory);
+            using var viewer = new DebugDbViewer(reopened).Register<PlotCommand>();
+
+            var commands = reopened.QueryAll<PlotCommand>(Timestamp.Zero, Timestamp.MaxValue).ToArray();
+            var command = Assert.Single(commands);
+
+            Assert.Equal("velocity", command.Id);
+            Assert.Equal("vel (mm/s)", command.Title);
+            Assert.Equal(PlotValueKind.Vector3, command.Value.Kind);
+            Assert.Equal(new Vector3(1, 2, 3), command.Value.Vector3Value);
+            Assert.Equal("Vision", command.Meta.Module);
+        }
+        finally
+        {
+            Directory.Delete(directory, recursive: true);
+        }
+    }
+
+    [Fact]
+    public void RegisterType_UsesDistinctBucketsForSameNamedDebugCommands()
+    {
+        var directory = CreateTempDirectory();
+
+        try
+        {
+            using (var db = new DebugDb(directory)
+                       .RegisterType<DrawingCommand>()
+                       .RegisterType<PlotCommand>())
+            {
+            }
+
+            var recordFiles = Directory.GetFiles(directory, "*.records")
+                .Select(Path.GetFileName)
+                .OrderBy(name => name)
+                .ToArray();
+
+            Assert.Contains("Tyr.Common.Debug.Drawing.Command.records", recordFiles);
+            Assert.Contains("Tyr.Common.Debug.Plotting.Command.records", recordFiles);
         }
         finally
         {
