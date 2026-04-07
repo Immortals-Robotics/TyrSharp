@@ -1,4 +1,5 @@
-﻿using System.Net;
+﻿using System.Diagnostics;
+using System.Net;
 using System.Text;
 using System.Text.Json;
 using Tyr.Common.Debug;
@@ -144,8 +145,10 @@ public sealed class DebugDbViewer : IDisposable
                 var t1    = long.TryParse(qs["t1"], out var v1) ? v1 : long.MaxValue;
                 var limit = int.TryParse(qs["limit"], out var lv) ? lv : 10_000;
 
+                var sw = Stopwatch.StartNew();
                 var rows = reg.Query(module, Timestamp.FromNanoseconds(t0), Timestamp.FromNanoseconds(t1)).Take(limit).ToArray();
-                RespondJson(ctx, rows);
+                sw.Stop();
+                RespondJson(ctx, rows, sw.Elapsed.TotalMilliseconds);
                 break;
             }
 
@@ -159,11 +162,13 @@ public sealed class DebugDbViewer : IDisposable
                 var t1    = long.TryParse(qs["t1"], out var v1) ? v1 : long.MaxValue;
                 var limit = int.TryParse(qs["limit"], out var lv) ? lv : 10_000;
 
+                var sw = Stopwatch.StartNew();
                 var frames = _db.QueryFrames(module, Timestamp.FromNanoseconds(t0), Timestamp.FromNanoseconds(t1))
                     .Take(limit)
                     .Select(f => new { moduleName = f.ModuleName, startTimestamp = f.StartTimestamp.Nanoseconds })
                     .ToArray();
-                RespondJson(ctx, frames);
+                sw.Stop();
+                RespondJson(ctx, frames, sw.Elapsed.TotalMilliseconds);
                 break;
             }
 
@@ -176,12 +181,14 @@ public sealed class DebugDbViewer : IDisposable
                 if (!long.TryParse(qs["t"], out var t))
                 { Respond(ctx, 400, "text/plain", "t required"u8.ToArray()); break; }
 
+                var sw = Stopwatch.StartNew();
                 var result = _db.GetFrameAt(module, Timestamp.FromNanoseconds(t));
+                sw.Stop();
                 if (result is null)
-                { RespondJson(ctx, new { found = false }); break; }
+                { RespondJson(ctx, new { found = false }, sw.Elapsed.TotalMilliseconds); break; }
 
                 var (start, end) = result.Value;
-                RespondJson(ctx, new { found = true, start = start.Nanoseconds, end = end.Nanoseconds });
+                RespondJson(ctx, new { found = true, start = start.Nanoseconds, end = end.Nanoseconds }, sw.Elapsed.TotalMilliseconds);
                 break;
             }
 
@@ -201,9 +208,11 @@ public sealed class DebugDbViewer : IDisposable
         ctx.Response.Close();
     }
 
-    private static void RespondJson(HttpListenerContext ctx, object data)
+    private static void RespondJson(HttpListenerContext ctx, object data, double? queryMs = null)
     {
         var json = JsonSerializer.SerializeToUtf8Bytes(data, JsonOpts);
+        if (queryMs.HasValue)
+            ctx.Response.Headers.Add("X-Query-Ms", queryMs.Value.ToString("F3"));
         Respond(ctx, 200, "application/json", json);
     }
 
@@ -567,7 +576,12 @@ public sealed class DebugDbViewer : IDisposable
 <script>
 const $ = s => document.querySelector(s);
 const $$ = s => document.querySelectorAll(s);
-const api = path => fetch(path).then(r => r.json());
+async function api(path) {
+  const r = await fetch(path);
+  const data = await r.json();
+  data._queryMs = r.headers.get('X-Query-Ms');
+  return data;
+}
 
 // ─── Tabs ──────────────────────────────────────────────────────────────
 $$('.tab').forEach(tab => {
@@ -624,10 +638,13 @@ async function runQuery() {
   ]);
   const elapsed = (performance.now() - ts).toFixed(0);
 
+  const serverMs = rows._queryMs;
+  delete rows._queryMs;
+
   colFilters = {};
   sortCol = null;
   renderTable();
-  $('#status').innerHTML = '<span class="count">' + rows.length + '</span> rows · ' + elapsed + 'ms';
+  $('#status').innerHTML = '<span class="count">' + rows.length + '</span> rows · query ' + serverMs + 'ms · total ' + elapsed + 'ms';
 }
 
 function renderTable() {
@@ -716,9 +733,12 @@ async function runFramesQuery() {
   frFrames = await api('/api/frames?' + params);
   const elapsed = (performance.now() - ts).toFixed(0);
 
+  const serverMs = frFrames._queryMs;
+  delete frFrames._queryMs;
+
   frSortCol = null;
   renderFramesTable();
-  $('#fr-status').innerHTML = '<span class="count">' + frFrames.length + '</span> frames · ' + elapsed + 'ms';
+  $('#fr-status').innerHTML = '<span class="count">' + frFrames.length + '</span> frames · query ' + serverMs + 'ms · total ' + elapsed + 'ms';
 }
 
 function renderFramesTable() {
@@ -772,13 +792,14 @@ async function runFrameAt() {
 
   const result = await api('/api/frame-at?module=' + encodeURIComponent(module) + '&t=' + t);
   const el = $('#fr-at-result');
+  const qMs = result._queryMs ? ' (query ' + result._queryMs + 'ms)' : '';
   if (result.found) {
     const durMs = fmtDurMs(result.end - result.start);
     el.innerHTML = '<span class="found">start:</span> ' + fmtTs(result.start)
       + ' <span class="found">end:</span> ' + fmtTs(result.end)
-      + ' <span class="found">duration:</span> ' + durMs + ' ms';
+      + ' <span class="found">duration:</span> ' + durMs + ' ms' + qMs;
   } else {
-    el.textContent = 'No frame found at that timestamp';
+    el.textContent = 'No frame found at that timestamp' + qMs;
   }
 }
 
