@@ -1,9 +1,9 @@
-using System.Numerics;
 using System.Runtime.InteropServices;
 using Hexa.NET.ImGui;
 using Hexa.NET.ImPlot;
 using Tyr.Common.Config;
 using Tyr.Common.Debug.Drawing;
+using Tyr.Common.Debug.Plotting;
 using Tyr.Common.Time;
 using Tyr.Gui.Backend;
 using Tyr.Gui.Data;
@@ -52,7 +52,7 @@ public partial class PlotView(DebugFramer debugFramer, DebugFilter filter)
 
     enum PlotDataType
     {
-        Float,
+        Scalar,
         Vector2,
         Vector3
     }
@@ -199,7 +199,7 @@ public partial class PlotView(DebugFramer debugFramer, DebugFilter filter)
 
             switch (type)
             {
-                case PlotDataType.Float:
+                case PlotDataType.Scalar:
                     ImPlot.PlotLine("##value", ref TimeSpan[0], ref ValueSpan[0], count);
                     break;
                 case PlotDataType.Vector2:
@@ -227,7 +227,7 @@ public partial class PlotView(DebugFramer debugFramer, DebugFilter filter)
     {
         foreach (var list in _rawData) list.Clear();
 
-        var type = PlotDataType.Float;
+        var type = PlotDataType.Scalar;
         string? title = null;
 
         var frames = framer.GetFrameRange(origin + min, origin + max, MaxPoints);
@@ -239,41 +239,33 @@ public partial class PlotView(DebugFramer debugFramer, DebugFilter filter)
 
             TimeList.Add((float)(frame.StartTimestamp - origin).Seconds);
 
-            switch (plot.Value)
+            switch (plot.Value.Kind)
             {
-                case float f:
-                    type = PlotDataType.Float;
-                    ValueList.Add(f);
+                case PlotValueKind.Number:
+                    type = PlotDataType.Scalar;
+                    ValueList.Add((float)plot.Value.Number);
                     break;
 
-                case double d:
-                    type = PlotDataType.Float;
-                    ValueList.Add((float)d);
+                case PlotValueKind.Boolean:
+                    type = PlotDataType.Scalar;
+                    ValueList.Add(plot.Value.Boolean ? 1f : 0f);
                     break;
 
-                case int i:
-                    type = PlotDataType.Float;
-                    ValueList.Add(i);
-                    break;
-
-                case bool b:
-                    type = PlotDataType.Float;
-                    ValueList.Add(b ? 1f : 0f);
-                    break;
-
-                case Vector2 v:
+                case PlotValueKind.Vector2:
+                    var v2 = plot.Value.Vector2Value;
                     type = PlotDataType.Vector2;
-                    XList.Add(v.X);
-                    YList.Add(v.Y);
-                    LenList.Add(v.Length());
+                    XList.Add(v2.X);
+                    YList.Add(v2.Y);
+                    LenList.Add(v2.Length());
                     break;
 
-                case Vector3 v:
+                case PlotValueKind.Vector3:
+                    var v3 = plot.Value.Vector3Value;
                     type = PlotDataType.Vector3;
-                    XList.Add(v.X);
-                    YList.Add(v.Y);
-                    ZList.Add(v.Z);
-                    LenList.Add(v.Length());
+                    XList.Add(v3.X);
+                    YList.Add(v3.Y);
+                    ZList.Add(v3.Z);
+                    LenList.Add(v3.Length());
                     break;
 
                 default:

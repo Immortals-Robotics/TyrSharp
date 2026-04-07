@@ -23,7 +23,14 @@ public class Plotter(string module)
         id = string.Intern(id);
         title = title != null ? string.Intern(title) : null;
 
-        var command = new Command(id, value!, title, meta, Timestamp.Now);
+        var command = new Command
+        {
+            Id = id,
+            Value = PlotValue.From(value),
+            Title = title,
+            Meta = meta,
+            Timestamp = Timestamp.Now,
+        };
 
         Hub.Plots.Publish(command);
     }
