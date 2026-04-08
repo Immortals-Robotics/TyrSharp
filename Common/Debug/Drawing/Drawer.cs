@@ -76,7 +76,8 @@ public sealed class Drawer(string module) : IDisposable
         string? expression, string? layer)
     {
         var meta = Meta.GetOrCreate(module, layer, file, member, line, expression);
-        var command = new Command(drawable, color, options, meta, Timestamp.Now);
+        var command = new Command
+            { Drawable = drawable, Color = color, Options = options, Meta = meta, Timestamp = Timestamp.Now };
 
         Hub.Draws.Publish(command);
     }

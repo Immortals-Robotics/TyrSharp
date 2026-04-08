@@ -135,7 +135,10 @@ public sealed partial class FieldView : IDisposable
     private void DrawInternal(Debug.Drawing.IDrawable drawable,
         Debug.Drawing.Color color, Debug.Drawing.Options options)
     {
-        _fieldDraws.Add(new Debug.Drawing.Command(drawable, color, options, Debug.Meta.Empty, Timestamp.Zero));
+        _fieldDraws.Add(new Debug.Drawing.Command
+        {
+            Drawable = drawable, Color = color, Options = options, Meta = Debug.Meta.Empty, Timestamp = Timestamp.Zero
+        });
     }
 
     private void DrawField()

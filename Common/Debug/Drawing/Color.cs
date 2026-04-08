@@ -1,27 +1,36 @@
 ﻿using System.Globalization;
 using System.Numerics;
+using MemoryPack;
 using Tomlet;
 using Tomlet.Models;
 
 namespace Tyr.Common.Debug.Drawing;
 
 // ReSharper disable once InconsistentNaming
-public readonly partial record struct Color(Vector4 RGBA)
+[MemoryPackable]
+public readonly partial record struct Color
 {
+    public Vector4 RGBA { get; init; }
+    
     public float R => RGBA.X;
     public float G => RGBA.Y;
     public float B => RGBA.Z;
     public float A => RGBA.W;
-
-    static Color()
+    
+    static partial void StaticConstructor()
     {
         TomletMain.RegisterMapper(
             color => new TomlString(color.ToHex()),
             toml => FromHex(toml.StringValue));
     }
 
-    public Color(float r, float g, float b, float a = 1f) : this(new Vector4(r, g, b, a))
+    public Color()
     {
+    }
+    
+    public Color(float r, float g, float b, float a = 1f)
+    {
+        RGBA = new Vector4(r, g, b, a);
     }
 
     public static Color FromHex(string hex)

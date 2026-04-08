@@ -25,10 +25,15 @@ public class DebugFramer : IDisposable
     public DebugFramer()
     {
         _db = new DebugDb("debug_session")
-            .RegisterType<Debug.Logging.Entry>();
+            .RegisterType<Debug.Logging.Entry>()
+            .RegisterType<Debug.Plotting.Command>()
+            .RegisterType<Debug.Drawing.Command>();
         
         _dbViewer = new DebugDbViewer(_db, port: 9000)
-            .Register<Debug.Logging.Entry>();
+            .Register<Debug.Logging.Entry>()
+            .Register<Debug.Plotting.Command>()
+            .Register<Debug.Drawing.Command>();
+        
         _dbViewer.Start();
     }
     
@@ -83,6 +88,7 @@ public class DebugFramer : IDisposable
             }
             else
             {
+                _db.Append(draw);
                 GetOrCreateModuleTimeline(draw.Meta.Module).OnDraw(draw);
             }
 
@@ -100,6 +106,7 @@ public class DebugFramer : IDisposable
             }
             else
             {
+                _db.Append(plot);
                 GetOrCreateModuleTimeline(plot.Meta.Module).OnPlot(plot);
             }
 

@@ -235,7 +235,7 @@ public partial class ConfigsView
         var dirty = ImGui.IsItemEdited();
         if (dirty)
         {
-            value = new Color(colorVec);
+            value = new Color { RGBA = colorVec };
         }
 
         return dirty;

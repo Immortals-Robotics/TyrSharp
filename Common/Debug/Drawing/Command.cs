@@ -1,14 +1,21 @@
-﻿namespace Tyr.Common.Debug.Drawing;
+﻿using MemoryPack;
 
-public record struct Command(
-    IDrawable Drawable,
-    Color Color,
-    Options Options,
-    Meta Meta,
-    Timestamp Timestamp
-) : IEntry
+namespace Tyr.Common.Debug.Drawing;
+
+[MemoryPackable]
+public partial record struct Command : IEntry
 {
-    public static Command Empty => new(null!, Color.Black, new Options(), Meta.Empty, Timestamp.Now);
-
+    public IDrawable Drawable { get; init; }
+    public Color Color { get; init; }
+    public Options Options { get; init; }
+    public Meta Meta { get; set; }
+    public Time.Timestamp Timestamp { get; init; }
+    
     public bool IsEmpty => Drawable is null;
+
+    public static Command Empty => new()
+    {
+        Drawable = null!, Color = Color.Black,
+        Options = new Options(), Meta = Meta.Empty, Timestamp = Timestamp.Now
+    };
 }
