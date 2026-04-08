@@ -1,10 +1,22 @@
 ﻿using System.Numerics;
+using MemoryPack;
 
 namespace Tyr.Common.Debug.Drawing.Drawables;
 
-public readonly record struct Circle(Vector2 Center, float Radius) : IDrawable
+[MemoryPackable]
+public partial record Circle : IDrawable
 {
-    public Circle(Math.Shapes.Circle circle) : this(circle.Center, circle.Radius)
+    public Vector2 Center { get; init; }
+    public float Radius { get; init; }
+
+    [MemoryPackConstructor]
+    public Circle()
     {
+    }
+    
+    public Circle(Math.Shapes.Circle circle)
+    {
+        Center = circle.Center;
+        Radius = circle.Radius;
     }
 }

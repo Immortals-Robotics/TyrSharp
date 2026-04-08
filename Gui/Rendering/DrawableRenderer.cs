@@ -234,21 +234,30 @@ internal partial class DrawableRenderer
     {
         if (robot.Orientation.HasValue)
         {
-            var arc = new Arc(robot.Position, robot.Radius,
-                robot.Orientation.Value + Robot.FlatAngle,
-                robot.Orientation.Value + 2f * Angle.Pi - Robot.FlatAngle,
-                true);
+            var arc = new Arc
+            {
+                Center = robot.Position,
+                Radius = robot.Radius,
+                Start = robot.Orientation.Value + Robot.FlatAngle,
+                End = robot.Orientation.Value + 2f * Angle.Pi - Robot.FlatAngle,
+                Closed = true
+
+            };
             DrawArc(arc, color, options);
         }
         else
         {
-            var circle = new Circle(robot.Position, robot.Radius);
+            var circle = new Circle{ Center = robot.Position, Radius = robot.Radius };
             DrawCircle(circle, color, options);
         }
 
         if (robot.Id.HasValue)
         {
-            var text = new Text(robot.Id.Value.ToString(), robot.Position, Robot.TextSize, TextAlignment.Center);
+            var text = new Text
+            {
+                Content = robot.Id.Value.ToString(), Position = robot.Position, Size = Robot.TextSize,
+                Alignment = TextAlignment.Center
+            };
             DrawText(text, Robot.TextColor);
         }
     }

@@ -98,7 +98,7 @@ public sealed class Drawer(string module) : IDisposable
         [CallerFilePath] string? file = null,
         [CallerLineNumber] int line = 0)
     {
-        var point = new Point(position);
+        var point = new Point { Position = position };
         Draw(point, color, options, member, file, line, positionExpression, layer ?? _layer);
     }
 
@@ -111,7 +111,7 @@ public sealed class Drawer(string module) : IDisposable
         [CallerFilePath] string? file = null,
         [CallerLineNumber] int lineNumber = 0)
     {
-        var line = new Line(point, angle);
+        var line = new Line { Point = point, Angle = angle };
 
         var expression = MakeExpression(
             nameof(point), pointExpression,
@@ -169,7 +169,7 @@ public sealed class Drawer(string module) : IDisposable
         [CallerFilePath] string? file = null,
         [CallerLineNumber] int line = 0)
     {
-        var arrow = new Arrow(start, end);
+        var arrow = new Arrow { Start = start, End = end };
 
         var expression = MakeExpression(
             nameof(start), startExpression,
@@ -198,7 +198,7 @@ public sealed class Drawer(string module) : IDisposable
         [CallerFilePath] string? file = null,
         [CallerLineNumber] int line = 0)
     {
-        var rect = new Rectangle(min, max);
+        var rect = new Rectangle { Min = min, Max = max };
 
         var expression = MakeExpression(
             nameof(min), minExpression,
@@ -228,7 +228,7 @@ public sealed class Drawer(string module) : IDisposable
         [CallerFilePath] string? file = null,
         [CallerLineNumber] int line = 0)
     {
-        var triangle = new Triangle(v1, v2, v3);
+        var triangle = new Triangle { A = v1, B = v2, C = v3 };
 
         var expression = MakeExpression(
             nameof(v1), v1Expression,
@@ -259,7 +259,7 @@ public sealed class Drawer(string module) : IDisposable
         [CallerFilePath] string? file = null,
         [CallerLineNumber] int line = 0)
     {
-        var circle = new Circle(center, radius);
+        var circle = new Circle { Center = center, Radius = radius };
 
         var expression = MakeExpression(
             nameof(center), centerExpression,
@@ -295,7 +295,7 @@ public sealed class Drawer(string module) : IDisposable
         [CallerFilePath] string? file = null,
         [CallerLineNumber] int line = 0)
     {
-        var arc = new Arc(center, radius, start, end, closed);
+        var arc = new Arc { Center = center, Radius = radius, Start = start, End = end, Closed = closed };
 
         var expression = MakeExpression(
             nameof(center), centerExpression,
@@ -318,7 +318,7 @@ public sealed class Drawer(string module) : IDisposable
         [CallerFilePath] string? file = null,
         [CallerLineNumber] int line = 0)
     {
-        var robot = new Robot(position, orientation, id, radius);
+        var robot = new Robot { Position = position, Orientation = orientation, Id = id, Radius = radius ?? Robot.DefaultRadius };
 
         var expression = MakeExpression(
             nameof(position), positionExpression,
@@ -339,7 +339,8 @@ public sealed class Drawer(string module) : IDisposable
         [CallerFilePath] string? file = null,
         [CallerLineNumber] int line = 0)
     {
-        var robot = new Robot(position, orientation, id?.Id, radius);
+        var robot = new Robot
+            { Position = position, Orientation = orientation, Id = id?.Id, Radius = radius ?? Robot.DefaultRadius };
 
         var expression = MakeExpression(
             nameof(position), positionExpression,
@@ -422,7 +423,7 @@ public sealed class Drawer(string module) : IDisposable
         [CallerFilePath] string? file = null,
         [CallerLineNumber] int line = 0)
     {
-        var text = new Text(content, position, size, alignment);
+        var text = new Text { Content = content, Position = position, Size = size, Alignment = alignment };
 
         var expression = MakeExpression(
             nameof(content), contentExpression,

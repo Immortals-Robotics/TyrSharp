@@ -1,13 +1,21 @@
 ﻿using System.Numerics;
+using MemoryPack;
 
 namespace Tyr.Common.Debug.Drawing.Drawables;
 
-public readonly record struct Path : IDrawable
+[MemoryPackable]
+public partial record Path : IDrawable
 {
+    public Vector2[] Points { get; init; }
+
+    [method: MemoryPackConstructor]
+    private Path()
+    {
+        Points = [];
+    }
+    
     public Path(IReadOnlyList<Vector2> points)
     {
         Points = points.ToArray();
     }
-
-    public Vector2[] Points { get; init; }
 }

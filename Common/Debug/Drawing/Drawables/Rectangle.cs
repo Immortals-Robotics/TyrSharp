@@ -1,10 +1,22 @@
 ﻿using System.Numerics;
+using MemoryPack;
 
 namespace Tyr.Common.Debug.Drawing.Drawables;
 
-public readonly record struct Rectangle(Vector2 Min, Vector2 Max) : IDrawable
+[MemoryPackable]
+public partial record Rectangle : IDrawable
 {
-    public Rectangle(Math.Shapes.Rectangle rect) : this(rect.Min, rect.Max)
+    public Vector2 Min { get; init; }
+    public Vector2 Max { get; init; }
+
+    [MemoryPackConstructor]
+    public Rectangle()
     {
+    }
+    
+    public Rectangle(Math.Shapes.Rectangle rect)
+    {
+        Min = rect.Min;
+        Max = rect.Max;
     }
 }
