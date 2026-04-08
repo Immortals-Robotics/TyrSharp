@@ -35,9 +35,7 @@ public sealed class DebugDb : IDebugDb
     private readonly Lock _internLock = new();
 
     [ThreadStatic] private static ArrayBufferWriter<byte>? _serializeBuffer;
-    private long _lastEntryTimestamp = long.MinValue;
-    private long _lastFrameTimestamp = long.MinValue;
-
+    
     public DebugDb(string directory)
     {
         _directory = directory;

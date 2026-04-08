@@ -27,8 +27,8 @@ internal sealed class FrameBucket : IDisposable
 
     private readonly string _path;
 
-    private MemoryMappedFile         _mmf;
-    private MemoryMappedViewAccessor _accessor;
+    private MemoryMappedFile         _mmf = null!;
+    private MemoryMappedViewAccessor _accessor = null!;
     private unsafe byte*             _ptr;
 
     private long _capacity;

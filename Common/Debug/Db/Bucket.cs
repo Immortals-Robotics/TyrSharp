@@ -30,12 +30,12 @@ internal sealed class Bucket : IDisposable
     private readonly string _recordsPath;
     private readonly string _blobsPath;
 
-    private MemoryMappedFile          _recordsMmf;
-    private MemoryMappedViewAccessor  _recordsAccessor;
+    private MemoryMappedFile          _recordsMmf = null!;
+    private MemoryMappedViewAccessor  _recordsAccessor = null!;
     private unsafe byte*              _recordsPtr;
 
-    private MemoryMappedFile          _blobsMmf;
-    private MemoryMappedViewAccessor  _blobsAccessor;
+    private MemoryMappedFile          _blobsMmf = null!;
+    private MemoryMappedViewAccessor  _blobsAccessor = null!;
     private unsafe byte*              _blobsPtr;
 
     private long _recordsCapacity;
