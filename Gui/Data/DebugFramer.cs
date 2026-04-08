@@ -1,5 +1,4 @@
 ﻿using Tyr.Common.Dataflow;
-using Tyr.Common.Debug.Db;
 using Tyr.Common.Time;
 using Debug = Tyr.Common.Debug;
 
@@ -13,30 +12,12 @@ public class DebugFramer : IDisposable
 
     private readonly Subscriber<Debug.Frame> _frameSubscriber = Hub.Frames.Subscribe(Mode.All);
 
-    private readonly DebugDb _db;
-    private readonly DebugDbViewer _dbViewer;
-    
     public Dictionary<string, ModuleTimeline> Modules { get; } = [];
 
     public Timestamp StartTime { get; private set; }
     public Timestamp EndTime { get; private set; }
     public DeltaTime Duration => EndTime - StartTime;
 
-    public DebugFramer()
-    {
-        _db = new DebugDb("debug_session")
-            .RegisterType<Debug.Logging.Entry>()
-            .RegisterType<Debug.Plotting.Command>()
-            .RegisterType<Debug.Drawing.Command>();
-        
-        _dbViewer = new DebugDbViewer(_db, port: 9000)
-            .Register<Debug.Logging.Entry>()
-            .Register<Debug.Plotting.Command>()
-            .Register<Debug.Drawing.Command>();
-        
-        _dbViewer.Start();
-    }
-    
     private ModuleTimeline GetOrCreateModuleTimeline(string moduleName)
     {
         if (!Modules.TryGetValue(moduleName, out var moduleFramer))
@@ -54,7 +35,6 @@ public class DebugFramer : IDisposable
 
         while (_frameSubscriber.Reader.TryRead(out var frame))
         {
-            _db.AppendFrame(frame);
             GetOrCreateModuleTimeline(frame.ModuleName).OnFrame(frame);
             dirty = true;
         }
@@ -70,7 +50,6 @@ public class DebugFramer : IDisposable
             }
             else
             {
-                _db.Append(log);
                 GetOrCreateModuleTimeline(log.Meta.Module).OnLog(log);
             }
 
@@ -88,7 +67,6 @@ public class DebugFramer : IDisposable
             }
             else
             {
-                _db.Append(draw);
                 GetOrCreateModuleTimeline(draw.Meta.Module).OnDraw(draw);
             }
 
@@ -106,19 +84,11 @@ public class DebugFramer : IDisposable
             }
             else
             {
-                _db.Append(plot);
                 GetOrCreateModuleTimeline(plot.Meta.Module).OnPlot(plot);
             }
 
             dirty = true;
         }
-        
-        var logsQuery = _db.Query<Debug.Logging.Entry>("Vision", Timestamp.Now - DeltaTime.FromMilliseconds(20), Timestamp.Now);
-        foreach (var log in logsQuery)
-        {
-            Console.WriteLine(log.Message);
-        }
-
         // update time ranges if anything has changed
         if (dirty)
         {
@@ -139,9 +109,6 @@ public class DebugFramer : IDisposable
 
     public void Dispose()
     {
-        _dbViewer.Dispose();
-        _db.Dispose();
-        
         _logSubscriber.Dispose();
         _drawSubscriber.Dispose();
         _plotSubscriber.Dispose();

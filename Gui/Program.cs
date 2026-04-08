@@ -3,6 +3,7 @@
 using var projectConfigs = new Config.Storage(args[0], Config.StorageType.Project);
 using var userConfigs = new Config.Storage("user.toml", Config.StorageType.User);
 
+using var debugDbDumper = new Tyr.Common.Debug.Db.DebugDbDumper();
 using var runner = new Tyr.Gui.Runner();
 
 using var sender = new Tyr.Sender.Runner();

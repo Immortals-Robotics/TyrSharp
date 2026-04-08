@@ -149,6 +149,7 @@ public sealed partial class Runner : IDisposable
         _window.Dispose();
         _imgui.Dispose();
         _fonts.Dispose();
+        _framer.Dispose();
         _filter.Dispose();
         _log.Dispose();
         _field.Dispose();
