@@ -170,6 +170,24 @@ public sealed class DebugDb : IDebugDb
             yield return shardKey;
     }
 
+    public IEnumerable<Meta> QuerySourceLocations<T>(string module) where T : IEntry
+    {
+        if (!_moduleIdCache.TryGetValue(module, out var moduleId))
+            yield break;
+
+        if (!_buckets.TryGetValue(typeof(T), out var bucketSet))
+            yield break;
+
+        var sourceLocationIds = bucketSet.Keys
+            .Where(shard => shard.ModuleId == moduleId)
+            .Select(shard => shard.SourceLocationId)
+            .Distinct()
+            .Order();
+
+        foreach (var sourceLocationId in sourceLocationIds)
+            yield return _sources.Get(sourceLocationId, _strings);
+    }
+
     private IEnumerable<T> QueryCore<T>(
         Timestamp t0,
         Timestamp t1,

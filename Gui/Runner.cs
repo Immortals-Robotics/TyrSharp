@@ -57,7 +57,7 @@ public sealed partial class Runner : IDisposable
 
         // init our UI views
         _framer = new DebugFramer();
-        _filter = new DebugFilter(_framer);
+        _filter = new DebugFilter(_framer, debugDb);
         _log = new LogView(_framer, _filter, debugDb);
         _field = new FieldView(_framer, _filter, debugDb);
         _plots = new PlotView(_framer, _filter, debugDb);

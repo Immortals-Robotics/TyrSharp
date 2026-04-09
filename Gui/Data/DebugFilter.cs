@@ -9,7 +9,7 @@ using StrSpan = System.ReadOnlySpan<char>;
 namespace Tyr.Gui.Data;
 
 [Configurable]
-public sealed partial class DebugFilter(DebugFramer debugFramer) : IDisposable
+public sealed partial class DebugFilter(DebugFramer debugFramer, Tyr.Common.Debug.Db.IDebugDb debugDb) : IDisposable
 {
     // Dictionary to track the enabled state of each node in the tree
     // Format: "module" or "module/file" or "module/layer/file" or "module/layer/file/member" or "module/layer/file/member/line"
@@ -19,6 +19,7 @@ public sealed partial class DebugFilter(DebugFramer debugFramer) : IDisposable
     private readonly Dictionary<string, bool>.AlternateLookup<StrSpan> _lookup =
         FilterState.GetAlternateLookup<StrSpan>();
 
+    private readonly Dictionary<string, Dictionary<string, Dictionary<string, Dictionary<string, HashSet<MetaTreeItem>>>>> _metaTrees = [];
     private Utf16ValueStringBuilder _stringBuilder = ZString.CreateStringBuilder();
 
     private bool _dirty;
@@ -76,11 +77,11 @@ public sealed partial class DebugFilter(DebugFramer debugFramer) : IDisposable
 
             RegisterModules();
 
-            foreach (var (moduleName, framer) in debugFramer.Modules)
+            foreach (var (moduleName, _) in debugFramer.Modules)
             {
-                if (framer.MetaTree.Count == 0) continue;
+                if (!_metaTrees.TryGetValue(moduleName, out var metaTree) || metaTree.Count == 0) continue;
 
-                DrawModuleNode(moduleName, framer);
+                DrawModuleNode(moduleName, metaTree);
             }
 
             if (_dirty)
@@ -95,10 +96,21 @@ public sealed partial class DebugFilter(DebugFramer debugFramer) : IDisposable
     // Register all modules, files, and functions
     private void RegisterModules()
     {
-        foreach (var (module, framer) in debugFramer.Modules)
+        foreach (var (module, _) in debugFramer.Modules)
         {
             _dirty |= FilterState.TryAdd(module, true);
-            foreach (var (layer, files) in framer.MetaTree)
+
+            RegisterMetaTree(module, debugDb.QuerySourceLocations<Tyr.Common.Debug.Logging.Entry>(module),
+                MetaTreeItem.ItemType.Log);
+            RegisterMetaTree(module, debugDb.QuerySourceLocations<Tyr.Common.Debug.Drawing.Command>(module),
+                MetaTreeItem.ItemType.Draw);
+            RegisterMetaTree(module, debugDb.QuerySourceLocations<Tyr.Common.Debug.Plotting.Command>(module),
+                MetaTreeItem.ItemType.Plot);
+
+            if (!_metaTrees.TryGetValue(module, out var metaTree))
+                continue;
+
+            foreach (var (layer, files) in metaTree)
             {
                 var defaultValue = !Meta.IsDebugLayer(layer);
                 _dirty |= _lookup.TryAdd(MakePath(module, layer), defaultValue);
@@ -118,7 +130,46 @@ public sealed partial class DebugFilter(DebugFramer debugFramer) : IDisposable
         }
     }
 
-    private void DrawModuleNode(string module, ModuleTimeline framer)
+    private void RegisterMetaTree(string module, IEnumerable<Meta> metas, MetaTreeItem.ItemType type)
+    {
+        foreach (var meta in metas)
+            AddToMetaTree(module, meta, type);
+    }
+
+    private void AddToMetaTree(string module, Meta meta, MetaTreeItem.ItemType type)
+    {
+        if (meta is not { File: not null, Member: not null })
+            return;
+
+        if (!_metaTrees.TryGetValue(module, out var metaTree))
+        {
+            metaTree = [];
+            _metaTrees[module] = metaTree;
+        }
+
+        if (!metaTree.TryGetValue(meta.Layer, out var fileDict))
+        {
+            fileDict = [];
+            metaTree[meta.Layer] = fileDict;
+        }
+
+        if (!fileDict.TryGetValue(meta.File, out var functionDict))
+        {
+            functionDict = [];
+            fileDict[meta.File] = functionDict;
+        }
+
+        if (!functionDict.TryGetValue(meta.Member, out var lineSet))
+        {
+            lineSet = [];
+            functionDict[meta.Member] = lineSet;
+        }
+
+        lineSet.Add(MetaTreeItem.GetOrCreate(type, meta.Line, meta.Expression));
+    }
+
+    private void DrawModuleNode(string module,
+        Dictionary<string, Dictionary<string, Dictionary<string, HashSet<MetaTreeItem>>>> metaTree)
     {
         // Get current state
         var isEnabled = FilterState[module];
@@ -137,7 +188,7 @@ public sealed partial class DebugFilter(DebugFramer debugFramer) : IDisposable
             ImGui.BeginDisabled(!isEnabled);
 
             // Draw files
-            foreach (var (layer, files) in framer.MetaTree)
+            foreach (var (layer, files) in metaTree)
             {
                 DrawLayerNode(module, layer, files, isEnabled);
             }

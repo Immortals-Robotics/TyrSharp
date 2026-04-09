@@ -7,6 +7,7 @@ public interface IDebugDb : IDisposable
     IEnumerable<T> Query<T>(Timestamp t0, Timestamp t1, string? module = null, int? sourceLocationId = null, string? shardKey = null, int? maxCount = null) where T : IEntry;
     IEnumerable<T> QueryAll<T>(Timestamp t0, Timestamp t1, string? shardKey = null, int? maxCount = null) where T : IEntry;
     IEnumerable<string> QueryShardKeys<T>(string module) where T : IEntry;
+    IEnumerable<Meta> QuerySourceLocations<T>(string module) where T : IEntry;
     Meta GetSourceLocation(int id);
 
     void AppendFrame(Frame frame);

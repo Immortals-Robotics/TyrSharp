@@ -31,11 +31,6 @@ public class ModuleTimeline
     private readonly Func<Timestamp, FrameData?> _getFillFrame;
     private readonly Action _sealFrames;
 
-    // layer -> file -> function -> MetaItem
-    public Dictionary<string, Dictionary<string, Dictionary<string, HashSet<MetaTreeItem>>>> MetaTree { get; } = [];
-
-    public Dictionary<string, Debug.Meta> Plots { get; } = [];
-
     public int FrameCount => _frames.Count;
     public Timestamp? StartTime => _frames.FirstOrDefault()?.StartTimestamp;
     public Timestamp? EndTime => LatestFrame?.EndTimestamp;
@@ -51,13 +46,11 @@ public class ModuleTimeline
         _logs = new DebugStream<Debug.Logging.Entry>((frame, e) =>
         {
             frame.Logs.Add(e);
-            AddToMetaTree(e.Meta, MetaTreeItem.ItemType.Log);
         });
 
         _draws = new DebugStream<Debug.Drawing.Command>((frame, d) =>
         {
             frame.Draws.Add(d);
-            AddToMetaTree(d.Meta, MetaTreeItem.ItemType.Draw);
         });
 
         _plots = new DebugStream<Debug.Plotting.Command>((frame, p) =>
@@ -65,11 +58,6 @@ public class ModuleTimeline
             if (!frame.Plots.TryAdd(p.Id, p))
             {
                 Log.ZLogWarning($"Dropping duplicate plot with id {p.Id} to frame {frame.StartTimestamp}");
-            }
-            else
-            {
-                Plots[p.Id] = p.Meta;
-                AddToMetaTree(p.Meta, MetaTreeItem.ItemType.Plot);
             }
         });
     }
@@ -150,37 +138,6 @@ public class ModuleTimeline
 
     public void OnPlot(Debug.Plotting.Command plot) =>
         _plots.OnItem(plot, _isUnassignable, _getFillFrame, _sealFrames);
-
-    private void AddToMetaTree(Debug.Meta meta, MetaTreeItem.ItemType type)
-    {
-        if (meta is { File: not null, Member: not null })
-        {
-            if (!MetaTree.TryGetValue(meta.Layer, out var fileDict))
-            {
-                fileDict = [];
-                MetaTree[meta.Layer] = fileDict;
-            }
-
-            if (!fileDict.TryGetValue(meta.File, out var functionDict))
-            {
-                functionDict = [];
-                fileDict[meta.File] = functionDict;
-            }
-
-            if (!functionDict.TryGetValue(meta.Member, out var lineSet))
-            {
-                lineSet = [];
-                functionDict[meta.Member] = lineSet;
-            }
-
-            var item = MetaTreeItem.GetOrCreate(type, meta.Line, meta.Expression);
-            lineSet.Add(item);
-        }
-        else
-        {
-            Log.ZLogWarning($"Failed to add item of type {type} with null meta to the tree: {meta}");
-        }
-    }
 
     private bool IsUnassignable(Timestamp timestamp) =>
         _frames.Count > 0 && _frames[0].StartTimestamp > timestamp;
