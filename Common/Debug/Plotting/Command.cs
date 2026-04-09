@@ -26,4 +26,7 @@ public partial record struct Command : IEntry
 
     [MemoryPackIgnore]
     public bool IsEmpty => string.IsNullOrEmpty(Id);
+
+    [MemoryPackIgnore]
+    public string? ShardKey => Id;
 }

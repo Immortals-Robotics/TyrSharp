@@ -22,8 +22,8 @@ internal struct BucketHeader
 
 internal sealed class Bucket : IDisposable
 {
-    private const long DefaultRecordsCapacity = 64 * 1024 * 1024;  // 64 MB
-    private const long DefaultBlobsCapacity   = 256 * 1024 * 1024; // 256 MB
+    private const long DefaultRecordsCapacity = 64 * 1024;   // 64 KB
+    private const long DefaultBlobsCapacity   = 256 * 1024;  // 256 KB
     private static readonly int HeaderSize = Unsafe.SizeOf<BucketHeader>();
     private static readonly int RecordSize = Unsafe.SizeOf<InternalRecord>();
 

@@ -242,11 +242,8 @@ public partial class PlotView(DebugFramer debugFramer, DebugFilter filter, IDebu
         var frameIndex = 0;
         var frameCaptured = false;
 
-        foreach (var plot in debugDb.Query<Command>(moduleName, firstFrameStart, lastFrameEnd))
+        foreach (var plot in debugDb.Query<Command>(moduleName, firstFrameStart, lastFrameEnd, id))
         {
-            if (plot.Id != id)
-                continue;
-
             while (frameIndex < frames.Length)
             {
                 var frame = frames[frameIndex];

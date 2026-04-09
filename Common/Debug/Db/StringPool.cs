@@ -111,6 +111,16 @@ internal sealed class MappedStringPool : IDisposable
 
     public string? Get(int id) => id < 0 ? null : _list[id];
     public int Count => _list.Count;
+    public bool TryGetId(string? value, out int id)
+    {
+        if (value is null)
+        {
+            id = -1;
+            return false;
+        }
+
+        return _map.TryGetValue(value, out id);
+    }
 
     public void Dispose()
     {

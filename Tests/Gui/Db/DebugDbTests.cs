@@ -144,6 +144,12 @@ public sealed class DebugDbTests
             Assert.Equal(PlotValueKind.Vector3, command.Value.Kind);
             Assert.Equal(new Vector3(1, 2, 3), command.Value.Vector3Value);
             Assert.Equal("Vision", command.Meta.Module);
+
+            var velocityCommands = reopened.Query<PlotCommand>("Vision", Timestamp.Zero, Timestamp.MaxValue, "velocity").ToArray();
+            Assert.Single(velocityCommands);
+
+            var missingCommands = reopened.Query<PlotCommand>("Vision", Timestamp.Zero, Timestamp.MaxValue, "missing").ToArray();
+            Assert.Empty(missingCommands);
         }
         finally
         {
@@ -152,7 +158,7 @@ public sealed class DebugDbTests
     }
 
     [Fact]
-    public void RegisterType_UsesDistinctBucketsForSameNamedDebugCommands()
+    public void RegisterType_UsesDistinctTypeDirectoriesForSameNamedDebugCommands()
     {
         var directory = CreateTempDirectory();
 
@@ -164,13 +170,13 @@ public sealed class DebugDbTests
             {
             }
 
-            var recordFiles = Directory.GetFiles(directory, "*.records")
+            var typeDirectories = Directory.GetDirectories(directory)
                 .Select(Path.GetFileName)
                 .OrderBy(name => name)
                 .ToArray();
 
-            Assert.Contains("Tyr.Common.Debug.Drawing.Command.records", recordFiles);
-            Assert.Contains("Tyr.Common.Debug.Plotting.Command.records", recordFiles);
+            Assert.Contains("Tyr.Common.Debug.Drawing.Command", typeDirectories);
+            Assert.Contains("Tyr.Common.Debug.Plotting.Command", typeDirectories);
         }
         finally
         {
