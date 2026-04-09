@@ -2,6 +2,7 @@ using System.Buffers;
 using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
+using System.Threading;
 using MemoryPack;
 
 namespace Tyr.Common.Debug.Db;
@@ -19,10 +20,13 @@ public sealed class DebugDb : IDebugDb
     private readonly string _directory;
     private readonly MappedStringPool _strings;
     private readonly MappedSourceLocationTable _sources;
-    private readonly ConcurrentDictionary<Type, ConcurrentDictionary<EntryShardKey, Bucket>> _buckets = new();
+    private readonly ConcurrentDictionary<Type, Lazy<ConcurrentDictionary<EntryShardKey, Lazy<Bucket>>>> _buckets = new();
     private readonly FrameBucket _frames;
 
     private readonly ConcurrentDictionary<string, int> _moduleIdCache = new();
+    private readonly ConcurrentDictionary<string, int> _shardKeyIdCache = new();
+    private readonly ConcurrentDictionary<Meta, int> _sourceIdCache = new();
+    private readonly ConcurrentDictionary<int, Meta> _sourceLocationCache = new();
     private readonly Lock _internLock = new();
 
     [ThreadStatic] private static ArrayBufferWriter<byte>? _serializeBuffer;
@@ -47,6 +51,9 @@ public sealed class DebugDb : IDebugDb
         {
             var isl = _sources.GetInternal(i);
             AddModuleToCache(isl.ModuleId);
+            var source = _sources.Get(i, _strings);
+            _sourceIdCache.TryAdd(source, i);
+            _sourceLocationCache.TryAdd(i, source);
         }
 
         var frameCount = _frames.RecordCount;
@@ -66,23 +73,43 @@ public sealed class DebugDb : IDebugDb
 
     public DebugDb RegisterType<T>() where T : IEntry
     {
-        _buckets.GetOrAdd(typeof(T), LoadBucketsForType);
+        GetOrCreateBucketSet(typeof(T));
         return this;
     }
 
     public void Append<T>(T entry) where T : IEntry
     {
-        int sourceId;
-        int moduleId;
-        int shardKeyId;
-        lock (_internLock)
-        {
-            sourceId = _sources.Intern(entry.Meta, _strings);
-            moduleId = _strings.Intern(entry.Meta.Module);
-            shardKeyId = _strings.Intern(entry.ShardKey);
-        }
+        var meta = entry.Meta;
+        var module = meta.Module;
+        var shardKey = entry.ShardKey;
 
-        _moduleIdCache.TryAdd(entry.Meta.Module, moduleId);
+        if (!_moduleIdCache.TryGetValue(module, out var moduleId) ||
+            !_sourceIdCache.TryGetValue(meta, out var sourceId) ||
+            !TryGetShardKeyId(shardKey, out var shardKeyId))
+        {
+            lock (_internLock)
+            {
+                if (!_moduleIdCache.TryGetValue(module, out moduleId))
+                {
+                    moduleId = _strings.Intern(module);
+                    _moduleIdCache.TryAdd(module, moduleId);
+                }
+
+                if (!_sourceIdCache.TryGetValue(meta, out sourceId))
+                {
+                    sourceId = _sources.Intern(meta, _strings);
+                    _sourceIdCache.TryAdd(meta, sourceId);
+                    _sourceLocationCache.TryAdd(sourceId, meta);
+                }
+
+                if (!TryGetShardKeyId(shardKey, out shardKeyId))
+                {
+                    shardKeyId = _strings.Intern(shardKey);
+                    if (shardKey is not null)
+                        _shardKeyIdCache.TryAdd(shardKey, shardKeyId);
+                }
+            }
+        }
 
         var bucket = GetOrCreateBucket(new EntryShardKey(typeof(T), moduleId, sourceId, shardKeyId));
 
@@ -104,7 +131,7 @@ public sealed class DebugDb : IDebugDb
         int? shardKeyId = null;
         if (shardKey is not null)
         {
-            if (!_strings.TryGetId(shardKey, out var resolvedShardKeyId))
+            if (!TryGetShardKeyId(shardKey, out var resolvedShardKeyId))
                 yield break;
 
             shardKeyId = resolvedShardKeyId;
@@ -134,7 +161,7 @@ public sealed class DebugDb : IDebugDb
         int? shardKeyId = null;
         if (shardKey is not null)
         {
-            if (!_strings.TryGetId(shardKey, out var resolvedShardKeyId))
+            if (!TryGetShardKeyId(shardKey, out var resolvedShardKeyId))
                 yield break;
 
             shardKeyId = resolvedShardKeyId;
@@ -161,7 +188,7 @@ public sealed class DebugDb : IDebugDb
         if (!_moduleIdCache.TryGetValue(module, out var moduleId))
             yield break;
 
-        if (!_buckets.TryGetValue(typeof(T), out var bucketSet))
+        if (!TryGetBucketSet(typeof(T), out var bucketSet))
             yield break;
 
         var shardKeys = bucketSet.Keys
@@ -181,7 +208,7 @@ public sealed class DebugDb : IDebugDb
         if (!_moduleIdCache.TryGetValue(module, out var moduleId))
             yield break;
 
-        if (!_buckets.TryGetValue(typeof(T), out var bucketSet))
+        if (!TryGetBucketSet(typeof(T), out var bucketSet))
             yield break;
 
         var sourceLocationIds = bucketSet.Keys
@@ -202,7 +229,7 @@ public sealed class DebugDb : IDebugDb
         int? shardKeyId,
         int? maxCount) where T : IEntry
     {
-        if (!_buckets.TryGetValue(typeof(T), out var bucketSet))
+        if (!TryGetBucketSet(typeof(T), out var bucketSet))
             yield break;
 
         if (maxCount <= 0)
@@ -210,7 +237,7 @@ public sealed class DebugDb : IDebugDb
 
         var matches = new List<ShardMatch>();
         var totalCount = 0;
-        foreach (var (shard, bucket) in bucketSet)
+        foreach (var (shard, bucketFactory) in bucketSet)
         {
             if (moduleId.HasValue && shard.ModuleId != moduleId.Value)
                 continue;
@@ -221,6 +248,7 @@ public sealed class DebugDb : IDebugDb
             if (shardKeyId.HasValue && shard.ShardKeyId != shardKeyId.Value)
                 continue;
 
+            var bucket = bucketFactory.Value;
             var count = bucket.RecordCount;
             var lo = bucket.LowerBound(t0.Nanoseconds, count);
             var hi = bucket.UpperBound(t1.Nanoseconds, count);
@@ -341,6 +369,18 @@ public sealed class DebugDb : IDebugDb
         return indices;
     }
 
+    private bool TryGetShardKeyId(string? shardKey, out int shardKeyId)
+    {
+        if (shardKey is null)
+        {
+            shardKeyId = -1;
+            return true;
+        }
+
+        return _shardKeyIdCache.TryGetValue(shardKey, out shardKeyId) ||
+               _strings.TryGetId(shardKey, out shardKeyId);
+    }
+
     private T? DeserializeEntry<T>(InternalRecord record, Bucket bucket, int sourceLocationId) where T : IEntry
     {
         try
@@ -350,7 +390,7 @@ public sealed class DebugDb : IDebugDb
             if (entry is null)
                 return default;
 
-            entry.Meta = _sources.Get(sourceLocationId, _strings);
+            entry.Meta = _sourceLocationCache.GetOrAdd(sourceLocationId, id => _sources.Get(id, _strings));
             return entry;
         }
         catch (Exception ex)
@@ -362,9 +402,9 @@ public sealed class DebugDb : IDebugDb
         }
     }
 
-    private ConcurrentDictionary<EntryShardKey, Bucket> LoadBucketsForType(Type type)
+    private ConcurrentDictionary<EntryShardKey, Lazy<Bucket>> LoadBucketsForType(Type type)
     {
-        var bucketSet = new ConcurrentDictionary<EntryShardKey, Bucket>();
+        var bucketSet = new ConcurrentDictionary<EntryShardKey, Lazy<Bucket>>();
         var typeDirectory = GetTypeDirectory(type);
         Directory.CreateDirectory(typeDirectory);
 
@@ -373,7 +413,14 @@ public sealed class DebugDb : IDebugDb
             if (!TryParseShardName(type, recordsPath, out var shard))
                 continue;
 
-            bucketSet[shard] = new Bucket(typeDirectory, Path.GetFileNameWithoutExtension(recordsPath));
+            if (shard.ShardKeyId >= 0)
+            {
+                var shardKey = _strings.Get(shard.ShardKeyId);
+                if (shardKey is not null)
+                    _shardKeyIdCache.TryAdd(shardKey, shard.ShardKeyId);
+            }
+
+            bucketSet[shard] = CreateBucketFactory(typeDirectory, Path.GetFileNameWithoutExtension(recordsPath));
         }
 
         return bucketSet;
@@ -381,13 +428,42 @@ public sealed class DebugDb : IDebugDb
 
     private Bucket GetOrCreateBucket(EntryShardKey shard)
     {
-        var bucketSet = _buckets.GetOrAdd(shard.Type, LoadBucketsForType);
+        var bucketSet = GetOrCreateBucketSet(shard.Type);
         return bucketSet.GetOrAdd(shard, key =>
         {
             var typeDirectory = GetTypeDirectory(key.Type);
             Directory.CreateDirectory(typeDirectory);
-            return new Bucket(typeDirectory, GetShardName(key));
-        });
+            return CreateBucketFactory(typeDirectory, GetShardName(key));
+        }).Value;
+    }
+
+    private ConcurrentDictionary<EntryShardKey, Lazy<Bucket>> GetOrCreateBucketSet(Type type)
+    {
+        return _buckets.GetOrAdd(
+            type,
+            static (bucketOwner, state) => new Lazy<ConcurrentDictionary<EntryShardKey, Lazy<Bucket>>>(
+                () => state.LoadBucketsForType(bucketOwner),
+                LazyThreadSafetyMode.ExecutionAndPublication),
+            this).Value;
+    }
+
+    private bool TryGetBucketSet(Type type, out ConcurrentDictionary<EntryShardKey, Lazy<Bucket>> bucketSet)
+    {
+        if (_buckets.TryGetValue(type, out var bucketSetFactory))
+        {
+            bucketSet = bucketSetFactory.Value;
+            return true;
+        }
+
+        bucketSet = null!;
+        return false;
+    }
+
+    private static Lazy<Bucket> CreateBucketFactory(string typeDirectory, string shardName)
+    {
+        return new Lazy<Bucket>(
+            () => new Bucket(typeDirectory, shardName),
+            LazyThreadSafetyMode.ExecutionAndPublication);
     }
 
     private string GetTypeDirectory(Type type) => Path.Combine(_directory, GetBucketName(type));
@@ -529,10 +605,16 @@ public sealed class DebugDb : IDebugDb
 
     public void Dispose()
     {
-        foreach (var bucketSet in _buckets.Values)
+        foreach (var bucketSetFactory in _buckets.Values)
         {
-            foreach (var bucket in bucketSet.Values)
-                bucket.Dispose();
+            if (!bucketSetFactory.IsValueCreated)
+                continue;
+
+            foreach (var bucketFactory in bucketSetFactory.Value.Values)
+            {
+                if (bucketFactory.IsValueCreated)
+                    bucketFactory.Value.Dispose();
+            }
         }
 
         _frames.Dispose();
