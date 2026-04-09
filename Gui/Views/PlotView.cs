@@ -2,16 +2,18 @@ using System.Runtime.InteropServices;
 using Hexa.NET.ImGui;
 using Hexa.NET.ImPlot;
 using Tyr.Common.Config;
+using Tyr.Common.Debug.Db;
 using Tyr.Common.Debug.Drawing;
 using Tyr.Common.Debug.Plotting;
 using Tyr.Common.Time;
 using Tyr.Gui.Backend;
 using Tyr.Gui.Data;
+using Command = Tyr.Common.Debug.Plotting.Command;
 
 namespace Tyr.Gui.Views;
 
 [Configurable]
-public partial class PlotView(DebugFramer debugFramer, DebugFilter filter)
+public partial class PlotView(DebugFramer debugFramer, DebugFilter filter, IDebugDb debugDb)
 {
     [ConfigEntry] private static double TimeAxisExtension { get; set; } = 5;
     [ConfigEntry] private static double TimeAxisMinRange { get; set; } = 1;
@@ -133,7 +135,7 @@ public partial class PlotView(DebugFramer debugFramer, DebugFilter filter)
 
                     if (open)
                     {
-                        DrawPlot(time, framer, plotId);
+                        DrawPlot(time, moduleName, framer, plotId);
                     }
 
                     ImGui.PopID();
@@ -146,7 +148,7 @@ public partial class PlotView(DebugFramer debugFramer, DebugFilter filter)
         ImGui.PopFont();
     }
 
-    private void DrawPlot(PlaybackTime time, ModuleTimeline framer, string plotId)
+    private void DrawPlot(PlaybackTime time, string moduleName, ModuleTimeline framer, string plotId)
     {
         if (ImPlot.BeginPlot("##plot"))
         {
@@ -179,7 +181,7 @@ public partial class PlotView(DebugFramer debugFramer, DebugFilter filter)
             xAxis.SetMax(Math.Max(TimeAxisExtension, end.Seconds));
             xAxis.SetMin(start.Seconds);
 
-            var (type, title) = GatherData(framer, plotId, time.StartTime, start, end);
+            var (type, title) = GatherData(moduleName, framer, plotId, time.StartTime, start, end);
 
             if (title != null)
             {
@@ -222,7 +224,7 @@ public partial class PlotView(DebugFramer debugFramer, DebugFilter filter)
     }
 
     private (PlotDataType type, string? title) GatherData(
-        ModuleTimeline framer, string id,
+        string moduleName, ModuleTimeline framer, string id,
         Timestamp origin, DeltaTime min, DeltaTime max)
     {
         foreach (var list in _rawData) list.Clear();
@@ -230,49 +232,87 @@ public partial class PlotView(DebugFramer debugFramer, DebugFilter filter)
         var type = PlotDataType.Scalar;
         string? title = null;
 
-        var frames = framer.GetFrameRange(origin + min, origin + max, MaxPoints);
-        foreach (var frame in frames)
+        var frames = framer.GetFrameRange(origin + min, origin + max, MaxPoints).ToArray();
+        if (frames.Length == 0)
+            return (type, title);
+
+        var firstFrameStart = frames[0].StartTimestamp;
+        var lastFrameEnd = frames[^1].EndTimestamp ?? frames[^1].StartTimestamp;
+
+        var frameIndex = 0;
+        var frameCaptured = false;
+
+        foreach (var plot in debugDb.Query<Command>(moduleName, firstFrameStart, lastFrameEnd))
         {
-            if (!frame.Plots.TryGetValue(id, out var plot)) continue;
+            if (plot.Id != id)
+                continue;
 
-            title ??= plot.Title;
-
-            TimeList.Add((float)(frame.StartTimestamp - origin).Seconds);
-
-            switch (plot.Value.Kind)
+            while (frameIndex < frames.Length)
             {
-                case PlotValueKind.Number:
-                    type = PlotDataType.Scalar;
-                    ValueList.Add((float)plot.Value.Number);
+                var frame = frames[frameIndex];
+                var frameEnd = frame.EndTimestamp ?? frame.StartTimestamp;
+
+                if (plot.Timestamp > frameEnd)
+                {
+                    frameIndex++;
+                    frameCaptured = false;
+                    continue;
+                }
+
+                if (plot.Timestamp < frame.StartTimestamp)
                     break;
 
-                case PlotValueKind.Boolean:
-                    type = PlotDataType.Scalar;
-                    ValueList.Add(plot.Value.Boolean ? 1f : 0f);
-                    break;
+                if (!frameCaptured)
+                {
+                    title ??= plot.Title;
+                    TimeList.Add((float)(frame.StartTimestamp - origin).Seconds);
+                    AddPlotValue(plot.Value, ref type);
+                    frameCaptured = true;
+                }
 
-                case PlotValueKind.Vector2:
-                    var v2 = plot.Value.Vector2Value;
-                    type = PlotDataType.Vector2;
-                    XList.Add(v2.X);
-                    YList.Add(v2.Y);
-                    LenList.Add(v2.Length());
-                    break;
-
-                case PlotValueKind.Vector3:
-                    var v3 = plot.Value.Vector3Value;
-                    type = PlotDataType.Vector3;
-                    XList.Add(v3.X);
-                    YList.Add(v3.Y);
-                    ZList.Add(v3.Z);
-                    LenList.Add(v3.Length());
-                    break;
-
-                default:
-                    throw new NotImplementedException();
+                break;
             }
+
+            if (frameIndex >= frames.Length)
+                break;
         }
 
         return (type, title);
+    }
+
+    private void AddPlotValue(PlotValue value, ref PlotDataType type)
+    {
+        switch (value.Kind)
+        {
+            case PlotValueKind.Number:
+                type = PlotDataType.Scalar;
+                ValueList.Add((float)value.Number);
+                break;
+
+            case PlotValueKind.Boolean:
+                type = PlotDataType.Scalar;
+                ValueList.Add(value.Boolean ? 1f : 0f);
+                break;
+
+            case PlotValueKind.Vector2:
+                var v2 = value.Vector2Value;
+                type = PlotDataType.Vector2;
+                XList.Add(v2.X);
+                YList.Add(v2.Y);
+                LenList.Add(v2.Length());
+                break;
+
+            case PlotValueKind.Vector3:
+                var v3 = value.Vector3Value;
+                type = PlotDataType.Vector3;
+                XList.Add(v3.X);
+                YList.Add(v3.Y);
+                ZList.Add(v3.Z);
+                LenList.Add(v3.Length());
+                break;
+
+            default:
+                throw new NotImplementedException();
+        }
     }
 }
