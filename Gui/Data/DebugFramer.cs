@@ -59,13 +59,8 @@ public class DebugFramer : IDisposable
                 {
                     module.OnDraw(draw);
                 }
+                dirty = true;
             }
-            else
-            {
-                GetOrCreateModuleTimeline(draw.Meta.Module).OnDraw(draw);
-            }
-
-            dirty = true;
         }
 
         while (_plotSubscriber.Reader.TryRead(out var plot))

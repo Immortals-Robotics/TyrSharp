@@ -4,6 +4,7 @@ using Hexa.NET.ImGui;
 using Tyr.Common.Config;
 using Tyr.Common.Data.Ssl.Vision.Geometry;
 using Tyr.Common.Dataflow;
+using Tyr.Common.Debug.Db;
 using Tyr.Common.Math;
 using Tyr.Gui.Backend;
 using Tyr.Gui.Data;
@@ -24,6 +25,7 @@ public sealed partial class FieldView : IDisposable
 
     private readonly DebugFramer _debugFramer;
     private readonly DebugFilter _filter;
+    private readonly IDebugDb _debugDb;
     private readonly DrawableRenderer _renderer = new();
     private readonly Common.Time.Timer _timer = new();
 
@@ -33,11 +35,13 @@ public sealed partial class FieldView : IDisposable
     private FieldSize? _fieldSize;
 
     private readonly List<Debug.Drawing.Command> _fieldDraws = [];
+    private readonly List<Debug.Drawing.Command> _drawBuffer = [];
 
-    public FieldView(DebugFramer debugFramer, DebugFilter filter)
+    public FieldView(DebugFramer debugFramer, DebugFilter filter, IDebugDb debugDb)
     {
         _debugFramer = debugFramer;
         _filter = filter;
+        _debugDb = debugDb;
 
         _timer.Start();
 
@@ -101,7 +105,16 @@ public sealed partial class FieldView : IDisposable
                 var frame = time.Live ? framer.LatestFrame : framer.GetFrame(time.Time);
                 if (frame == null) continue;
 
-                _renderer.Draw(frame.Draws, _filter);
+                _drawBuffer.Clear();
+                foreach (var draw in _debugDb.Query<Debug.Drawing.Command>(
+                             module,
+                             frame.StartTimestamp,
+                             frame.EndTimestamp ?? frame.StartTimestamp))
+                {
+                    _drawBuffer.Add(draw);
+                }
+
+                _renderer.Draw(_drawBuffer, _filter);
             }
 
             ShowStats();
