@@ -54,27 +54,18 @@ public sealed partial class DebugDbDumper : IDisposable
 
         while (_logSubscriber.Reader.TryRead(out var log))
         {
-            if (log.IsEmpty)
-                continue;
-
             _db.Append(log);
             dumped = true;
         }
 
         while (_drawSubscriber.Reader.TryRead(out var draw))
         {
-            if (draw.IsEmpty)
-                continue;
-
             _db.Append(draw);
             dumped = true;
         }
 
         while (_plotSubscriber.Reader.TryRead(out var plot))
         {
-            if (plot.IsEmpty)
-                continue;
-
             _db.Append(plot);
             dumped = true;
         }

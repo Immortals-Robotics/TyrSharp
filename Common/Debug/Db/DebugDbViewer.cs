@@ -256,8 +256,7 @@ public sealed class DebugDbViewer : IDisposable
     private static IEnumerable<PropertyInfo> GetVisibleProperties(Type type)
     {
         return type.GetProperties(BindingFlags.Instance | BindingFlags.Public)
-            .Where(p => p.GetIndexParameters().Length == 0)
-            .Where(p => p.Name != nameof(IEntry.IsEmpty));
+            .Where(p => p.GetIndexParameters().Length == 0);
     }
 
     private static string GetRegisteredTypeName(Type type)

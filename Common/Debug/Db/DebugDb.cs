@@ -451,6 +451,7 @@ public sealed class DebugDb : IDebugDb
             if (entry is null)
                 return default;
 
+            entry.Timestamp = Timestamp.FromNanoseconds(record.Timestamp);
             entry.Meta = hydrateMeta
                 ? _sourceLocationCache.GetOrAdd(sourceLocationId, id => _sources.Get(id, _strings))
                 : Meta.Empty;

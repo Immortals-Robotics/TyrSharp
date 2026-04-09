@@ -41,11 +41,5 @@ public abstract class RunnerBase(int tickRateHz)
             StartTimestamp = CurrentTickStartTimestamp,
         };
         Hub.Frames.Publish(frame);
-
-        // Send empty debug entries so that the frames can be sealed
-        // even when the frames do not contain any actual entries
-        Hub.Logs.Publish(Debug.Logging.Entry.Empty);
-        Hub.Draws.Publish(Debug.Drawing.Command.Empty);
-        Hub.Plots.Publish(Debug.Plotting.Command.Empty);
     }
 }

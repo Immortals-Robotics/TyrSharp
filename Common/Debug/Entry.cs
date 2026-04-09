@@ -2,8 +2,7 @@
 
 public interface IEntry
 {
-    public bool IsEmpty { get; }
-    public Timestamp Timestamp { get; }
+    public Timestamp Timestamp { get; set; }
     public Meta Meta { get; set; }
     public string? ShardKey => null;
 }
