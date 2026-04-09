@@ -12,7 +12,7 @@ using Debug = Tyr.Common.Debug;
 namespace Tyr.Gui.Views;
 
 [Configurable]
-public sealed partial class LogView(DebugFramer debugFramer, DebugFilter filter, IDebugDb debugDb) : IDisposable
+public sealed partial class LogView(DebugFilter filter, IDebugDb debugDb) : IDisposable
 {
     [ConfigEntry(StorageType.User)] private static LogLevel LogLevel { get; set; } = LogLevel.Debug;
 
@@ -55,14 +55,14 @@ public sealed partial class LogView(DebugFramer debugFramer, DebugFilter filter,
 
                 DrawSearchAndFilterControls();
 
-                foreach (var (module, framer) in debugFramer.Modules)
+                foreach (var module in debugDb.QueryModules())
                 {
                     if (!filter.IsEnabled(module)) continue;
 
-                    var frame = time.Live ? framer.LatestFrame : framer.GetFrame(time.Time);
-                    if (frame == null) continue;
+                    var frame = debugDb.GetFrameAt(module, time.Time);
+                    if (!frame.HasValue) continue;
 
-                    foreach (var log in debugDb.Query<Entry>(module, frame.StartTimestamp, frame.EndTimestamp ?? frame.StartTimestamp))
+                    foreach (var log in debugDb.Query<Entry>(module, frame.Value.Start, frame.Value.End))
                     {
                         if (!filter.IsEnabled(log.Meta)) continue;
                         if (log.Level < LogLevel) continue;

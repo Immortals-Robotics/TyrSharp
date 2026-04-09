@@ -9,7 +9,7 @@ using StrSpan = System.ReadOnlySpan<char>;
 namespace Tyr.Gui.Data;
 
 [Configurable]
-public sealed partial class DebugFilter(DebugFramer debugFramer, Tyr.Common.Debug.Db.IDebugDb debugDb) : IDisposable
+public sealed partial class DebugFilter(Tyr.Common.Debug.Db.IDebugDb debugDb) : IDisposable
 {
     // Dictionary to track the enabled state of each node in the tree
     // Format: "module" or "module/file" or "module/layer/file" or "module/layer/file/member" or "module/layer/file/member/line"
@@ -77,7 +77,7 @@ public sealed partial class DebugFilter(DebugFramer debugFramer, Tyr.Common.Debu
 
             RegisterModules();
 
-            foreach (var (moduleName, _) in debugFramer.Modules)
+            foreach (var moduleName in debugDb.QueryModules())
             {
                 if (!_metaTrees.TryGetValue(moduleName, out var metaTree) || metaTree.Count == 0) continue;
 
@@ -96,7 +96,7 @@ public sealed partial class DebugFilter(DebugFramer debugFramer, Tyr.Common.Debu
     // Register all modules, files, and functions
     private void RegisterModules()
     {
-        foreach (var (module, _) in debugFramer.Modules)
+        foreach (var module in debugDb.QueryModules())
         {
             _dirty |= FilterState.TryAdd(module, true);
 

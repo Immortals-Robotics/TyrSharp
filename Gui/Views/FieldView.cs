@@ -23,7 +23,6 @@ public sealed partial class FieldView : IDisposable
     [ConfigEntry]
     private static Debug.Drawing.Color LineColor { get; set; } = Debug.Drawing.Color.White.WithAlpha(0.7f);
 
-    private readonly DebugFramer _debugFramer;
     private readonly DebugFilter _filter;
     private readonly IDebugDb _debugDb;
     private readonly DrawableRenderer _renderer = new();
@@ -37,9 +36,8 @@ public sealed partial class FieldView : IDisposable
     private readonly List<Debug.Drawing.Command> _fieldDraws = [];
     private readonly List<Debug.Drawing.Command> _drawBuffer = [];
 
-    public FieldView(DebugFramer debugFramer, DebugFilter filter, IDebugDb debugDb)
+    public FieldView(DebugFilter filter, IDebugDb debugDb)
     {
-        _debugFramer = debugFramer;
         _filter = filter;
         _debugDb = debugDb;
 
@@ -98,18 +96,18 @@ public sealed partial class FieldView : IDisposable
 
             DrawField();
 
-            foreach (var (module, framer) in _debugFramer.Modules)
+            foreach (var module in _debugDb.QueryModules())
             {
                 if (!_filter.IsEnabled(module)) continue;
 
-                var frame = time.Live ? framer.LatestFrame : framer.GetFrame(time.Time);
-                if (frame == null) continue;
+                var frame = _debugDb.GetFrameAt(module, time.Time);
+                if (!frame.HasValue) continue;
 
                 _drawBuffer.Clear();
                 foreach (var draw in _debugDb.Query<Debug.Drawing.Command>(
                              module,
-                             frame.StartTimestamp,
-                             frame.EndTimestamp ?? frame.StartTimestamp))
+                             frame.Value.Start,
+                             frame.Value.End))
                 {
                     _drawBuffer.Add(draw);
                 }

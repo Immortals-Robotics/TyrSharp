@@ -150,6 +150,12 @@ public sealed class DebugDb : IDebugDb
             yield return entry;
     }
 
+    public IEnumerable<string> QueryModules()
+    {
+        foreach (var module in _moduleIdCache.Keys.Order())
+            yield return module;
+    }
+
     public IEnumerable<string> QueryShardKeys<T>(string module) where T : IEntry
     {
         if (!_moduleIdCache.TryGetValue(module, out var moduleId))

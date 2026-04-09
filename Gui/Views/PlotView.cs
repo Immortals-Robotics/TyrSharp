@@ -13,7 +13,7 @@ using Command = Tyr.Common.Debug.Plotting.Command;
 namespace Tyr.Gui.Views;
 
 [Configurable]
-public partial class PlotView(DebugFramer debugFramer, DebugFilter filter, IDebugDb debugDb)
+public partial class PlotView(DebugFilter filter, IDebugDb debugDb)
 {
     [ConfigEntry] private static double TimeAxisExtension { get; set; } = 5;
     [ConfigEntry] private static double TimeAxisMinRange { get; set; } = 1;
@@ -106,7 +106,7 @@ public partial class PlotView(DebugFramer debugFramer, DebugFilter filter, IDebu
     {
         ImGui.PushFont(FontRegistry.Instance.MonoFont);
 
-        foreach (var (moduleName, _) in debugFramer.Modules)
+        foreach (var moduleName in debugDb.QueryModules())
         {
             var plots = GetPlots(moduleName).ToArray();
             var anyVisible = plots.Any(kv =>

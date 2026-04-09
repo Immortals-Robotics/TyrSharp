@@ -31,7 +31,6 @@ public sealed partial class Runner : IDisposable
     private readonly FontRegistry _fonts;
 
     // views
-    private readonly DebugFramer _framer;
     private readonly DebugFilter _filter;
     private readonly LogView _log;
     private readonly FieldView _field;
@@ -56,11 +55,10 @@ public sealed partial class Runner : IDisposable
         _fonts = new FontRegistry();
 
         // init our UI views
-        _framer = new DebugFramer();
-        _filter = new DebugFilter(_framer, debugDb);
-        _log = new LogView(_framer, _filter, debugDb);
-        _field = new FieldView(_framer, _filter, debugDb);
-        _plots = new PlotView(_framer, _filter, debugDb);
+        _filter = new DebugFilter(debugDb);
+        _log = new LogView(_filter, debugDb);
+        _field = new FieldView(_filter, debugDb);
+        _plots = new PlotView(_filter, debugDb);
         _control = new PlaybackControl(debugDb);
         _configs = new ConfigsView();
 
@@ -84,7 +82,6 @@ public sealed partial class Runner : IDisposable
     private bool Tick()
     {
         // update
-        _framer.Tick();
         _window.PollEvents();
 
         var (width, height) = _window.GetSize();
@@ -150,7 +147,6 @@ public sealed partial class Runner : IDisposable
         _window.Dispose();
         _imgui.Dispose();
         _fonts.Dispose();
-        _framer.Dispose();
         _filter.Dispose();
         _log.Dispose();
         _field.Dispose();
