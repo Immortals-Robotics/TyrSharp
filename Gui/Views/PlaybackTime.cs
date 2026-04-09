@@ -2,7 +2,7 @@
 
 namespace Tyr.Gui.Views;
 
-public record PlaybackTime(bool Live, Timestamp StartTime, DeltaTime Delta)
+public record PlaybackTime(bool Live, Timestamp EndTime, DeltaTime Offset)
 {
-    public Timestamp Time => StartTime + Delta;
+    public Timestamp Time => EndTime + Offset;
 }

@@ -185,8 +185,8 @@ public partial class PlotView(DebugFramer debugFramer, DebugFilter filter, IDebu
     {
         if (ImPlot.BeginPlot("##plot"))
         {
-            // limits defined by the range [0, ∞) extended by the extension factor 
-            ImPlot.SetupAxisLimitsConstraints(ImAxis.X1, -TimeAxisExtension, float.PositiveInfinity);
+            // limits defined by the range (-∞, 0] extended by the extension factor
+            ImPlot.SetupAxisLimitsConstraints(ImAxis.X1, float.NegativeInfinity, TimeAxisExtension);
             ImPlot.SetupAxisZoomConstraints(ImAxis.X1, TimeAxisMinRange, TimeAxisMaxRange);
             ImPlot.SetupAxisZoomConstraints(ImAxis.Y1, YAxisMinRange, double.PositiveInfinity);
 
@@ -199,9 +199,9 @@ public partial class PlotView(DebugFramer debugFramer, DebugFilter filter, IDebu
             if (plot.Hovered || xAxis.Hovered)
                 _linkedTimeRange = DeltaTime.FromSeconds(xAxis.Range.Size());
 
-            var end = time.Delta;
+            var end = time.Offset;
 
-            var extensionCausedRange = Math.Clamp(3 * TimeAxisExtension - end.Seconds,
+            var extensionCausedRange = Math.Clamp(2 * TimeAxisExtension + end.Seconds,
                 0, 2 * TimeAxisExtension);
             var minRange = Math.Max(TimeAxisMinRange, extensionCausedRange);
             _linkedTimeRange = DeltaTime.Max(_linkedTimeRange, DeltaTime.FromSeconds(minRange));
@@ -210,11 +210,11 @@ public partial class PlotView(DebugFramer debugFramer, DebugFilter filter, IDebu
                 ? DeltaTime.FromSeconds(xAxis.Range.Min)
                 : end - _linkedTimeRange;
 
-            // snap to the latest data
-            xAxis.SetMax(Math.Max(TimeAxisExtension, end.Seconds));
+            // keep a small look-ahead region to the right of the selected time
+            xAxis.SetMax(end.Seconds + TimeAxisExtension);
             xAxis.SetMin(start.Seconds);
 
-            var (type, title) = GatherData(moduleName, plotId, time.StartTime, start, end);
+            var (type, title) = GatherData(moduleName, plotId, time.EndTime, start, end);
 
             if (title != null)
             {
