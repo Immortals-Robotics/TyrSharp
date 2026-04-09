@@ -125,10 +125,10 @@ public sealed class DebugDbTests
             {
                 db.Append(new PlotCommand
                 {
-                    Id = "velocity",
                     Value = PlotValue.From(new Vector3(1, 2, 3)),
                     Title = "vel (mm/s)",
                     Meta = Meta.GetOrCreate("Vision", layer: "TestLayer", file: "DebugDbTests.cs", member: nameof(PlotCommands_RoundTripThroughDebugDb), line: 1),
+                    ShardKey = "velocity",
                     Timestamp = Timestamp.FromNanoseconds(42),
                 });
             }
@@ -139,7 +139,6 @@ public sealed class DebugDbTests
             var commands = reopened.QueryAll<PlotCommand>(Timestamp.Zero, Timestamp.MaxValue).ToArray();
             var command = Assert.Single(commands);
 
-            Assert.Equal("velocity", command.Id);
             Assert.Equal("vel (mm/s)", command.Title);
             Assert.Equal(PlotValueKind.Vector3, command.Value.Kind);
             Assert.Equal(new Vector3(1, 2, 3), command.Value.Vector3Value);
@@ -170,10 +169,10 @@ public sealed class DebugDbTests
                 {
                     db.Append(new PlotCommand
                     {
-                        Id = "velocity",
                         Value = PlotValue.From(i),
                         Title = "vel",
                         Meta = Meta.GetOrCreate("Vision", layer: "TestLayer", file: "DebugDbTests.cs", member: nameof(Query_WithMaxCount_SamplesEvenlyAcrossMatchingEntries), line: 1),
+                        ShardKey = "velocity",
                         Timestamp = Timestamp.FromNanoseconds(i),
                     });
                 }

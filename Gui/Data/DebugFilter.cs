@@ -77,7 +77,7 @@ public sealed partial class DebugFilter(Tyr.Common.Debug.Db.IDebugDb debugDb) : 
 
             RegisterModules();
 
-            foreach (var moduleName in debugDb.QueryModules())
+            foreach (var moduleName in DebugDbUsageProfiler.MeasureEnumerable("DebugFilter.QueryModules", debugDb.QueryModules()))
             {
                 if (!_metaTrees.TryGetValue(moduleName, out var metaTree) || metaTree.Count == 0) continue;
 
@@ -96,15 +96,21 @@ public sealed partial class DebugFilter(Tyr.Common.Debug.Db.IDebugDb debugDb) : 
     // Register all modules, files, and functions
     private void RegisterModules()
     {
-        foreach (var module in debugDb.QueryModules())
+        foreach (var module in DebugDbUsageProfiler.MeasureEnumerable("DebugFilter.QueryModules", debugDb.QueryModules()))
         {
             _dirty |= FilterState.TryAdd(module, true);
 
-            RegisterMetaTree(module, debugDb.QuerySourceLocations<Tyr.Common.Debug.Logging.Entry>(module),
+            RegisterMetaTree(module, DebugDbUsageProfiler.MeasureEnumerable(
+                    "DebugFilter.QuerySourceLocations.Logs",
+                    debugDb.QuerySourceLocations<Tyr.Common.Debug.Logging.Entry>(module)),
                 MetaTreeItem.ItemType.Log);
-            RegisterMetaTree(module, debugDb.QuerySourceLocations<Tyr.Common.Debug.Drawing.Command>(module),
+            RegisterMetaTree(module, DebugDbUsageProfiler.MeasureEnumerable(
+                    "DebugFilter.QuerySourceLocations.Draws",
+                    debugDb.QuerySourceLocations<Tyr.Common.Debug.Drawing.Command>(module)),
                 MetaTreeItem.ItemType.Draw);
-            RegisterMetaTree(module, debugDb.QuerySourceLocations<Tyr.Common.Debug.Plotting.Command>(module),
+            RegisterMetaTree(module, DebugDbUsageProfiler.MeasureEnumerable(
+                    "DebugFilter.QuerySourceLocations.Plots",
+                    debugDb.QuerySourceLocations<Tyr.Common.Debug.Plotting.Command>(module)),
                 MetaTreeItem.ItemType.Plot);
 
             if (!_metaTrees.TryGetValue(module, out var metaTree))

@@ -688,10 +688,10 @@ internal sealed class BenchmarkScenario
     {
         return new PlotCommand
         {
-            Id = shardKey,
             Title = "speed",
             Value = PlotValue.From(new Vector3(index, index + 1, index + 2)),
             Meta = Meta.GetOrCreate(module, layer: "Benchmarks", file: "Program.cs", member: nameof(CreatePlotEntry), line: 1),
+            ShardKey = shardKey,
             Timestamp = Timestamp.FromNanoseconds(index),
         };
     }
@@ -708,7 +708,6 @@ internal sealed class BenchmarkScenario
 
         return new PlotCommand
         {
-            Id = plotId,
             Title = (plotIndex % 3) switch
             {
                 0 => "value",
@@ -725,6 +724,7 @@ internal sealed class BenchmarkScenario
                 member: plotIndex % 2 == 0 ? "PublishTelemetry" : "PublishPlannerPlots",
                 line: 300 + plotIndex % 16,
                 expression: plotId),
+            ShardKey = plotId,
             Timestamp = Timestamp.FromNanoseconds(timestampNs),
         };
     }

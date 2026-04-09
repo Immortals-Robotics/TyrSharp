@@ -96,18 +96,20 @@ public sealed partial class FieldView : IDisposable
 
             DrawField();
 
-            foreach (var module in _debugDb.QueryModules())
+            foreach (var module in DebugDbUsageProfiler.MeasureEnumerable("FieldView.QueryModules", _debugDb.QueryModules()))
             {
                 if (!_filter.IsEnabled(module)) continue;
 
-                var frame = _debugDb.GetFrameAt(module, time.Time);
+                var frame = DebugDbUsageProfiler.Measure("FieldView.GetFrameAt", () => _debugDb.GetFrameAt(module, time.Time));
                 if (!frame.HasValue) continue;
 
                 _drawBuffer.Clear();
-                foreach (var draw in _debugDb.Query<Debug.Drawing.Command>(
-                             module,
-                             frame.Value.Start,
-                             frame.Value.End))
+                foreach (var draw in DebugDbUsageProfiler.MeasureEnumerable(
+                             "FieldView.QueryDraws",
+                             _debugDb.Query<Debug.Drawing.Command>(
+                                 module,
+                                 frame.Value.Start,
+                                 frame.Value.End)))
                 {
                     _drawBuffer.Add(draw);
                 }

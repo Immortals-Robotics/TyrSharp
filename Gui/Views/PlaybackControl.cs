@@ -16,7 +16,7 @@ public class PlaybackControl(IDebugDb debugDb)
     {
         get
         {
-            var liveEndTime = debugDb.GetFrameRange()?.End ?? Timestamp.Zero;
+            var liveEndTime = Tyr.Gui.Data.DebugDbUsageProfiler.Measure("PlaybackControl.GetFrameRange", () => debugDb.GetFrameRange())?.End ?? Timestamp.Zero;
             return new(_live, _live ? liveEndTime : _frozenEndTime, DeltaTime.FromSeconds(_offset));
         }
     }
@@ -33,7 +33,7 @@ public class PlaybackControl(IDebugDb debugDb)
             ImGui.SameLine();
 
             var wasLive = _live;
-            var frameRange = debugDb.GetFrameRange();
+            var frameRange = Tyr.Gui.Data.DebugDbUsageProfiler.Measure("PlaybackControl.GetFrameRange", () => debugDb.GetFrameRange());
             var liveEndTime = frameRange?.End ?? Timestamp.Zero;
             var liveRange = frameRange.HasValue
                 ? (float)(frameRange.Value.End - frameRange.Value.Start).Seconds

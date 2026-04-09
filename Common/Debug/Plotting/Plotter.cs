@@ -25,10 +25,10 @@ public class Plotter(string module)
 
         var command = new Command
         {
-            Id = id,
             Value = PlotValue.From(value),
             Title = title,
             Meta = meta,
+            ShardKey = id,
             Timestamp = Timestamp.Now,
         };
 

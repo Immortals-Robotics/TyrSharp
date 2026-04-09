@@ -139,7 +139,25 @@ public sealed class DebugDb : IDebugDb
             shardKeyId = resolvedShardKeyId;
         }
 
-        foreach (var entry in QueryCore<T>(t0, t1, moduleId, null, shardKeyId, maxCount))
+        foreach (var entry in QueryCore<T>(t0, t1, moduleId, null, shardKeyId, maxCount, hydrateMeta: true))
+            yield return entry;
+    }
+
+    public IEnumerable<T> QueryWithoutMeta<T>(string module, Timestamp t0, Timestamp t1, string? shardKey = null, int? maxCount = null) where T : IEntry
+    {
+        if (!_moduleIdCache.TryGetValue(module, out var moduleId))
+            yield break;
+
+        int? shardKeyId = null;
+        if (shardKey is not null)
+        {
+            if (!TryGetShardKeyId(shardKey, out var resolvedShardKeyId))
+                yield break;
+
+            shardKeyId = resolvedShardKeyId;
+        }
+
+        foreach (var entry in QueryCore<T>(t0, t1, moduleId, null, shardKeyId, maxCount, hydrateMeta: false))
             yield return entry;
     }
 
@@ -169,7 +187,7 @@ public sealed class DebugDb : IDebugDb
             shardKeyId = resolvedShardKeyId;
         }
 
-        foreach (var entry in QueryCore<T>(t0, t1, moduleId, sourceLocationId, shardKeyId, maxCount))
+        foreach (var entry in QueryCore<T>(t0, t1, moduleId, sourceLocationId, shardKeyId, maxCount, hydrateMeta: true))
             yield return entry;
     }
 
@@ -245,7 +263,8 @@ public sealed class DebugDb : IDebugDb
         int? moduleId,
         int? sourceLocationId,
         int? shardKeyId,
-        int? maxCount) where T : IEntry
+        int? maxCount,
+        bool hydrateMeta) where T : IEntry
     {
         if (!TryGetBucketSet(typeof(T), out var bucketSet))
             yield break;
@@ -271,27 +290,46 @@ public sealed class DebugDb : IDebugDb
         if (matches.Count == 0)
             yield break;
 
-        if (!maxCount.HasValue || totalCount <= maxCount.Value)
-        {
-            foreach (var entry in EnumerateAllMatches<T>(matches))
-                yield return entry;
-
-            yield break;
-        }
-
         if (matches.Count == 1)
         {
-            foreach (var entry in EnumerateSampledSingleShard<T>(matches[0], totalCount, maxCount.Value))
+            if (!maxCount.HasValue || totalCount <= maxCount.Value)
+            {
+                foreach (var entry in EnumerateSingleShardRange<T>(matches[0], hydrateMeta))
+                    yield return entry;
+
+                yield break;
+            }
+
+            foreach (var entry in EnumerateSampledSingleShard<T>(matches[0], totalCount, maxCount.Value, hydrateMeta))
                 yield return entry;
 
             yield break;
         }
 
-        foreach (var entry in EnumerateSampledMatches<T>(matches, totalCount, maxCount.Value))
+        if (!maxCount.HasValue || totalCount <= maxCount.Value)
+        {
+            foreach (var entry in EnumerateAllMatches<T>(matches, hydrateMeta))
+                yield return entry;
+
+            yield break;
+        }
+
+        foreach (var entry in EnumerateSampledMatches<T>(matches, totalCount, maxCount.Value, hydrateMeta))
             yield return entry;
     }
 
-    private IEnumerable<T> EnumerateAllMatches<T>(List<ShardMatch> matches) where T : IEntry
+    private IEnumerable<T> EnumerateSingleShardRange<T>(ShardMatch match, bool hydrateMeta) where T : IEntry
+    {
+        for (var index = match.Lo; index < match.Hi; index++)
+        {
+            var record = match.Bucket.GetRecord(index);
+            var entry = DeserializeEntry<T>(record, match.Bucket, match.Shard.SourceLocationId, hydrateMeta);
+            if (entry is not null)
+                yield return entry;
+        }
+    }
+
+    private IEnumerable<T> EnumerateAllMatches<T>(List<ShardMatch> matches, bool hydrateMeta) where T : IEntry
     {
         var queue = new PriorityQueue<ShardCursor, long>();
         foreach (var match in matches)
@@ -303,7 +341,7 @@ public sealed class DebugDb : IDebugDb
         while (queue.TryDequeue(out var cursor, out _))
         {
             var record = cursor.CurrentRecord;
-            var entry = DeserializeEntry<T>(record, cursor.Bucket, cursor.Shard.SourceLocationId);
+            var entry = DeserializeEntry<T>(record, cursor.Bucket, cursor.Shard.SourceLocationId, hydrateMeta);
             if (entry is not null)
                 yield return entry;
 
@@ -313,19 +351,33 @@ public sealed class DebugDb : IDebugDb
         }
     }
 
-    private IEnumerable<T> EnumerateSampledSingleShard<T>(ShardMatch match, int totalCount, int maxCount) where T : IEntry
+    private IEnumerable<T> EnumerateSampledSingleShard<T>(ShardMatch match, int totalCount, int maxCount, bool hydrateMeta) where T : IEntry
     {
-        foreach (var relativeIndex in GetSampledIndices(totalCount, maxCount))
+        var sampleCount = System.Math.Min(totalCount, maxCount);
+        if (sampleCount <= 0)
+            yield break;
+
+        if (sampleCount == 1)
         {
+            var record = match.Bucket.GetRecord(match.Lo);
+            var entry = DeserializeEntry<T>(record, match.Bucket, match.Shard.SourceLocationId, hydrateMeta);
+            if (entry is not null)
+                yield return entry;
+            yield break;
+        }
+
+        for (int i = 0; i < sampleCount; i++)
+        {
+            var relativeIndex = (int)((long)i * (totalCount - 1) / (sampleCount - 1));
             var absoluteIndex = match.Lo + relativeIndex;
             var record = match.Bucket.GetRecord(absoluteIndex);
-            var entry = DeserializeEntry<T>(record, match.Bucket, match.Shard.SourceLocationId);
+            var entry = DeserializeEntry<T>(record, match.Bucket, match.Shard.SourceLocationId, hydrateMeta);
             if (entry is not null)
                 yield return entry;
         }
     }
 
-    private IEnumerable<T> EnumerateSampledMatches<T>(List<ShardMatch> matches, int totalCount, int maxCount) where T : IEntry
+    private IEnumerable<T> EnumerateSampledMatches<T>(List<ShardMatch> matches, int totalCount, int maxCount, bool hydrateMeta) where T : IEntry
     {
         var targetIndices = GetSampledIndices(totalCount, maxCount);
         var targetPosition = 0;
@@ -343,7 +395,7 @@ public sealed class DebugDb : IDebugDb
             if (logicalIndex == targetIndices[targetPosition])
             {
                 var record = cursor.CurrentRecord;
-                var entry = DeserializeEntry<T>(record, cursor.Bucket, cursor.Shard.SourceLocationId);
+                var entry = DeserializeEntry<T>(record, cursor.Bucket, cursor.Shard.SourceLocationId, hydrateMeta);
                 if (entry is not null)
                     yield return entry;
 
@@ -390,7 +442,7 @@ public sealed class DebugDb : IDebugDb
                _strings.TryGetId(shardKey, out shardKeyId);
     }
 
-    private T? DeserializeEntry<T>(InternalRecord record, Bucket bucket, int sourceLocationId) where T : IEntry
+    private T? DeserializeEntry<T>(InternalRecord record, Bucket bucket, int sourceLocationId, bool hydrateMeta) where T : IEntry
     {
         try
         {
@@ -399,7 +451,9 @@ public sealed class DebugDb : IDebugDb
             if (entry is null)
                 return default;
 
-            entry.Meta = _sourceLocationCache.GetOrAdd(sourceLocationId, id => _sources.Get(id, _strings));
+            entry.Meta = hydrateMeta
+                ? _sourceLocationCache.GetOrAdd(sourceLocationId, id => _sources.Get(id, _strings))
+                : Meta.Empty;
             return entry;
         }
         catch (Exception ex)

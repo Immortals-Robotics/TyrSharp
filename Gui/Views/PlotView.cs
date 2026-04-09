@@ -106,7 +106,7 @@ public partial class PlotView(DebugFilter filter, IDebugDb debugDb)
     {
         ImGui.PushFont(FontRegistry.Instance.MonoFont);
 
-        foreach (var moduleName in debugDb.QueryModules())
+        foreach (var moduleName in DebugDbUsageProfiler.MeasureEnumerable("PlotView.QueryModules", debugDb.QueryModules()))
         {
             var plots = GetPlots(moduleName).ToArray();
             var anyVisible = plots.Any(kv =>
@@ -158,7 +158,9 @@ public partial class PlotView(DebugFilter filter, IDebugDb debugDb)
             _plotMetadataCache[moduleName] = plotMetadata;
         }
 
-        foreach (var plotId in debugDb.QueryShardKeys<Command>(moduleName))
+        foreach (var plotId in DebugDbUsageProfiler.MeasureEnumerable(
+                     "PlotView.QueryShardKeys",
+                     debugDb.QueryShardKeys<Command>(moduleName)))
         {
             if (!plotMetadata.TryGetValue(plotId, out var plotMeta))
             {
@@ -175,7 +177,10 @@ public partial class PlotView(DebugFilter filter, IDebugDb debugDb)
 
     private Common.Debug.Meta TryGetPlotMeta(string moduleName, string plotId)
     {
-        return debugDb.TryGetShardMeta<Command>(moduleName, plotId) ?? Common.Debug.Meta.Empty;
+        return DebugDbUsageProfiler.Measure(
+                   "PlotView.TryGetShardMeta",
+                   () => debugDb.TryGetShardMeta<Command>(moduleName, plotId))
+               ?? Common.Debug.Meta.Empty;
     }
 
     private void DrawPlot(PlaybackTime time, string moduleName, string plotId)
@@ -265,7 +270,9 @@ public partial class PlotView(DebugFilter filter, IDebugDb debugDb)
         var startTimestamp = origin + min;
         var endTimestamp = origin + max;
 
-        foreach (var plot in debugDb.Query<Command>(moduleName, startTimestamp, endTimestamp, id, MaxPoints))
+        foreach (var plot in DebugDbUsageProfiler.MeasureEnumerable(
+                     "PlotView.QueryWindow",
+                     debugDb.QueryWithoutMeta<Command>(moduleName, startTimestamp, endTimestamp, id, MaxPoints)))
         {
             title ??= plot.Title;
             TimeList.Add((float)(plot.Timestamp - origin).Seconds);

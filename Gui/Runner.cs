@@ -120,6 +120,7 @@ public sealed partial class Runner : IDisposable
         // draw
         _window.Clear(Color.Slate950);
         _imgui.NewFrame();
+        DebugDbUsageProfiler.BeginFrame();
 
         ImGui.ShowDemoWindow();
 
@@ -130,6 +131,7 @@ public sealed partial class Runner : IDisposable
         _field.Draw(_control.Current);
         _plots.Draw(_control.Current);
         _filter.Draw();
+        DebugDbUsageProfiler.EndFrame();
 
         _imgui.Render();
         _window.SwapBuffers();

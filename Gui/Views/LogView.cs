@@ -55,14 +55,16 @@ public sealed partial class LogView(DebugFilter filter, IDebugDb debugDb) : IDis
 
                 DrawSearchAndFilterControls();
 
-                foreach (var module in debugDb.QueryModules())
+                foreach (var module in DebugDbUsageProfiler.MeasureEnumerable("LogView.QueryModules", debugDb.QueryModules()))
                 {
                     if (!filter.IsEnabled(module)) continue;
 
-                    var frame = debugDb.GetFrameAt(module, time.Time);
+                    var frame = DebugDbUsageProfiler.Measure("LogView.GetFrameAt", () => debugDb.GetFrameAt(module, time.Time));
                     if (!frame.HasValue) continue;
 
-                    foreach (var log in debugDb.Query<Entry>(module, frame.Value.Start, frame.Value.End))
+                    foreach (var log in DebugDbUsageProfiler.MeasureEnumerable(
+                                 "LogView.QueryEntries",
+                                 debugDb.Query<Entry>(module, frame.Value.Start, frame.Value.End)))
                     {
                         if (!filter.IsEnabled(log.Meta)) continue;
                         if (log.Level < LogLevel) continue;
