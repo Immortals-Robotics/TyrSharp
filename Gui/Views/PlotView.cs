@@ -135,7 +135,7 @@ public partial class PlotView(DebugFramer debugFramer, DebugFilter filter, IDebu
 
                     if (open)
                     {
-                        DrawPlot(time, moduleName, framer, plotId);
+                        DrawPlot(time, moduleName, plotId);
                     }
 
                     ImGui.PopID();
@@ -148,7 +148,7 @@ public partial class PlotView(DebugFramer debugFramer, DebugFilter filter, IDebu
         ImGui.PopFont();
     }
 
-    private void DrawPlot(PlaybackTime time, string moduleName, ModuleTimeline framer, string plotId)
+    private void DrawPlot(PlaybackTime time, string moduleName, string plotId)
     {
         if (ImPlot.BeginPlot("##plot"))
         {
@@ -181,7 +181,7 @@ public partial class PlotView(DebugFramer debugFramer, DebugFilter filter, IDebu
             xAxis.SetMax(Math.Max(TimeAxisExtension, end.Seconds));
             xAxis.SetMin(start.Seconds);
 
-            var (type, title) = GatherData(moduleName, framer, plotId, time.StartTime, start, end);
+            var (type, title) = GatherData(moduleName, plotId, time.StartTime, start, end);
 
             if (title != null)
             {
@@ -224,7 +224,7 @@ public partial class PlotView(DebugFramer debugFramer, DebugFilter filter, IDebu
     }
 
     private (PlotDataType type, string? title) GatherData(
-        string moduleName, ModuleTimeline framer, string id,
+        string moduleName, string id,
         Timestamp origin, DeltaTime min, DeltaTime max)
     {
         foreach (var list in _rawData) list.Clear();
@@ -232,46 +232,14 @@ public partial class PlotView(DebugFramer debugFramer, DebugFilter filter, IDebu
         var type = PlotDataType.Scalar;
         string? title = null;
 
-        var frames = framer.GetFrameRange(origin + min, origin + max, MaxPoints).ToArray();
-        if (frames.Length == 0)
-            return (type, title);
+        var startTimestamp = origin + min;
+        var endTimestamp = origin + max;
 
-        var firstFrameStart = frames[0].StartTimestamp;
-        var lastFrameEnd = frames[^1].EndTimestamp ?? frames[^1].StartTimestamp;
-
-        var frameIndex = 0;
-        var frameCaptured = false;
-
-        foreach (var plot in debugDb.Query<Command>(moduleName, firstFrameStart, lastFrameEnd, id))
+        foreach (var plot in debugDb.Query<Command>(moduleName, startTimestamp, endTimestamp, id, MaxPoints))
         {
-            while (frameIndex < frames.Length)
-            {
-                var frame = frames[frameIndex];
-                var frameEnd = frame.EndTimestamp ?? frame.StartTimestamp;
-
-                if (plot.Timestamp > frameEnd)
-                {
-                    frameIndex++;
-                    frameCaptured = false;
-                    continue;
-                }
-
-                if (plot.Timestamp < frame.StartTimestamp)
-                    break;
-
-                if (!frameCaptured)
-                {
-                    title ??= plot.Title;
-                    TimeList.Add((float)(frame.StartTimestamp - origin).Seconds);
-                    AddPlotValue(plot.Value, ref type);
-                    frameCaptured = true;
-                }
-
-                break;
-            }
-
-            if (frameIndex >= frames.Length)
-                break;
+            title ??= plot.Title;
+            TimeList.Add((float)(plot.Timestamp - origin).Seconds);
+            AddPlotValue(plot.Value, ref type);
         }
 
         return (type, title);

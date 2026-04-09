@@ -158,6 +158,44 @@ public sealed class DebugDbTests
     }
 
     [Fact]
+    public void Query_WithMaxCount_SamplesEvenlyAcrossMatchingEntries()
+    {
+        var directory = CreateTempDirectory();
+
+        try
+        {
+            using (var db = new DebugDb(directory).RegisterType<PlotCommand>())
+            {
+                for (int i = 0; i < 10; i++)
+                {
+                    db.Append(new PlotCommand
+                    {
+                        Id = "velocity",
+                        Value = PlotValue.From(i),
+                        Title = "vel",
+                        Meta = Meta.GetOrCreate("Vision", layer: "TestLayer", file: "DebugDbTests.cs", member: nameof(Query_WithMaxCount_SamplesEvenlyAcrossMatchingEntries), line: 1),
+                        Timestamp = Timestamp.FromNanoseconds(i),
+                    });
+                }
+            }
+
+            using var reopened = new DebugDb(directory).RegisterType<PlotCommand>();
+
+            var commands = reopened.Query<PlotCommand>("Vision", Timestamp.Zero, Timestamp.FromNanoseconds(9), "velocity", 4).ToArray();
+
+            Assert.Equal(4, commands.Length);
+            Assert.Equal(0, commands[0].Timestamp.Nanoseconds);
+            Assert.Equal(3, commands[1].Timestamp.Nanoseconds);
+            Assert.Equal(6, commands[2].Timestamp.Nanoseconds);
+            Assert.Equal(9, commands[3].Timestamp.Nanoseconds);
+        }
+        finally
+        {
+            Directory.Delete(directory, recursive: true);
+        }
+    }
+
+    [Fact]
     public void RegisterType_UsesDistinctTypeDirectoriesForSameNamedDebugCommands()
     {
         var directory = CreateTempDirectory();
