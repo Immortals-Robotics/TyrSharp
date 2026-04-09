@@ -175,10 +175,7 @@ public partial class PlotView(DebugFilter filter, IDebugDb debugDb)
 
     private Common.Debug.Meta TryGetPlotMeta(string moduleName, string plotId)
     {
-        foreach (var plot in debugDb.Query<Command>(moduleName, Timestamp.Zero, Timestamp.MaxValue, plotId, 1))
-            return plot.Meta;
-
-        return Common.Debug.Meta.Empty;
+        return debugDb.TryGetShardMeta<Command>(moduleName, plotId) ?? Common.Debug.Meta.Empty;
     }
 
     private void DrawPlot(PlaybackTime time, string moduleName, string plotId)

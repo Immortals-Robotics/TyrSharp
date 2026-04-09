@@ -20,13 +20,14 @@ public sealed class DebugDb : IDebugDb
     private readonly string _directory;
     private readonly MappedStringPool _strings;
     private readonly MappedSourceLocationTable _sources;
-    private readonly ConcurrentDictionary<Type, Lazy<ConcurrentDictionary<EntryShardKey, Lazy<Bucket>>>> _buckets = new();
+    private readonly ConcurrentDictionary<Type, Lazy<BucketSet>> _buckets = new();
     private readonly FrameBucket _frames;
 
     private readonly ConcurrentDictionary<string, int> _moduleIdCache = new();
     private readonly ConcurrentDictionary<string, int> _shardKeyIdCache = new();
     private readonly ConcurrentDictionary<Meta, int> _sourceIdCache = new();
     private readonly ConcurrentDictionary<int, Meta> _sourceLocationCache = new();
+    private readonly ConcurrentDictionary<int, ModuleFrameIndex> _frameIndices = new();
     private readonly Lock _internLock = new();
 
     [ThreadStatic] private static ArrayBufferWriter<byte>? _serializeBuffer;
@@ -61,6 +62,7 @@ public sealed class DebugDb : IDebugDb
         {
             var frame = _frames.GetRecord(i);
             AddModuleToCache(frame.ModuleId);
+            GetOrCreateFrameIndex(frame.ModuleId).Add(frame.Timestamp);
         }
     }
 
@@ -191,8 +193,8 @@ public sealed class DebugDb : IDebugDb
         if (!TryGetBucketSet(typeof(T), out var bucketSet))
             yield break;
 
-        var shardKeys = bucketSet.Keys
-            .Where(shard => shard.ModuleId == moduleId && shard.ShardKeyId >= 0)
+        var shardKeys = bucketSet.GetByModule(moduleId).Keys
+            .Where(shard => shard.ShardKeyId >= 0)
             .Select(shard => shard.ShardKeyId)
             .Distinct()
             .Select(_strings.Get)
@@ -211,14 +213,30 @@ public sealed class DebugDb : IDebugDb
         if (!TryGetBucketSet(typeof(T), out var bucketSet))
             yield break;
 
-        var sourceLocationIds = bucketSet.Keys
-            .Where(shard => shard.ModuleId == moduleId)
+        var sourceLocationIds = bucketSet.GetByModule(moduleId).Keys
             .Select(shard => shard.SourceLocationId)
             .Distinct()
             .Order();
 
         foreach (var sourceLocationId in sourceLocationIds)
-            yield return _sources.Get(sourceLocationId, _strings);
+            yield return _sourceLocationCache.GetOrAdd(sourceLocationId, id => _sources.Get(id, _strings));
+    }
+
+    public Meta? TryGetShardMeta<T>(string module, string shardKey) where T : IEntry
+    {
+        if (!_moduleIdCache.TryGetValue(module, out var moduleId))
+            return null;
+
+        if (!TryGetShardKeyId(shardKey, out var shardKeyId))
+            return null;
+
+        if (!TryGetBucketSet(typeof(T), out var bucketSet))
+            return null;
+
+        foreach (var (shard, _) in bucketSet.GetCandidates(moduleId, null, shardKeyId))
+            return _sourceLocationCache.GetOrAdd(shard.SourceLocationId, id => _sources.Get(id, _strings));
+
+        return null;
     }
 
     private IEnumerable<T> QueryCore<T>(
@@ -237,17 +255,8 @@ public sealed class DebugDb : IDebugDb
 
         var matches = new List<ShardMatch>();
         var totalCount = 0;
-        foreach (var (shard, bucketFactory) in bucketSet)
+        foreach (var (shard, bucketFactory) in bucketSet.GetCandidates(moduleId, sourceLocationId, shardKeyId))
         {
-            if (moduleId.HasValue && shard.ModuleId != moduleId.Value)
-                continue;
-
-            if (sourceLocationId.HasValue && shard.SourceLocationId != sourceLocationId.Value)
-                continue;
-
-            if (shardKeyId.HasValue && shard.ShardKeyId != shardKeyId.Value)
-                continue;
-
             var bucket = bucketFactory.Value;
             var count = bucket.RecordCount;
             var lo = bucket.LowerBound(t0.Nanoseconds, count);
@@ -402,9 +411,9 @@ public sealed class DebugDb : IDebugDb
         }
     }
 
-    private ConcurrentDictionary<EntryShardKey, Lazy<Bucket>> LoadBucketsForType(Type type)
+    private BucketSet LoadBucketsForType(Type type)
     {
-        var bucketSet = new ConcurrentDictionary<EntryShardKey, Lazy<Bucket>>();
+        var bucketSet = new BucketSet();
         var typeDirectory = GetTypeDirectory(type);
         Directory.CreateDirectory(typeDirectory);
 
@@ -420,7 +429,7 @@ public sealed class DebugDb : IDebugDb
                     _shardKeyIdCache.TryAdd(shardKey, shard.ShardKeyId);
             }
 
-            bucketSet[shard] = CreateBucketFactory(typeDirectory, Path.GetFileNameWithoutExtension(recordsPath));
+            bucketSet.Add(shard, CreateBucketFactory(typeDirectory, Path.GetFileNameWithoutExtension(recordsPath)));
         }
 
         return bucketSet;
@@ -437,17 +446,17 @@ public sealed class DebugDb : IDebugDb
         }).Value;
     }
 
-    private ConcurrentDictionary<EntryShardKey, Lazy<Bucket>> GetOrCreateBucketSet(Type type)
+    private BucketSet GetOrCreateBucketSet(Type type)
     {
         return _buckets.GetOrAdd(
             type,
-            static (bucketOwner, state) => new Lazy<ConcurrentDictionary<EntryShardKey, Lazy<Bucket>>>(
+            static (bucketOwner, state) => new Lazy<BucketSet>(
                 () => state.LoadBucketsForType(bucketOwner),
                 LazyThreadSafetyMode.ExecutionAndPublication),
             this).Value;
     }
 
-    private bool TryGetBucketSet(Type type, out ConcurrentDictionary<EntryShardKey, Lazy<Bucket>> bucketSet)
+    private bool TryGetBucketSet(Type type, out BucketSet bucketSet)
     {
         if (_buckets.TryGetValue(type, out var bucketSetFactory))
         {
@@ -530,6 +539,8 @@ public sealed class DebugDb : IDebugDb
             Timestamp = frame.StartTimestamp.Nanoseconds,
             ModuleId = moduleId,
         });
+
+        GetOrCreateFrameIndex(moduleId).Add(frame.StartTimestamp.Nanoseconds);
     }
 
     public (Timestamp Start, Timestamp End)? GetFrameRange()
@@ -548,20 +559,15 @@ public sealed class DebugDb : IDebugDb
         if (!_moduleIdCache.TryGetValue(module, out var moduleId))
             yield break;
 
-        var count = _frames.RecordCount;
-        var lo = _frames.LowerBound(t0.Nanoseconds, count);
-        var hi = _frames.UpperBound(t1.Nanoseconds, count);
+        if (!_frameIndices.TryGetValue(moduleId, out var frameIndex))
+            yield break;
 
-        for (int i = lo; i < hi; i++)
+        foreach (var timestamp in frameIndex.GetRange(t0.Nanoseconds, t1.Nanoseconds))
         {
-            var record = _frames.GetRecord(i);
-            if (record.ModuleId != moduleId)
-                continue;
-
             yield return new Frame
             {
                 ModuleName = module,
-                StartTimestamp = Timestamp.FromNanoseconds(record.Timestamp),
+                StartTimestamp = Timestamp.FromNanoseconds(timestamp),
             };
         }
     }
@@ -571,36 +577,20 @@ public sealed class DebugDb : IDebugDb
         if (!_moduleIdCache.TryGetValue(module, out var moduleId))
             return null;
 
-        var count = _frames.RecordCount;
-        if (count == 0)
+        if (!_frameIndices.TryGetValue(moduleId, out var frameIndex))
             return null;
 
-        var pos = _frames.UpperBound(t.Nanoseconds, count);
-
-        int startIdx = -1;
-        for (int i = pos - 1; i >= 0; i--)
-        {
-            var record = _frames.GetRecord(i);
-            if (record.ModuleId == moduleId)
-            {
-                startIdx = i;
-                break;
-            }
-        }
-
-        if (startIdx < 0)
+        if (!frameIndex.TryGetFrameAt(t.Nanoseconds, out var start, out var end))
             return null;
 
-        var start = Timestamp.FromNanoseconds(_frames.GetRecord(startIdx).Timestamp);
+        return (
+            Timestamp.FromNanoseconds(start),
+            end.HasValue ? Timestamp.FromNanoseconds(end.Value) : Timestamp.MaxValue);
+    }
 
-        for (int i = startIdx + 1; i < count; i++)
-        {
-            var record = _frames.GetRecord(i);
-            if (record.ModuleId == moduleId)
-                return (start, Timestamp.FromNanoseconds(record.Timestamp));
-        }
-
-        return (start, Timestamp.MaxValue);
+    private ModuleFrameIndex GetOrCreateFrameIndex(int moduleId)
+    {
+        return _frameIndices.GetOrAdd(moduleId, static _ => new ModuleFrameIndex());
     }
 
     public void Dispose()
@@ -610,7 +600,7 @@ public sealed class DebugDb : IDebugDb
             if (!bucketSetFactory.IsValueCreated)
                 continue;
 
-            foreach (var bucketFactory in bucketSetFactory.Value.Values)
+            foreach (var bucketFactory in bucketSetFactory.Value.All.Values)
             {
                 if (bucketFactory.IsValueCreated)
                     bucketFactory.Value.Dispose();
@@ -654,5 +644,194 @@ public sealed class DebugDb : IDebugDb
             Lo = lo;
             Hi = hi;
         }
+    }
+
+    private sealed class ModuleFrameIndex
+    {
+        private readonly Lock _lock = new();
+        private readonly List<long> _timestamps = [];
+
+        public void Add(long timestamp)
+        {
+            lock (_lock)
+                _timestamps.Add(timestamp);
+        }
+
+        public IEnumerable<long> GetRange(long t0, long t1)
+        {
+            long[] timestamps;
+            lock (_lock)
+                timestamps = _timestamps.ToArray();
+
+            var lo = LowerBound(timestamps, t0);
+            var hi = UpperBound(timestamps, t1);
+            for (var i = lo; i < hi; i++)
+                yield return timestamps[i];
+        }
+
+        public bool TryGetFrameAt(long timestamp, out long start, out long? end)
+        {
+            lock (_lock)
+            {
+                var pos = UpperBound(_timestamps, timestamp);
+                if (pos == 0)
+                {
+                    start = default;
+                    end = default;
+                    return false;
+                }
+
+                start = _timestamps[pos - 1];
+                end = pos < _timestamps.Count ? _timestamps[pos] : null;
+                return true;
+            }
+        }
+
+        private static int LowerBound(IReadOnlyList<long> timestamps, long value)
+        {
+            var lo = 0;
+            var hi = timestamps.Count;
+            while (lo < hi)
+            {
+                var mid = lo + (hi - lo) / 2;
+                if (timestamps[mid] < value) lo = mid + 1;
+                else hi = mid;
+            }
+
+            return lo;
+        }
+
+        private static int UpperBound(IReadOnlyList<long> timestamps, long value)
+        {
+            var lo = 0;
+            var hi = timestamps.Count;
+            while (lo < hi)
+            {
+                var mid = lo + (hi - lo) / 2;
+                if (timestamps[mid] <= value) lo = mid + 1;
+                else hi = mid;
+            }
+
+            return lo;
+        }
+    }
+
+    private readonly record struct ModuleShardKey(int ModuleId, int ShardKeyId);
+
+    private sealed class BucketSet
+    {
+        public ConcurrentDictionary<EntryShardKey, Lazy<Bucket>> All { get; } = new();
+
+        private readonly ConcurrentDictionary<int, ConcurrentDictionary<EntryShardKey, Lazy<Bucket>>> _byModule = new();
+        private readonly ConcurrentDictionary<int, ConcurrentDictionary<EntryShardKey, Lazy<Bucket>>> _bySourceLocation = new();
+        private readonly ConcurrentDictionary<int, ConcurrentDictionary<EntryShardKey, Lazy<Bucket>>> _byShardKey = new();
+        private readonly ConcurrentDictionary<ModuleShardKey, ConcurrentDictionary<EntryShardKey, Lazy<Bucket>>> _byModuleAndShardKey = new();
+
+        public Lazy<Bucket> GetOrAdd(EntryShardKey shard, Func<EntryShardKey, Lazy<Bucket>> valueFactory)
+        {
+            return All.GetOrAdd(shard, key =>
+            {
+                var bucketFactory = valueFactory(key);
+                Index(key, bucketFactory);
+                return bucketFactory;
+            });
+        }
+
+        public void Add(EntryShardKey shard, Lazy<Bucket> bucketFactory)
+        {
+            if (All.TryAdd(shard, bucketFactory))
+                Index(shard, bucketFactory);
+        }
+
+        public ConcurrentDictionary<EntryShardKey, Lazy<Bucket>> GetByModule(int moduleId)
+        {
+            return _byModule.TryGetValue(moduleId, out var buckets)
+                ? buckets
+                : Empty;
+        }
+
+        public IEnumerable<KeyValuePair<EntryShardKey, Lazy<Bucket>>> GetCandidates(
+            int? moduleId,
+            int? sourceLocationId,
+            int? shardKeyId)
+        {
+            if (sourceLocationId.HasValue)
+            {
+                var sourceBuckets = GetBySourceLocation(sourceLocationId.Value);
+
+                foreach (var entry in sourceBuckets)
+                {
+                    if (moduleId.HasValue && entry.Key.ModuleId != moduleId.Value)
+                        continue;
+
+                    if (shardKeyId.HasValue && entry.Key.ShardKeyId != shardKeyId.Value)
+                        continue;
+
+                    yield return entry;
+                }
+
+                yield break;
+            }
+
+            if (moduleId.HasValue && shardKeyId.HasValue)
+            {
+                foreach (var entry in GetByModuleAndShardKey(moduleId.Value, shardKeyId.Value))
+                    yield return entry;
+
+                yield break;
+            }
+
+            if (moduleId.HasValue)
+            {
+                foreach (var entry in GetByModule(moduleId.Value))
+                    yield return entry;
+
+                yield break;
+            }
+
+            if (shardKeyId.HasValue)
+            {
+                foreach (var entry in GetByShardKey(shardKeyId.Value))
+                    yield return entry;
+
+                yield break;
+            }
+
+            foreach (var entry in All)
+                yield return entry;
+        }
+
+        private ConcurrentDictionary<EntryShardKey, Lazy<Bucket>> GetBySourceLocation(int sourceLocationId)
+        {
+            return _bySourceLocation.TryGetValue(sourceLocationId, out var buckets)
+                ? buckets
+                : Empty;
+        }
+
+        private ConcurrentDictionary<EntryShardKey, Lazy<Bucket>> GetByShardKey(int shardKeyId)
+        {
+            return _byShardKey.TryGetValue(shardKeyId, out var buckets)
+                ? buckets
+                : Empty;
+        }
+
+        private ConcurrentDictionary<EntryShardKey, Lazy<Bucket>> GetByModuleAndShardKey(int moduleId, int shardKeyId)
+        {
+            return _byModuleAndShardKey.TryGetValue(new ModuleShardKey(moduleId, shardKeyId), out var buckets)
+                ? buckets
+                : Empty;
+        }
+
+        private void Index(EntryShardKey shard, Lazy<Bucket> bucketFactory)
+        {
+            _byModule.GetOrAdd(shard.ModuleId, static _ => new ConcurrentDictionary<EntryShardKey, Lazy<Bucket>>())[shard] = bucketFactory;
+            _bySourceLocation.GetOrAdd(shard.SourceLocationId, static _ => new ConcurrentDictionary<EntryShardKey, Lazy<Bucket>>())[shard] = bucketFactory;
+            _byShardKey.GetOrAdd(shard.ShardKeyId, static _ => new ConcurrentDictionary<EntryShardKey, Lazy<Bucket>>())[shard] = bucketFactory;
+            _byModuleAndShardKey.GetOrAdd(
+                new ModuleShardKey(shard.ModuleId, shard.ShardKeyId),
+                static _ => new ConcurrentDictionary<EntryShardKey, Lazy<Bucket>>())[shard] = bucketFactory;
+        }
+
+        private static readonly ConcurrentDictionary<EntryShardKey, Lazy<Bucket>> Empty = new();
     }
 }

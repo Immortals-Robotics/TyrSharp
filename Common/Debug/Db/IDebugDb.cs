@@ -9,6 +9,7 @@ public interface IDebugDb : IDisposable
     IEnumerable<string> QueryModules();
     IEnumerable<string> QueryShardKeys<T>(string module) where T : IEntry;
     IEnumerable<Meta> QuerySourceLocations<T>(string module) where T : IEntry;
+    Meta? TryGetShardMeta<T>(string module, string shardKey) where T : IEntry;
     Meta GetSourceLocation(int id);
 
     void AppendFrame(Frame frame);
