@@ -1,18 +1,25 @@
 ﻿using Hexa.NET.ImGui;
+using Tyr.Common.Debug.Db;
 using Tyr.Common.Time;
 using Tyr.Gui.Backend;
-using Tyr.Gui.Data;
 
 namespace Tyr.Gui.Views;
 
-public class PlaybackControl(DebugFramer debugFramer)
+public class PlaybackControl(IDebugDb debugDb)
 {
     private float _offset;
     private bool _live = true;
     private float _frozenRange;
     private Timestamp _frozenEndTime;
 
-    public PlaybackTime Current => new(_live, _live ? debugFramer.EndTime : _frozenEndTime, DeltaTime.FromSeconds(_offset));
+    public PlaybackTime Current
+    {
+        get
+        {
+            var liveEndTime = debugDb.GetFrameRange()?.End ?? Timestamp.Zero;
+            return new(_live, _live ? liveEndTime : _frozenEndTime, DeltaTime.FromSeconds(_offset));
+        }
+    }
 
     public void Draw()
     {
@@ -26,11 +33,16 @@ public class PlaybackControl(DebugFramer debugFramer)
             ImGui.SameLine();
 
             var wasLive = _live;
+            var frameRange = debugDb.GetFrameRange();
+            var liveEndTime = frameRange?.End ?? Timestamp.Zero;
+            var liveRange = frameRange.HasValue
+                ? (float)(frameRange.Value.End - frameRange.Value.Start).Seconds
+                : 0f;
 
             if (_live)
             {
-                _frozenEndTime = debugFramer.EndTime;
-                _frozenRange = (float)debugFramer.Duration.Seconds;
+                _frozenEndTime = liveEndTime;
+                _frozenRange = liveRange;
                 _offset = 0f;
             }
             else

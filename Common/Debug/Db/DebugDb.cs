@@ -450,6 +450,17 @@ public sealed class DebugDb : IDebugDb
         });
     }
 
+    public (Timestamp Start, Timestamp End)? GetFrameRange()
+    {
+        var count = _frames.RecordCount;
+        if (count == 0)
+            return null;
+
+        var start = Timestamp.FromNanoseconds(_frames.GetRecord(0).Timestamp);
+        var end = Timestamp.FromNanoseconds(_frames.GetRecord(count - 1).Timestamp);
+        return (start, end);
+    }
+
     public IEnumerable<Frame> QueryFrames(string module, Timestamp t0, Timestamp t1)
     {
         if (!_moduleIdCache.TryGetValue(module, out var moduleId))

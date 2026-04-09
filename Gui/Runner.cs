@@ -61,7 +61,7 @@ public sealed partial class Runner : IDisposable
         _log = new LogView(_framer, _filter, debugDb);
         _field = new FieldView(_framer, _filter, debugDb);
         _plots = new PlotView(_framer, _filter, debugDb);
-        _control = new PlaybackControl(_framer);
+        _control = new PlaybackControl(debugDb);
         _configs = new ConfigsView();
 
         // and the runner

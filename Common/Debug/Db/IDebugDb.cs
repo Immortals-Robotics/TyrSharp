@@ -11,6 +11,7 @@ public interface IDebugDb : IDisposable
     Meta GetSourceLocation(int id);
 
     void AppendFrame(Frame frame);
+    (Timestamp Start, Timestamp End)? GetFrameRange();
     IEnumerable<Frame> QueryFrames(string module, Timestamp t0, Timestamp t1);
     (Timestamp Start, Timestamp End)? GetFrameAt(string module, Timestamp t);
 }
