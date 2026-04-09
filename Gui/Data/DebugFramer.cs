@@ -72,10 +72,6 @@ public class DebugFramer : IDisposable
                     module.OnPlot(plot);
                 }
             }
-            else
-            {
-                GetOrCreateModuleTimeline(plot.Meta.Module).OnPlot(plot);
-            }
 
             dirty = true;
         }

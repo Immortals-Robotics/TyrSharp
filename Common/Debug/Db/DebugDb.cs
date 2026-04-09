@@ -150,6 +150,26 @@ public sealed class DebugDb : IDebugDb
             yield return entry;
     }
 
+    public IEnumerable<string> QueryShardKeys<T>(string module) where T : IEntry
+    {
+        if (!_moduleIdCache.TryGetValue(module, out var moduleId))
+            yield break;
+
+        if (!_buckets.TryGetValue(typeof(T), out var bucketSet))
+            yield break;
+
+        var shardKeys = bucketSet.Keys
+            .Where(shard => shard.ModuleId == moduleId && shard.ShardKeyId >= 0)
+            .Select(shard => shard.ShardKeyId)
+            .Distinct()
+            .Select(_strings.Get)
+            .OfType<string>()
+            .Order();
+
+        foreach (var shardKey in shardKeys)
+            yield return shardKey;
+    }
+
     private IEnumerable<T> QueryCore<T>(
         Timestamp t0,
         Timestamp t1,

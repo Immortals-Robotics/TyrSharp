@@ -46,6 +46,7 @@ public partial class PlotView(DebugFramer debugFramer, DebugFilter filter, IDebu
     private Span<float> LenSpan => CollectionsMarshal.AsSpan(LenList);
 
     private DeltaTime _linkedTimeRange = DeltaTime.Zero;
+    private readonly Dictionary<string, Dictionary<string, Common.Debug.Meta>> _plotMetadataCache = [];
 
     private ImGuiTextFilterPtr _filter = ImGui.ImGuiTextFilter();
     private bool IsFiltering => _filter.IsActive();
@@ -105,9 +106,10 @@ public partial class PlotView(DebugFramer debugFramer, DebugFilter filter, IDebu
     {
         ImGui.PushFont(FontRegistry.Instance.MonoFont);
 
-        foreach (var (moduleName, framer) in debugFramer.Modules)
+        foreach (var (moduleName, _) in debugFramer.Modules)
         {
-            var anyVisible = framer.Plots.Any(kv =>
+            var plots = GetPlots(moduleName).ToArray();
+            var anyVisible = plots.Any(kv =>
                 filter.IsEnabled(kv.Value) && _filter.PassFilter(kv.Key));
 
             if (!anyVisible) continue;
@@ -117,7 +119,7 @@ public partial class PlotView(DebugFramer debugFramer, DebugFilter filter, IDebu
             if (sectionOpen)
             {
                 ImGui.Indent();
-                foreach (var (plotId, plotMeta) in framer.Plots)
+                foreach (var (plotId, plotMeta) in plots)
                 {
                     if (!filter.IsEnabled(plotMeta)) continue;
 
@@ -146,6 +148,37 @@ public partial class PlotView(DebugFramer debugFramer, DebugFilter filter, IDebu
         }
 
         ImGui.PopFont();
+    }
+
+    private IEnumerable<KeyValuePair<string, Common.Debug.Meta>> GetPlots(string moduleName)
+    {
+        if (!_plotMetadataCache.TryGetValue(moduleName, out var plotMetadata))
+        {
+            plotMetadata = [];
+            _plotMetadataCache[moduleName] = plotMetadata;
+        }
+
+        foreach (var plotId in debugDb.QueryShardKeys<Command>(moduleName))
+        {
+            if (!plotMetadata.TryGetValue(plotId, out var plotMeta))
+            {
+                plotMeta = TryGetPlotMeta(moduleName, plotId);
+                if (plotMeta == Common.Debug.Meta.Empty)
+                    continue;
+
+                plotMetadata[plotId] = plotMeta;
+            }
+
+            yield return new KeyValuePair<string, Common.Debug.Meta>(plotId, plotMeta);
+        }
+    }
+
+    private Common.Debug.Meta TryGetPlotMeta(string moduleName, string plotId)
+    {
+        foreach (var plot in debugDb.Query<Command>(moduleName, Timestamp.Zero, Timestamp.MaxValue, plotId, 1))
+            return plot.Meta;
+
+        return Common.Debug.Meta.Empty;
     }
 
     private void DrawPlot(PlaybackTime time, string moduleName, string plotId)
