@@ -47,13 +47,8 @@ public class DebugFramer : IDisposable
                 {
                     module.OnLog(log);
                 }
+                dirty = true;
             }
-            else
-            {
-                GetOrCreateModuleTimeline(log.Meta.Module).OnLog(log);
-            }
-
-            dirty = true;
         }
 
         while (_drawSubscriber.Reader.TryRead(out var draw))

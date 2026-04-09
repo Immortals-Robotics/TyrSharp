@@ -2,6 +2,7 @@
 using Hexa.NET.ImGui;
 using Microsoft.Extensions.Logging;
 using Tyr.Common.Config;
+using Tyr.Common.Debug.Db;
 using Tyr.Common.Debug.Drawing;
 using Tyr.Common.Debug.Logging;
 using Tyr.Gui.Backend;
@@ -11,7 +12,7 @@ using Debug = Tyr.Common.Debug;
 namespace Tyr.Gui.Views;
 
 [Configurable]
-public sealed partial class LogView(DebugFramer debugFramer, DebugFilter filter) : IDisposable
+public sealed partial class LogView(DebugFramer debugFramer, DebugFilter filter, IDebugDb debugDb) : IDisposable
 {
     [ConfigEntry(StorageType.User)] private static LogLevel LogLevel { get; set; } = LogLevel.Debug;
 
@@ -61,7 +62,7 @@ public sealed partial class LogView(DebugFramer debugFramer, DebugFilter filter)
                     var frame = time.Live ? framer.LatestFrame : framer.GetFrame(time.Time);
                     if (frame == null) continue;
 
-                    foreach (var log in frame.Logs)
+                    foreach (var log in debugDb.Query<Entry>(module, frame.StartTimestamp, frame.EndTimestamp ?? frame.StartTimestamp))
                     {
                         if (!filter.IsEnabled(log.Meta)) continue;
                         if (log.Level < LogLevel) continue;

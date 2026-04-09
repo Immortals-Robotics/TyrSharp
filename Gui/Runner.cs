@@ -1,5 +1,6 @@
 ﻿using Hexa.NET.ImGui;
 using Tyr.Common.Config;
+using Tyr.Common.Debug.Db;
 using Tyr.Common.Debug.Drawing;
 using Tyr.Common.Runner;
 using Tyr.Gui.Backend;
@@ -38,7 +39,7 @@ public sealed partial class Runner : IDisposable
     private readonly PlaybackControl _control;
     private readonly ConfigsView _configs;
 
-    public Runner()
+    public Runner(IDebugDb debugDb)
     {
         // init the backend
         _window = new GlfwWindow("Tyr",
@@ -57,7 +58,7 @@ public sealed partial class Runner : IDisposable
         // init our UI views
         _framer = new DebugFramer();
         _filter = new DebugFilter(_framer);
-        _log = new LogView(_framer, _filter);
+        _log = new LogView(_framer, _filter, debugDb);
         _field = new FieldView(_framer, _filter);
         _plots = new PlotView(_framer, _filter);
         _control = new PlaybackControl(_framer);

@@ -22,6 +22,8 @@ public sealed partial class DebugDbDumper : IDisposable
     private readonly DebugDb _db;
     private readonly DebugDbViewer _viewer;
 
+    public IDebugDb Db => _db;
+
     public DebugDbDumper()
     {
         _db = new DebugDb(Directory)
