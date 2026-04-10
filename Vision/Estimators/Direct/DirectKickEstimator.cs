@@ -147,7 +147,7 @@ public partial class DirectKickEstimator : IKickEstimator
             .DefaultIfEmpty(float.MaxValue)
             .Min();
 
-        if (minDistToRobot < Tyr.Vision.Vision.FieldSize.RobotRadius.GetValueOrDefault(90f))
+        if (minDistToRobot < Tyr.Vision.Vision.FieldSize.RobotRadius)
         {
             return true;
         }

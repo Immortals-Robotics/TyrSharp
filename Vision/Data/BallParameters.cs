@@ -52,10 +52,7 @@ internal static partial class BallParameters
             return;
         }
 
-        if (fieldSize.BallRadius.HasValue)
-        {
-            Radius = fieldSize.BallRadius.Value;
-        }
+        Radius = fieldSize.BallRadius;
     }
 
     internal static void Apply(BallModels models)

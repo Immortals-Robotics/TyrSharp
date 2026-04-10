@@ -15,7 +15,7 @@ public sealed partial class Vision
 {
     [ConfigEntry] private static DeltaTime CameraTooOldTime { get; set; } = DeltaTime.FromSeconds(1f);
 
-    public static FieldSize FieldSize { get; set; } = FieldSize.DivisionA;
+    public static FieldSize FieldSize { get; set; } = FieldSize.Default;
 
     private FilteredFrame _lastFilteredFrame = new();
 

@@ -55,7 +55,7 @@ public partial class Camera(uint id)
 
     public CameraCalibration? Calibration { get; set; }
 
-    private float RobotRadius => Vision.FieldSize.RobotRadius ?? 90f;
+    private float RobotRadius => Vision.FieldSize.RobotRadius;
 
     private List<RobotCollisionShape> _shapes = new(22); // Max 22 robots
 

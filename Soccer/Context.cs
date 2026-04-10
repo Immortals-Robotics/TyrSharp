@@ -42,7 +42,7 @@ internal static class Context
     internal static Referee.State Referee => Data.Value!.Referee;
     internal static FieldSize Field => Data.Value!.Field;
 
-    internal static float RobotRadius => Field.RobotRadius ?? 90f;
+    internal static float RobotRadius => Field.RobotRadius;
 
     internal static Timer Timer => Data.Value!.Timer;
 

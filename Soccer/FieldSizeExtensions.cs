@@ -48,16 +48,16 @@ public static class FieldSizeExtensions
 
     public static Rectangle OwnPenaltyArea(this FieldSize field)
     {
-        float w = -Context.SideSign * field.PenaltyAreaDepth!.Value;
-        float h = field.PenaltyAreaWidth!.Value;
+        float w = -Context.SideSign * field.PenaltyAreaDepth;
+        float h = field.PenaltyAreaWidth;
 
         return Rectangle.FromCornerAndSize(new Vector2(Context.SideSign * field.Width, -h / 2), w, h);
     }
 
     public static Rectangle OppPenaltyArea(this FieldSize field)
     {
-        float w = Context.SideSign * field.PenaltyAreaDepth!.Value;
-        float h = field.PenaltyAreaWidth!.Value;
+        float w = Context.SideSign * field.PenaltyAreaDepth;
+        float h = field.PenaltyAreaWidth;
 
         return Rectangle.FromCornerAndSize(new Vector2(-Context.SideSign * field.Width, -h / 2), w, h);
     }

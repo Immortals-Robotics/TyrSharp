@@ -162,7 +162,7 @@ public partial class ChipKickEstimator : IKickEstimator
             .DefaultIfEmpty(float.MaxValue)
             .Min();
 
-        if ((minDistanceToRobot < Tyr.Vision.Vision.FieldSize.RobotRadius.GetValueOrDefault(90f)) && !state.IsChipped)
+        if ((minDistanceToRobot < Tyr.Vision.Vision.FieldSize.RobotRadius) && !state.IsChipped)
         {
             return true;
         }

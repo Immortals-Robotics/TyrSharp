@@ -82,7 +82,7 @@ public partial class Robot
         if (ballRadius > 0.0f)
         {
             _obsMap.Add(new Circle()
-                    { Center = Context.Ball.State.Position, Radius = Context.Field.BallRadius!.Value },
+                    { Center = Context.Ball.State.Position, Radius = Context.Field.BallRadius },
                 Physicality.Physical);
             _obsMap.Add(new Circle()
                     { Center = Context.Ball.State.Position, Radius = ballRadius },
@@ -111,7 +111,7 @@ public partial class Robot
         foreach (var post in posts)
             _obsMap.Add(post, Physicality.Physical);
 
-        var halfPenaltyWidth = Context.Field.PenaltyAreaWidth!.Value / 2f;
+        var halfPenaltyWidth = Context.Field.PenaltyAreaWidth / 2f;
 
         if (ourPenalty)
         {
@@ -119,15 +119,15 @@ public partial class Robot
                 Context.SideSign * (Context.Field.Width + PenaltyAreaExtensionBehindGoal),
                 -halfPenaltyWidth);
             var w = -Context.SideSign *
-                    (PenaltyAreaExtensionBehindGoal + Context.Field.PenaltyAreaDepth!.Value);
-            float h = Context.Field.PenaltyAreaWidth!.Value;
+                    (PenaltyAreaExtensionBehindGoal + Context.Field.PenaltyAreaDepth);
+            float h = Context.Field.PenaltyAreaWidth;
             _obsMap.Add(Rectangle.FromCornerAndSize(start, w, h), Physicality.Virtual);
         }
 
         if (oppPenaltyBig)
         {
-            var r = Context.Field.PenaltyAreaDepth!.Value + BigPenaltyAddition;
-            var w = Context.Field.PenaltyAreaWidth!.Value + 2.0f * BigPenaltyAddition;
+            var r = Context.Field.PenaltyAreaDepth + BigPenaltyAddition;
+            var w = Context.Field.PenaltyAreaWidth + 2.0f * BigPenaltyAddition;
             var halfW = w / 2.0f;
 
             var start = new Vector2(
@@ -141,8 +141,8 @@ public partial class Robot
                 -Context.SideSign * (Context.Field.Width + PenaltyAreaExtensionBehindGoal),
                 -halfPenaltyWidth);
             var w = Context.SideSign *
-                    (PenaltyAreaExtensionBehindGoal + Context.Field.PenaltyAreaDepth!.Value);
-            _obsMap.Add(Rectangle.FromCornerAndSize(start, w, Context.Field.PenaltyAreaWidth!.Value),
+                    (PenaltyAreaExtensionBehindGoal + Context.Field.PenaltyAreaDepth);
+            _obsMap.Add(Rectangle.FromCornerAndSize(start, w, Context.Field.PenaltyAreaWidth),
                 Physicality.Virtual);
         }
 

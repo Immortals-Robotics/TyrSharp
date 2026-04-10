@@ -28,10 +28,10 @@ public partial class MarkToGoal : ISkill
         if (PenaltyAreaMark)
         {
             var penaltyAreaDist      = PenaltyAreaMarkDistance;
-            var penaltyAreaHalfWidth = Context.Field.PenaltyAreaWidth!.Value / 2f;
+            var penaltyAreaHalfWidth = Context.Field.PenaltyAreaWidth / 2f;
             var start = new Vector2(ownGoal.X, -(penaltyAreaHalfWidth + penaltyAreaDist));
-            var w     = -Context.SideSign * (penaltyAreaDist + Context.Field.PenaltyAreaDepth!.Value);
-            var h     = Context.Field.PenaltyAreaWidth!.Value + 2 * penaltyAreaDist;
+            var w     = -Context.SideSign * (penaltyAreaDist + Context.Field.PenaltyAreaDepth);
+            var h     = Context.Field.PenaltyAreaWidth + 2 * penaltyAreaDist;
 
             var virtualDefenseArea = Rectangle.FromCornerAndSize(start, w, h);
             var shotLine           = Line.FromTwoPoints(ownGoal, predictedOpp);
