@@ -254,11 +254,13 @@ public sealed class DebugDb : IDebugDb
         if (!TryGetBucketSet(typeof(T), out var bucketSet))
             return null;
 
-        foreach (var (shard, _) in bucketSet.GetCandidates(moduleId, null, shardKeyId))
+        if (bucketSet.TryGetFirstByModuleAndShardKey(moduleId, shardKeyId, out var shard))
+        {
             return _sourceLocationCache.GetOrAdd(
                 shard.SourceLocationId,
                 static (id, db) => db._sources.Get(id, db._strings),
                 this);
+        }
 
         return null;
     }
@@ -280,8 +282,15 @@ public sealed class DebugDb : IDebugDb
 
         var matches = new List<ShardMatch>();
         var totalCount = 0;
-        foreach (var (shard, bucketFactory) in bucketSet.GetCandidates(moduleId, sourceLocationId, shardKeyId))
+        var candidates = bucketSet.GetCandidateMap(moduleId, sourceLocationId, shardKeyId, out var filterModuleId, out var filterShardKeyId);
+        foreach (var (shard, bucketFactory) in candidates)
         {
+            if (filterModuleId.HasValue && shard.ModuleId != filterModuleId.Value)
+                continue;
+
+            if (filterShardKeyId.HasValue && shard.ShardKeyId != filterShardKeyId.Value)
+                continue;
+
             var bucket = bucketFactory.Value;
             var count = bucket.RecordCount;
             var lo = bucket.LowerBound(t0.Nanoseconds, count);
@@ -811,6 +820,47 @@ public sealed class DebugDb : IDebugDb
         public ConcurrentDictionary<EntryShardKey, Lazy<Bucket>> GetByModule(int moduleId)
         {
             return _byModule.GetValueOrDefault(moduleId, Empty);
+        }
+
+        public ConcurrentDictionary<EntryShardKey, Lazy<Bucket>> GetCandidateMap(
+            int? moduleId,
+            int? sourceLocationId,
+            int? shardKeyId,
+            out int? filterModuleId,
+            out int? filterShardKeyId)
+        {
+            if (sourceLocationId.HasValue)
+            {
+                filterModuleId = moduleId;
+                filterShardKeyId = shardKeyId;
+                return GetBySourceLocation(sourceLocationId.Value);
+            }
+
+            filterModuleId = null;
+            filterShardKeyId = null;
+
+            if (moduleId.HasValue && shardKeyId.HasValue)
+                return GetByModuleAndShardKey(moduleId.Value, shardKeyId.Value);
+
+            if (moduleId.HasValue)
+                return GetByModule(moduleId.Value);
+
+            if (shardKeyId.HasValue)
+                return GetByShardKey(shardKeyId.Value);
+
+            return All;
+        }
+
+        public bool TryGetFirstByModuleAndShardKey(int moduleId, int shardKeyId, out EntryShardKey shard)
+        {
+            foreach (var entry in GetByModuleAndShardKey(moduleId, shardKeyId))
+            {
+                shard = entry.Key;
+                return true;
+            }
+
+            shard = default;
+            return false;
         }
 
         public IEnumerable<KeyValuePair<EntryShardKey, Lazy<Bucket>>> GetCandidates(
