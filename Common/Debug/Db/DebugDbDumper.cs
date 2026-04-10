@@ -10,7 +10,8 @@ namespace Tyr.Common.Debug.Db;
 public sealed partial class DebugDbDumper : IDisposable
 {
     [ConfigEntry] private static DeltaTime SleepTime { get; set; } = DeltaTime.FromMilliseconds(1);
-    [ConfigEntry] private static string Directory { get; set; } = "debug_session";
+    [ConfigEntry(StorageType.User)] private static string RootDirectory { get; set; } = "";
+    [ConfigEntry(StorageType.User)] private static string CaptureLabel { get; set; } = "";
     [ConfigEntry] private static int ViewerPort { get; set; } = 9000;
     [ConfigEntry] private static ThreadPriority RunnerPriority { get; set; } = ThreadPriority.BelowNormal;
 
@@ -22,12 +23,20 @@ public sealed partial class DebugDbDumper : IDisposable
     private readonly RunnerSync _runner;
     private readonly DebugDb _db;
     private readonly DebugDbViewer _viewer;
+    private readonly DebugDbSessionDescriptor _session;
+    private readonly DebugDbSessionMetadata _metadata;
 
     public IDebugDb Db => _db;
+    public string SessionDirectory => _session.SessionDirectory;
+    public string DatabaseDirectory => _session.DatabaseDirectory;
 
     public DebugDbDumper()
     {
-        _db = new DebugDb(Directory)
+        _session = DebugDbSessionPaths.CreateSession(RootDirectory, CaptureLabel);
+        _metadata = DebugDbSessionMetadata.Create(_session);
+        _metadata.Save(_session.MetadataPath);
+
+        _db = new DebugDb(_session.DatabaseDirectory)
             .RegisterType<Debug.Logging.Entry>()
             .RegisterType<Debug.Plotting.Command>()
             .RegisterType<Debug.Drawing.Command>();
@@ -37,6 +46,7 @@ public sealed partial class DebugDbDumper : IDisposable
             .Register<Debug.Plotting.Command>()
             .Register<Debug.Drawing.Command>();
 
+        Log.ZLogInformation($"DebugDb session started: {_session.SessionDirectory}");
         _viewer.Start();
 
         _runner = new RunnerSync(Tick, priority: RunnerPriority);
@@ -51,6 +61,7 @@ public sealed partial class DebugDbDumper : IDisposable
         while (_frameSubscriber.Reader.TryRead(out var frame))
         {
             _db.AppendFrame(frame);
+            _metadata.UpdateFrameRange(frame);
             dumped = true;
         }
 
@@ -92,5 +103,8 @@ public sealed partial class DebugDbDumper : IDisposable
 
         _viewer.Dispose();
         _db.Dispose();
+
+        _metadata.ClosedAtUtc = DateTimeOffset.UtcNow;
+        _metadata.Save(_session.MetadataPath);
     }
 }
