@@ -11,6 +11,16 @@ namespace Tyr.Gui.Views;
 [Configurable]
 public sealed partial class GameControllerView : IDisposable
 {
+    private static readonly string WindowTitle = $"{IconFonts.FontAwesome6.Flag} Game Controller";
+    private static readonly string ProcessTabTitle = $"{IconFonts.FontAwesome6.Microchip}  Process";
+    private static readonly string RefereeTabTitle = $"{IconFonts.FontAwesome6.Gavel}  Referee";
+    private static readonly string YellowTabTitle = $"{IconFonts.FontAwesome6.Robot}  Yellow";
+    private static readonly string BlueTabTitle = $"{IconFonts.FontAwesome6.Robot}  Blue";
+    private static readonly string DownloadLatestButtonLabel = $"{IconFonts.FontAwesome6.CloudArrowDown}  Download Latest##gcdownload";
+    private static readonly string CancelDownloadButtonLabel = $"{IconFonts.FontAwesome6.Xmark}  Cancel##gcdownload";
+    private static readonly string StopProcessButtonLabel = $"{IconFonts.FontAwesome6.Stop}  Stop##gcproc";
+    private static readonly string StartProcessButtonLabel = $"{IconFonts.FontAwesome6.Play}  Start##gcproc";
+
     [ConfigEntry("Hostname or IP address where the game controller is running", StorageType.User)]
     private static string GameControllerHost { get; set; } = "localhost";
 
@@ -38,7 +48,7 @@ public sealed partial class GameControllerView : IDisposable
 
     public void Draw()
     {
-        if (!ImGui.Begin($"{IconFonts.FontAwesome6.Flag} Game Controller"))
+        if (!ImGui.Begin(WindowTitle))
         {
             ImGui.End();
             return;
@@ -46,25 +56,25 @@ public sealed partial class GameControllerView : IDisposable
 
         if (ImGui.BeginTabBar("gc_tabs"))
         {
-            if (ImGui.BeginTabItem($"{IconFonts.FontAwesome6.Microchip}  Process"))
+            if (ImGui.BeginTabItem(ProcessTabTitle))
             {
                 DrawProcessPanel();
                 ImGui.EndTabItem();
             }
 
-            if (ImGui.BeginTabItem($"{IconFonts.FontAwesome6.Gavel}  Referee"))
+            if (ImGui.BeginTabItem(RefereeTabTitle))
             {
                 DrawRefereePanel();
                 ImGui.EndTabItem();
             }
 
-            if (ImGui.BeginTabItem($"{IconFonts.FontAwesome6.Robot}  Yellow"))
+            if (ImGui.BeginTabItem(YellowTabTitle))
             {
                 DrawTeamPanel(TeamColor.Yellow, _rconYellow, ref _keeperInputYellow, ref _keeperDirtyYellow);
                 ImGui.EndTabItem();
             }
 
-            if (ImGui.BeginTabItem($"{IconFonts.FontAwesome6.Robot}  Blue"))
+            if (ImGui.BeginTabItem(BlueTabTitle))
             {
                 DrawTeamPanel(TeamColor.Blue, _rconBlue, ref _keeperInputBlue, ref _keeperDirtyBlue);
                 ImGui.EndTabItem();
@@ -95,26 +105,28 @@ public sealed partial class GameControllerView : IDisposable
                                     : "Not downloaded"),
         };
 
-        ImGui.TextColored(statusColor, $"{IconFonts.FontAwesome6.Circle}  {statusLabel}");
+        ImGui.TextColored(statusColor, IconFonts.FontAwesome6.Circle);
+        ImGui.SameLine();
+        ImGui.TextUnformatted(statusLabel);
 
         ImGui.SameLine();
 
         if (procStatus == GcProcess.Status.Downloading)
         {
-            if (ImGui.Button($"{IconFonts.FontAwesome6.Xmark}  Cancel##gcdownload"))
+            if (ImGui.Button(CancelDownloadButtonLabel))
                 _process.CancelDownload();
             ImGui.ProgressBar(_process.DownloadProgress, new System.Numerics.Vector2(-1f, 0f));
         }
         else
         {
-            if (ImGui.Button($"{IconFonts.FontAwesome6.CloudArrowDown}  Download Latest##gcdownload"))
+            if (ImGui.Button(DownloadLatestButtonLabel))
                 _process.StartDownload();
 
             ImGui.SameLine();
 
             if (procStatus == GcProcess.Status.Running)
             {
-                if (ImGui.Button($"{IconFonts.FontAwesome6.Stop}  Stop##gcproc"))
+                if (ImGui.Button(StopProcessButtonLabel))
                 {
                     _process.Stop();
                     _apiClient.Disconnect();
@@ -123,14 +135,15 @@ public sealed partial class GameControllerView : IDisposable
             else
             {
                 ImGui.BeginDisabled(_process.CachedVersion == null);
-                if (ImGui.Button($"{IconFonts.FontAwesome6.Play}  Start##gcproc"))
+                if (ImGui.Button(StartProcessButtonLabel))
                     StartProcess();
                 ImGui.EndDisabled();
             }
         }
 
-        ImGui.TextColored(Color.Zinc500,
-            $"{IconFonts.FontAwesome6.CircleInfo}  RCon :{RemoteControlPort}   Web :{WebUiPort}   Auto-connect: {AutoConnect}");
+        ImGui.TextColored(Color.Zinc500, IconFonts.FontAwesome6.CircleInfo);
+        ImGui.SameLine();
+        ImGui.Text($"RCon :{RemoteControlPort}   Web :{WebUiPort}   Auto-connect: {AutoConnect}");
     }
 
     private void StartProcess()

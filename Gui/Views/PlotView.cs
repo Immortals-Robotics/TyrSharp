@@ -22,7 +22,7 @@ public partial class PlotView(IDebugDb debugDb)
     [ConfigEntry] private static int MaxPoints { get; set; } = 500;
 
     private DeltaTime _linkedHistoryRange = DeltaTime.Zero;
-    private readonly HashSet<string> _openPlots = new(StringComparer.Ordinal);
+    private readonly HashSet<PlotKey> _openPlots = [];
     private bool _prepareStateDirty = true;
     private PrepareState? _prepareStateCache;
     private DeltaTime _prepareStateRange;
@@ -39,7 +39,9 @@ public partial class PlotView(IDebugDb debugDb)
         Vector3
     }
 
-    internal sealed record PrepareState(DeltaTime LinkedHistoryRange, IReadOnlySet<string> OpenPlots);
+    internal readonly record struct PlotKey(string ModuleName, string PlotId);
+
+    internal sealed record PrepareState(DeltaTime LinkedHistoryRange, IReadOnlySet<PlotKey> OpenPlots);
 
     internal sealed class PreparedSeries
     {
@@ -149,7 +151,7 @@ public partial class PlotView(IDebugDb debugDb)
         if (_prepareStateCache is null || _prepareStateDirty || _prepareStateRange != _linkedHistoryRange)
         {
             _prepareStateRange = _linkedHistoryRange;
-            _prepareStateCache = new PrepareState(_linkedHistoryRange, _openPlots.ToHashSet(StringComparer.Ordinal));
+            _prepareStateCache = new PrepareState(_linkedHistoryRange, new HashSet<PlotKey>(_openPlots));
             _prepareStateDirty = false;
         }
 
@@ -175,7 +177,7 @@ public partial class PlotView(IDebugDb debugDb)
 
                 preparedModule ??= prepared.AddModule(moduleName);
                 var preparedPlot = preparedModule.AddPlot(plotId, plotMeta);
-                if (state.OpenPlots.Contains(GetPlotKey(moduleName, plotId)))
+                if (state.OpenPlots.Contains(new PlotKey(moduleName, plotId)))
                 {
                     var (min, max) = GetAnchoredTimeRange(time.Offset, historyRange);
                     GatherPreparedData(moduleName, plotId, time.EndTime, min, max, preparedPlot.EnsureSeries());
@@ -280,7 +282,7 @@ public partial class PlotView(IDebugDb debugDb)
 
     private void UpdateOpenState(string moduleName, string plotId, bool open)
     {
-        var plotKey = GetPlotKey(moduleName, plotId);
+        var plotKey = new PlotKey(moduleName, plotId);
         if (open)
             _prepareStateDirty |= _openPlots.Add(plotKey);
         else
@@ -428,5 +430,4 @@ public partial class PlotView(IDebugDb debugDb)
         }
     }
 
-    private static string GetPlotKey(string moduleName, string plotId) => $"{moduleName}\n{plotId}";
 }

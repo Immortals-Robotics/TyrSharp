@@ -234,7 +234,11 @@ public sealed partial class DebugFilter(Tyr.Common.Debug.Db.IDebugDb debugDb) : 
         ImGui.PushID(module);
         var isOpen = ImGui.TreeNode("");
         ImGui.SameLine();
-        _dirty |= ImGui.Checkbox($"{IconFonts.FontAwesome6.CubesStacked} {module}", ref isEnabled);
+        _dirty |= ImGui.Checkbox("##enabled", ref isEnabled);
+        ImGui.SameLine();
+        ImGui.TextUnformatted(IconFonts.FontAwesome6.CubesStacked);
+        ImGui.SameLine();
+        ImGui.TextUnformatted(module);
 
         FilterState[module] = isEnabled;
 
@@ -279,7 +283,11 @@ public sealed partial class DebugFilter(Tyr.Common.Debug.Db.IDebugDb debugDb) : 
 
             ImGui.PushFont(FontRegistry.Instance.MonoFont, FontRegistry.Instance.MonoFont.LegacySize);
             if (debugLayer) ImGui.PushStyleColor(ImGuiCol.Text, Color.Yellow200);
-            _dirty |= ImGui.Checkbox($"{IconFonts.FontAwesome6.LayerGroup} {layerName}", ref isEnabled);
+            _dirty |= ImGui.Checkbox("##enabled", ref isEnabled);
+            ImGui.SameLine();
+            ImGui.TextUnformatted(IconFonts.FontAwesome6.LayerGroup);
+            ImGui.SameLine();
+            ImGui.TextUnformatted(layerName);
             ImGui.PopFont();
             if (debugLayer) ImGui.PopStyleColor();
         }
@@ -324,7 +332,11 @@ public sealed partial class DebugFilter(Tyr.Common.Debug.Db.IDebugDb debugDb) : 
         var isOpen = ImGui.TreeNode("");
         ImGui.SameLine();
         ImGui.PushFont(FontRegistry.Instance.MonoFont, FontRegistry.Instance.MonoFont.LegacySize);
-        _dirty |= ImGui.Checkbox($"{IconFonts.FontAwesome6.FileCode} {displayName}", ref isEnabled);
+        _dirty |= ImGui.Checkbox("##enabled", ref isEnabled);
+        ImGui.SameLine();
+        ImGui.TextUnformatted(IconFonts.FontAwesome6.FileCode);
+        ImGui.SameLine();
+        ImGui.TextUnformatted(displayName);
         ImGui.PopFont();
 
         // Show full path as tooltip
@@ -371,7 +383,11 @@ public sealed partial class DebugFilter(Tyr.Common.Debug.Db.IDebugDb debugDb) : 
         var isOpen = ImGui.TreeNode("");
         ImGui.SameLine();
         ImGui.PushFont(FontRegistry.Instance.MonoFont, FontRegistry.Instance.MonoFont.LegacySize);
-        _dirty |= ImGui.Checkbox($"{IconFonts.FontAwesome6.Code} {member}()", ref isEnabled);
+        _dirty |= ImGui.Checkbox("##enabled", ref isEnabled);
+        ImGui.SameLine();
+        ImGui.TextUnformatted(IconFonts.FontAwesome6.Code);
+        ImGui.SameLine();
+        ImGui.Text($"{member}()");
         ImGui.PopFont();
 
         if (parentEnabled)
@@ -412,13 +428,17 @@ public sealed partial class DebugFilter(Tyr.Common.Debug.Db.IDebugDb debugDb) : 
 
         var icon = treeItem.Type switch
         {
-            MetaTreeItem.ItemType.Log => $"{IconFonts.FontAwesome6.Terminal}",
-            MetaTreeItem.ItemType.Draw => $"{IconFonts.FontAwesome6.Shapes}",
-            MetaTreeItem.ItemType.Plot => $"{IconFonts.FontAwesome6.ChartLine}",
-            _ => $"{IconFonts.FontAwesome6.Square}" // Default to square icon for other types
+            MetaTreeItem.ItemType.Log => IconFonts.FontAwesome6.Terminal,
+            MetaTreeItem.ItemType.Draw => IconFonts.FontAwesome6.Shapes,
+            MetaTreeItem.ItemType.Plot => IconFonts.FontAwesome6.ChartLine,
+            _ => IconFonts.FontAwesome6.Square // Default to square icon for other types
         };
 
-        _dirty |= ImGui.Checkbox($"{icon} Line {treeItem.Line}", ref isEnabled);
+        _dirty |= ImGui.Checkbox("##enabled", ref isEnabled);
+        ImGui.SameLine();
+        ImGui.TextUnformatted(icon);
+        ImGui.SameLine();
+        ImGui.Text($"Line {treeItem.Line}");
 
         if (!string.IsNullOrWhiteSpace(treeItem.Expression) && ImGui.IsItemHovered(ImGuiHoveredFlags.ForTooltip))
         {
