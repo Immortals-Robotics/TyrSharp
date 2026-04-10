@@ -21,6 +21,10 @@
     </ItemGroup>
 
     <ItemGroup>
+      <PackageReference Include="protobuf-net" Version="3.2.46" />
+    </ItemGroup>
+
+    <ItemGroup>
       <PackageReference Include="Hexa.NET.GLFW" Version="1.0.4" />
       <PackageReference Include="Hexa.NET.ImGui" Version="2.2.7" />
       <PackageReference Include="Hexa.NET.ImGui.Backends" Version="1.0.15" />

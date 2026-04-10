@@ -37,6 +37,7 @@ public sealed partial class Runner : IDisposable
     private readonly PlotView _plots;
     private readonly PlaybackControl _control;
     private readonly ConfigsView _configs;
+    private readonly GameControllerView _gameController;
 
     public Runner(IDebugDb debugDb)
     {
@@ -61,6 +62,7 @@ public sealed partial class Runner : IDisposable
         _plots = new PlotView(_filter, debugDb);
         _control = new PlaybackControl(debugDb);
         _configs = new ConfigsView();
+        _gameController = new GameControllerView();
 
         // and the runner
         _runner = new RunnerSync(Tick, MaxFps, ModuleName);
@@ -125,6 +127,7 @@ public sealed partial class Runner : IDisposable
         ImGui.ShowDemoWindow();
 
         _configs.Draw();
+        _gameController.Draw();
 
         _control.Draw();
         var currentPlayback = _control.Current;
@@ -153,5 +156,6 @@ public sealed partial class Runner : IDisposable
         _filter.Dispose();
         _log.Dispose();
         _field.Dispose();
+        _gameController.Dispose();
     }
 }
