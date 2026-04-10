@@ -13,8 +13,8 @@ public class RedirectKickSpinAwareFitter
 {
     private const int KickDirMaxRecordsPerCam = 5;
     private const double SimplexStep = 100.0;
-    private const double FunctionTolerance = 1e-6;
-    private const int MaxIterations = 2000;
+    private const double FunctionTolerance = 1e-3;
+    private const int MaxIterations = 200;
     private const double SpinFactorFilterAlpha = 0.95;
     private const double SpinFactorStep = 0.01;
     private const double SpinFactorSearchEpsilon = 0.001;
@@ -48,7 +48,7 @@ public class RedirectKickSpinAwareFitter
         if (kickDirection == null)
             return null;
 
-        ComputeFixedKickDirection(ballRecords);
+        ComputeFixedKickDirection(ballRecords, kickDirection.Value);
         EnsureInitialGuess(ballRecords, kickDirection.Value);
 
         var minFactor = 0d;
@@ -108,7 +108,7 @@ public class RedirectKickSpinAwareFitter
         return estimated?.Item2;
     }
 
-    private void ComputeFixedKickDirection(List<RawBall> ballRecords)
+    private void ComputeFixedKickDirection(List<RawBall> ballRecords, Vector2 kickDirection)
     {
         if (_fixedKickDirection != null)
             return;
@@ -119,7 +119,9 @@ public class RedirectKickSpinAwareFitter
 
         if (atLeastOneGroupAtMaxRecords)
         {
-            _fixedKickDirection = GetKickDirection(ballRecords);
+            // Once we have enough records on one camera, keep the already estimated direction
+            // so later pruning does not make the solver chase a moving target.
+            _fixedKickDirection = kickDirection;
         }
     }
 
