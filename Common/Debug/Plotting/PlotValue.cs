@@ -16,14 +16,29 @@ public enum PlotValueKind
 public readonly partial record struct PlotValue
 {
     public PlotValueKind Kind { get; init; }
-    public double Number { get; init; }
-    public bool Boolean { get; init; }
-    public float X { get; init; }
-    public float Y { get; init; }
-    public float Z { get; init; }
+
+    [MemoryPackInclude]
+    private ulong Raw0 { get; init; }
+    [MemoryPackInclude]
+    private uint Raw1 { get; init; }
 
     [MemoryPackIgnore]
     public static PlotValue Empty => default;
+
+    [MemoryPackIgnore]
+    public double Number => BitConverter.Int64BitsToDouble(unchecked((long)Raw0));
+
+    [MemoryPackIgnore]
+    public bool Boolean => Raw0 != 0;
+
+    [MemoryPackIgnore]
+    public float X => BitConverter.Int32BitsToSingle(unchecked((int)(Raw0 & uint.MaxValue)));
+
+    [MemoryPackIgnore]
+    public float Y => BitConverter.Int32BitsToSingle(unchecked((int)(Raw0 >> 32)));
+
+    [MemoryPackIgnore]
+    public float Z => BitConverter.Int32BitsToSingle(unchecked((int)Raw1));
 
     [MemoryPackIgnore]
     public Vector2 Vector2Value => new(X, Y);
@@ -60,35 +75,36 @@ public readonly partial record struct PlotValue
         };
     }
 
-    public static PlotValue FromNumber(double number) => new()
+    private static PlotValue FromNumber(double number) => new()
     {
         Kind = PlotValueKind.Number,
-        Number = number,
+        Raw0 = unchecked((ulong)BitConverter.DoubleToInt64Bits(number)),
     };
 
-    public static PlotValue FromBoolean(bool boolean) => new()
+    private static PlotValue FromBoolean(bool boolean) => new()
     {
         Kind = PlotValueKind.Boolean,
-        Boolean = boolean,
+        Raw0 = boolean ? 1u : 0u,
     };
 
-    public static PlotValue FromVector(Vector2 vector) => new()
+    private static PlotValue FromVector(Vector2 vector) => new()
     {
         Kind = PlotValueKind.Vector2,
-        X = vector.X,
-        Y = vector.Y,
+        Raw0 = PackVector2(vector.X, vector.Y),
     };
 
-    public static PlotValue FromVector(Vector3 vector) => new()
+    private static PlotValue FromVector(Vector3 vector) => new()
     {
         Kind = PlotValueKind.Vector3,
-        X = vector.X,
-        Y = vector.Y,
-        Z = vector.Z,
+        Raw0 = PackVector2(vector.X, vector.Y),
+        Raw1 = unchecked((uint)BitConverter.SingleToInt32Bits(vector.Z)),
     };
 
-    [MemoryPackIgnore]
-    public bool IsEmpty => Kind == PlotValueKind.None;
+    private static ulong PackVector2(float x, float y)
+    {
+        return unchecked((uint)BitConverter.SingleToInt32Bits(x)) |
+               (unchecked((ulong)(uint)BitConverter.SingleToInt32Bits(y)) << 32);
+    }
 
     private static PlotValue ThrowUnsupported(Type type) => throw new NotSupportedException(
         $"Plotting values of type '{type.FullName}' is not supported. " +
