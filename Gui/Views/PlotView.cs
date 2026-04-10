@@ -1,6 +1,6 @@
-using System.Runtime.InteropServices;
 using Hexa.NET.ImGui;
 using Hexa.NET.ImPlot;
+using System.Runtime.InteropServices;
 using Tyr.Common.Config;
 using Tyr.Common.Debug.Db;
 using Tyr.Common.Debug.Drawing;
@@ -13,7 +13,7 @@ using Command = Tyr.Common.Debug.Plotting.Command;
 namespace Tyr.Gui.Views;
 
 [Configurable]
-public partial class PlotView(DebugFilter filter, IDebugDb debugDb)
+public partial class PlotView(IDebugDb debugDb)
 {
     [ConfigEntry] private static double TimeAxisMinRange { get; set; } = 1;
     [ConfigEntry] private static double TimeAxisMaxRange { get; set; } = 200;
@@ -21,45 +21,170 @@ public partial class PlotView(DebugFilter filter, IDebugDb debugDb)
     [ConfigEntry] private static double YAxisMinRange { get; set; } = 1;
     [ConfigEntry] private static int MaxPoints { get; set; } = 500;
 
-    private readonly List<float>[] _rawData =
-    [
-        new(MaxPoints),
-        new(MaxPoints),
-        new(MaxPoints),
-        new(MaxPoints),
-        new(MaxPoints),
-    ];
-
-    private List<float> TimeList => _rawData[0];
-    private List<float> ValueList => _rawData[4];
-    private List<float> XList => _rawData[1];
-    private List<float> YList => _rawData[2];
-    private List<float> ZList => _rawData[3];
-    private List<float> LenList => _rawData[4];
-
-    private Span<float> TimeSpan => CollectionsMarshal.AsSpan(TimeList);
-    private Span<float> ValueSpan => CollectionsMarshal.AsSpan(ValueList);
-    private Span<float> XSpan => CollectionsMarshal.AsSpan(XList);
-    private Span<float> YSpan => CollectionsMarshal.AsSpan(YList);
-    private Span<float> ZSpan => CollectionsMarshal.AsSpan(ZList);
-    private Span<float> LenSpan => CollectionsMarshal.AsSpan(LenList);
-
     private DeltaTime _linkedHistoryRange = DeltaTime.Zero;
-    private readonly Dictionary<string, Dictionary<string, Common.Debug.Meta>> _plotMetadataCache = [];
+    private readonly HashSet<string> _openPlots = new(StringComparer.Ordinal);
+    private bool _prepareStateDirty = true;
+    private PrepareState? _prepareStateCache;
+    private DeltaTime _prepareStateRange;
 
     private ImGuiTextFilterPtr _filter = ImGui.ImGuiTextFilter();
     private bool IsFiltering => _filter.IsActive();
     private int _filterTested;
     private int _filterPassed;
 
-    enum PlotDataType
+    internal enum PlotDataType
     {
         Scalar,
         Vector2,
         Vector3
     }
 
-    public void Draw(PlaybackTime time)
+    internal sealed record PrepareState(DeltaTime LinkedHistoryRange, IReadOnlySet<string> OpenPlots);
+
+    internal sealed class PreparedSeries
+    {
+        public PlotDataType Type { get; set; }
+        public string? Title { get; set; }
+        public DeltaTime Min { get; set; }
+        public DeltaTime Max { get; set; }
+        public List<float> Time { get; } = new(MaxPoints);
+        public List<float> Value { get; } = new(MaxPoints);
+        public List<float> X { get; } = new(MaxPoints);
+        public List<float> Y { get; } = new(MaxPoints);
+        public List<float> Z { get; } = new(MaxPoints);
+        public List<float> Len { get; } = new(MaxPoints);
+
+        public void Reset()
+        {
+            Type = PlotDataType.Scalar;
+            Title = null;
+            Min = DeltaTime.Zero;
+            Max = DeltaTime.Zero;
+            Time.Clear();
+            Value.Clear();
+            X.Clear();
+            Y.Clear();
+            Z.Clear();
+            Len.Clear();
+        }
+    }
+
+    internal sealed class PreparedPlot
+    {
+        public string PlotId { get; set; } = string.Empty;
+        public Common.Debug.Meta Meta { get; set; } = Common.Debug.Meta.Empty;
+        public PreparedSeries? Series { get; private set; }
+
+        public PreparedSeries EnsureSeries()
+        {
+            Series ??= new PreparedSeries();
+            return Series;
+        }
+
+        public void Reset()
+        {
+            PlotId = string.Empty;
+            Meta = Common.Debug.Meta.Empty;
+            Series?.Reset();
+        }
+    }
+
+    internal sealed class PreparedModule
+    {
+        private readonly Stack<PreparedPlot> _plotPool = [];
+
+        public string ModuleName { get; set; } = string.Empty;
+        public List<PreparedPlot> Plots { get; } = [];
+
+        public PreparedPlot AddPlot(string plotId, Common.Debug.Meta meta)
+        {
+            var plot = _plotPool.Count > 0 ? _plotPool.Pop() : new PreparedPlot();
+            plot.PlotId = plotId;
+            plot.Meta = meta;
+            Plots.Add(plot);
+            return plot;
+        }
+
+        public void Reset()
+        {
+            foreach (var plot in Plots)
+            {
+                plot.Reset();
+                _plotPool.Push(plot);
+            }
+
+            ModuleName = string.Empty;
+            Plots.Clear();
+        }
+    }
+
+    internal sealed class PreparedData
+    {
+        private readonly Stack<PreparedModule> _modulePool = [];
+
+        public List<PreparedModule> Modules { get; } = [];
+
+        public PreparedModule AddModule(string moduleName)
+        {
+            var module = _modulePool.Count > 0 ? _modulePool.Pop() : new PreparedModule();
+            module.ModuleName = moduleName;
+            Modules.Add(module);
+            return module;
+        }
+
+        public void Reset()
+        {
+            foreach (var module in Modules)
+            {
+                module.Reset();
+                _modulePool.Push(module);
+            }
+
+            Modules.Clear();
+        }
+    }
+
+    internal PrepareState CreatePrepareState()
+    {
+        if (_prepareStateCache is null || _prepareStateDirty || _prepareStateRange != _linkedHistoryRange)
+        {
+            _prepareStateRange = _linkedHistoryRange;
+            _prepareStateCache = new PrepareState(_linkedHistoryRange, _openPlots.ToHashSet(StringComparer.Ordinal));
+            _prepareStateDirty = false;
+        }
+
+        return _prepareStateCache;
+    }
+
+    internal void Prepare(PlaybackTime time, DebugFilterSnapshot filterSnapshot, PrepareState state, PreparedData prepared)
+    {
+        prepared.Reset();
+        var historyRange = ClampLinkedHistoryRange(state.LinkedHistoryRange);
+
+        foreach (var moduleName in debugDb.QueryModules())
+        {
+            if (!filterSnapshot.IsEnabled(moduleName))
+                continue;
+
+            PreparedModule? preparedModule = null;
+            foreach (var plotId in debugDb.QueryShardKeys<Command>(moduleName))
+            {
+                var plotMeta = debugDb.TryGetShardMeta<Command>(moduleName, plotId) ?? Common.Debug.Meta.Empty;
+                if (plotMeta == Common.Debug.Meta.Empty || !filterSnapshot.IsEnabled(plotMeta))
+                    continue;
+
+                preparedModule ??= prepared.AddModule(moduleName);
+                var preparedPlot = preparedModule.AddPlot(plotId, plotMeta);
+                if (state.OpenPlots.Contains(GetPlotKey(moduleName, plotId)))
+                {
+                    var (min, max) = GetAnchoredTimeRange(time.Offset, historyRange);
+                    GatherPreparedData(moduleName, plotId, time.EndTime, min, max, preparedPlot.EnsureSeries());
+                }
+            }
+        }
+    }
+
+    internal void Draw(PreparedData prepared)
     {
         if (ImGui.Begin($"{IconFonts.FontAwesome6.ChartLine} Plots"))
         {
@@ -67,7 +192,7 @@ public partial class PlotView(DebugFilter filter, IDebugDb debugDb)
             _filterPassed = 0;
 
             DrawSearchBar();
-            DrawPlots(time);
+            DrawPlots(prepared);
 
             // Add status bar at bottom
             if (IsFiltering)
@@ -101,42 +226,46 @@ public partial class PlotView(DebugFilter filter, IDebugDb debugDb)
         ImGui.Separator();
     }
 
-    private void DrawPlots(PlaybackTime time)
+    private void DrawPlots(PreparedData prepared)
     {
         ImGui.PushFont(FontRegistry.Instance.MonoFont, FontRegistry.Instance.MonoFont.LegacySize);
 
-        foreach (var moduleName in DebugDbUsageProfiler.MeasureEnumerable("PlotView.QueryModules", debugDb.QueryModules()))
+        foreach (var module in prepared.Modules)
         {
-            var plots = GetPlots(moduleName).ToArray();
-            var anyVisible = plots.Any(kv =>
-                filter.IsEnabled(kv.Value) && _filter.PassFilter(kv.Key));
+            var anyVisible = module.Plots.Any(plot => _filter.PassFilter(plot.PlotId));
 
             if (!anyVisible) continue;
 
-            ImGui.PushID(moduleName);
-            var sectionOpen = ImGui.CollapsingHeader(moduleName, ImGuiTreeNodeFlags.DefaultOpen);
+            ImGui.PushID(module.ModuleName);
+            var sectionOpen = ImGui.CollapsingHeader(module.ModuleName, ImGuiTreeNodeFlags.DefaultOpen);
             if (sectionOpen)
             {
                 ImGui.Indent();
-                foreach (var (plotId, plotMeta) in plots)
+                foreach (var plot in module.Plots)
                 {
-                    if (!filter.IsEnabled(plotMeta)) continue;
-
                     _filterTested += 1;
-                    if (!_filter.PassFilter(plotId)) continue;
+                    if (!_filter.PassFilter(plot.PlotId)) continue;
                     _filterPassed += 1;
 
-                    ImGui.PushID(plotId);
+                    ImGui.PushID(plot.PlotId);
 
-                    var open = ImGui.CollapsingHeader(plotId);
+                    var open = ImGui.CollapsingHeader(plot.PlotId);
+                    UpdateOpenState(module.ModuleName, plot.PlotId, open);
                     ImGui.SameLine();
                     ImGui.TextUnformatted("   ");
                     ImGui.SameLine();
-                    ImGui.TextDisabled(plotMeta.Expression);
+                    ImGui.TextDisabled(plot.Meta.Expression);
 
                     if (open)
                     {
-                        DrawPlot(time, moduleName, plotId);
+                        if (plot.Series is null)
+                        {
+                            ImGui.TextDisabled("Preparing plot data...");
+                        }
+                        else
+                        {
+                            DrawPlot(plot.Series);
+                        }
                     }
 
                     ImGui.PopID();
@@ -149,40 +278,16 @@ public partial class PlotView(DebugFilter filter, IDebugDb debugDb)
         ImGui.PopFont();
     }
 
-    private IEnumerable<KeyValuePair<string, Common.Debug.Meta>> GetPlots(string moduleName)
+    private void UpdateOpenState(string moduleName, string plotId, bool open)
     {
-        if (!_plotMetadataCache.TryGetValue(moduleName, out var plotMetadata))
-        {
-            plotMetadata = [];
-            _plotMetadataCache[moduleName] = plotMetadata;
-        }
-
-        foreach (var plotId in DebugDbUsageProfiler.MeasureEnumerable(
-                     "PlotView.QueryShardKeys",
-                     debugDb.QueryShardKeys<Command>(moduleName)))
-        {
-            if (!plotMetadata.TryGetValue(plotId, out var plotMeta))
-            {
-                plotMeta = TryGetPlotMeta(moduleName, plotId);
-                if (plotMeta == Common.Debug.Meta.Empty)
-                    continue;
-
-                plotMetadata[plotId] = plotMeta;
-            }
-
-            yield return new KeyValuePair<string, Common.Debug.Meta>(plotId, plotMeta);
-        }
+        var plotKey = GetPlotKey(moduleName, plotId);
+        if (open)
+            _prepareStateDirty |= _openPlots.Add(plotKey);
+        else
+            _prepareStateDirty |= _openPlots.Remove(plotKey);
     }
 
-    private Common.Debug.Meta TryGetPlotMeta(string moduleName, string plotId)
-    {
-        return DebugDbUsageProfiler.Measure(
-                   "PlotView.TryGetShardMeta",
-                   () => debugDb.TryGetShardMeta<Command>(moduleName, plotId))
-               ?? Common.Debug.Meta.Empty;
-    }
-
-    private void DrawPlot(PlaybackTime time, string moduleName, string plotId)
+    private void DrawPlot(PreparedSeries series)
     {
         if (ImPlot.BeginPlot("##plot"))
         {
@@ -199,46 +304,50 @@ public partial class PlotView(DebugFilter filter, IDebugDb debugDb)
 
             _linkedHistoryRange = ClampLinkedHistoryRange(_linkedHistoryRange);
 
-            var (min, max) = xAxis.Held || plot.Held
-                ? (DeltaTime.FromSeconds(xAxis.Range.Min), DeltaTime.FromSeconds(xAxis.Range.Max))
-                : GetAnchoredTimeRange(time.Offset, _linkedHistoryRange);
-
-            xAxis.SetMin(min.Seconds);
-            xAxis.SetMax(max.Seconds);
-
-            var (type, title) = GatherData(moduleName, plotId, time.EndTime, min, time.Offset);
-
-            if (title != null)
+            if (!xAxis.Held && !plot.Held)
             {
-                ImPlot.SetupAxis(ImAxis.Y1, title, ImPlotAxisFlags.AutoFit);
+                xAxis.SetMin(series.Min.Seconds);
+                xAxis.SetMax(series.Max.Seconds);
+            }
+
+            if (series.Title != null)
+            {
+                ImPlot.SetupAxis(ImAxis.Y1, series.Title, ImPlotAxisFlags.AutoFit);
             }
             else
             {
                 ImPlot.SetupAxis(ImAxis.Y1, ImPlotAxisFlags.AutoFit | ImPlotAxisFlags.NoLabel);
             }
 
-            var count = TimeList.Count;
+            var count = series.Time.Count;
             if (count == 0)
             {
                 ImPlot.EndPlot();
                 return;
             }
 
-            switch (type)
+            var time = CollectionsMarshal.AsSpan(series.Time);
+            var value = CollectionsMarshal.AsSpan(series.Value);
+            var x = CollectionsMarshal.AsSpan(series.X);
+            var y = CollectionsMarshal.AsSpan(series.Y);
+            var z = CollectionsMarshal.AsSpan(series.Z);
+            var len = CollectionsMarshal.AsSpan(series.Len);
+
+            switch (series.Type)
             {
                 case PlotDataType.Scalar:
-                    ImPlot.PlotLine("##value", ref TimeSpan[0], ref ValueSpan[0], count);
+                    ImPlot.PlotLine("##value", ref time[0], ref value[0], count);
                     break;
                 case PlotDataType.Vector2:
-                    ImPlot.PlotLine("x", ref TimeSpan[0], ref XSpan[0], count);
-                    ImPlot.PlotLine("y", ref TimeSpan[0], ref YSpan[0], count);
-                    ImPlot.PlotLine("len", ref TimeSpan[0], ref LenSpan[0], count);
+                    ImPlot.PlotLine("x", ref time[0], ref x[0], count);
+                    ImPlot.PlotLine("y", ref time[0], ref y[0], count);
+                    ImPlot.PlotLine("len", ref time[0], ref len[0], count);
                     break;
                 case PlotDataType.Vector3:
-                    ImPlot.PlotLine("x", ref TimeSpan[0], ref XSpan[0], count);
-                    ImPlot.PlotLine("y", ref TimeSpan[0], ref YSpan[0], count);
-                    ImPlot.PlotLine("z", ref TimeSpan[0], ref ZSpan[0], count);
-                    ImPlot.PlotLine("len", ref TimeSpan[0], ref LenSpan[0], count);
+                    ImPlot.PlotLine("x", ref time[0], ref x[0], count);
+                    ImPlot.PlotLine("y", ref time[0], ref y[0], count);
+                    ImPlot.PlotLine("z", ref time[0], ref z[0], count);
+                    ImPlot.PlotLine("len", ref time[0], ref len[0], count);
                     break;
                 default:
                     throw new ArgumentOutOfRangeException();
@@ -263,63 +372,61 @@ public partial class PlotView(DebugFilter filter, IDebugDb debugDb)
         return (min, max);
     }
 
-    private (PlotDataType type, string? title) GatherData(
+    private void GatherPreparedData(
         string moduleName, string id,
-        Timestamp origin, DeltaTime min, DeltaTime max)
+        Timestamp origin, DeltaTime min, DeltaTime max, PreparedSeries prepared)
     {
-        foreach (var list in _rawData) list.Clear();
-
-        var type = PlotDataType.Scalar;
-        string? title = null;
+        prepared.Reset();
+        prepared.Type = PlotDataType.Scalar;
+        prepared.Min = min;
+        prepared.Max = max;
 
         var startTimestamp = origin + min;
         var endTimestamp = origin + max;
 
-        foreach (var plot in DebugDbUsageProfiler.MeasureEnumerable(
-                     "PlotView.QueryWindow",
-                     debugDb.QueryWithoutMeta<Command>(moduleName, startTimestamp, endTimestamp, id, MaxPoints)))
+        foreach (var plot in debugDb.QueryWithoutMeta<Command>(moduleName, startTimestamp, endTimestamp, id, MaxPoints))
         {
-            title ??= plot.Title;
-            TimeList.Add((float)(plot.Timestamp - origin).Seconds);
-            AddPlotValue(plot.Value, ref type);
+            prepared.Title ??= plot.Title;
+            prepared.Time.Add((float)(plot.Timestamp - origin).Seconds);
+            AddPlotValue(plot.Value, prepared);
         }
-
-        return (type, title);
     }
 
-    private void AddPlotValue(PlotValue value, ref PlotDataType type)
+    private static void AddPlotValue(PlotValue value, PreparedSeries prepared)
     {
         switch (value.Kind)
         {
             case PlotValueKind.Number:
-                type = PlotDataType.Scalar;
-                ValueList.Add((float)value.Number);
+                prepared.Type = PlotDataType.Scalar;
+                prepared.Value.Add((float)value.Number);
                 break;
 
             case PlotValueKind.Boolean:
-                type = PlotDataType.Scalar;
-                ValueList.Add(value.Boolean ? 1f : 0f);
+                prepared.Type = PlotDataType.Scalar;
+                prepared.Value.Add(value.Boolean ? 1f : 0f);
                 break;
 
             case PlotValueKind.Vector2:
                 var v2 = value.Vector2Value;
-                type = PlotDataType.Vector2;
-                XList.Add(v2.X);
-                YList.Add(v2.Y);
-                LenList.Add(v2.Length());
+                prepared.Type = PlotDataType.Vector2;
+                prepared.X.Add(v2.X);
+                prepared.Y.Add(v2.Y);
+                prepared.Len.Add(v2.Length());
                 break;
 
             case PlotValueKind.Vector3:
                 var v3 = value.Vector3Value;
-                type = PlotDataType.Vector3;
-                XList.Add(v3.X);
-                YList.Add(v3.Y);
-                ZList.Add(v3.Z);
-                LenList.Add(v3.Length());
+                prepared.Type = PlotDataType.Vector3;
+                prepared.X.Add(v3.X);
+                prepared.Y.Add(v3.Y);
+                prepared.Z.Add(v3.Z);
+                prepared.Len.Add(v3.Length());
                 break;
 
             default:
                 throw new NotImplementedException();
         }
     }
+
+    private static string GetPlotKey(string moduleName, string plotId) => $"{moduleName}\n{plotId}";
 }

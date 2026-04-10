@@ -5,6 +5,7 @@ using Tyr.Common.Debug.Drawing;
 using Tyr.Common.Runner;
 using Tyr.Gui.Backend;
 using Tyr.Gui.Data;
+using Tyr.Gui.Pipeline;
 using Tyr.Gui.Views;
 
 namespace Tyr.Gui;
@@ -39,6 +40,8 @@ public sealed partial class Runner : IDisposable
     private readonly PlaybackControl _control;
     private readonly ConfigsView _configs;
     private readonly GameControllerView _gameController;
+    private readonly GuiFramePipeline _pipeline;
+    private GuiFramePipeline.PreparedFrame _preparedFrame;
 
     public Runner(IDebugDb debugDb)
     {
@@ -59,12 +62,15 @@ public sealed partial class Runner : IDisposable
 
         // init our UI views
         _filter = new DebugFilter(debugDb);
-        _log = new LogView(_filter, debugDb);
-        _field = new FieldView(_filter, debugDb);
-        _plots = new PlotView(_filter, debugDb);
+        _log = new LogView(debugDb);
+        _field = new FieldView(debugDb);
+        _plots = new PlotView(debugDb);
         _control = new PlaybackControl(debugDb);
         _configs = new ConfigsView();
         _gameController = new GameControllerView();
+        _pipeline = new GuiFramePipeline(PrepareFrame);
+        _preparedFrame = new GuiFramePipeline.PreparedFrame();
+        PrepareFrame(CreatePrepareRequest(), _preparedFrame);
 
         // and the runner
         _runner = new RunnerSync(Tick, MaxFps, ModuleName, RunnerPriority);
@@ -125,20 +131,20 @@ public sealed partial class Runner : IDisposable
         // draw
         _window.Clear(Color.Slate950);
         _imgui.NewFrame();
-        DebugDbUsageProfiler.BeginFrame();
-
         ImGui.ShowDemoWindow();
+
+        _pipeline.TrySwapLatest(ref _preparedFrame);
 
         _configs.Draw();
         _gameController.Draw();
 
         _control.Draw();
-        var currentPlayback = _control.Current;
-        _log.Draw(currentPlayback);
-        _field.Draw(currentPlayback);
-        _plots.Draw(currentPlayback);
+        _log.Draw(_preparedFrame.Log);
+        _field.Draw(_preparedFrame.Field);
+        _plots.Draw(_preparedFrame.Plots);
         _filter.Draw();
-        DebugDbUsageProfiler.EndFrame();
+
+        _pipeline.Enqueue(CreatePrepareRequest());
 
         _imgui.Render();
         _window.SwapBuffers();
@@ -153,6 +159,7 @@ public sealed partial class Runner : IDisposable
 
     public void Dispose()
     {
+        _pipeline.Dispose();
         _window.Dispose();
         _imgui.Dispose();
         _fonts.Dispose();
@@ -160,5 +167,21 @@ public sealed partial class Runner : IDisposable
         _log.Dispose();
         _field.Dispose();
         _gameController.Dispose();
+    }
+
+    private GuiFramePipeline.PrepareRequest CreatePrepareRequest()
+    {
+        return new GuiFramePipeline.PrepareRequest(
+            _control.Current,
+            _filter.Snapshot(),
+            _plots.CreatePrepareState());
+    }
+
+    private void PrepareFrame(GuiFramePipeline.PrepareRequest request, GuiFramePipeline.PreparedFrame prepared)
+    {
+        prepared.Time = request.Time;
+        _field.Prepare(request.Time, request.FilterSnapshot, prepared.Field);
+        _log.Prepare(request.Time, request.FilterSnapshot, prepared.Log);
+        _plots.Prepare(request.Time, request.FilterSnapshot, request.PlotState, prepared.Plots);
     }
 }

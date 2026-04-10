@@ -12,7 +12,7 @@ using Debug = Tyr.Common.Debug;
 namespace Tyr.Gui.Views;
 
 [Configurable]
-public sealed partial class LogView(DebugFilter filter, IDebugDb debugDb) : IDisposable
+public sealed partial class LogView(IDebugDb debugDb) : IDisposable
 {
     [ConfigEntry(StorageType.User)] private static LogLevel LogLevel { get; set; } = LogLevel.Debug;
 
@@ -23,7 +23,43 @@ public sealed partial class LogView(DebugFilter filter, IDebugDb debugDb) : IDis
     private int _filterTested;
     private int _filterPassed;
 
-    public void Draw(PlaybackTime time)
+    internal sealed class PreparedData
+    {
+        public List<Entry> Entries { get; } = [];
+
+        public void Reset()
+        {
+            Entries.Clear();
+        }
+    }
+
+    internal void Prepare(PlaybackTime time, DebugFilterSnapshot filterSnapshot, PreparedData prepared)
+    {
+        prepared.Reset();
+
+        foreach (var module in debugDb.QueryModules())
+        {
+            if (!filterSnapshot.IsEnabled(module))
+                continue;
+
+            var frame = time.GetVisibleFrame(debugDb, module);
+            if (!frame.HasValue)
+                continue;
+
+            foreach (var log in debugDb.Query<Entry>(module, frame.Value.Start, frame.Value.End))
+            {
+                if (!filterSnapshot.IsEnabled(log.Meta))
+                    continue;
+
+                if (log.Level < LogLevel)
+                    continue;
+
+                prepared.Entries.Add(log);
+            }
+        }
+    }
+
+    internal void Draw(PreparedData prepared)
     {
         if (ImGui.Begin($"{IconFonts.FontAwesome6.Terminal} Logs", ImGuiWindowFlags.AlwaysVerticalScrollbar))
         {
@@ -55,30 +91,17 @@ public sealed partial class LogView(DebugFilter filter, IDebugDb debugDb) : IDis
 
                 DrawSearchAndFilterControls();
 
-                foreach (var module in DebugDbUsageProfiler.MeasureEnumerable("LogView.QueryModules", debugDb.QueryModules()))
+                foreach (var log in prepared.Entries)
                 {
-                    if (!filter.IsEnabled(module)) continue;
+                    _filterTested += 1;
+                    if (!_filter.PassFilter(log.Message) &&
+                        !_filter.PassFilter(log.Meta.Module))
+                        continue;
+                    _filterPassed += 1;
 
-                    var frame = DebugDbUsageProfiler.Measure("LogView.GetFrameAt", () => time.GetVisibleFrame(debugDb, module));
-                    if (!frame.HasValue) continue;
+                    ImGui.TableNextRow();
 
-                    foreach (var log in DebugDbUsageProfiler.MeasureEnumerable(
-                                 "LogView.QueryEntries",
-                                 debugDb.Query<Entry>(module, frame.Value.Start, frame.Value.End)))
-                    {
-                        if (!filter.IsEnabled(log.Meta)) continue;
-                        if (log.Level < LogLevel) continue;
-
-                        _filterTested += 1;
-                        if (!_filter.PassFilter(log.Message) &&
-                            !_filter.PassFilter(log.Meta.Module))
-                            continue;
-                        _filterPassed += 1;
-
-                        ImGui.TableNextRow();
-
-                        DrawLogEntry(log);
-                    }
+                    DrawLogEntry(log);
                 }
 
                 ImGui.PopFont();

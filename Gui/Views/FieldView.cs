@@ -23,7 +23,6 @@ public sealed partial class FieldView : IDisposable
     [ConfigEntry]
     private static Debug.Drawing.Color LineColor { get; set; } = Debug.Drawing.Color.White.WithAlpha(0.7f);
 
-    private readonly DebugFilter _filter;
     private readonly IDebugDb _debugDb;
     private readonly DrawableRenderer _renderer = new();
     private readonly Common.Time.Timer _timer = new();
@@ -34,11 +33,42 @@ public sealed partial class FieldView : IDisposable
     private FieldSize? _fieldSize;
 
     private readonly List<Debug.Drawing.Command> _fieldDraws = [];
-    private readonly List<Debug.Drawing.Command> _drawBuffer = [];
 
-    public FieldView(DebugFilter filter, IDebugDb debugDb)
+    internal sealed class PreparedModule
     {
-        _filter = filter;
+        public string ModuleName = string.Empty;
+        public List<Debug.Drawing.Command> Commands { get; } = [];
+    }
+
+    internal sealed class PreparedData
+    {
+        private readonly Stack<PreparedModule> _modulePool = [];
+
+        public List<PreparedModule> Modules { get; } = [];
+
+        public void Reset()
+        {
+            foreach (var module in Modules)
+            {
+                module.ModuleName = string.Empty;
+                module.Commands.Clear();
+                _modulePool.Push(module);
+            }
+
+            Modules.Clear();
+        }
+
+        public PreparedModule AddModule(string moduleName)
+        {
+            var module = _modulePool.Count > 0 ? _modulePool.Pop() : new PreparedModule();
+            module.ModuleName = moduleName;
+            Modules.Add(module);
+            return module;
+        }
+    }
+
+    public FieldView(IDebugDb debugDb)
+    {
         _debugDb = debugDb;
 
         _timer.Start();
@@ -47,7 +77,35 @@ public sealed partial class FieldView : IDisposable
         _renderer.Camera.Zoom = ZoomDefault;
     }
 
-    public void Draw(PlaybackTime time)
+    internal void Prepare(PlaybackTime time, DebugFilterSnapshot filterSnapshot, PreparedData prepared)
+    {
+        prepared.Reset();
+
+        foreach (var module in _debugDb.QueryModules())
+        {
+            if (!filterSnapshot.IsEnabled(module))
+                continue;
+
+            var frame = time.GetVisibleFrame(_debugDb, module);
+            if (!frame.HasValue)
+                continue;
+
+            PreparedModule? preparedModule = null;
+            foreach (var draw in _debugDb.Query<Debug.Drawing.Command>(
+                         module,
+                         frame.Value.Start,
+                         frame.Value.End))
+            {
+                if (!filterSnapshot.IsEnabled(draw.Meta))
+                    continue;
+
+                preparedModule ??= prepared.AddModule(module);
+                preparedModule.Commands.Add(draw);
+            }
+        }
+    }
+
+    internal void Draw(PreparedData prepared)
     {
         _timer.Update();
 
@@ -96,25 +154,9 @@ public sealed partial class FieldView : IDisposable
 
             DrawField();
 
-            foreach (var module in DebugDbUsageProfiler.MeasureEnumerable("FieldView.QueryModules", _debugDb.QueryModules()))
+            foreach (var module in prepared.Modules)
             {
-                if (!_filter.IsEnabled(module)) continue;
-
-                var frame = DebugDbUsageProfiler.Measure("FieldView.GetFrameAt", () => time.GetVisibleFrame(_debugDb, module));
-                if (!frame.HasValue) continue;
-
-                _drawBuffer.Clear();
-                foreach (var draw in DebugDbUsageProfiler.MeasureEnumerable(
-                             "FieldView.QueryDraws",
-                             _debugDb.Query<Debug.Drawing.Command>(
-                                 module,
-                                 frame.Value.Start,
-                                 frame.Value.End)))
-                {
-                    _drawBuffer.Add(draw);
-                }
-
-                _renderer.Draw(_drawBuffer, _filter);
+                _renderer.Draw(module.Commands, null);
             }
 
             ShowStats();

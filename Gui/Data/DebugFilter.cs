@@ -23,6 +23,8 @@ public sealed partial class DebugFilter(Tyr.Common.Debug.Db.IDebugDb debugDb) : 
     private Utf16ValueStringBuilder _stringBuilder = ZString.CreateStringBuilder();
 
     private bool _dirty;
+    private bool _snapshotDirty = true;
+    private DebugFilterSnapshot? _snapshot;
 
     private StrSpan MakePath(string module, string? layer = null,
         string? file = null, string? member = null, int? line = null)
@@ -56,6 +58,7 @@ public sealed partial class DebugFilter(Tyr.Common.Debug.Db.IDebugDb debugDb) : 
 
         return _stringBuilder.AsSpan();
     }
+
     public bool IsEnabled(Meta meta) =>
         IsEnabled(meta.Module, meta.Layer, meta.File, meta.Member, meta.Line);
 
@@ -102,6 +105,22 @@ public sealed partial class DebugFilter(Tyr.Common.Debug.Db.IDebugDb debugDb) : 
         foreach (var c in value)
             _stringBuilder.Append(c == '.' ? '_' : c);
     }
+
+    public DebugFilterSnapshot Snapshot()
+    {
+        if (_snapshotDirty || _snapshot is null)
+        {
+            _snapshot?.Dispose();
+            _snapshot = new DebugFilterSnapshot(FilterState.ToDictionary(
+                static pair => pair.Key,
+                static pair => pair.Value,
+                StringComparer.Ordinal));
+            _snapshotDirty = false;
+        }
+
+        return _snapshot;
+    }
+
     public void Draw()
     {
         if (ImGui.Begin($"{IconFonts.FontAwesome6.Filter} Debug Filter"))
@@ -110,7 +129,7 @@ public sealed partial class DebugFilter(Tyr.Common.Debug.Db.IDebugDb debugDb) : 
 
             RegisterModules();
 
-            foreach (var moduleName in DebugDbUsageProfiler.MeasureEnumerable("DebugFilter.QueryModules", debugDb.QueryModules()))
+            foreach (var moduleName in debugDb.QueryModules())
             {
                 if (!_metaTrees.TryGetValue(moduleName, out var metaTree) || metaTree.Count == 0) continue;
 
@@ -119,6 +138,7 @@ public sealed partial class DebugFilter(Tyr.Common.Debug.Db.IDebugDb debugDb) : 
 
             if (_dirty)
             {
+                _snapshotDirty = true;
                 Configurable.MarkChanged(StorageType.User);
             }
         }
@@ -129,21 +149,18 @@ public sealed partial class DebugFilter(Tyr.Common.Debug.Db.IDebugDb debugDb) : 
     // Register all modules, files, and functions
     private void RegisterModules()
     {
-        foreach (var module in DebugDbUsageProfiler.MeasureEnumerable("DebugFilter.QueryModules", debugDb.QueryModules()))
+        foreach (var module in debugDb.QueryModules())
         {
             _dirty |= FilterState.TryAdd(module, true);
 
-            RegisterMetaTree(module, DebugDbUsageProfiler.MeasureEnumerable(
-                    "DebugFilter.QuerySourceLocations.Logs",
-                    debugDb.QuerySourceLocations<Tyr.Common.Debug.Logging.Entry>(module)),
+            RegisterMetaTree(module,
+                debugDb.QuerySourceLocations<Tyr.Common.Debug.Logging.Entry>(module),
                 MetaTreeItem.ItemType.Log);
-            RegisterMetaTree(module, DebugDbUsageProfiler.MeasureEnumerable(
-                    "DebugFilter.QuerySourceLocations.Draws",
-                    debugDb.QuerySourceLocations<Tyr.Common.Debug.Drawing.Command>(module)),
+            RegisterMetaTree(module,
+                debugDb.QuerySourceLocations<Tyr.Common.Debug.Drawing.Command>(module),
                 MetaTreeItem.ItemType.Draw);
-            RegisterMetaTree(module, DebugDbUsageProfiler.MeasureEnumerable(
-                    "DebugFilter.QuerySourceLocations.Plots",
-                    debugDb.QuerySourceLocations<Tyr.Common.Debug.Plotting.Command>(module)),
+            RegisterMetaTree(module,
+                debugDb.QuerySourceLocations<Tyr.Common.Debug.Plotting.Command>(module),
                 MetaTreeItem.ItemType.Plot);
 
             if (!_metaTrees.TryGetValue(module, out var metaTree))
@@ -421,6 +438,7 @@ public sealed partial class DebugFilter(Tyr.Common.Debug.Db.IDebugDb debugDb) : 
 
     public void Dispose()
     {
+        _snapshot?.Dispose();
         _stringBuilder.Dispose();
     }
 }

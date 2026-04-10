@@ -12,14 +12,11 @@ public class PlaybackControl(IDebugDb debugDb)
     private float _frozenRange;
     private Timestamp _frozenEndTime;
 
-    public PlaybackTime Current
-    {
-        get
-        {
-            var liveEndTime = Tyr.Gui.Data.DebugDbUsageProfiler.Measure("PlaybackControl.GetFrameRange", () => debugDb.GetFrameRange())?.End ?? Timestamp.Zero;
-            return new(_live, _live ? liveEndTime : _frozenEndTime, DeltaTime.FromSeconds(_offset));
-        }
-    }
+    public PlaybackTime Current { get; private set; } = CreatePlaybackTime(
+        debugDb.GetFrameRange()?.End ?? Timestamp.Zero,
+        live: true,
+        frozenEndTime: Timestamp.Zero,
+        offset: 0f);
 
     public void Draw()
     {
@@ -33,7 +30,7 @@ public class PlaybackControl(IDebugDb debugDb)
             ImGui.SameLine();
 
             var wasLive = _live;
-            var frameRange = Tyr.Gui.Data.DebugDbUsageProfiler.Measure("PlaybackControl.GetFrameRange", () => debugDb.GetFrameRange());
+            var frameRange = debugDb.GetFrameRange();
             var liveEndTime = frameRange?.End ?? Timestamp.Zero;
             var liveRange = frameRange.HasValue
                 ? (float)(frameRange.Value.End - frameRange.Value.Start).Seconds
@@ -63,8 +60,15 @@ public class PlaybackControl(IDebugDb debugDb)
             {
                 _offset = 0f;
             }
+
+            Current = CreatePlaybackTime(liveEndTime, _live, _frozenEndTime, _offset);
         }
 
         ImGui.End();
+    }
+
+    private static PlaybackTime CreatePlaybackTime(Timestamp liveEndTime, bool live, Timestamp frozenEndTime, float offset)
+    {
+        return new PlaybackTime(live, live ? liveEndTime : frozenEndTime, DeltaTime.FromSeconds(offset));
     }
 }
