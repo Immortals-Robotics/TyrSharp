@@ -9,6 +9,7 @@ namespace Tyr.Sender;
 public sealed partial class Runner : IDisposable
 {
     [ConfigEntry] private static DeltaTime SleepTime { get; set; } = DeltaTime.FromMilliseconds(1);
+    [ConfigEntry] private static ThreadPriority RunnerPriority { get; set; } = ThreadPriority.AboveNormal;
 
     private readonly Subscriber<Common.Sender.Data.CommandsWrapper> _commandsSubscriber;
     
@@ -26,7 +27,8 @@ public sealed partial class Runner : IDisposable
 
         _commandsSubscriber = Hub.Commands.Subscribe(Mode.All);
 
-        _runner = new RunnerSync(Tick, 0, ModuleName);
+        _runner = new RunnerSync(Tick, 0, ModuleName, RunnerPriority);
+        Configurable.OnUpdated += _ => _runner.SetPriority(RunnerPriority);
         _runner.Start();
     }
 

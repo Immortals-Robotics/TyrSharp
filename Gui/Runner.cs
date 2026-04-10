@@ -14,6 +14,7 @@ public sealed partial class Runner : IDisposable
 {
     [ConfigEntry(StorageType.User)] private static int MaxFps { get; set; } = 0;
     [ConfigEntry(StorageType.User)] private static bool VSync { get; set; } = true;
+    [ConfigEntry(StorageType.User)] private static ThreadPriority RunnerPriority { get; set; } = ThreadPriority.Highest;
 
     [ConfigEntry(StorageType.User)] private static int WindowWidth { get; set; } = 1280;
     [ConfigEntry(StorageType.User)] private static int WindowHeight { get; set; } = 720;
@@ -66,13 +67,14 @@ public sealed partial class Runner : IDisposable
         _gameController = new GameControllerView();
 
         // and the runner
-        _runner = new RunnerSync(Tick, MaxFps, ModuleName);
+        _runner = new RunnerSync(Tick, MaxFps, ModuleName, RunnerPriority);
 
         Configurable.OnUpdated += _ => OnConfigsChanged();
     }
 
     private void OnConfigsChanged()
     {
+        _runner.SetPriority(RunnerPriority);
         _window.SetVSync(VSync);
         _window.SetSize(WindowWidth, WindowHeight);
     }

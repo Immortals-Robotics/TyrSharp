@@ -2,17 +2,30 @@
 
 namespace Tyr.Common.Runner;
 
-public class RunnerSync(Func<bool> tick, int tickRateHz = 0, string? callingModule = null) : RunnerBase(tickRateHz)
+public class RunnerSync(
+    Func<bool> tick,
+    int tickRateHz = 0,
+    string? callingModule = null,
+    ThreadPriority priority = ThreadPriority.Normal) : RunnerBase(tickRateHz)
 {
     private Func<bool>? _init = null;
     private Thread? _thread;
+    private Thread? _executingThread;
     private volatile bool _running;
+    private ThreadPriority _priority = priority;
 
     public bool IsRunning => _running;
+    public ThreadPriority Priority => _priority;
 
     public void SetInit(Func<bool> init)
     {
         _init = init;
+    }
+
+    public void SetPriority(ThreadPriority priority)
+    {
+        _priority = priority;
+        TrySetPriority(_executingThread ?? _thread, priority);
     }
     
     public void Start()
@@ -26,7 +39,8 @@ public class RunnerSync(Func<bool> tick, int tickRateHz = 0, string? callingModu
         _thread = new Thread(Loop)
         {
             IsBackground = true,
-            Name = $"{tick.Method.DeclaringType?.FullName ?? "Unknown"}:{tick.Method.Name}"
+            Name = $"{tick.Method.DeclaringType?.FullName ?? "Unknown"}:{tick.Method.Name}",
+            Priority = _priority
         };
         _thread.Start();
     }
@@ -39,7 +53,23 @@ public class RunnerSync(Func<bool> tick, int tickRateHz = 0, string? callingModu
 
         _running = true;
 
-        Loop();
+        var thread = Thread.CurrentThread;
+        var previousPriority = thread.Priority;
+        _executingThread = thread;
+        TrySetPriority(thread, _priority);
+
+        try
+        {
+            Loop();
+        }
+        finally
+        {
+            TrySetPriority(thread, previousPriority);
+            if (ReferenceEquals(_executingThread, thread))
+            {
+                _executingThread = null;
+            }
+        }
     }
 
     public void Stop()
@@ -54,30 +84,55 @@ public class RunnerSync(Func<bool> tick, int tickRateHz = 0, string? callingModu
 
     private void Loop()
     {
+        _executingThread = Thread.CurrentThread;
         ModuleContext.Current.Value = callingModule;
 
-        if (_init != null)
+        try
         {
-            CurrentTickStartTimestamp = Timestamp.Now;
-            Timer.Update();
-            
-            if (_init()) NewDebugFrame();
+            if (_init != null)
+            {
+                CurrentTickStartTimestamp = Timestamp.Now;
+                Timer.Update();
+                
+                if (_init()) NewDebugFrame();
+            }
+
+            var ticked = false;
+            while (_running)
+            {
+                var tickStart = Timer.Time;
+                CurrentTickStartTimestamp = Timestamp.Now;
+
+                if (ticked) Timer.Update();
+                
+                ticked = tick();
+                if (ticked) NewDebugFrame();
+                if (TickRateHz <= 0) continue;
+
+                var nextTick = tickStart + TickDuration;
+                SleepUntil(nextTick);
+            }
         }
-
-        var ticked = false;
-        while (_running)
+        finally
         {
-            var tickStart = Timer.Time;
-            CurrentTickStartTimestamp = Timestamp.Now;
+            if (ReferenceEquals(_executingThread, Thread.CurrentThread))
+            {
+                _executingThread = null;
+            }
+        }
+    }
 
-            if (ticked) Timer.Update();
-            
-            ticked = tick();
-            if (ticked) NewDebugFrame();
-            if (TickRateHz <= 0) continue;
+    private static void TrySetPriority(Thread? thread, ThreadPriority priority)
+    {
+        if (thread == null) return;
 
-            var nextTick = tickStart + TickDuration;
-            SleepUntil(nextTick);
+        try
+        {
+            thread.Priority = priority;
+        }
+        catch (ThreadStateException)
+        {
+            // The runner can be stopping while configs are updating; in that case we just keep going.
         }
     }
 }

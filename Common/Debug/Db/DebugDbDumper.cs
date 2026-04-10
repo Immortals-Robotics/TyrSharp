@@ -12,6 +12,7 @@ public sealed partial class DebugDbDumper : IDisposable
     [ConfigEntry] private static DeltaTime SleepTime { get; set; } = DeltaTime.FromMilliseconds(1);
     [ConfigEntry] private static string Directory { get; set; } = "debug_session";
     [ConfigEntry] private static int ViewerPort { get; set; } = 9000;
+    [ConfigEntry] private static ThreadPriority RunnerPriority { get; set; } = ThreadPriority.BelowNormal;
 
     private readonly Subscriber<Debug.Logging.Entry> _logSubscriber = Hub.Logs.Subscribe(Mode.All);
     private readonly Subscriber<Debug.Drawing.Command> _drawSubscriber = Hub.Draws.Subscribe(Mode.All);
@@ -38,7 +39,8 @@ public sealed partial class DebugDbDumper : IDisposable
 
         _viewer.Start();
 
-        _runner = new RunnerSync(Tick);
+        _runner = new RunnerSync(Tick, priority: RunnerPriority);
+        Configurable.OnUpdated += _ => _runner.SetPriority(RunnerPriority);
         _runner.Start();
     }
 

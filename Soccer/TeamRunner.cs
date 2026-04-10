@@ -14,6 +14,7 @@ namespace Tyr.Soccer;
 public sealed partial class TeamRunner : IDisposable
 {
     [ConfigEntry] private static DeltaTime SleepTime { get; set; } = DeltaTime.FromMilliseconds(1);
+    [ConfigEntry] private static ThreadPriority RunnerPriority { get; set; } = ThreadPriority.Highest;
 
     private readonly Subscriber<Referee.State> _refereeSubscriber;
     private readonly Subscriber<Vision.FilteredFrame> _visionSubscriber;
@@ -42,8 +43,9 @@ public sealed partial class TeamRunner : IDisposable
         _fieldSizeSubscriber = Hub.FieldSize.Subscribe(Mode.Latest);
         _robotStatusSubscriber = Hub.RobotStatus.Subscribe(Mode.All);
 
-        _runner = new RunnerSync(Tick, 0, $"{ModuleName}{color}");
+        _runner = new RunnerSync(Tick, 0, $"{ModuleName}{color}", RunnerPriority);
         _runner.SetInit(Init);
+        Configurable.OnUpdated += _ => _runner.SetPriority(RunnerPriority);
 
         _ai = new Ai();
     }

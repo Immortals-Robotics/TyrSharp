@@ -17,6 +17,7 @@ public abstract class RunnerBase(int tickRateHz)
     static RunnerBase()
     {
         TimerResolution.Set(DeltaTime.FromMilliseconds(1));
+        ProcessScheduling.Initialize();
     }
 
     protected void SleepUntil(Timestamp nextTick)

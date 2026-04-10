@@ -12,6 +12,7 @@ namespace Tyr.Vision;
 public sealed partial class Runner : IDisposable
 {
     [ConfigEntry] private static int TickRateHz { get; set; } = 100;
+    [ConfigEntry] private static ThreadPriority RunnerPriority { get; set; } = ThreadPriority.Highest;
 
     private readonly Subscriber<Detection.Frame> _detectionSubscriber = Hub.RawDetection.Subscribe(Mode.All);
 
@@ -30,7 +31,8 @@ public sealed partial class Runner : IDisposable
     {
         ServiceLocator.BallTrajectoryFactory = new BallTrajectoryFactory();
 
-        _runner = new RunnerSync(Tick, TickRateHz, ModuleName);
+        _runner = new RunnerSync(Tick, TickRateHz, ModuleName, RunnerPriority);
+        Configurable.OnUpdated += _ => _runner.SetPriority(RunnerPriority);
         _runner.Start();
     }
 

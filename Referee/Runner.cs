@@ -11,6 +11,7 @@ namespace Tyr.Referee;
 public sealed partial class Runner : IDisposable
 {
     [ConfigEntry] private static DeltaTime SleepTime { get; set; } = DeltaTime.FromMilliseconds(1);
+    [ConfigEntry] private static ThreadPriority RunnerPriority { get; set; } = ThreadPriority.AboveNormal;
 
     private readonly Subscriber<Gc.Referee> _gcSubscriber;
     private readonly Subscriber<FilteredFrame> _visionSubscriber;
@@ -27,7 +28,8 @@ public sealed partial class Runner : IDisposable
         _gcSubscriber = Hub.RawReferee.Subscribe(Mode.All);
         _visionSubscriber = Hub.Vision.Subscribe(Mode.Latest);
 
-        _runner = new RunnerSync(Tick, 0, ModuleName);
+        _runner = new RunnerSync(Tick, 0, ModuleName, RunnerPriority);
+        Configurable.OnUpdated += _ => _runner.SetPriority(RunnerPriority);
         _runner.Start();
     }
 
