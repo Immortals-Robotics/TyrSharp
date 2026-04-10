@@ -3,13 +3,14 @@ using Tyr.Common.Config;
 using Tyr.Common.Debug.Db;
 using Tyr.Common.Time;
 using Tyr.Gui.Backend;
+using Tyr.Gui.Data;
 
 using Stopwatch = System.Diagnostics.Stopwatch;
 
 namespace Tyr.Gui.Views;
 
 [Configurable]
-public sealed partial class PlaybackControl(IDebugDb debugDb)
+public sealed partial class PlaybackControl(IDebugDb debugDb, PlaybackSessionManager playbackSessions)
 {
     [ConfigEntry(StorageType.User)] private static double StepMilliseconds { get; set; } = 16.0;
     [ConfigEntry(StorageType.User)] private static double ShuttleMaxSpeedSecondsPerSecond { get; set; } = 0.5;
@@ -106,6 +107,12 @@ public sealed partial class PlaybackControl(IDebugDb debugDb)
             ImGui.SameLine();
             ImGui.Checkbox("Live", ref _live);
 
+            ImGui.SameLine();
+            if (ImGui.Button($"{IconFonts.FontAwesome6.FolderOpen} {playbackSessions.CurrentSourceLabel}"))
+                ImGui.OpenPopup("PlaybackSource");
+
+            DrawSourcePopup();
+
             if (!_live)
             {
                 ImGui.SameLine();
@@ -196,5 +203,42 @@ public sealed partial class PlaybackControl(IDebugDb debugDb)
             : 0f;
         _offset = 0f;
         _live = false;
+    }
+
+    private void DrawSourcePopup()
+    {
+        if (!ImGui.BeginPopup("PlaybackSource"))
+            return;
+
+        if (ImGui.Selectable($"{IconFonts.FontAwesome6.SatelliteDish} Live", playbackSessions.UsingLive))
+        {
+            playbackSessions.SwitchToLive();
+            _live = true;
+            _offset = 0f;
+            _playing = false;
+            _shuttle = 0f;
+        }
+
+        ImGui.SameLine();
+        if (ImGui.SmallButton($"{IconFonts.FontAwesome6.Rotate} Refresh"))
+            playbackSessions.RefreshSessions();
+
+        ImGui.Separator();
+
+        foreach (var session in playbackSessions.Sessions)
+        {
+            var selected = !playbackSessions.UsingLive &&
+                           string.Equals(playbackSessions.CurrentSessionMetadataPath, session.MetadataPath, StringComparison.Ordinal);
+            if (!ImGui.Selectable(session.DisplayName, selected))
+                continue;
+
+            playbackSessions.OpenSession(session);
+            _live = true;
+            _offset = 0f;
+            _playing = false;
+            _shuttle = 0f;
+        }
+
+        ImGui.EndPopup();
     }
 }

@@ -1,6 +1,5 @@
 ﻿using Hexa.NET.ImGui;
 using Tyr.Common.Config;
-using Tyr.Common.Debug.Db;
 using Tyr.Common.Debug.Drawing;
 using Tyr.Common.Runner;
 using Tyr.Gui.Backend;
@@ -43,8 +42,10 @@ public sealed partial class Runner : IDisposable
     private readonly GuiFramePipeline _pipeline;
     private GuiFramePipeline.PreparedFrame _preparedFrame;
 
-    public Runner(IDebugDb debugDb)
+    public Runner(PlaybackSessionManager playbackSessions)
     {
+        var debugDb = playbackSessions.PlaybackDb;
+
         // init the backend
         _window = new SdlWindow("Tyr",
             WindowWidth, WindowHeight,
@@ -65,7 +66,7 @@ public sealed partial class Runner : IDisposable
         _log = new LogView(debugDb);
         _field = new FieldView(debugDb);
         _plots = new PlotView(debugDb);
-        _control = new PlaybackControl(debugDb);
+        _control = new PlaybackControl(debugDb, playbackSessions);
         _configs = new ConfigsView();
         _gameController = new GameControllerView();
         _pipeline = new GuiFramePipeline(PrepareFrame);

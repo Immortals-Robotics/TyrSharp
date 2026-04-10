@@ -67,4 +67,22 @@ public sealed class DebugDbSessionMetadata
 
         File.WriteAllText(path, JsonSerializer.Serialize(this, JsonOptions));
     }
+
+    public static DebugDbSessionMetadata Load(string path)
+    {
+        var metadata = JsonSerializer.Deserialize<DebugDbSessionMetadata>(File.ReadAllText(path), JsonOptions);
+        return metadata ?? throw new InvalidOperationException($"Failed to deserialize debug DB session metadata at {path}.");
+    }
+
+    public string ResolveSessionDirectory(string metadataPath)
+    {
+        return Path.GetDirectoryName(metadataPath) ?? SessionDirectory;
+    }
+
+    public string ResolveDatabaseDirectory(string metadataPath)
+    {
+        var sessionDirectory = ResolveSessionDirectory(metadataPath);
+        var relativeDbDirectory = Path.Combine(sessionDirectory, "db");
+        return Directory.Exists(relativeDbDirectory) ? relativeDbDirectory : DatabaseDirectory;
+    }
 }

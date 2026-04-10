@@ -27,6 +27,7 @@ public sealed partial class DebugDbDumper : IDisposable
     private readonly DebugDbSessionMetadata _metadata;
 
     public IDebugDb Db => _db;
+    public string SessionRootDirectory => _session.RootDirectory;
     public string SessionDirectory => _session.SessionDirectory;
     public string DatabaseDirectory => _session.DatabaseDirectory;
 
