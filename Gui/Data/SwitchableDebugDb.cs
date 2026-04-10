@@ -1,4 +1,3 @@
-using Tyr.Common.Debug;
 using Tyr.Common.Debug.Db;
 using Tyr.Common.Time;
 
@@ -13,45 +12,45 @@ internal sealed class SwitchableDebugDb(IDebugDb source) : IDebugDb
         Interlocked.Exchange(ref _source, source);
     }
 
-    public void Append<T>(T entry) where T : struct, IEntry
+    void IDebugDb.Append<T>(T entry)
         => _source.Append(entry);
 
-    public IEnumerable<T> Query<T>(string module, Timestamp t0, Timestamp t1, string? shardKey = null, int? maxCount = null) where T : struct, IEntry
+    IEnumerable<T> IDebugDb.Query<T>(string module, Timestamp t0, Timestamp t1, string? shardKey, int? maxCount)
         => _source.Query<T>(module, t0, t1, shardKey, maxCount);
 
-    public IEnumerable<T> QueryWithoutMeta<T>(string module, Timestamp t0, Timestamp t1, string? shardKey = null, int? maxCount = null) where T : struct, IEntry
+    IEnumerable<T> IDebugDb.QueryWithoutMeta<T>(string module, Timestamp t0, Timestamp t1, string? shardKey, int? maxCount)
         => _source.QueryWithoutMeta<T>(module, t0, t1, shardKey, maxCount);
 
-    public IEnumerable<T> Query<T>(Timestamp t0, Timestamp t1, string? module = null, int? sourceLocationId = null, string? shardKey = null, int? maxCount = null) where T : struct, IEntry
+    IEnumerable<T> IDebugDb.Query<T>(Timestamp t0, Timestamp t1, string? module, int? sourceLocationId, string? shardKey, int? maxCount)
         => _source.Query<T>(t0, t1, module, sourceLocationId, shardKey, maxCount);
 
-    public IEnumerable<T> QueryAll<T>(Timestamp t0, Timestamp t1, string? shardKey = null, int? maxCount = null) where T : struct, IEntry
+    IEnumerable<T> IDebugDb.QueryAll<T>(Timestamp t0, Timestamp t1, string? shardKey, int? maxCount)
         => _source.QueryAll<T>(t0, t1, shardKey, maxCount);
 
-    public IEnumerable<string> QueryModules() => _source.QueryModules();
+    IEnumerable<string> IDebugDb.QueryModules() => _source.QueryModules();
 
-    public IEnumerable<string> QueryShardKeys<T>(string module) where T : struct, IEntry
+    IEnumerable<string> IDebugDb.QueryShardKeys<T>(string module)
         => _source.QueryShardKeys<T>(module);
 
-    public IEnumerable<Meta> QuerySourceLocations<T>(string module) where T : struct, IEntry
+    IEnumerable<Tyr.Common.Debug.Meta> IDebugDb.QuerySourceLocations<T>(string module)
         => _source.QuerySourceLocations<T>(module);
 
-    public Meta? TryGetShardMeta<T>(string module, string shardKey) where T : struct, IEntry
+    Tyr.Common.Debug.Meta? IDebugDb.TryGetShardMeta<T>(string module, string shardKey)
         => _source.TryGetShardMeta<T>(module, shardKey);
 
-    public Meta GetSourceLocation(int id) => _source.GetSourceLocation(id);
+    Tyr.Common.Debug.Meta IDebugDb.GetSourceLocation(int id) => _source.GetSourceLocation(id);
 
-    public void AppendFrame(Frame frame) => _source.AppendFrame(frame);
+    void IDebugDb.AppendFrame(Tyr.Common.Debug.Frame frame) => _source.AppendFrame(frame);
 
-    public (Timestamp Start, Timestamp End)? GetFrameRange() => _source.GetFrameRange();
+    (Timestamp Start, Timestamp End)? IDebugDb.GetFrameRange() => _source.GetFrameRange();
 
-    public IEnumerable<Frame> QueryFrames(string module, Timestamp t0, Timestamp t1)
+    IEnumerable<Tyr.Common.Debug.Frame> IDebugDb.QueryFrames(string module, Timestamp t0, Timestamp t1)
         => _source.QueryFrames(module, t0, t1);
 
-    public (Timestamp Start, Timestamp End)? GetFrameAt(string module, Timestamp t)
+    (Timestamp Start, Timestamp End)? IDebugDb.GetFrameAt(string module, Timestamp t)
         => _source.GetFrameAt(module, t);
 
-    public void Dispose()
+    void IDisposable.Dispose()
     {
     }
 }

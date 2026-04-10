@@ -10,7 +10,7 @@ using Stopwatch = System.Diagnostics.Stopwatch;
 namespace Tyr.Gui.Views;
 
 [Configurable]
-public sealed partial class PlaybackControl(IDebugDb debugDb, PlaybackSessionManager playbackSessions)
+public sealed partial class PlaybackControl(IDebugDb debugDb, SessionsView sessionsView)
 {
     [ConfigEntry(StorageType.User)] private static double StepMilliseconds { get; set; } = 16.0;
     [ConfigEntry(StorageType.User)] private static double ShuttleMaxSpeedSecondsPerSecond { get; set; } = 0.5;
@@ -22,6 +22,8 @@ public sealed partial class PlaybackControl(IDebugDb debugDb, PlaybackSessionMan
     private float _frozenRange;
     private Timestamp _frozenEndTime;
     private long _lastDrawTimestamp = Stopwatch.GetTimestamp();
+    private int _lastSourceRevision = -1;
+    private bool _pendingSourceReset;
 
     public PlaybackTime Current { get; private set; } = CreatePlaybackTime(
         debugDb.GetFrameRange()?.End ?? Timestamp.Zero,
@@ -31,6 +33,13 @@ public sealed partial class PlaybackControl(IDebugDb debugDb, PlaybackSessionMan
 
     public void Draw()
     {
+        var currentSourceRevision = sessionsView.SourceRevision;
+        if (_lastSourceRevision != currentSourceRevision)
+        {
+            _lastSourceRevision = currentSourceRevision;
+            _pendingSourceReset = true;
+        }
+
         var nowTicks = Stopwatch.GetTimestamp();
         var elapsedSeconds = (nowTicks - _lastDrawTimestamp) / (double)Stopwatch.Frequency;
         _lastDrawTimestamp = nowTicks;
@@ -42,6 +51,17 @@ public sealed partial class PlaybackControl(IDebugDb debugDb, PlaybackSessionMan
             var liveRange = frameRange.HasValue
                 ? (float)(frameRange.Value.End - frameRange.Value.Start).Seconds
                 : 0f;
+
+            if (_pendingSourceReset)
+            {
+                _live = sessionsView.SourceIsLive;
+                _playing = false;
+                _offset = 0f;
+                _shuttle = 0f;
+                _frozenEndTime = liveEndTime;
+                _frozenRange = liveRange;
+                _pendingSourceReset = false;
+            }
 
             var wasLive = _live;
             if (_live)
@@ -104,14 +124,15 @@ public sealed partial class PlaybackControl(IDebugDb debugDb, PlaybackSessionMan
                 ImGui.EndDisabled();
             ImGui.PopFont();
 
-            ImGui.SameLine();
-            ImGui.Checkbox("Live", ref _live);
+            if (sessionsView.SourceIsLive)
+            {
+                ImGui.SameLine();
+                ImGui.Checkbox("Live", ref _live);
+            }
 
             ImGui.SameLine();
-            if (ImGui.Button($"{IconFonts.FontAwesome6.FolderOpen} {playbackSessions.CurrentSourceLabel}"))
-                ImGui.OpenPopup("PlaybackSource");
-
-            DrawSourcePopup();
+            if (ImGui.Button($"{IconFonts.FontAwesome6.HardDrive} Sessions"))
+                sessionsView.Open();
 
             if (!_live)
             {
@@ -205,40 +226,4 @@ public sealed partial class PlaybackControl(IDebugDb debugDb, PlaybackSessionMan
         _live = false;
     }
 
-    private void DrawSourcePopup()
-    {
-        if (!ImGui.BeginPopup("PlaybackSource"))
-            return;
-
-        if (ImGui.Selectable($"{IconFonts.FontAwesome6.SatelliteDish} Live", playbackSessions.UsingLive))
-        {
-            playbackSessions.SwitchToLive();
-            _live = true;
-            _offset = 0f;
-            _playing = false;
-            _shuttle = 0f;
-        }
-
-        ImGui.SameLine();
-        if (ImGui.SmallButton($"{IconFonts.FontAwesome6.Rotate} Refresh"))
-            playbackSessions.RefreshSessions();
-
-        ImGui.Separator();
-
-        foreach (var session in playbackSessions.Sessions)
-        {
-            var selected = !playbackSessions.UsingLive &&
-                           string.Equals(playbackSessions.CurrentSessionMetadataPath, session.MetadataPath, StringComparison.Ordinal);
-            if (!ImGui.Selectable(session.DisplayName, selected))
-                continue;
-
-            playbackSessions.OpenSession(session);
-            _live = true;
-            _offset = 0f;
-            _playing = false;
-            _shuttle = 0f;
-        }
-
-        ImGui.EndPopup();
-    }
 }

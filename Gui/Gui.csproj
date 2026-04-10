@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
     <PropertyGroup>
-        <OutputType>WinExe</OutputType>
+        <OutputType>Exe</OutputType>
         <TargetFramework>net10.0</TargetFramework>
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
@@ -27,6 +27,7 @@
       <PackageReference Include="Hexa.NET.ImPlot" Version="2.2.9" />
       <PackageReference Include="Hexa.NET.OpenGL3" Version="1.1.0" />
       <PackageReference Include="Hexa.NET.SDL3" Version="1.2.17" />
+      <PackageReference Include="NativeFileDialogSharp" Version="0.5.0" />
     </ItemGroup>
 
     <ItemGroup>

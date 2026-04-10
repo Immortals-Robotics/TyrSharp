@@ -2,6 +2,7 @@ using Hexa.NET.ImGui;
 using Tyr.Common.Config;
 using Tyr.Common.Debug.Drawing;
 using Tyr.Gui.Backend;
+using Color = Tyr.Common.Debug.Drawing.Color;
 
 namespace Tyr.Gui.Views;
 

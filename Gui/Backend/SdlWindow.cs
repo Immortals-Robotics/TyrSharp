@@ -1,6 +1,7 @@
 using Hexa.NET.OpenGL;
 using Hexa.NET.SDL3;
 using Tyr.Common.Debug.Drawing;
+using Color = Tyr.Common.Debug.Drawing.Color;
 
 namespace Tyr.Gui.Backend;
 

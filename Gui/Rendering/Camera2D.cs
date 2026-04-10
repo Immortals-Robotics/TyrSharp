@@ -1,6 +1,7 @@
 ﻿using System.Numerics;
 using Tyr.Common.Math;
 using Tyr.Common.Math.Shapes;
+using Rectangle = Tyr.Common.Math.Shapes.Rectangle;
 
 namespace Tyr.Gui.Rendering;
 

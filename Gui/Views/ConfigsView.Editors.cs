@@ -6,6 +6,7 @@ using Tyr.Common.Debug.Drawing;
 using Tyr.Common.Math;
 using Tyr.Common.Network;
 using Tyr.Common.Time;
+using Color = Tyr.Common.Debug.Drawing.Color;
 
 namespace Tyr.Gui.Views;
 

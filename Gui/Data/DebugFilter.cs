@@ -5,6 +5,7 @@ using Tyr.Common.Debug;
 using Tyr.Common.Debug.Drawing;
 using Tyr.Gui.Backend;
 using StrSpan = System.ReadOnlySpan<char>;
+using Color = Tyr.Common.Debug.Drawing.Color;
 
 namespace Tyr.Gui.Data;
 

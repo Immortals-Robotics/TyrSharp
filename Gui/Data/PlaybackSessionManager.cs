@@ -1,4 +1,7 @@
+using System.IO.Compression;
+using System.Diagnostics;
 using Tyr.Common.Debug.Db;
+using Tyr.Common.Time;
 
 namespace Tyr.Gui.Data;
 
@@ -12,6 +15,7 @@ public sealed class PlaybackSessionManager : IDisposable
     private IDebugDb? _openedDb;
     private PlaybackSessionInfo? _openedSession;
     private IReadOnlyList<PlaybackSessionInfo> _sessions = [];
+    private int _sourceRevision;
 
     public PlaybackSessionManager(IDebugDb liveDb, string sessionRootDirectory)
     {
@@ -26,6 +30,8 @@ public sealed class PlaybackSessionManager : IDisposable
     public string? CurrentSessionMetadataPath => _openedSession?.MetadataPath;
     public string CurrentSourceLabel => UsingLive ? "Live" : _openedSession?.DisplayName ?? "Opened Session";
     public IReadOnlyList<PlaybackSessionInfo> Sessions => _sessions;
+    public string SessionRootDirectory => _sessionRootDirectory;
+    public int SourceRevision => _sourceRevision;
 
     public void RefreshSessions()
     {
@@ -48,6 +54,7 @@ public sealed class PlaybackSessionManager : IDisposable
         RetainForDispose(_openedDb);
         _openedDb = null;
         _openedSession = null;
+        _sourceRevision++;
     }
 
     public void OpenSession(PlaybackSessionInfo session)
@@ -66,6 +73,127 @@ public sealed class PlaybackSessionManager : IDisposable
         RetainForDispose(_openedDb);
         _openedDb = readOnlyDb;
         _openedSession = session;
+        _sourceRevision++;
+    }
+
+    public void ExportSession(PlaybackSessionInfo session, string archivePath)
+    {
+        Directory.CreateDirectory(Path.GetDirectoryName(archivePath)!);
+        if (File.Exists(archivePath))
+            File.Delete(archivePath);
+
+        using var archive = ZipFile.Open(archivePath, ZipArchiveMode.Create);
+        var baseDirectory = Path.GetDirectoryName(session.SessionDirectory) ?? session.SessionDirectory;
+        foreach (var filePath in Directory.EnumerateFiles(session.SessionDirectory, "*", SearchOption.AllDirectories))
+        {
+            var entryName = Path.GetRelativePath(baseDirectory, filePath)
+                .Replace(Path.DirectorySeparatorChar, '/');
+            var entry = archive.CreateEntry(entryName, CompressionLevel.Optimal);
+
+            using var input = new FileStream(
+                filePath,
+                FileMode.Open,
+                FileAccess.Read,
+                FileShare.ReadWrite | FileShare.Delete);
+            using var output = entry.Open();
+            input.CopyTo(output);
+        }
+    }
+
+    public void ImportSessionArchive(string archivePath)
+    {
+        Directory.CreateDirectory(_sessionRootDirectory);
+        using var archive = ZipFile.OpenRead(archivePath);
+
+        var firstEntry = archive.Entries
+            .FirstOrDefault(static entry => !string.IsNullOrEmpty(entry.FullName) && !entry.FullName.EndsWith('/'));
+        if (firstEntry is null)
+            return;
+
+        var topLevelDirectory = firstEntry.FullName
+            .Split(['/', '\\'], StringSplitOptions.RemoveEmptyEntries)
+            .FirstOrDefault();
+        if (string.IsNullOrWhiteSpace(topLevelDirectory))
+            return;
+
+        var destinationRoot = Path.Combine(_sessionRootDirectory, topLevelDirectory);
+        if (Directory.Exists(destinationRoot))
+        {
+            Log.ZLogWarning($"Skipping session import from {archivePath} because session id '{topLevelDirectory}' already exists.");
+            return;
+        }
+
+        foreach (var entry in archive.Entries)
+        {
+            if (string.IsNullOrEmpty(entry.FullName))
+                continue;
+
+            var normalizedPath = entry.FullName.Replace('\\', '/');
+            if (!normalizedPath.StartsWith(topLevelDirectory + "/", StringComparison.Ordinal) &&
+                !string.Equals(normalizedPath, topLevelDirectory, StringComparison.Ordinal))
+            {
+                continue;
+            }
+
+            var relativePath = normalizedPath.Length == topLevelDirectory.Length
+                ? string.Empty
+                : normalizedPath[(topLevelDirectory.Length + 1)..];
+
+            var destinationPath = string.IsNullOrEmpty(relativePath)
+                ? destinationRoot
+                : Path.Combine(destinationRoot, relativePath.Replace('/', Path.DirectorySeparatorChar));
+
+            if (entry.FullName.EndsWith('/'))
+            {
+                Directory.CreateDirectory(destinationPath);
+                continue;
+            }
+
+            var destinationDirectory = Path.GetDirectoryName(destinationPath);
+            if (!string.IsNullOrEmpty(destinationDirectory))
+                Directory.CreateDirectory(destinationDirectory);
+
+            using var input = entry.Open();
+            using var output = new FileStream(destinationPath, FileMode.CreateNew, FileAccess.Write, FileShare.None);
+            input.CopyTo(output);
+        }
+    }
+
+    public void RenameSession(PlaybackSessionInfo session, string? captureLabel)
+    {
+        var metadata = DebugDbSessionMetadata.Load(session.MetadataPath);
+        metadata.CaptureLabel = captureLabel;
+        metadata.Save(session.MetadataPath);
+        if (_openedSession?.MetadataPath == session.MetadataPath)
+            _openedSession = session with { Metadata = metadata };
+    }
+
+    public void AssignCaptureLabel(IEnumerable<PlaybackSessionInfo> sessions, string? captureLabel)
+    {
+        foreach (var session in sessions)
+            RenameSession(session, captureLabel);
+    }
+
+    public void DeleteSessions(IEnumerable<PlaybackSessionInfo> sessions)
+    {
+        foreach (var session in sessions)
+        {
+            if (_openedSession?.MetadataPath == session.MetadataPath)
+                SwitchToLive();
+
+            if (Directory.Exists(session.SessionDirectory))
+                Directory.Delete(session.SessionDirectory, recursive: true);
+        }
+    }
+
+    public void RevealInExplorer(PlaybackSessionInfo session)
+    {
+        Process.Start(new ProcessStartInfo
+        {
+            FileName = "explorer.exe",
+            Arguments = $"\"{session.SessionDirectory}\"",
+            UseShellExecute = true,
+        });
     }
 
     public void Dispose()
@@ -77,7 +205,7 @@ public sealed class PlaybackSessionManager : IDisposable
 
     private void RetainForDispose(IDebugDb? db)
     {
-        if (db is not null)
+        if (db is not null && !ReferenceEquals(db, _liveDb))
             _retainedDbs.Add(db);
     }
 
@@ -101,11 +229,33 @@ public sealed class PlaybackSessionManager : IDisposable
 }
 
 public sealed record PlaybackSessionInfo(
-    DebugDbSessionMetadata Metadata,
+    Tyr.Common.Debug.Db.DebugDbSessionMetadata Metadata,
     string MetadataPath,
     string SessionDirectory,
     string DatabaseDirectory)
 {
+    public string RangeLabel
+    {
+        get
+        {
+            if (Metadata.FirstFrameTimestamp.HasValue && Metadata.LastFrameTimestamp.HasValue)
+            {
+                var frameSpan = Metadata.LastFrameTimestamp.Value - Metadata.FirstFrameTimestamp.Value;
+                if (frameSpan > DeltaTime.Zero)
+                    return $"{frameSpan.Seconds:0.###} s";
+            }
+
+            if (Metadata.ClosedAtUtc.HasValue)
+            {
+                var wallClockSpan = Metadata.ClosedAtUtc.Value - Metadata.CreatedAtUtc;
+                if (wallClockSpan > TimeSpan.Zero)
+                    return $"{wallClockSpan.TotalSeconds:0.###} s";
+            }
+
+            return "n/a";
+        }
+    }
+
     public string DisplayName
     {
         get

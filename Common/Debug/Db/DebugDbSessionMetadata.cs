@@ -12,7 +12,7 @@ public sealed class DebugDbSessionMetadata
 
     public required int SchemaVersion { get; init; }
     public required string SessionId { get; init; }
-    public string? CaptureLabel { get; init; }
+    public string? CaptureLabel { get; set; }
     public required string SessionDirectory { get; init; }
     public required string DatabaseDirectory { get; init; }
     public required DateTimeOffset CreatedAtUtc { get; init; }

@@ -9,6 +9,7 @@ using Tyr.Common.Time;
 using Tyr.Gui.Backend;
 using Tyr.Gui.Data;
 using Command = Tyr.Common.Debug.Plotting.Command;
+using Color = Tyr.Common.Debug.Drawing.Color;
 
 namespace Tyr.Gui.Views;
 

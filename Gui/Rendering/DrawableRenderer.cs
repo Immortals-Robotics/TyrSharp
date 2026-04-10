@@ -8,6 +8,7 @@ using Tyr.Gui.Backend;
 using Tyr.Gui.Data;
 using Color = Tyr.Common.Debug.Drawing.Color;
 using Path = Tyr.Common.Debug.Drawing.Drawables.Path;
+using Point = Tyr.Common.Debug.Drawing.Drawables.Point;
 using Rectangle = Tyr.Common.Debug.Drawing.Drawables.Rectangle;
 using Triangle = Tyr.Common.Debug.Drawing.Drawables.Triangle;
 

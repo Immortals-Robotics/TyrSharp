@@ -6,6 +6,7 @@ using Tyr.Gui.Backend;
 using Tyr.Gui.Data;
 using Tyr.Gui.Pipeline;
 using Tyr.Gui.Views;
+using Color = Tyr.Common.Debug.Drawing.Color;
 
 namespace Tyr.Gui;
 
@@ -37,6 +38,7 @@ public sealed partial class Runner : IDisposable
     private readonly FieldView _field;
     private readonly PlotView _plots;
     private readonly PlaybackControl _control;
+    private readonly SessionsView _sessions;
     private readonly ConfigsView _configs;
     private readonly GameControllerView _gameController;
     private readonly GuiFramePipeline _pipeline;
@@ -66,7 +68,8 @@ public sealed partial class Runner : IDisposable
         _log = new LogView(debugDb);
         _field = new FieldView(debugDb);
         _plots = new PlotView(debugDb);
-        _control = new PlaybackControl(debugDb, playbackSessions);
+        _sessions = new SessionsView(playbackSessions);
+        _control = new PlaybackControl(debugDb, _sessions);
         _configs = new ConfigsView();
         _gameController = new GameControllerView();
         _pipeline = new GuiFramePipeline(PrepareFrame);
@@ -142,6 +145,7 @@ public sealed partial class Runner : IDisposable
         _gameController.Draw();
 
         _control.Draw();
+        _sessions.Draw();
         _log.Draw(_preparedFrame.Log);
         _field.Draw(_preparedFrame.Field);
         _plots.Draw(_preparedFrame.Plots);

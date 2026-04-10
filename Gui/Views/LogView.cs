@@ -8,6 +8,7 @@ using Tyr.Common.Debug.Logging;
 using Tyr.Gui.Backend;
 using Tyr.Gui.Data;
 using Debug = Tyr.Common.Debug;
+using Color = Tyr.Common.Debug.Drawing.Color;
 
 namespace Tyr.Gui.Views;
 
