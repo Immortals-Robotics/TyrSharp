@@ -15,7 +15,6 @@ namespace Tyr.Gui.Views;
 [Configurable]
 public partial class PlotView(DebugFilter filter, IDebugDb debugDb)
 {
-    [ConfigEntry] private static double TimeAxisExtension { get; set; } = 5;
     [ConfigEntry] private static double TimeAxisMinRange { get; set; } = 1;
     [ConfigEntry] private static double TimeAxisMaxRange { get; set; } = 200;
 
@@ -45,7 +44,7 @@ public partial class PlotView(DebugFilter filter, IDebugDb debugDb)
     private Span<float> ZSpan => CollectionsMarshal.AsSpan(ZList);
     private Span<float> LenSpan => CollectionsMarshal.AsSpan(LenList);
 
-    private DeltaTime _linkedTimeRange = DeltaTime.Zero;
+    private DeltaTime _linkedHistoryRange = DeltaTime.Zero;
     private readonly Dictionary<string, Dictionary<string, Common.Debug.Meta>> _plotMetadataCache = [];
 
     private ImGuiTextFilterPtr _filter = ImGui.ImGuiTextFilter();
@@ -187,8 +186,6 @@ public partial class PlotView(DebugFilter filter, IDebugDb debugDb)
     {
         if (ImPlot.BeginPlot("##plot"))
         {
-            // limits defined by the range (-∞, 0] extended by the extension factor
-            ImPlot.SetupAxisLimitsConstraints(ImAxis.X1, float.NegativeInfinity, TimeAxisExtension);
             ImPlot.SetupAxisZoomConstraints(ImAxis.X1, TimeAxisMinRange, TimeAxisMaxRange);
             ImPlot.SetupAxisZoomConstraints(ImAxis.Y1, YAxisMinRange, double.PositiveInfinity);
 
@@ -197,26 +194,19 @@ public partial class PlotView(DebugFilter filter, IDebugDb debugDb)
             var plot = ImPlot.GetCurrentPlot();
             var xAxis = ImPlot.XAxis(plot, 0);
 
-            // the active plot can override the range, others will follow
             if (plot.Hovered || xAxis.Hovered)
-                _linkedTimeRange = DeltaTime.FromSeconds(xAxis.Range.Size());
+                _linkedHistoryRange = DeltaTime.FromSeconds(xAxis.Range.Size());
 
-            var end = time.Offset;
+            _linkedHistoryRange = ClampLinkedHistoryRange(_linkedHistoryRange);
 
-            var extensionCausedRange = Math.Clamp(2 * TimeAxisExtension + end.Seconds,
-                0, 2 * TimeAxisExtension);
-            var minRange = Math.Max(TimeAxisMinRange, extensionCausedRange);
-            _linkedTimeRange = DeltaTime.Max(_linkedTimeRange, DeltaTime.FromSeconds(minRange));
+            var (min, max) = xAxis.Held || plot.Held
+                ? (DeltaTime.FromSeconds(xAxis.Range.Min), DeltaTime.FromSeconds(xAxis.Range.Max))
+                : GetAnchoredTimeRange(time.Offset, _linkedHistoryRange);
 
-            var start = xAxis.Held || plot.Held
-                ? DeltaTime.FromSeconds(xAxis.Range.Min)
-                : end - _linkedTimeRange;
+            xAxis.SetMin(min.Seconds);
+            xAxis.SetMax(max.Seconds);
 
-            // keep a small look-ahead region to the right of the selected time
-            xAxis.SetMax(end.Seconds + TimeAxisExtension);
-            xAxis.SetMin(start.Seconds);
-
-            var (type, title) = GatherData(moduleName, plotId, time.EndTime, start, end);
+            var (type, title) = GatherData(moduleName, plotId, time.EndTime, min, time.Offset);
 
             if (title != null)
             {
@@ -256,6 +246,21 @@ public partial class PlotView(DebugFilter filter, IDebugDb debugDb)
 
             ImPlot.EndPlot();
         }
+    }
+
+    private static DeltaTime ClampLinkedHistoryRange(DeltaTime historyRange)
+    {
+        return DeltaTime.Clamp(
+            historyRange,
+            DeltaTime.FromSeconds(TimeAxisMinRange),
+            DeltaTime.FromSeconds(TimeAxisMaxRange));
+    }
+
+    private static (DeltaTime Min, DeltaTime Max) GetAnchoredTimeRange(DeltaTime currentTime, DeltaTime historyRange)
+    {
+        var max = currentTime;
+        var min = currentTime - historyRange;
+        return (min, max);
     }
 
     private (PlotDataType type, string? title) GatherData(
