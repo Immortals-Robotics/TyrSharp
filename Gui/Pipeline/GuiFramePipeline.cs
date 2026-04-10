@@ -31,14 +31,20 @@ internal sealed class GuiFramePipeline : IDisposable
 
     public void Enqueue(PrepareRequest request)
     {
+        PrepareRequest? displaced;
         lock (_sync)
         {
             if (_disposed)
+            {
+                request.Dispose();
                 return;
+            }
 
+            displaced = _pending;
             _pending = request;
         }
 
+        displaced?.Dispose();
         _signal.Set();
     }
 
@@ -97,6 +103,7 @@ internal sealed class GuiFramePipeline : IDisposable
             }
 
             _prepare(request.Value, frame);
+            request.Value.Dispose();
 
             lock (_sync)
             {
@@ -123,7 +130,10 @@ internal sealed class GuiFramePipeline : IDisposable
     internal readonly record struct PrepareRequest(
         PlaybackTime Time,
         DebugFilterSnapshot FilterSnapshot,
-        PlotView.PrepareState PlotState);
+        PlotView.PrepareState PlotState) : IDisposable
+    {
+        public void Dispose() => FilterSnapshot.Dispose();
+    }
 
     internal sealed class PreparedFrame
     {

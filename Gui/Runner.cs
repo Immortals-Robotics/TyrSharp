@@ -71,7 +71,9 @@ public sealed partial class Runner : IDisposable
         _gameController = new GameControllerView();
         _pipeline = new GuiFramePipeline(PrepareFrame);
         _preparedFrame = new GuiFramePipeline.PreparedFrame();
-        PrepareFrame(CreatePrepareRequest(), _preparedFrame);
+        var initialRequest = CreatePrepareRequest();
+        PrepareFrame(initialRequest, _preparedFrame);
+        initialRequest.Dispose();
 
         // and the runner
         _runner = new RunnerSync(Tick, MaxFps, ModuleName, RunnerPriority);

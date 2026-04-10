@@ -24,7 +24,7 @@ public sealed partial class DebugFilter(Tyr.Common.Debug.Db.IDebugDb debugDb) : 
 
     private bool _dirty;
     private bool _snapshotDirty = true;
-    private DebugFilterSnapshot? _snapshot;
+    private Dictionary<string, bool>? _snapshotState;
 
     private StrSpan MakePath(string module, string? layer = null,
         string? file = null, string? member = null, int? line = null)
@@ -108,17 +108,16 @@ public sealed partial class DebugFilter(Tyr.Common.Debug.Db.IDebugDb debugDb) : 
 
     public DebugFilterSnapshot Snapshot()
     {
-        if (_snapshotDirty || _snapshot is null)
+        if (_snapshotDirty || _snapshotState is null)
         {
-            _snapshot?.Dispose();
-            _snapshot = new DebugFilterSnapshot(FilterState.ToDictionary(
+            _snapshotState = FilterState.ToDictionary(
                 static pair => pair.Key,
                 static pair => pair.Value,
-                StringComparer.Ordinal));
+                StringComparer.Ordinal);
             _snapshotDirty = false;
         }
 
-        return _snapshot;
+        return new DebugFilterSnapshot(_snapshotState);
     }
 
     public void Draw()
@@ -458,7 +457,6 @@ public sealed partial class DebugFilter(Tyr.Common.Debug.Db.IDebugDb debugDb) : 
 
     public void Dispose()
     {
-        _snapshot?.Dispose();
         _stringBuilder.Dispose();
     }
 }
