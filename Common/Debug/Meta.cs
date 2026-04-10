@@ -1,10 +1,8 @@
 ﻿using System.Collections.Concurrent;
-using MemoryPack;
 
 namespace Tyr.Common.Debug;
 
-[MemoryPackable]
-public partial record struct Meta
+public record struct Meta
 {
     public const string DebugLayerPrefix = "[debug]";
     public static string DebugLayer(string layer) => DebugLayerPrefix + layer;

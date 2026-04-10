@@ -8,7 +8,7 @@ public partial record Path : IDrawable
 {
     public Vector2[] Points { get; init; }
 
-    [method: MemoryPackConstructor]
+    [MemoryPackConstructor]
     private Path()
     {
         Points = [];

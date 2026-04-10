@@ -4,10 +4,19 @@ using MemoryPack;
 namespace Tyr.Common.Debug.Drawing.Drawables;
 
 [MemoryPackable]
-[method: MemoryPackConstructor]
-public partial record LineSegment(Vector2 Start, Vector2 End) : IDrawable
+public partial record LineSegment : IDrawable
 {
-    public LineSegment(Math.Shapes.LineSegment segment) : this(segment.Start, segment.End)
+    public Vector2 Start { get; init; }
+    public Vector2 End { get; init; }
+
+    [MemoryPackConstructor]
+    public LineSegment()
     {
+    }
+    
+    public LineSegment(Math.Shapes.LineSegment segment)
+    {
+        Start = segment.Start;
+        End = segment.End;
     }
 }

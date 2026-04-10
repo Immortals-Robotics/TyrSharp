@@ -1,6 +1,6 @@
 ﻿namespace Tyr.Common.Debug.Drawing;
 
-public readonly record struct Options
+public readonly partial record struct Options
 {
     public bool IsFilled { get; init; }
     public float Thickness { get; init; }

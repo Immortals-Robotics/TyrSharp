@@ -141,7 +141,7 @@ public sealed class Drawer(string module) : IDisposable
         [CallerFilePath] string? file = null,
         [CallerLineNumber] int line = 0)
     {
-        var segment = new LineSegment(start, end);
+        var segment = new LineSegment{ Start = start, End = end };
 
         var expression = MakeExpression(
             nameof(start), startExpression,

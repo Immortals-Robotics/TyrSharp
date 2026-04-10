@@ -13,7 +13,7 @@ public enum PlotValueKind
 }
 
 [MemoryPackable]
-public partial record struct PlotValue
+public readonly partial record struct PlotValue
 {
     public PlotValueKind Kind { get; init; }
     public double Number { get; init; }

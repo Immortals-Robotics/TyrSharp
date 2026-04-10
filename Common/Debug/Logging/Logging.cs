@@ -26,7 +26,7 @@ public static partial class Logging
             options.UsePlainTextFormatter(formatter =>
             {
                 formatter.SetPrefixFormatter($"[{0} | {1} | {2} | {3} @ {4}:{5}] ",
-                    (in MessageTemplate template, in LogInfo info) =>
+                    (in template, in info) =>
                     {
                         template.Format(
                             info.Timestamp, info.Category, info.LogLevel,
