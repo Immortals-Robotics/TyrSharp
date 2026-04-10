@@ -14,7 +14,7 @@ public class RedirectKickSpinAwareFitter
     private const int KickDirMaxRecordsPerCam = 5;
     private const double SimplexStep = 100.0;
     private const double FunctionTolerance = 1e-3;
-    private const int MaxIterations = 200;
+    private const int MaxIterations = 50;
     private const double SpinFactorFilterAlpha = 0.95;
     private const double SpinFactorStep = 0.01;
     private const double SpinFactorSearchEpsilon = 0.001;
@@ -22,21 +22,32 @@ public class RedirectKickSpinAwareFitter
     private readonly Vector2 _initialSpin;
     private readonly Angle _kickingBotOrientation;
     private readonly double[] _initialGuess = new double[3];
+    private readonly NelderMeadSimplex _optimizer = new(FunctionTolerance, MaxIterations);
+    private readonly DenseVector _initialGuessVector = new(3);
+    private readonly DenseVector _initialPerturbation = new(3);
+    private readonly IObjectiveFunction _objectiveFunction;
 
     private Vector2? _fixedKickDirection;
     private bool _hasInitialGuess;
     private double _spinFactorState = BallParameters.RedirectSpinFactor;
+    private RedirectBallModel? _currentModel;
+    private double _bestKickX;
+    private double _bestKickY;
+    private double _bestKickVelocity;
+    private double _bestError;
 
     public RedirectKickSpinAwareFitter(Angle kickingBotOrientation, FilteredBall ballStateAtKick)
     {
         _initialSpin = ballStateAtKick.State.SpinRadians;
         _kickingBotOrientation = kickingBotOrientation;
+        _objectiveFunction = ObjectiveFunction.Value(EvaluateObjective);
     }
 
     public RedirectKickSpinAwareFitter(Angle kickingBotOrientation)
     {
         _initialSpin = Vector2.Zero;
         _kickingBotOrientation = kickingBotOrientation;
+        _objectiveFunction = ObjectiveFunction.Value(EvaluateObjective);
     }
 
     public SolvedKick? Solve(List<RawBall> ballRecords)
@@ -156,22 +167,67 @@ public class RedirectKickSpinAwareFitter
 
     private NonlinearSolveResult SolveNonlinear(List<RawBall> ballRecords, Vector2 kickDirection, Vector2 kickSpin)
     {
-        var model = new RedirectBallModel(ballRecords, kickSpin, kickDirection, ballRecords[0].CaptureTimestamp);
-        var optimizer = new NelderMeadSimplex(FunctionTolerance, MaxIterations);
-        var objectiveFunction = ObjectiveFunction.Value(point => model.Value(point.ToArray()));
-        var result = optimizer.FindMinimum(
-            objectiveFunction,
-            DenseVector.OfArray(_initialGuess),
-            DenseVector.OfArray([SimplexStep, SimplexStep, SimplexStep]));
-        var point = result.MinimizingPoint.ToArray();
+        _currentModel = new RedirectBallModel(ballRecords, kickSpin, kickDirection, ballRecords[0].CaptureTimestamp);
+        _bestKickX = _initialGuess[0];
+        _bestKickY = _initialGuess[1];
+        _bestKickVelocity = _initialGuess[2];
+        _bestError = double.PositiveInfinity;
 
-        Array.Copy(point, _initialGuess, _initialGuess.Length);
+        _initialGuessVector[0] = _initialGuess[0];
+        _initialGuessVector[1] = _initialGuess[1];
+        _initialGuessVector[2] = _initialGuess[2];
 
-        var kickPosition = new Vector2((float)point[0], (float)point[1]);
-        var kickVelocity = kickDirection * (float)point[2];
-        var error = model.Value(point);
+        _initialPerturbation[0] = SimplexStep;
+        _initialPerturbation[1] = SimplexStep;
+        _initialPerturbation[2] = SimplexStep;
+
+        double positionX;
+        double positionY;
+        double velocityMagnitude;
+        double error;
+        try
+        {
+            var result = _optimizer.FindMinimum(_objectiveFunction, _initialGuessVector, _initialPerturbation);
+            var point = result.MinimizingPoint;
+            positionX = point[0];
+            positionY = point[1];
+            velocityMagnitude = point[2];
+            error = _currentModel.Value(positionX, positionY, velocityMagnitude);
+        }
+        catch (Exception) when (!double.IsPositiveInfinity(_bestError))
+        {
+            positionX = _bestKickX;
+            positionY = _bestKickY;
+            velocityMagnitude = _bestKickVelocity;
+            error = _bestError;
+        }
+        finally
+        {
+            _currentModel = null;
+        }
+
+        _initialGuess[0] = positionX;
+        _initialGuess[1] = positionY;
+        _initialGuess[2] = velocityMagnitude;
+
+        var kickPosition = new Vector2((float)positionX, (float)positionY);
+        var kickVelocity = kickDirection * (float)velocityMagnitude;
 
         return new NonlinearSolveResult(kickPosition, kickVelocity, error);
+    }
+
+    private double EvaluateObjective(MathNet.Numerics.LinearAlgebra.Vector<double> point)
+    {
+        var error = _currentModel!.Value(point[0], point[1], point[2]);
+        if (error < _bestError)
+        {
+            _bestError = error;
+            _bestKickX = point[0];
+            _bestKickY = point[1];
+            _bestKickVelocity = point[2];
+        }
+
+        return error;
     }
 
     private sealed record NonlinearSolveResult(Vector2 KickPosition, Vector2 KickVelocity, double Error);
@@ -182,10 +238,10 @@ public class RedirectKickSpinAwareFitter
         Vector2 kickDirection,
         Timestamp tZero)
     {
-        public double Value(double[] point)
+        public double Value(double positionX, double positionY, double velocityMagnitude)
         {
-            var kickPosition = new Vector2((float)point[0], (float)point[1]);
-            var kickVelocity = kickDirection * (float)point[2];
+            var kickPosition = new Vector2((float)positionX, (float)positionY);
+            var kickVelocity = kickDirection * (float)velocityMagnitude;
 
             var trajectory = new BallFlat(new BallState
             {
