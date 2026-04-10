@@ -2,8 +2,7 @@
 .vs/
 
 # Build results
-bin/
-obj/
+artifacts/
 
 packages/
 
