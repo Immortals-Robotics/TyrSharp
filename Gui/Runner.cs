@@ -54,6 +54,7 @@ public sealed partial class Runner : IDisposable
         Style.Apply();
 
         _fonts = new FontRegistry();
+        _imgui.InitializeBackends();
 
         // init our UI views
         _filter = new DebugFilter(debugDb);

@@ -260,7 +260,7 @@ public sealed partial class DebugFilter(Tyr.Common.Debug.Db.IDebugDb debugDb) : 
             isOpen = ImGui.TreeNode("");
             ImGui.SameLine();
 
-            ImGui.PushFont(FontRegistry.Instance.MonoFont);
+            ImGui.PushFont(FontRegistry.Instance.MonoFont, FontRegistry.Instance.MonoFont.LegacySize);
             if (debugLayer) ImGui.PushStyleColor(ImGuiCol.Text, Color.Yellow200);
             _dirty |= ImGui.Checkbox($"{IconFonts.FontAwesome6.LayerGroup} {layerName}", ref isEnabled);
             ImGui.PopFont();
@@ -306,14 +306,14 @@ public sealed partial class DebugFilter(Tyr.Common.Debug.Db.IDebugDb debugDb) : 
         ImGui.PushID(file);
         var isOpen = ImGui.TreeNode("");
         ImGui.SameLine();
-        ImGui.PushFont(FontRegistry.Instance.MonoFont);
+        ImGui.PushFont(FontRegistry.Instance.MonoFont, FontRegistry.Instance.MonoFont.LegacySize);
         _dirty |= ImGui.Checkbox($"{IconFonts.FontAwesome6.FileCode} {displayName}", ref isEnabled);
         ImGui.PopFont();
 
         // Show full path as tooltip
         if (ImGui.IsItemHovered(ImGuiHoveredFlags.ForTooltip))
         {
-            ImGui.PushFont(FontRegistry.Instance.MonoFont);
+            ImGui.PushFont(FontRegistry.Instance.MonoFont, FontRegistry.Instance.MonoFont.LegacySize);
             ImGui.SetTooltip(file);
             ImGui.PopFont();
         }
@@ -353,7 +353,7 @@ public sealed partial class DebugFilter(Tyr.Common.Debug.Db.IDebugDb debugDb) : 
         ImGui.PushID(member);
         var isOpen = ImGui.TreeNode("");
         ImGui.SameLine();
-        ImGui.PushFont(FontRegistry.Instance.MonoFont);
+        ImGui.PushFont(FontRegistry.Instance.MonoFont, FontRegistry.Instance.MonoFont.LegacySize);
         _dirty |= ImGui.Checkbox($"{IconFonts.FontAwesome6.Code} {member}()", ref isEnabled);
         ImGui.PopFont();
 
@@ -391,7 +391,7 @@ public sealed partial class DebugFilter(Tyr.Common.Debug.Db.IDebugDb debugDb) : 
         // Create leaf node with checkbox (no children)
         ImGui.PushID(treeItem.Line);
         ImGui.Indent();
-        ImGui.PushFont(FontRegistry.Instance.MonoFont);
+        ImGui.PushFont(FontRegistry.Instance.MonoFont, FontRegistry.Instance.MonoFont.LegacySize);
 
         var icon = treeItem.Type switch
         {

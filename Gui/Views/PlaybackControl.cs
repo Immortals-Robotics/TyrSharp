@@ -50,7 +50,7 @@ public class PlaybackControl(IDebugDb debugDb)
                 _offset = Math.Clamp(_offset, -_frozenRange, 0f);
             }
 
-            ImGui.PushFont(FontRegistry.Instance.MonoFont);
+            ImGui.PushFont(FontRegistry.Instance.MonoFont, FontRegistry.Instance.MonoFont.LegacySize);
             if (_live) ImGui.BeginDisabled();
             ImGui.SliderFloat("Time", ref _offset, -_frozenRange, 0f, ImGuiSliderFlags.None);
             if (_live) ImGui.EndDisabled();

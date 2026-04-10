@@ -101,7 +101,7 @@ public partial class ConfigsView
         {
             ImGui.BeginTooltip();
 
-            ImGui.PushFont(FontRegistry.Instance.MonoFont);
+            ImGui.PushFont(FontRegistry.Instance.MonoFont, FontRegistry.Instance.MonoFont.LegacySize);
             ImGui.TextColored(Color.Zinc400, $"{configurable.Type.FullName}");
             ImGui.PopFont();
 
@@ -168,7 +168,7 @@ public partial class ConfigsView
         {
             ImGui.BeginTooltip();
 
-            ImGui.PushFont(FontRegistry.Instance.MonoFont);
+            ImGui.PushFont(FontRegistry.Instance.MonoFont, FontRegistry.Instance.MonoFont.LegacySize);
             ImGui.TextColored(Color.Zinc400, $"{field.Type.FullName}");
             ImGui.PopFont();
 
@@ -196,7 +196,7 @@ public partial class ConfigsView
             ImGui.BeginTooltip();
             ImGui.Text("Reset to");
             ImGui.SameLine();
-            ImGui.PushFont(FontRegistry.Instance.MonoFont);
+            ImGui.PushFont(FontRegistry.Instance.MonoFont, FontRegistry.Instance.MonoFont.LegacySize);
             ImGui.TextColored(Color.Amber, $"{field.DefaultValue}");
             ImGui.PopFont();
             ImGui.EndTooltip();
@@ -204,7 +204,7 @@ public partial class ConfigsView
 
         // Value
         ImGui.TableNextColumn();
-        ImGui.PushFont(FontRegistry.Instance.MonoFont);
+        ImGui.PushFont(FontRegistry.Instance.MonoFont, FontRegistry.Instance.MonoFont.LegacySize);
 
         var (changed, newVal) = DrawFieldEditor(field.Value);
         if (changed)

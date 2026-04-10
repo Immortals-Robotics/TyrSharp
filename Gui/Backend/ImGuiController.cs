@@ -32,10 +32,17 @@ internal class ImGuiController : IDisposable
         io.ConfigFlags |= ImGuiConfigFlags.ViewportsEnable; // Enable Multi-Viewport / Platform Windows
         io.ConfigViewportsNoAutoMerge = false;
         io.ConfigViewportsNoTaskBarIcon = false;
+    }
+
+    public void InitializeBackends()
+    {
+        ImGui.SetCurrentContext(_imguiCtx);
+        ImPlot.SetImGuiContext(_imguiCtx);
+        ImPlot.SetCurrentContext(_plotCtx);
 
         ImGuiImplGLFW.SetCurrentContext(_imguiCtx);
         if (!ImGuiImplGLFW.InitForOpenGL(
-                Unsafe.BitCast<Hexa.NET.GLFW.GLFWwindowPtr, GLFWwindowPtr>(window.Handle),
+                Unsafe.BitCast<Hexa.NET.GLFW.GLFWwindowPtr, GLFWwindowPtr>(_window.Handle),
                 true))
         {
             throw new Exception("Failed Init GLFW ImGui");

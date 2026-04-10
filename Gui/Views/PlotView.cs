@@ -103,7 +103,7 @@ public partial class PlotView(DebugFilter filter, IDebugDb debugDb)
 
     private void DrawPlots(PlaybackTime time)
     {
-        ImGui.PushFont(FontRegistry.Instance.MonoFont);
+        ImGui.PushFont(FontRegistry.Instance.MonoFont, FontRegistry.Instance.MonoFont.LegacySize);
 
         foreach (var moduleName in DebugDbUsageProfiler.MeasureEnumerable("PlotView.QueryModules", debugDb.QueryModules()))
         {

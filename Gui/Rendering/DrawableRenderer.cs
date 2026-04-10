@@ -26,7 +26,7 @@ internal partial class DrawableRenderer
     {
         if (commands.Count == 0) return;
 
-        Log.ZLogTrace($"Drawing {commands.Count} items");
+        //Log.ZLogTrace($"Drawing {commands.Count} items");
 
         _drawList = ImGui.GetWindowDrawList();
 
@@ -264,10 +264,19 @@ internal partial class DrawableRenderer
 
     private void DrawText(Text text, Color color)
     {
+        if (string.IsNullOrEmpty(text.Content))
+        {
+            return;
+        }
+
         var posScreen = Camera.WorldToScreen(text.Position);
         var sizeScreen = Camera.WorldToScreenLength(text.Size);
 
         var (font, correctedSize) = FontRegistry.Instance.GetFieldFont(sizeScreen);
+        if (font.IsNull || !float.IsFinite(correctedSize) || correctedSize <= 0f)
+        {
+            return;
+        }
 
         var textSize = ImGui.CalcTextSizeA(font, correctedSize,
             float.PositiveInfinity, float.PositiveInfinity,

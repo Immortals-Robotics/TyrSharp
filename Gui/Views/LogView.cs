@@ -51,7 +51,7 @@ public sealed partial class LogView(DebugFilter filter, IDebugDb debugDb) : IDis
 
                 ImGui.TableHeadersRow();
 
-                ImGui.PushFont(FontRegistry.Instance.MonoFont);
+                ImGui.PushFont(FontRegistry.Instance.MonoFont, FontRegistry.Instance.MonoFont.LegacySize);
 
                 DrawSearchAndFilterControls();
 

@@ -21,15 +21,11 @@
     </ItemGroup>
 
     <ItemGroup>
-      <PackageReference Include="protobuf-net" Version="3.2.46" />
-    </ItemGroup>
-
-    <ItemGroup>
-      <PackageReference Include="Hexa.NET.GLFW" Version="1.0.4" />
-      <PackageReference Include="Hexa.NET.ImGui" Version="2.2.7" />
-      <PackageReference Include="Hexa.NET.ImGui.Backends" Version="1.0.15" />
-      <PackageReference Include="Hexa.NET.ImGui.Backends.GLFW" Version="1.0.15" />
-      <PackageReference Include="Hexa.NET.ImPlot" Version="2.2.7" />
+      <PackageReference Include="Hexa.NET.GLFW" Version="1.0.5" />
+      <PackageReference Include="Hexa.NET.ImGui" Version="2.2.9" />
+      <PackageReference Include="Hexa.NET.ImGui.Backends" Version="1.0.18" />
+      <PackageReference Include="Hexa.NET.ImGui.Backends.GLFW" Version="1.0.18" />
+      <PackageReference Include="Hexa.NET.ImPlot" Version="2.2.9" />
       <PackageReference Include="Hexa.NET.OpenGL3" Version="1.1.0" />
     </ItemGroup>
 

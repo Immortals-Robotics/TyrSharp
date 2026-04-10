@@ -53,7 +53,7 @@ public sealed partial class FieldView : IDisposable
 
         if (ImGui.Begin($"{IconFonts.FontAwesome6.Video} Field"))
         {
-            ImGui.PushFont(FontRegistry.Instance.MonoFont);
+            ImGui.PushFont(FontRegistry.Instance.MonoFont, FontRegistry.Instance.MonoFont.LegacySize);
 
             _renderer.Camera.Viewport = new Viewport(
                 Offset: ImGui.GetCursorScreenPos(),
