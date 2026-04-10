@@ -237,7 +237,10 @@ public sealed class DebugDb : IDebugDb
             .Order();
 
         foreach (var sourceLocationId in sourceLocationIds)
-            yield return _sourceLocationCache.GetOrAdd(sourceLocationId, id => _sources.Get(id, _strings));
+            yield return _sourceLocationCache.GetOrAdd(
+                sourceLocationId,
+                static (id, db) => db._sources.Get(id, db._strings),
+                this);
     }
 
     public Meta? TryGetShardMeta<T>(string module, string shardKey) where T : struct, IEntry
@@ -252,7 +255,10 @@ public sealed class DebugDb : IDebugDb
             return null;
 
         foreach (var (shard, _) in bucketSet.GetCandidates(moduleId, null, shardKeyId))
-            return _sourceLocationCache.GetOrAdd(shard.SourceLocationId, id => _sources.Get(id, _strings));
+            return _sourceLocationCache.GetOrAdd(
+                shard.SourceLocationId,
+                static (id, db) => db._sources.Get(id, db._strings),
+                this);
 
         return null;
     }
@@ -451,7 +457,10 @@ public sealed class DebugDb : IDebugDb
             var value = entry;
             value.Timestamp = Timestamp.FromNanoseconds(record.Timestamp);
             value.Meta = hydrateMeta
-                ? _sourceLocationCache.GetOrAdd(sourceLocationId, id => _sources.Get(id, _strings))
+                ? _sourceLocationCache.GetOrAdd(
+                    sourceLocationId,
+                    static (id, db) => db._sources.Get(id, db._strings),
+                    this)
                 : Meta.Empty;
             return value;
         }
@@ -491,12 +500,15 @@ public sealed class DebugDb : IDebugDb
     private Bucket GetOrCreateBucket(EntryShardKey shard)
     {
         var bucketSet = GetOrCreateBucketSet(shard.Type);
-        return bucketSet.GetOrAdd(shard, key =>
-        {
-            var typeDirectory = GetTypeDirectory(key.Type);
-            Directory.CreateDirectory(typeDirectory);
-            return CreateBucketFactory(typeDirectory, GetShardName(key));
-        }).Value;
+        return bucketSet.GetOrAdd(
+            shard,
+            static (key, db) =>
+            {
+                var typeDirectory = db.GetTypeDirectory(key.Type);
+                Directory.CreateDirectory(typeDirectory);
+                return CreateBucketFactory(typeDirectory, GetShardName(key));
+            },
+            this).Value;
     }
 
     private BucketSet GetOrCreateBucketSet(Type type)
@@ -780,11 +792,11 @@ public sealed class DebugDb : IDebugDb
         private readonly ConcurrentDictionary<int, ConcurrentDictionary<EntryShardKey, Lazy<Bucket>>> _byShardKey = new();
         private readonly ConcurrentDictionary<ModuleShardKey, ConcurrentDictionary<EntryShardKey, Lazy<Bucket>>> _byModuleAndShardKey = new();
 
-        public Lazy<Bucket> GetOrAdd(EntryShardKey shard, Func<EntryShardKey, Lazy<Bucket>> valueFactory)
+        public Lazy<Bucket> GetOrAdd<TState>(EntryShardKey shard, Func<EntryShardKey, TState, Lazy<Bucket>> valueFactory, TState state)
         {
             return All.GetOrAdd(shard, key =>
             {
-                var bucketFactory = valueFactory(key);
+                var bucketFactory = valueFactory(key, state);
                 Index(key, bucketFactory);
                 return bucketFactory;
             });
