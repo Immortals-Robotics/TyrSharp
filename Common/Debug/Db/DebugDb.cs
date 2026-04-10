@@ -555,7 +555,7 @@ public sealed class DebugDb : IDebugDb
         {
             if (part.Length < 2 || part[0] != prefix)
             {
-                value = default;
+                value = 0;
                 return false;
             }
 
@@ -731,8 +731,8 @@ public sealed class DebugDb : IDebugDb
                 var pos = UpperBound(_timestamps, timestamp);
                 if (pos == 0)
                 {
-                    start = default;
-                    end = default;
+                    start = 0;
+                    end = null;
                     return false;
                 }
 
@@ -800,9 +800,7 @@ public sealed class DebugDb : IDebugDb
 
         public ConcurrentDictionary<EntryShardKey, Lazy<Bucket>> GetByModule(int moduleId)
         {
-            return _byModule.TryGetValue(moduleId, out var buckets)
-                ? buckets
-                : Empty;
+            return _byModule.GetValueOrDefault(moduleId, Empty);
         }
 
         public IEnumerable<KeyValuePair<EntryShardKey, Lazy<Bucket>>> GetCandidates(
@@ -858,23 +856,17 @@ public sealed class DebugDb : IDebugDb
 
         private ConcurrentDictionary<EntryShardKey, Lazy<Bucket>> GetBySourceLocation(int sourceLocationId)
         {
-            return _bySourceLocation.TryGetValue(sourceLocationId, out var buckets)
-                ? buckets
-                : Empty;
+            return _bySourceLocation.GetValueOrDefault(sourceLocationId, Empty);
         }
 
         private ConcurrentDictionary<EntryShardKey, Lazy<Bucket>> GetByShardKey(int shardKeyId)
         {
-            return _byShardKey.TryGetValue(shardKeyId, out var buckets)
-                ? buckets
-                : Empty;
+            return _byShardKey.GetValueOrDefault(shardKeyId, Empty);
         }
 
         private ConcurrentDictionary<EntryShardKey, Lazy<Bucket>> GetByModuleAndShardKey(int moduleId, int shardKeyId)
         {
-            return _byModuleAndShardKey.TryGetValue(new ModuleShardKey(moduleId, shardKeyId), out var buckets)
-                ? buckets
-                : Empty;
+            return _byModuleAndShardKey.GetValueOrDefault(new ModuleShardKey(moduleId, shardKeyId), Empty);
         }
 
         private void Index(EntryShardKey shard, Lazy<Bucket> bucketFactory)
