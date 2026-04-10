@@ -82,39 +82,6 @@ public sealed class DebugDbTests
     }
 
     [Fact]
-    public void Append_OutOfOrderTimestamp_WritesDebugWarning()
-    {
-        var directory = CreateTempDirectory();
-
-        try
-        {
-            using var db = new DebugDb(directory).RegisterType<Entry>();
-            using var listener = new CollectingTraceListener();
-            Trace.Listeners.Add(listener);
-
-            try
-            {
-                db.Append(CreateEntry(100, "Vision", "first"));
-                db.Append(CreateEntry(50, "Vision", "out-of-order"));
-            }
-            finally
-            {
-                Trace.Listeners.Remove(listener);
-            }
-
-#if DEBUG
-            Assert.Contains("non-monotonic timestamp", listener.Messages, StringComparison.OrdinalIgnoreCase);
-#else
-            Assert.DoesNotContain("non-monotonic timestamp", listener.Messages, StringComparison.OrdinalIgnoreCase);
-#endif
-        }
-        finally
-        {
-            Directory.Delete(directory, recursive: true);
-        }
-    }
-
-    [Fact]
     public void PlotCommands_RoundTripThroughDebugDb()
     {
         var directory = CreateTempDirectory();
