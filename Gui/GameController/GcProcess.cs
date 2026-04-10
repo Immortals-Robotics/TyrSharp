@@ -178,7 +178,7 @@ internal sealed class GcProcess : IDisposable
             _process.BeginOutputReadLine();
             _process.BeginErrorReadLine();
 
-            _statusMessage = $"Running (PID {_process.Id})";
+            _statusMessage = $"PID {_process.Id}";
             _status = Status.Running;
         }
         catch (Exception ex)

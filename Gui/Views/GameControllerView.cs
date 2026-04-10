@@ -11,33 +11,30 @@ namespace Tyr.Gui.Views;
 [Configurable]
 public sealed partial class GameControllerView : IDisposable
 {
-    // Process settings
-    [ConfigEntry(StorageType.User)] private static int GcRconPort { get; set; } = 10011;
-    [ConfigEntry(StorageType.User)] private static int GcUiPort   { get; set; } = 8081;
+    [ConfigEntry("Hostname or IP address where the game controller is running", StorageType.User)]
+    private static string GameControllerHost { get; set; } = "localhost";
 
-    // Team rcon settings
-    [ConfigEntry(StorageType.User)] private static string RconHost { get; set; } = "localhost";
-    [ConfigEntry(StorageType.User)] private static int    RconPort { get; set; } = 10011;
+    [ConfigEntry("TCP port for the team remote control protocol", StorageType.User)]
+    private static int RemoteControlPort { get; set; } = 10011;
+
+    [ConfigEntry("HTTP port for the web UI and referee WebSocket API", StorageType.User)]
+    private static int WebUiPort { get; set; } = 8081;
+
+    [ConfigEntry("Automatically connect referee API and team rcon after starting the managed process", StorageType.User)]
+    private static bool AutoConnect { get; set; } = true;
 
     private readonly GcProcess    _process    = new();
     private readonly GcApiClient  _apiClient  = new();
     private readonly GcRconClient _rconYellow = new();
     private readonly GcRconClient _rconBlue   = new();
 
-    // Process UI state
-    private int  _gcRconPortInput = GcRconPort;
-    private int  _gcUiPortInput   = GcUiPort;
-    private bool _autoConnect     = true;
     private bool _autoConnectPending;
     private DateTime _autoConnectDeadline;
 
-    // Rcon UI state
-    private string _rconHostInput = RconHost;
-    private int    _rconPortInput = RconPort;
-    private int    _keeperInputYellow;
-    private bool   _keeperDirtyYellow;
-    private int    _keeperInputBlue;
-    private bool   _keeperDirtyBlue;
+    private int  _keeperInputYellow;
+    private bool _keeperDirtyYellow;
+    private int  _keeperInputBlue;
+    private bool _keeperDirtyBlue;
 
     public void Draw()
     {
@@ -89,7 +86,7 @@ public sealed partial class GameControllerView : IDisposable
 
         var (statusColor, statusLabel) = procStatus switch
         {
-            GcProcess.Status.Running     => (Color.Green400,  $"Running  —  {_process.StatusMessage}"),
+            GcProcess.Status.Running     => (Color.Green400,  $"Running  |  {_process.StatusMessage}"),
             GcProcess.Status.Downloading => (Color.Sky300,    $"Downloading…  {_process.DownloadProgress * 100:F0}%"),
             GcProcess.Status.Exited      => (Color.Orange400, $"Exited: {_process.StatusMessage}"),
             GcProcess.Status.Error       => (Color.Red400,    $"Error: {_process.StatusMessage}"),
@@ -100,41 +97,13 @@ public sealed partial class GameControllerView : IDisposable
 
         ImGui.TextColored(statusColor, $"{IconFonts.FontAwesome6.Circle}  {statusLabel}");
 
-        if (procStatus == GcProcess.Status.Downloading)
-            ImGui.ProgressBar(_process.DownloadProgress, new System.Numerics.Vector2(-1f, 0f));
-
-        ImGui.Spacing();
-
-        var notRunning = procStatus != GcProcess.Status.Running;
-        ImGui.BeginDisabled(!notRunning);
-
-        ImGui.SetNextItemWidth(80f);
-        if (ImGui.InputInt("RCon port##gcproc", ref _gcRconPortInput))
-        {
-            GcRconPort = _gcRconPortInput;
-            Configurable.MarkChanged(StorageType.User);
-        }
-
         ImGui.SameLine();
-
-        ImGui.SetNextItemWidth(80f);
-        if (ImGui.InputInt("UI port##gcproc", ref _gcUiPortInput))
-        {
-            GcUiPort = _gcUiPortInput;
-            Configurable.MarkChanged(StorageType.User);
-        }
-
-        ImGui.SameLine();
-        ImGui.Checkbox("Auto-connect##gcproc", ref _autoConnect);
-
-        ImGui.EndDisabled();
-
-        ImGui.Spacing();
 
         if (procStatus == GcProcess.Status.Downloading)
         {
             if (ImGui.Button($"{IconFonts.FontAwesome6.Xmark}  Cancel##gcdownload"))
                 _process.CancelDownload();
+            ImGui.ProgressBar(_process.DownloadProgress, new System.Numerics.Vector2(-1f, 0f));
         }
         else
         {
@@ -159,12 +128,15 @@ public sealed partial class GameControllerView : IDisposable
                 ImGui.EndDisabled();
             }
         }
+
+        ImGui.TextColored(Color.Zinc500,
+            $"{IconFonts.FontAwesome6.CircleInfo}  RCon :{RemoteControlPort}   Web :{WebUiPort}   Auto-connect: {AutoConnect}");
     }
 
     private void StartProcess()
     {
-        _process.Start(GcRconPort, GcUiPort);
-        if (_autoConnect && _process.CurrentStatus == GcProcess.Status.Running)
+        _process.Start(RemoteControlPort, WebUiPort);
+        if (AutoConnect && _process.CurrentStatus == GcProcess.Status.Running)
         {
             _autoConnectPending  = true;
             _autoConnectDeadline = DateTime.UtcNow.AddSeconds(2);
@@ -176,17 +148,9 @@ public sealed partial class GameControllerView : IDisposable
         if (!_autoConnectPending || DateTime.UtcNow < _autoConnectDeadline) return;
         _autoConnectPending = false;
 
-        // Referee API
-        _apiClient.Connect("localhost", GcUiPort);
-
-        // Team rcon
-        RconHost = "localhost";
-        RconPort = GcRconPort;
-        _rconHostInput = RconHost;
-        _rconPortInput = RconPort;
-        Configurable.MarkChanged(StorageType.User);
-        _rconYellow.Connect("localhost", GcRconPort, TeamColor.Yellow);
-        _rconBlue.Connect("localhost", GcRconPort, TeamColor.Blue);
+        _apiClient.Connect("localhost", WebUiPort);
+        _rconYellow.Connect("localhost", RemoteControlPort, TeamColor.Yellow);
+        _rconBlue.Connect("localhost", RemoteControlPort, TeamColor.Blue);
     }
 
     // ── Referee tab ───────────────────────────────────────────────────────────
@@ -253,16 +217,17 @@ public sealed partial class GameControllerView : IDisposable
                                    or GcApiClient.ConnectionState.Error;
         if (disconnected)
         {
-            ImGui.SetNextItemWidth(160f);
-            // inline host:port connect
             if (ImGui.Button($"{IconFonts.FontAwesome6.Plug}  Connect##apiconn"))
-                _apiClient.Connect("localhost", GcUiPort);
+                _apiClient.Connect(GameControllerHost, WebUiPort);
         }
         else
         {
             if (ImGui.Button($"{IconFonts.FontAwesome6.PowerOff}  Disconnect##apiconn"))
                 _apiClient.Disconnect();
         }
+
+        ImGui.SameLine();
+        ImGui.TextColored(Color.Zinc500, $"{GameControllerHost}:{WebUiPort}");
     }
 
     private void DrawMatchHeader(GcMatchState ms)
@@ -275,7 +240,7 @@ public sealed partial class GameControllerView : IDisposable
             : "";
 
         ImGui.TextColored(Color.Zinc300, timeLabel.Length > 0
-            ? $"{stage}  —  {timeLabel} left"
+            ? $"{stage}  |  {timeLabel} left"
             : stage);
 
         // Scoreboard
@@ -289,7 +254,7 @@ public sealed partial class GameControllerView : IDisposable
 
         ImGui.TextColored(Color.Yellow300, yellowName);
         ImGui.SameLine();
-        ImGui.Text($"  {yellowGoals}  —  {blueGoals}  ");
+        ImGui.Text($"  {yellowGoals}  |  {blueGoals}  ");
         ImGui.SameLine();
         ImGui.TextColored(Color.Sky300, blueName);
 
@@ -448,42 +413,19 @@ public sealed partial class GameControllerView : IDisposable
         var disconnected = state is GcRconClient.ConnectionState.Disconnected
                                    or GcRconClient.ConnectionState.Error;
 
-        ImGui.BeginDisabled(!disconnected);
-
-        ImGui.SetNextItemWidth(160f);
-        if (ImGui.InputText($"Host##{suffix}", ref _rconHostInput, 128))
-        {
-            RconHost = _rconHostInput;
-            Configurable.MarkChanged(StorageType.User);
-        }
-
-        ImGui.SameLine();
-        ImGui.SetNextItemWidth(80f);
-        if (ImGui.InputInt($"Port##{suffix}", ref _rconPortInput))
-        {
-            RconPort = _rconPortInput;
-            Configurable.MarkChanged(StorageType.User);
-        }
-
-        ImGui.EndDisabled();
-
-        ImGui.SameLine();
-
         if (disconnected)
         {
             if (ImGui.Button($"{IconFonts.FontAwesome6.Plug}  Connect##{suffix}"))
-            {
-                RconHost = _rconHostInput;
-                RconPort = _rconPortInput;
-                Configurable.MarkChanged(StorageType.User);
-                client.Connect(RconHost, RconPort, team);
-            }
+                client.Connect(GameControllerHost, RemoteControlPort, team);
         }
         else
         {
             if (ImGui.Button($"{IconFonts.FontAwesome6.PowerOff}  Disconnect##{suffix}"))
                 client.Disconnect();
         }
+
+        ImGui.SameLine();
+        ImGui.TextColored(Color.Zinc500, $"{GameControllerHost}:{RemoteControlPort}");
 
         if (state == GcRconClient.ConnectionState.Connected)
         {
@@ -689,7 +631,7 @@ public sealed partial class GameControllerView : IDisposable
         "PENALTY_SHOOTOUT_BREAK"   => "Penalty Shootout Break",
         "PENALTY_SHOOTOUT"         => "Penalty Shootout",
         "POST_GAME"                => "Post Game",
-        null or ""                 => "—",
+        null or ""                 => "|",
         _                          => stage,
     };
 
