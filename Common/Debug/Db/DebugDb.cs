@@ -803,12 +803,16 @@ public sealed class DebugDb : IDebugDb
 
         public Lazy<Bucket> GetOrAdd<TState>(EntryShardKey shard, Func<EntryShardKey, TState, Lazy<Bucket>> valueFactory, TState state)
         {
-            return All.GetOrAdd(shard, key =>
-            {
-                var bucketFactory = valueFactory(key, state);
-                Index(key, bucketFactory);
-                return bucketFactory;
-            });
+            return All.GetOrAdd(
+                shard,
+                static (key, arg) =>
+                {
+                    var (bucketSet, factory, factoryState) = arg;
+                    var bucketFactory = factory(key, factoryState);
+                    bucketSet.Index(key, bucketFactory);
+                    return bucketFactory;
+                },
+                (this, valueFactory, state));
         }
 
         public void Add(EntryShardKey shard, Lazy<Bucket> bucketFactory)
