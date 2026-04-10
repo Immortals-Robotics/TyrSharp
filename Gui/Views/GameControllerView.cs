@@ -142,8 +142,6 @@ public sealed partial class GameControllerView : IDisposable
         }
 
         ImGui.TextColored(Color.Zinc500, IconFonts.FontAwesome6.CircleInfo);
-        ImGui.SameLine();
-        ImGui.Text($"RCon :{RemoteControlPort}   Web :{WebUiPort}   Auto-connect: {AutoConnect}");
     }
 
     private void StartProcess()
