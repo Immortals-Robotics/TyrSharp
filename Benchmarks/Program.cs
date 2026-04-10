@@ -688,7 +688,6 @@ internal sealed class BenchmarkScenario
     {
         return new PlotCommand
         {
-            Title = "speed",
             Value = PlotValue.From(new Vector3(index, index + 1, index + 2)),
             Meta = Meta.GetOrCreate(module, layer: "Benchmarks", file: "Program.cs", member: nameof(CreatePlotEntry), line: 1),
             ShardKey = shardKey,
@@ -708,12 +707,6 @@ internal sealed class BenchmarkScenario
 
         return new PlotCommand
         {
-            Title = (plotIndex % 3) switch
-            {
-                0 => "value",
-                1 => "velocity",
-                _ => "error",
-            },
             Value = plotIndex % 2 == 0
                 ? PlotValue.From(frameIndex * 0.1 + plotIndex)
                 : PlotValue.From(new Vector3(frameIndex, plotIndex, frameIndex + plotIndex)),

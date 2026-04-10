@@ -29,7 +29,7 @@ public sealed partial class Vision
         Draw.DrawRobot(robot.State.Position, robot.State.Angle, robot.Id, null,
             Options.Filled with { Thickness = 10f });
 
-        Plot.Plot($"Robot {robot.Id} velocity", robot.State.Velocity, "vel (mm/s)");
+        Plot.Plot($"Robot {robot.Id} velocity", robot.State.Velocity);
     }
 
     private static void DrawFilteredBall(FilteredBall ball)
@@ -37,8 +37,8 @@ public sealed partial class Vision
         Draw.DrawCircle(ball.State.Position, 25f + Math.Clamp(ball.State.Position3D.Z / 3, 0, 200), Color.Orange400,
             Options.Filled with { Thickness = 5f });
 
-        Plot.Plot($"ball position", ball.State.Position3D, "pos (mm)");
-        Plot.Plot($"ball velocity", ball.State.Velocity, "vel (mm/s)");
+        Plot.Plot("ball position", ball.State.Position3D);
+        Plot.Plot("ball velocity", ball.State.Velocity);
     }
 
     private static void DrawDetectedKick(DetectedKick kick, Vector2? kickDirection)

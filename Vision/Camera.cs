@@ -93,7 +93,7 @@ public partial class Camera(uint id)
     public void DrawDebug(Timestamp timestamp)
     {
         Log.ZLogTrace($"Camera {Id} FPS: {Fps:F2}");
-        Plot.Plot($"cam[{Id}] fps", Fps, "fps");
+        Plot.Plot($"cam[{Id}] fps", Fps);
 
         DrawCalibration(timestamp);
         DrawTrackedBalls(timestamp);

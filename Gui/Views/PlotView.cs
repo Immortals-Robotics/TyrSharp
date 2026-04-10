@@ -46,7 +46,6 @@ public partial class PlotView(IDebugDb debugDb)
     internal sealed class PreparedSeries
     {
         public PlotDataType Type { get; set; }
-        public string? Title { get; set; }
         public DeltaTime Min { get; set; }
         public DeltaTime Max { get; set; }
         public List<float> Time { get; } = new(MaxPoints);
@@ -59,7 +58,6 @@ public partial class PlotView(IDebugDb debugDb)
         public void Reset()
         {
             Type = PlotDataType.Scalar;
-            Title = null;
             Min = DeltaTime.Zero;
             Max = DeltaTime.Zero;
             Time.Clear();
@@ -312,15 +310,8 @@ public partial class PlotView(IDebugDb debugDb)
                 xAxis.SetMax(series.Max.Seconds);
             }
 
-            if (series.Title != null)
-            {
-                ImPlot.SetupAxis(ImAxis.Y1, series.Title, ImPlotAxisFlags.AutoFit);
-            }
-            else
-            {
-                ImPlot.SetupAxis(ImAxis.Y1, ImPlotAxisFlags.AutoFit | ImPlotAxisFlags.NoLabel);
-            }
-
+            ImPlot.SetupAxis(ImAxis.Y1, ImPlotAxisFlags.AutoFit | ImPlotAxisFlags.NoLabel);
+            
             var count = series.Time.Count;
             if (count == 0)
             {
@@ -388,7 +379,6 @@ public partial class PlotView(IDebugDb debugDb)
 
         foreach (var plot in debugDb.QueryWithoutMeta<Command>(moduleName, startTimestamp, endTimestamp, id, MaxPoints))
         {
-            prepared.Title ??= plot.Title;
             prepared.Time.Add((float)(plot.Timestamp - origin).Seconds);
             AddPlotValue(plot.Value, prepared);
         }
