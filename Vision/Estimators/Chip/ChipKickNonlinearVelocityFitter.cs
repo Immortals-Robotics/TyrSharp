@@ -1,6 +1,5 @@
 using System.Numerics;
-using MathNet.Numerics.LinearAlgebra.Double;
-using MathNet.Numerics.Optimization;
+using NLoptNet;
 using Tyr.Common.Data.Ssl.Vision.Geometry;
 using Tyr.Common.Time;
 using Tyr.Common.Vision.Data;
@@ -10,7 +9,7 @@ using Tyr.Vision.Util;
 
 namespace Tyr.Vision.Estimators.Chip;
 
-public class ChipKickNonlinearVelocityFitter
+public class ChipKickNonlinearVelocityFitter : IDisposable
 {
     private const double FunctionTolerance = 1e-3;
     private const int MaxIterations = 20;
@@ -20,15 +19,8 @@ public class ChipKickNonlinearVelocityFitter
     private readonly Timestamp _kickTimestamp;
     private readonly IReadOnlyDictionary<uint, CameraCalibration> _cameraCalibrations;
     private readonly double[] _kickVelocityGuess;
-    private readonly NelderMeadSimplex _optimizer = new(FunctionTolerance, MaxIterations);
-    private readonly DenseVector _initialGuessVector = new(3);
-    private readonly DenseVector _initialPerturbation = new(3);
-    private readonly IObjectiveFunction _objectiveFunction;
+    private readonly NLoptSolver _optimizer;
     private ChipTrajectoryErrorModel? _currentModel;
-    private double _bestVelocityX;
-    private double _bestVelocityY;
-    private double _bestVelocityZ;
-    private double _bestError;
 
     public ChipKickNonlinearVelocityFitter(
         Vector2 kickPosition,
@@ -40,7 +32,9 @@ public class ChipKickNonlinearVelocityFitter
         _kickTimestamp = kickTimestamp;
         _cameraCalibrations = cameraCalibrations;
         _kickVelocityGuess = [initialEstimate.X, initialEstimate.Y, initialEstimate.Z];
-        _objectiveFunction = ObjectiveFunction.Value(EvaluateObjective);
+        _optimizer = new NLoptSolver(NLoptAlgorithm.LN_SBPLX, 3, FunctionTolerance, MaxIterations);
+        _optimizer.SetInitialStepSize1(SimplexStep);
+        _optimizer.SetMinObjective(EvaluateObjective);
     }
 
     public SolvedKick? Solve(List<RawBall> ballRecords)
@@ -51,38 +45,23 @@ public class ChipKickNonlinearVelocityFitter
         }
 
         _currentModel = new ChipTrajectoryErrorModel(ballRecords, _kickPosition, _kickTimestamp, _cameraCalibrations);
-        _bestVelocityX = _kickVelocityGuess[0];
-        _bestVelocityY = _kickVelocityGuess[1];
-        _bestVelocityZ = _kickVelocityGuess[2];
-        _bestError = double.PositiveInfinity;
+        var startVelocityX = _kickVelocityGuess[0];
+        var startVelocityY = _kickVelocityGuess[1];
+        var startVelocityZ = _kickVelocityGuess[2];
 
-        _initialGuessVector[0] = _kickVelocityGuess[0];
-        _initialGuessVector[1] = _kickVelocityGuess[1];
-        _initialGuessVector[2] = _kickVelocityGuess[2];
-
-        _initialPerturbation[0] = SimplexStep;
-        _initialPerturbation[1] = SimplexStep;
-        _initialPerturbation[2] = SimplexStep;
-
-        double resultX;
-        double resultY;
-        double resultZ;
+        var resultX = startVelocityX;
+        var resultY = startVelocityY;
+        var resultZ = startVelocityZ;
         try
         {
-            var result = _optimizer.FindMinimum(_objectiveFunction, _initialGuessVector, _initialPerturbation);
-            var point = result.MinimizingPoint;
-            resultX = point[0];
-            resultY = point[1];
-            resultZ = point[2];
-        }
-        catch (Exception) when (!double.IsPositiveInfinity(_bestError))
-        {
-            resultX = _bestVelocityX;
-            resultY = _bestVelocityY;
-            resultZ = _bestVelocityZ;
-        }
-        catch (Exception)
-        {
+            var result = _optimizer.Optimize(_kickVelocityGuess, out _);
+            if (!IsUsableResult(result))
+            {
+                _kickVelocityGuess[0] = startVelocityX;
+                _kickVelocityGuess[1] = startVelocityY;
+                _kickVelocityGuess[2] = startVelocityZ;
+            }
+
             resultX = _kickVelocityGuess[0];
             resultY = _kickVelocityGuess[1];
             resultZ = _kickVelocityGuess[2];
@@ -104,19 +83,12 @@ public class ChipKickNonlinearVelocityFitter
             nameof(ChipKickNonlinearVelocityFitter));
     }
 
-    private double EvaluateObjective(MathNet.Numerics.LinearAlgebra.Vector<double> point)
-    {
-        var error = _currentModel!.Value(point[0], point[1], point[2]);
-        if (error < _bestError)
-        {
-            _bestError = error;
-            _bestVelocityX = point[0];
-            _bestVelocityY = point[1];
-            _bestVelocityZ = point[2];
-        }
+    public void Dispose() => _optimizer.Dispose();
 
-        return error;
-    }
+    private static bool IsUsableResult(NloptResult result) =>
+        ((int)result > 0) || (result == NloptResult.ROUNDOFF_LIMITED);
+
+    private double EvaluateObjective(double[] point) => _currentModel!.Value(point[0], point[1], point[2]);
 
     private sealed class ChipTrajectoryErrorModel(
         List<RawBall> records,

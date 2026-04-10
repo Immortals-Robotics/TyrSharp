@@ -114,6 +114,12 @@ public partial class DirectKickEstimator : IKickEstimator
 
     public KickFitResult? GetFitResult() => _fitResult;
 
+    public void Dispose()
+    {
+        _solverFull.Dispose();
+        _solverRedirect.Dispose();
+    }
+
     public bool IsDone(List<FilteredRobot> mergedRobots, Timestamp timestamp)
     {
         if (_allRecords.Count == 0)

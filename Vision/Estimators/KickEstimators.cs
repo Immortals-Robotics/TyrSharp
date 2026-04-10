@@ -81,10 +81,12 @@ public partial class KickEstimators
         if ((_lastBestEstimator != null) && finishedEstimators.Contains(_lastBestEstimator))
         {
             // Keep the flat estimator set coherent: once the active one finishes, drop the whole group.
+            DisposeEstimators(_estimators);
             _estimators.Clear();
         }
         else
         {
+            DisposeEstimators(finishedEstimators);
             _estimators.RemoveAll(estimator => finishedEstimators.Contains(estimator));
         }
 
@@ -101,6 +103,7 @@ public partial class KickEstimators
 
     public void Reset()
     {
+        DisposeEstimators(_estimators);
         _estimators.Clear();
         _kickEventHistory.Clear();
         _filteredBallHistory.Clear();
@@ -147,12 +150,7 @@ public partial class KickEstimators
             flatEstimator = new DirectKickEstimator(kickEvent, _filteredBallHistory.ToList());
         }
 
-        _estimators.Clear();
-        _estimators.Add(flatEstimator);
-        if (chipEstimator != null)
-        {
-            _estimators.Add(chipEstimator);
-        }
+        ReplaceEstimators(flatEstimator, chipEstimator);
         _lastKickTimestamp = kickEvent.Timestamp;
     }
 
@@ -218,13 +216,42 @@ public partial class KickEstimators
 
         if ((timestamp - _lastKickTimestamp).Seconds > 0.5)
         {
-            _estimators.RemoveAll(estimator =>
-            {
-                var fit = estimator.GetFitResult();
-                return (fit != null) && (fit.AvgDistance > lastBest.AvgDistance);
-            });
+            var worseEstimators = _estimators
+                .Where(estimator =>
+                {
+                    var fit = estimator.GetFitResult();
+                    return (fit != null) && (fit.AvgDistance > lastBest.AvgDistance);
+                })
+                .ToList();
+            DisposeEstimators(worseEstimators);
+            _estimators.RemoveAll(estimator => worseEstimators.Contains(estimator));
         }
         return lastBest;
+    }
+
+    private void ReplaceEstimators(params IKickEstimator?[] nextEstimators)
+    {
+        var activeEstimators = nextEstimators
+            .Where(estimator => estimator != null)
+            .Cast<IKickEstimator>()
+            .Distinct()
+            .ToList();
+
+        var removedEstimators = _estimators
+            .Where(estimator => !activeEstimators.Contains(estimator))
+            .ToList();
+        DisposeEstimators(removedEstimators);
+
+        _estimators.Clear();
+        _estimators.AddRange(activeEstimators);
+    }
+
+    private static void DisposeEstimators(IEnumerable<IKickEstimator> estimators)
+    {
+        foreach (var estimator in estimators)
+        {
+            estimator.Dispose();
+        }
     }
 
     private static void EnqueueWithLimit<T>(Queue<T> queue, T item, int limit)

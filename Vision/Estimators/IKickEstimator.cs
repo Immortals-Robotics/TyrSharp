@@ -4,7 +4,7 @@ using Tyr.Vision.Data;
 
 namespace Tyr.Vision.Estimators;
 
-public interface IKickEstimator
+public interface IKickEstimator : IDisposable
 {
     void AddCamBall(RawBall record);
 

@@ -104,6 +104,7 @@ public partial class ChipKickEstimator : IKickEstimator
             if (((lastRecord.CaptureTimestamp - _kickTimestamp).Seconds > flightTime) && (_records.Count > 12))
             {
                 _doFirstHopFit = false;
+                _solverNonlinear?.Dispose();
                 _solverNonlinear = new ChipKickNonlinearVelocityFitter(
                     solvedKick.Position,
                     solvedKick.Timestamp,
@@ -117,6 +118,8 @@ public partial class ChipKickEstimator : IKickEstimator
     }
 
     public KickFitResult? GetFitResult() => _fitResult;
+
+    public void Dispose() => _solverNonlinear?.Dispose();
 
     public bool IsDone(List<FilteredRobot> mergedRobots, Timestamp timestamp)
     {

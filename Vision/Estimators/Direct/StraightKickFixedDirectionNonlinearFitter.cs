@@ -1,6 +1,5 @@
 using System.Numerics;
-using MathNet.Numerics.LinearAlgebra.Double;
-using MathNet.Numerics.Optimization;
+using NLoptNet;
 using Tyr.Common.Vision.Data;
 using Tyr.Vision.Data;
 using Tyr.Vision.Trajectory;
@@ -8,30 +7,25 @@ using Tyr.Vision.Util;
 
 namespace Tyr.Vision.Estimators.Direct;
 
-public class StraightKickFixedDirectionNonlinearFitter
+public class StraightKickFixedDirectionNonlinearFitter : IDisposable
 {
     private const double FunctionTolerance = 1e-3;
-    private const int MaxIterations = 100;
-    private const double SimplexStep = 10.0;
+    private const int MaxIterations = 200;
+    private const double SimplexStep = 100.0;
 
     private readonly double[] _initialGuess = new double[3];
-    private readonly NelderMeadSimplex _optimizer = new(FunctionTolerance, MaxIterations);
-    private readonly DenseVector _initialGuessVector = new(3);
-    private readonly DenseVector _initialPerturbation = new(3);
-    private readonly IObjectiveFunction _objectiveFunction;
+    private readonly NLoptSolver _optimizer;
 
     private StraightBallModel? _currentModel;
-    private double _bestX;
-    private double _bestY;
-    private double _bestVelocity;
-    private double _bestError;
 
     public StraightKickFixedDirectionNonlinearFitter(Vector2 kickPosition, float kickVelocity)
     {
         _initialGuess[0] = kickPosition.X;
         _initialGuess[1] = kickPosition.Y;
         _initialGuess[2] = kickVelocity;
-        _objectiveFunction = ObjectiveFunction.Value(EvaluateObjective);
+        _optimizer = new NLoptSolver(NLoptAlgorithm.LN_SBPLX, 3, FunctionTolerance, MaxIterations);
+        _optimizer.SetInitialStepSize1(SimplexStep);
+        _optimizer.SetMinObjective(EvaluateObjective);
     }
 
     public SolvedKick? Solve(List<RawBall> ballRecords)
@@ -50,19 +44,12 @@ public class StraightKickFixedDirectionNonlinearFitter
 
         var (_, direction) = estimated.Value;
         var model = new StraightBallModel(ballRecords, direction, tZero);
-        try
-        {
-            if (!TryOptimize(model, out var solvedX, out var solvedY, out var solvedVelocity))
-                return null;
-
-            _initialGuess[0] = solvedX;
-            _initialGuess[1] = solvedY;
-            _initialGuess[2] = solvedVelocity;
-        }
-        catch (Exception)
-        {
+        if (!TryOptimize(model, out var solvedX, out var solvedY, out var solvedVelocity))
             return null;
-        }
+
+        _initialGuess[0] = solvedX;
+        _initialGuess[1] = solvedY;
+        _initialGuess[2] = solvedVelocity;
 
         var kickPosition = new Vector2((float)_initialGuess[0], (float)_initialGuess[1]);
         var kickVelocity = direction * (float)_initialGuess[2];
@@ -78,33 +65,28 @@ public class StraightKickFixedDirectionNonlinearFitter
     private bool TryOptimize(StraightBallModel model, out double x, out double y, out double velocity)
     {
         _currentModel = model;
-        _bestX = _initialGuess[0];
-        _bestY = _initialGuess[1];
-        _bestVelocity = _initialGuess[2];
-        _bestError = double.PositiveInfinity;
+        var startX = _initialGuess[0];
+        var startY = _initialGuess[1];
+        var startVelocity = _initialGuess[2];
 
-        _initialGuessVector[0] = _initialGuess[0];
-        _initialGuessVector[1] = _initialGuess[1];
-        _initialGuessVector[2] = _initialGuess[2];
-
-        _initialPerturbation[0] = SimplexStep;
-        _initialPerturbation[1] = SimplexStep;
-        _initialPerturbation[2] = SimplexStep;
+        x = startX;
+        y = startY;
+        velocity = startVelocity;
 
         try
         {
-            var result = _optimizer.FindMinimum(_objectiveFunction, _initialGuessVector, _initialPerturbation);
-            var point = result.MinimizingPoint;
-            x = point[0];
-            y = point[1];
-            velocity = point[2];
-            return true;
-        }
-        catch (Exception) when (!double.IsPositiveInfinity(_bestError))
-        {
-            x = _bestX;
-            y = _bestY;
-            velocity = _bestVelocity;
+            var result = _optimizer.Optimize(_initialGuess, out _);
+            if (!IsUsableResult(result))
+            {
+                _initialGuess[0] = startX;
+                _initialGuess[1] = startY;
+                _initialGuess[2] = startVelocity;
+                return false;
+            }
+
+            x = _initialGuess[0];
+            y = _initialGuess[1];
+            velocity = _initialGuess[2];
             return true;
         }
         finally
@@ -113,19 +95,12 @@ public class StraightKickFixedDirectionNonlinearFitter
         }
     }
 
-    private double EvaluateObjective(MathNet.Numerics.LinearAlgebra.Vector<double> point)
-    {
-        var error = _currentModel!.Value(point[0], point[1], point[2]);
-        if (error < _bestError)
-        {
-            _bestError = error;
-            _bestX = point[0];
-            _bestY = point[1];
-            _bestVelocity = point[2];
-        }
+    public void Dispose() => _optimizer.Dispose();
 
-        return error;
-    }
+    private static bool IsUsableResult(NloptResult result) =>
+        ((int)result > 0) || (result == NloptResult.ROUNDOFF_LIMITED);
+
+    private double EvaluateObjective(double[] point) => _currentModel!.Value(point[0], point[1], point[2]);
 
     private sealed class StraightBallModel(List<RawBall> records, Vector2 kickDirection, Timestamp tZero)
     {

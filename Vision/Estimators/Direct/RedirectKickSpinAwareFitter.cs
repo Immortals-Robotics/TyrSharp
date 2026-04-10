@@ -1,6 +1,5 @@
 using System.Numerics;
-using MathNet.Numerics.LinearAlgebra.Double;
-using MathNet.Numerics.Optimization;
+using NLoptNet;
 using Tyr.Common.Math;
 using Tyr.Common.Vision.Data;
 using Tyr.Vision.Data;
@@ -9,7 +8,7 @@ using Tyr.Vision.Util;
 
 namespace Tyr.Vision.Estimators.Direct;
 
-public class RedirectKickSpinAwareFitter
+public class RedirectKickSpinAwareFitter : IDisposable
 {
     private const int KickDirMaxRecordsPerCam = 5;
     private const double SimplexStep = 100.0;
@@ -22,32 +21,25 @@ public class RedirectKickSpinAwareFitter
     private readonly Vector2 _initialSpin;
     private readonly Angle _kickingBotOrientation;
     private readonly double[] _initialGuess = new double[3];
-    private readonly NelderMeadSimplex _optimizer = new(FunctionTolerance, MaxIterations);
-    private readonly DenseVector _initialGuessVector = new(3);
-    private readonly DenseVector _initialPerturbation = new(3);
-    private readonly IObjectiveFunction _objectiveFunction;
+    private readonly NLoptSolver _optimizer;
 
     private Vector2? _fixedKickDirection;
     private bool _hasInitialGuess;
     private double _spinFactorState = BallParameters.RedirectSpinFactor;
     private RedirectBallModel? _currentModel;
-    private double _bestKickX;
-    private double _bestKickY;
-    private double _bestKickVelocity;
-    private double _bestError;
 
     public RedirectKickSpinAwareFitter(Angle kickingBotOrientation, FilteredBall ballStateAtKick)
     {
         _initialSpin = ballStateAtKick.State.SpinRadians;
         _kickingBotOrientation = kickingBotOrientation;
-        _objectiveFunction = ObjectiveFunction.Value(EvaluateObjective);
+        _optimizer = CreateOptimizer();
     }
 
     public RedirectKickSpinAwareFitter(Angle kickingBotOrientation)
     {
         _initialSpin = Vector2.Zero;
         _kickingBotOrientation = kickingBotOrientation;
-        _objectiveFunction = ObjectiveFunction.Value(EvaluateObjective);
+        _optimizer = CreateOptimizer();
     }
 
     public SolvedKick? Solve(List<RawBall> ballRecords)
@@ -168,67 +160,57 @@ public class RedirectKickSpinAwareFitter
     private NonlinearSolveResult SolveNonlinear(List<RawBall> ballRecords, Vector2 kickDirection, Vector2 kickSpin)
     {
         _currentModel = new RedirectBallModel(ballRecords, kickSpin, kickDirection, ballRecords[0].CaptureTimestamp);
-        _bestKickX = _initialGuess[0];
-        _bestKickY = _initialGuess[1];
-        _bestKickVelocity = _initialGuess[2];
-        _bestError = double.PositiveInfinity;
+        var startPositionX = _initialGuess[0];
+        var startPositionY = _initialGuess[1];
+        var startVelocity = _initialGuess[2];
 
-        _initialGuessVector[0] = _initialGuess[0];
-        _initialGuessVector[1] = _initialGuess[1];
-        _initialGuessVector[2] = _initialGuess[2];
-
-        _initialPerturbation[0] = SimplexStep;
-        _initialPerturbation[1] = SimplexStep;
-        _initialPerturbation[2] = SimplexStep;
-
-        double positionX;
-        double positionY;
-        double velocityMagnitude;
-        double error;
+        var positionX = startPositionX;
+        var positionY = startPositionY;
+        var velocityMagnitude = startVelocity;
+        double solvedError;
         try
         {
-            var result = _optimizer.FindMinimum(_objectiveFunction, _initialGuessVector, _initialPerturbation);
-            var point = result.MinimizingPoint;
-            positionX = point[0];
-            positionY = point[1];
-            velocityMagnitude = point[2];
-            error = _currentModel.Value(positionX, positionY, velocityMagnitude);
-        }
-        catch (Exception) when (!double.IsPositiveInfinity(_bestError))
-        {
-            positionX = _bestKickX;
-            positionY = _bestKickY;
-            velocityMagnitude = _bestKickVelocity;
-            error = _bestError;
+            var result = _optimizer.Optimize(_initialGuess, out var error);
+            if (!IsUsableResult(result))
+            {
+                _initialGuess[0] = startPositionX;
+                _initialGuess[1] = startPositionY;
+                _initialGuess[2] = startVelocity;
+            }
+
+            positionX = _initialGuess[0];
+            positionY = _initialGuess[1];
+            velocityMagnitude = _initialGuess[2];
+            solvedError = error ?? _currentModel!.Value(positionX, positionY, velocityMagnitude);
         }
         finally
         {
             _currentModel = null;
         }
 
-        _initialGuess[0] = positionX;
-        _initialGuess[1] = positionY;
-        _initialGuess[2] = velocityMagnitude;
-
         var kickPosition = new Vector2((float)positionX, (float)positionY);
         var kickVelocity = kickDirection * (float)velocityMagnitude;
 
-        return new NonlinearSolveResult(kickPosition, kickVelocity, error);
+        return new NonlinearSolveResult(
+            kickPosition,
+            kickVelocity,
+            solvedError);
     }
 
-    private double EvaluateObjective(MathNet.Numerics.LinearAlgebra.Vector<double> point)
+    public void Dispose() => _optimizer.Dispose();
+
+    private NLoptSolver CreateOptimizer()
     {
-        var error = _currentModel!.Value(point[0], point[1], point[2]);
-        if (error < _bestError)
-        {
-            _bestError = error;
-            _bestKickX = point[0];
-            _bestKickY = point[1];
-            _bestKickVelocity = point[2];
-        }
-
-        return error;
+        var optimizer = new NLoptSolver(NLoptAlgorithm.LN_SBPLX, 3, FunctionTolerance, MaxIterations);
+        optimizer.SetInitialStepSize1(SimplexStep);
+        optimizer.SetMinObjective(EvaluateObjective);
+        return optimizer;
     }
+
+    private static bool IsUsableResult(NloptResult result) =>
+        ((int)result > 0) || (result == NloptResult.ROUNDOFF_LIMITED);
+
+    private double EvaluateObjective(double[] point) => _currentModel!.Value(point[0], point[1], point[2]);
 
     private sealed record NonlinearSolveResult(Vector2 KickPosition, Vector2 KickVelocity, double Error);
 
