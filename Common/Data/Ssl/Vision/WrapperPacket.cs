@@ -27,4 +27,9 @@ public class WrapperPacket
     /// - Ball and robot models
     /// </summary>
     [ProtoMember(2)] public Geometry.Data? Geometry { get; set; }
+
+    /// <summary>
+    /// Identifies which software produced this packet.
+    /// </summary>
+    [ProtoMember(3)] public Source? Source { get; set; }
 }

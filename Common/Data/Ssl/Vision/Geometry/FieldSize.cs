@@ -9,24 +9,39 @@ namespace Tyr.Common.Data.Ssl.Vision.Geometry;
 [ProtoContract]
 public struct FieldSize
 {
-    // TODO: these width and height namings are here to ease the port of our old code
-    // they make no sense and should be changed to SSL's standard naming
-    
+    public FieldSize()
+    {
+    }
+
     /// <summary>
     /// Field length (distance between goal lines) in mm.
     /// </summary>
     [ProtoMember(1, IsRequired = true)]
-    public int FullWidth { get; set; }
+    public int FieldLength { get; set; }
 
-    public int Width => FullWidth / 2;
+    // Compatibility alias for the old Tyr naming.
+    public int FullWidth
+    {
+        get => FieldLength;
+        set => FieldLength = value;
+    }
+
+    public int Width => FieldLength / 2;
 
     /// <summary>
     /// Field width (distance between touch lines) in mm.
     /// </summary>
     [ProtoMember(2, IsRequired = true)]
-    public int FullHeight { get; set; }
+    public int FieldWidth { get; set; }
 
-    public int Height => FullHeight / 2;
+    // Compatibility alias for the old Tyr naming.
+    public int FullHeight
+    {
+        get => FieldWidth;
+        set => FieldWidth = value;
+    }
+
+    public int Height => FieldWidth / 2;
 
     /// <summary>
     /// Boundary width (distance from touch/goal line centers to boundary walls) in mm.
@@ -38,13 +53,14 @@ public struct FieldSize
     /// Rectangle representing the field boundaries without the boundary width.
     /// </summary>
     public Rectangle Rectangle =>
-        Rectangle.FromCenterAndSize(System.Numerics.Vector2.Zero, FullWidth, FullHeight);
+        Rectangle.FromCenterAndSize(System.Numerics.Vector2.Zero, FieldLength, FieldWidth);
 
     /// <summary>
     /// Rectangle representing the field boundaries including the boundary width.
     /// </summary>
     public Rectangle RectangleWithBoundary => Rectangle.FromCenterAndSize(System.Numerics.Vector2.Zero,
-        FullWidth + BoundaryWidth, FullHeight + BoundaryWidth);
+        FieldLength + 2 * (BoundaryWidthGoalLine ?? BoundaryWidth),
+        FieldWidth + 2 * BoundaryWidth);
 
     /// <summary>
     /// Goal width (distance between inner edges of goal posts) in mm.
@@ -62,13 +78,13 @@ public struct FieldSize
     /// Generated line segments based on the other parameters.
     /// </summary>
     [ProtoMember(6)]
-    public List<FieldLineSegment> Lines { get; set; }
+    public List<FieldLineSegment> Lines { get; set; } = [];
 
     /// <summary>
     /// Generated circular arcs based on the other parameters.
     /// </summary>
     [ProtoMember(7)]
-    public List<FieldCircularArc> Arcs { get; set; }
+    public List<FieldCircularArc> Arcs { get; set; } = [];
 
     /// <summary>
     /// Depth of the penalty/defense area (measured between line centers) in mm.
@@ -118,19 +134,39 @@ public struct FieldSize
     [ProtoMember(14)]
     public float? BallRadius { get; set; }
 
-    // TODO: rename back to MaxRobotRadius once the port is done
     /// <summary>
     /// Max allowed robot radius in mm (note that this is a float type to represent sub-mm precision).
     /// </summary>
     [ProtoMember(15)]
-    public float? RobotRadius { get; set; }
+    public float? MaxRobotRadius { get; set; }
+
+    // Compatibility alias for the old Tyr naming.
+    public float? RobotRadius
+    {
+        get => MaxRobotRadius;
+        set => MaxRobotRadius = value;
+    }
+
+    /// <summary>
+    /// Boundary width at the goal lines (distance from goal line centers to boundary walls) in mm.
+    /// </summary>
+    [ProtoMember(16)]
+    public int? BoundaryWidthGoalLine { get; set; }
+
+    /// <summary>
+    /// Width of the goal substitution area in mm.
+    /// </summary>
+    [ProtoMember(17)]
+    public int? GoalSubstitutionAreaWidth { get; set; }
 
     public static readonly FieldSize DivisionA = new()
     {
-        FullWidth = 12000,
-        FullHeight = 9000,
+        FieldLength = 12000,
+        FieldWidth = 9000,
         GoalWidth = 1800,
-        GoalDepth = 300,
+        GoalDepth = 180,
+        BoundaryWidth = 300,
+        BoundaryWidthGoalLine = 600,
         PenaltyAreaDepth = 1800,
         PenaltyAreaWidth = 3600,
         CenterCircleRadius = 500,
@@ -138,7 +174,8 @@ public struct FieldSize
         GoalCenterToPenaltyMark = 8000,
         GoalHeight = 155,
         BallRadius = 21.5f,
-        RobotRadius = 90f,
+        MaxRobotRadius = 90f,
+        GoalSubstitutionAreaWidth = 300,
         // TODO: add lines / arcs
     };
 }
