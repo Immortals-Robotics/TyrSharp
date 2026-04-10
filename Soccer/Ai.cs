@@ -134,6 +134,7 @@ public partial class Ai
     public void Process()
     {
         Log.ZLogDebug($"fps: {Context.Timer.FpsSmooth}");
+        Plot.Plot("fps", Context.Timer.Fps);
 
         foreach (var robot in Context.OwnRobots)
         {

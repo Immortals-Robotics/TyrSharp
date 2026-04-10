@@ -65,6 +65,7 @@ public sealed partial class Runner : IDisposable
         _vision.Process(_detectionSubscriber.All(), _calibrationSubscriber.All());
 
         Log.ZLogDebug($"fps: {_runner.Timer.Fps}");
+        Plot.Plot("fps", _runner.Timer.Fps);
 
         return true;
     }
