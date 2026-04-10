@@ -100,7 +100,7 @@ public sealed partial class FieldView : IDisposable
             {
                 if (!_filter.IsEnabled(module)) continue;
 
-                var frame = DebugDbUsageProfiler.Measure("FieldView.GetFrameAt", () => _debugDb.GetFrameAt(module, time.Time));
+                var frame = DebugDbUsageProfiler.Measure("FieldView.GetFrameAt", () => time.GetVisibleFrame(_debugDb, module));
                 if (!frame.HasValue) continue;
 
                 _drawBuffer.Clear();

@@ -127,9 +127,10 @@ public sealed partial class Runner : IDisposable
         _configs.Draw();
 
         _control.Draw();
-        _log.Draw(_control.Current);
-        _field.Draw(_control.Current);
-        _plots.Draw(_control.Current);
+        var currentPlayback = _control.Current;
+        _log.Draw(currentPlayback);
+        _field.Draw(currentPlayback);
+        _plots.Draw(currentPlayback);
         _filter.Draw();
         DebugDbUsageProfiler.EndFrame();
 

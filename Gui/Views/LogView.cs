@@ -59,7 +59,7 @@ public sealed partial class LogView(DebugFilter filter, IDebugDb debugDb) : IDis
                 {
                     if (!filter.IsEnabled(module)) continue;
 
-                    var frame = DebugDbUsageProfiler.Measure("LogView.GetFrameAt", () => debugDb.GetFrameAt(module, time.Time));
+                    var frame = DebugDbUsageProfiler.Measure("LogView.GetFrameAt", () => time.GetVisibleFrame(debugDb, module));
                     if (!frame.HasValue) continue;
 
                     foreach (var log in DebugDbUsageProfiler.MeasureEnumerable(
