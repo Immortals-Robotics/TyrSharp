@@ -74,10 +74,10 @@ public partial class ChipKickEstimator : IKickEstimator
 
     public KickEstimatorType Type => KickEstimatorType.Chip;
 
-    public void AddCamBall(RawBall record)
+    public void AddRawBall(RawBall rawBall)
     {
-        _records.Add(record);
-        _allRecords.Add(record);
+        _records.Add(rawBall);
+        _allRecords.Add(rawBall);
 
         if (_records.Count < MinRecords)
         {

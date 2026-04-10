@@ -8,7 +8,7 @@ namespace Tyr.Tests.Vision.Estimators.Chip;
 public class ChipKickEstimatorTests
 {
     [Fact]
-    public void AddCamBall_DoesNotFitBeforeMinimumRecordCount()
+    public void AddRawBall_DoesNotFitBeforeMinimumRecordCount()
     {
         var cameraCalibrations = ChipTestHelper.CreateCalibrations((1, new Vector3(1200f, -1800f, 2600f)));
         var kickPosition = new Vector2(100f, -40f);
@@ -30,14 +30,14 @@ public class ChipKickEstimatorTests
 
         Assert.Null(estimator.GetFitResult());
 
-        estimator.AddCamBall(records[5]);
-        estimator.AddCamBall(records[6]);
+        estimator.AddRawBall(records[5]);
+        estimator.AddRawBall(records[6]);
 
         Assert.Null(estimator.GetFitResult());
     }
 
     [Fact]
-    public void AddCamBall_SwitchesFromLinearToNonlinearAfterFirstHop()
+    public void AddRawBall_SwitchesFromLinearToNonlinearAfterFirstHop()
     {
         var cameraCalibrations = ChipTestHelper.CreateCalibrations((1, new Vector3(1200f, -1800f, 2600f)));
         var kickPosition = new Vector2(100f, -40f);
@@ -58,13 +58,13 @@ public class ChipKickEstimatorTests
                 Vector2.Normalize(kickVelocity.Xy()),
                 kickTimestamp: Timestamp.FromSeconds(2.0)));
 
-        estimator.AddCamBall(records[7]);
+        estimator.AddRawBall(records[7]);
         Assert.NotNull(estimator.GetFitResult());
         Assert.Equal(nameof(ChipKickLinearTimeOffsetFitter), estimator.GetFitResult()!.SolverName);
 
         for (var i = 8; i < records.Count; i++)
         {
-            estimator.AddCamBall(records[i]);
+            estimator.AddRawBall(records[i]);
         }
 
         Assert.NotNull(estimator.GetFitResult());

@@ -103,10 +103,10 @@ public partial class DirectKickEstimator : IKickEstimator
         }
     }
 
-    public void AddCamBall(RawBall newRecord)
+    public void AddRawBall(RawBall rawBall)
     {
-        _records.Add(newRecord);
-        _allRecords.Add(newRecord);
+        _records.Add(rawBall);
+        _allRecords.Add(rawBall);
 
         PruneRecords();
         RunSolvers();

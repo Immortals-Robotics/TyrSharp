@@ -6,7 +6,7 @@ namespace Tyr.Vision.Estimators;
 
 public interface IKickEstimator : IDisposable
 {
-    void AddCamBall(RawBall record);
+    void AddRawBall(RawBall record);
 
     KickFitResult? GetFitResult();
 

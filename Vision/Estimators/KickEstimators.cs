@@ -66,11 +66,11 @@ public partial class KickEstimators
     {
         EnqueueWithLimit(_filteredBallHistory, lastFilteredBall, FilteredBallHistorySize);
 
-        if (ball?.LatestRawBall is { } latestBall)
+        if (ball?.LatestRawBall is { } latestRawBall)
         {
             foreach (var estimator in _estimators)
             {
-                estimator.AddCamBall(latestBall);
+                estimator.AddRawBall(latestRawBall);
             }
         }
 
