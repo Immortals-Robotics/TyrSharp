@@ -27,7 +27,7 @@ public sealed partial class Runner : IDisposable
     private readonly RunnerSync _runner;
 
     // backend
-    private readonly GlfwWindow _window;
+    private readonly SdlWindow _window;
     private readonly ImGuiController _imgui;
     private readonly FontRegistry _fonts;
 
@@ -43,7 +43,7 @@ public sealed partial class Runner : IDisposable
     public Runner(IDebugDb debugDb)
     {
         // init the backend
-        _window = new GlfwWindow("Tyr",
+        _window = new SdlWindow("Tyr",
             WindowWidth, WindowHeight,
             WindowPosX, WindowPosY,
             WindowMaximized);

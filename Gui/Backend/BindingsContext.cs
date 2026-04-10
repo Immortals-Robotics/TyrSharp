@@ -1,45 +1,28 @@
-﻿using Hexa.NET.GLFW;
+using Hexa.NET.SDL3;
 
 namespace Tyr.Gui.Backend;
 
-internal unsafe class BindingsContext(GLFWwindowPtr window) : HexaGen.Runtime.IGLContext
+internal unsafe class BindingsContext(SDLWindowPtr window, SDLGLContext context) : HexaGen.Runtime.IGLContext
 {
     public nint Handle => (nint)window.Handle;
 
-    public bool IsCurrent => GLFW.GetCurrentContext() == window;
+    public bool IsCurrent => SDL.GLGetCurrentContext() == context;
 
-    public void Dispose()
-    {
-    }
+    public void Dispose() { }
 
-    public nint GetProcAddress(string procName)
-    {
-        return (nint)GLFW.GetProcAddress(procName);
-    }
+    public nint GetProcAddress(string procName) => (nint)SDL.GLGetProcAddress(procName);
 
-    public bool IsExtensionSupported(string extensionName)
-    {
-        return GLFW.ExtensionSupported(extensionName) != 0;
-    }
+    public bool IsExtensionSupported(string extensionName) => SDL.GLExtensionSupported(extensionName);
 
-    public void MakeCurrent()
-    {
-        GLFW.MakeContextCurrent(window);
-    }
+    public void MakeCurrent() => SDL.GLMakeCurrent(window, context);
 
-    public void SwapBuffers()
-    {
-        GLFW.SwapBuffers(window);
-    }
+    public void SwapBuffers() => SDL.GLSwapWindow(window);
 
-    public void SwapInterval(int interval)
-    {
-        GLFW.SwapInterval(interval);
-    }
+    public void SwapInterval(int interval) => SDL.GLSetSwapInterval(interval);
 
     public bool TryGetProcAddress(string procName, out nint procAddress)
     {
-        procAddress = (nint)GLFW.GetProcAddress(procName);
+        procAddress = (nint)SDL.GLGetProcAddress(procName);
         return procAddress != 0;
     }
 }

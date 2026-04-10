@@ -1,18 +1,17 @@
-﻿using System.Runtime.CompilerServices;
 using Hexa.NET.ImGui;
-using Hexa.NET.ImGui.Backends.GLFW;
 using Hexa.NET.ImGui.Backends.OpenGL3;
+using Hexa.NET.ImGui.Backends.SDL3;
 using Hexa.NET.ImPlot;
 
 namespace Tyr.Gui.Backend;
 
-internal class ImGuiController : IDisposable
+internal unsafe class ImGuiController : IDisposable
 {
-    private readonly GlfwWindow _window;
+    private readonly SdlWindow _window;
     private readonly ImGuiContextPtr _imguiCtx;
-    private ImPlotContextPtr _plotCtx;
+    private readonly ImPlotContextPtr _plotCtx;
 
-    public ImGuiController(GlfwWindow window)
+    public ImGuiController(SdlWindow window)
     {
         _window = window;
         _imguiCtx = ImGui.CreateContext();
@@ -24,12 +23,11 @@ internal class ImGuiController : IDisposable
         ImPlot.SetCurrentContext(_plotCtx);
         ImPlot.StyleColorsDark(ImPlot.GetStyle());
 
-        // Setup ImGui config.
         var io = ImGui.GetIO();
-        io.ConfigFlags |= ImGuiConfigFlags.NavEnableKeyboard; // Enable Keyboard Controls
-        io.ConfigFlags |= ImGuiConfigFlags.NavEnableGamepad; // Enable Gamepad Controls
-        io.ConfigFlags |= ImGuiConfigFlags.DockingEnable; // Enable Docking
-        io.ConfigFlags |= ImGuiConfigFlags.ViewportsEnable; // Enable Multi-Viewport / Platform Windows
+        io.ConfigFlags |= ImGuiConfigFlags.NavEnableKeyboard;
+        io.ConfigFlags |= ImGuiConfigFlags.NavEnableGamepad;
+        io.ConfigFlags |= ImGuiConfigFlags.DockingEnable;
+        io.ConfigFlags |= ImGuiConfigFlags.ViewportsEnable;
         io.ConfigViewportsNoAutoMerge = false;
         io.ConfigViewportsNoTaskBarIcon = false;
     }
@@ -40,24 +38,31 @@ internal class ImGuiController : IDisposable
         ImPlot.SetImGuiContext(_imguiCtx);
         ImPlot.SetCurrentContext(_plotCtx);
 
-        ImGuiImplGLFW.SetCurrentContext(_imguiCtx);
-        if (!ImGuiImplGLFW.InitForOpenGL(
-                Unsafe.BitCast<Hexa.NET.GLFW.GLFWwindowPtr, GLFWwindowPtr>(_window.Handle),
-                true))
+        ImGuiImplSDL3.SetCurrentContext(_imguiCtx);
+        if (!ImGuiImplSDL3.InitForOpenGL(
+                new SDLWindowPtr((SDLWindow*)_window.Handle.Handle),
+                (void*)_window.GlContext.Handle))
         {
-            throw new Exception("Failed Init GLFW ImGui");
+            throw new Exception("Failed to init SDL3 ImGui backend");
         }
 
         ImGuiImplOpenGL3.SetCurrentContext(_imguiCtx);
-        if (!ImGuiImplOpenGL3.Init("#version 150"))
-            throw new Exception("Failed Init GL3 ImGui");
+        if (!ImGuiImplOpenGL3.Init((byte*)null))
+            throw new Exception("Failed to init OpenGL3 ImGui backend");
     }
 
     public void NewFrame()
     {
         _window.MakeContextCurrent();
+
+        foreach (var e in _window.Events)
+        {
+            var evt = e;
+            ImGuiImplSDL3.ProcessEvent((SDLEvent*)&evt);
+        }
+
         ImGuiImplOpenGL3.NewFrame();
-        ImGuiImplGLFW.NewFrame();
+        ImGuiImplSDL3.NewFrame();
         ImGui.NewFrame();
 
         ImGui.DockSpaceOverViewport();
@@ -80,11 +85,10 @@ internal class ImGuiController : IDisposable
     public void Dispose()
     {
         ImGuiImplOpenGL3.Shutdown();
-        ImGuiImplGLFW.Shutdown();
+        ImGuiImplSDL3.Shutdown();
 
         ImPlot.SetCurrentContext(null);
         ImPlot.SetImGuiContext(null);
-
         ImPlot.DestroyContext(_plotCtx);
 
         ImGui.SetCurrentContext(null);
