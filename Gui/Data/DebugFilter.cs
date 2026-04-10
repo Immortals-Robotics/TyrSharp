@@ -28,47 +28,80 @@ public sealed partial class DebugFilter(Tyr.Common.Debug.Db.IDebugDb debugDb) : 
         string? file = null, string? member = null, int? line = null)
     {
         _stringBuilder.Clear();
+        AppendNormalizedPathPart(module);
 
-        if (layer == null)
-            _stringBuilder.AppendFormat("{0}", module);
-        else if (file == null)
-            _stringBuilder.AppendFormat("{0}/{1}", module, layer);
-        else if (member == null)
-            _stringBuilder.AppendFormat("{0}/{1}/{2}", module, layer, file);
-        else if (line == null)
-            _stringBuilder.AppendFormat("{0}/{1}/{2}/{3}", module, layer, file, member);
-        else
-            _stringBuilder.AppendFormat("{0}/{1}/{2}/{3}/{4}", module, layer, file, member, line);
+        if (layer != null)
+        {
+            _stringBuilder.Append('/');
+            AppendNormalizedPathPart(layer);
+        }
 
-        _stringBuilder.Replace('.', '_');
+        if (file != null)
+        {
+            _stringBuilder.Append('/');
+            AppendNormalizedPathPart(file);
+        }
+
+        if (member != null)
+        {
+            _stringBuilder.Append('/');
+            AppendNormalizedPathPart(member);
+        }
+
+        if (line != null)
+        {
+            _stringBuilder.Append('/');
+            _stringBuilder.Append(line.Value);
+        }
+
         return _stringBuilder.AsSpan();
     }
-
     public bool IsEnabled(Meta meta) =>
         IsEnabled(meta.Module, meta.Layer, meta.File, meta.Member, meta.Line);
 
     public bool IsEnabled(string module, string? layer = null,
         string? file = null, string? member = null, int? line = null)
     {
-        if (!IsEnabledInternal(MakePath(module))) return false;
+        _stringBuilder.Clear();
+        AppendNormalizedPathPart(module);
+        if (!IsEnabledInternal(_stringBuilder.AsSpan())) return false;
 
         if (layer == null) return true;
-        if (!IsEnabledInternal(MakePath(module, layer))) return false;
+        _stringBuilder.Append('/');
+        AppendNormalizedPathPart(layer);
+        if (!IsEnabledInternal(_stringBuilder.AsSpan())) return false;
 
         if (file == null) return true;
-        if (!IsEnabledInternal(MakePath(module, layer, file))) return false;
+        _stringBuilder.Append('/');
+        AppendNormalizedPathPart(file);
+        if (!IsEnabledInternal(_stringBuilder.AsSpan())) return false;
 
         if (member == null) return true;
-        if (!IsEnabledInternal(MakePath(module, layer, file, member))) return false;
+        _stringBuilder.Append('/');
+        AppendNormalizedPathPart(member);
+        if (!IsEnabledInternal(_stringBuilder.AsSpan())) return false;
 
         if (line == null) return true;
-        if (!IsEnabledInternal(MakePath(module, layer, file, member, line.Value))) return false;
+        _stringBuilder.Append('/');
+        _stringBuilder.Append(line.Value);
+        if (!IsEnabledInternal(_stringBuilder.AsSpan())) return false;
 
         return true;
 
         bool IsEnabledInternal(StrSpan path) => !_lookup.TryGetValue(path, out var enabled) || enabled;
     }
 
+    private void AppendNormalizedPathPart(string value)
+    {
+        if (!value.Contains('.'))
+        {
+            _stringBuilder.Append(value);
+            return;
+        }
+
+        foreach (var c in value)
+            _stringBuilder.Append(c == '.' ? '_' : c);
+    }
     public void Draw()
     {
         if (ImGui.Begin($"{IconFonts.FontAwesome6.Filter} Debug Filter"))
