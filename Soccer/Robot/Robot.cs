@@ -49,6 +49,7 @@ public partial class Robot
     public Angle TargetAngle { get; set; }
 
     public float DynamicBallObstacleRadius { get; set; }
+    public bool IgnoreRefereeBallObstacle { get; set; }
 
     public PhysicalStatus PhysicalStatus => PhysicalStatus.StatusArray[Id];
 
@@ -61,6 +62,7 @@ public partial class Robot
         _dribbler = 0f;
         Halted = false;
         Navigated = false;
+        IgnoreRefereeBallObstacle = false;
     }
 
     public void Halt()

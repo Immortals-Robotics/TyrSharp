@@ -219,6 +219,7 @@ internal sealed class ManualControlState(TeamColor team)
                 return true;
             }
 
+            robot.IgnoreRefereeBallObstacle = RequiresBallAccess(_action);
             ExecuteSelected(robot);
             return true;
         }
@@ -347,5 +348,16 @@ internal sealed class ManualControlState(TeamColor team)
                 robot.Halt();
                 return;
         }
+    }
+
+    private static bool RequiresBallAccess(ManualSkillAction action)
+    {
+        return action is
+            ManualSkillAction.KickBall or
+            ManualSkillAction.WaitForBall or
+            ManualSkillAction.InterceptBall or
+            ManualSkillAction.OneTouch or
+            ManualSkillAction.TurnAndShoot or
+            ManualSkillAction.DribbleToDirection;
     }
 }
