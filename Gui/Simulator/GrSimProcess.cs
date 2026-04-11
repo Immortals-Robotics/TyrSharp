@@ -24,6 +24,7 @@ internal sealed class GrSimProcess : IDisposable
 
     private Process? _process;
     private CancellationTokenSource? _downloadCts;
+    private DateTime _nextExternalScan = DateTime.MinValue;
 
     private static readonly HttpClient Http = new()
     {
@@ -42,6 +43,7 @@ internal sealed class GrSimProcess : IDisposable
     {
         Directory.CreateDirectory(CacheDir);
         ScanCache();
+        AttachExternalProcess();
     }
 
     // ── cache ────────────────────────────────────────────────────────────────
@@ -68,6 +70,55 @@ internal sealed class GrSimProcess : IDisposable
         // macOS / Linux tar.gz extracts a binary named grSim (no extension)
         return Directory.GetFiles(CacheDir, "grSim", SearchOption.AllDirectories).FirstOrDefault()
             ?? Directory.GetFiles(CacheDir, "grsim", SearchOption.AllDirectories).FirstOrDefault();
+    }
+
+    // ── external process detection ───────────────────────────────────────────
+
+    /// <summary>
+    /// Called every frame from the view. Re-scans for a running grSim process
+    /// when we're not tracking one, throttled to once per second.
+    /// </summary>
+    public void Refresh()
+    {
+        if (_status is Status.Running or Status.Downloading) return;
+        if (DateTime.UtcNow < _nextExternalScan) return;
+        _nextExternalScan = DateTime.UtcNow.AddSeconds(1);
+        AttachExternalProcess();
+    }
+
+    private void AttachExternalProcess()
+    {
+        // Process.GetProcessesByName is case-insensitive on Windows; on Linux we try both casings.
+        var found = Process.GetProcessesByName("grSim").FirstOrDefault()
+                 ?? Process.GetProcessesByName("grsim").FirstOrDefault();
+
+        if (found == null) return;
+
+        _process?.Dispose();
+        _process = found;
+
+        try
+        {
+            _process.EnableRaisingEvents = true;
+            _process.Exited += (_, _) =>
+            {
+                if (_status == Status.Running)
+                {
+                    _statusMessage = "Process exited";
+                    _status = Status.Exited;
+                }
+            };
+        }
+        catch
+        {
+            // Process may have already exited between GetProcessesByName and here
+            _process.Dispose();
+            _process = null;
+            return;
+        }
+
+        _statusMessage = $"PID {_process.Id} (external)";
+        _status = Status.Running;
     }
 
     // ── download ─────────────────────────────────────────────────────────────
@@ -265,7 +316,9 @@ internal sealed class GrSimProcess : IDisposable
     {
         _downloadCts?.Cancel();
         _downloadCts?.Dispose();
-        Stop();
+        // Detach without killing — grSim should outlive our process
+        _process?.Dispose();
+        _process = null;
     }
 }
 

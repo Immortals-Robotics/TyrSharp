@@ -18,6 +18,8 @@ public sealed class SimulatorView : IDisposable
 
     public void Draw()
     {
+        _process.Refresh();
+
         if (!ImGui.Begin(WindowTitle))
         {
             ImGui.End();
