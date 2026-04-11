@@ -30,7 +30,7 @@ public sealed class TurnAndShoot : ISkill
             : ballPos;
 
         var toBallAngle = (effectiveBallPos - robot.Position).ToAngle();
-        var angleToTarget = (shootAngle - toBallAngle).Deg;
+        var angleToTarget = (shootAngle - toBallAngle).DegNormalized;
         var angleError = MathF.Abs(angleToTarget);
 
         if (angleError < 8f)

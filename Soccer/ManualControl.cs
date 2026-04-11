@@ -432,8 +432,8 @@ internal sealed class ManualControlState(TeamColor team)
         return _action switch
         {
             ManualSkillAction.KickBall or
-            ManualSkillAction.OneTouch or
-            ManualSkillAction.TurnAndShoot => _shotTargetMode == ManualShotTargetMode.TargetPoint,
+                ManualSkillAction.OneTouch or
+                ManualSkillAction.TurnAndShoot => _shotTargetMode == ManualShotTargetMode.TargetPoint,
             _ => false
         };
     }
@@ -442,7 +442,7 @@ internal sealed class ManualControlState(TeamColor team)
     {
         if (_shotMode == ManualShotMode.Kick)
         {
-            kick = _kickSpeedMps * 1000f;
+            kick = _kickSpeedMps;
             chip = 0f;
             return;
         }

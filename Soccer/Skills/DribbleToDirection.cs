@@ -26,7 +26,7 @@ public sealed class DribbleToDirection : ISkill
             : ballPos;
 
         var toBallAngle = (effectiveBallPos - robot.Position).ToAngle();
-        var angleToTarget = (targetAngle - toBallAngle).Deg;
+        var angleToTarget = (targetAngle - toBallAngle).DegNormalized;
         var heading = CalculateSteeringHeading(toBallAngle, angleToTarget);
         var target = CalculateWrapTarget(effectiveBallPos, heading, angleToTarget);
 
