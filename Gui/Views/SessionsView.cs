@@ -3,23 +3,30 @@ using Hexa.NET.ImGui;
 using NativeFileDialogSharp;
 using Tyr.Gui.Backend;
 using Tyr.Gui.Data;
+using Color = Tyr.Common.Debug.Drawing.Color;
 
 namespace Tyr.Gui.Views;
 
 public sealed class SessionsView(PlaybackSessionManager playbackSessions)
 {
     private readonly HashSet<string> _selectedMetadataPaths = [];
-    private string _renameBuffer = string.Empty;
     private string _mergeLabelBuffer = string.Empty;
-    private string? _renameTargetMetadataPath;
+    private string _renameBuffer = string.Empty;
+    private PlaybackSessionInfo? _renameSession;
 
     public bool IsOpen { get; set; }
     public int SourceRevision => playbackSessions.SourceRevision;
     public bool SourceIsLive => playbackSessions.UsingLive;
+    public string CurrentSourceLabel => playbackSessions.CurrentSourceLabel;
 
     public void Open()
     {
         IsOpen = true;
+    }
+
+    public void SwitchToLive()
+    {
+        playbackSessions.SwitchToLive();
     }
 
     public void Draw()
@@ -46,17 +53,6 @@ public sealed class SessionsView(PlaybackSessionManager playbackSessions)
 
     private void DrawToolbar()
     {
-        var wasUsingLive = playbackSessions.UsingLive;
-        ImGui.TextDisabled($"Current Source: {playbackSessions.CurrentSourceLabel}");
-        ImGui.SameLine();
-        if (wasUsingLive)
-            ImGui.BeginDisabled();
-        if (ImGui.Button($"{IconFonts.FontAwesome6.SatelliteDish} Use Live"))
-            playbackSessions.SwitchToLive();
-        if (wasUsingLive)
-            ImGui.EndDisabled();
-
-        ImGui.SameLine();
         if (ImGui.Button($"{IconFonts.FontAwesome6.Rotate} Refresh"))
             playbackSessions.RefreshSessions();
 
@@ -65,58 +61,16 @@ public sealed class SessionsView(PlaybackSessionManager playbackSessions)
             ImportArchive();
 
         var selectedSessions = GetSelectedSessions();
-        var singleSelection = selectedSessions.Count == 1 ? selectedSessions[0] : null;
 
         ImGui.SameLine();
-        if (selectedSessions.Count == 0)
-            ImGui.BeginDisabled();
-        if (ImGui.Button($"{IconFonts.FontAwesome6.FileExport} Export"))
-            ExportSelectedSessions(selectedSessions);
-        if (selectedSessions.Count == 0)
-            ImGui.EndDisabled();
-
-        ImGui.SameLine();
-        if (singleSelection is null)
-            ImGui.BeginDisabled();
-        if (ImGui.Button($"{IconFonts.FontAwesome6.FolderOpen} Reveal"))
-            playbackSessions.RevealInExplorer(singleSelection!);
-        if (singleSelection is null)
-            ImGui.EndDisabled();
-
-        ImGui.SameLine();
-        if (singleSelection is null)
-            ImGui.BeginDisabled();
-        ImGui.SetNextItemWidth(220f);
-        if (singleSelection is not null && _renameTargetMetadataPath != singleSelection.MetadataPath)
+        if (selectedSessions.Count >= 2)
         {
-            _renameTargetMetadataPath = singleSelection.MetadataPath;
-            _renameBuffer = singleSelection.Metadata.CaptureLabel ?? string.Empty;
+            ImGui.SetNextItemWidth(200f);
+            ImGui.InputTextWithHint("##merge-label", "Shared label", ref _mergeLabelBuffer, 256);
+            ImGui.SameLine();
+            if (ImGui.Button($"{IconFonts.FontAwesome6.ObjectGroup} Merge Label"))
+                MergeLabel(selectedSessions, _mergeLabelBuffer);
         }
-        ImGui.InputTextWithHint("##rename", "Friendly name", ref _renameBuffer, 256);
-        ImGui.SameLine();
-        if (ImGui.Button($"{IconFonts.FontAwesome6.PenToSquare} Rename"))
-            Rename(singleSelection!, _renameBuffer);
-        if (singleSelection is null)
-            ImGui.EndDisabled();
-
-        ImGui.SameLine();
-        if (selectedSessions.Count < 2)
-            ImGui.BeginDisabled();
-        ImGui.SetNextItemWidth(200f);
-        ImGui.InputTextWithHint("##merge-label", "Shared label", ref _mergeLabelBuffer, 256);
-        ImGui.SameLine();
-        if (ImGui.Button($"{IconFonts.FontAwesome6.ObjectGroup} Merge Label"))
-            MergeLabel(selectedSessions, _mergeLabelBuffer);
-        if (selectedSessions.Count < 2)
-            ImGui.EndDisabled();
-
-        ImGui.SameLine();
-        if (selectedSessions.Count == 0)
-            ImGui.BeginDisabled();
-        if (ImGui.Button($"{IconFonts.FontAwesome6.Trash} Delete"))
-            DeleteSelectedSessions(selectedSessions);
-        if (selectedSessions.Count == 0)
-            ImGui.EndDisabled();
     }
 
     private void DrawSessionTable()
@@ -127,33 +81,54 @@ public sealed class SessionsView(PlaybackSessionManager playbackSessions)
         if (!ImGui.BeginTable("sessions", 7, flags, new Vector2(0f, -1f)))
             return;
 
-        ImGui.TableSetupColumn("Sel", ImGuiTableColumnFlags.WidthFixed, 42f);
-        ImGui.TableSetupColumn("Name", ImGuiTableColumnFlags.WidthStretch, 2f);
+        ImGui.TableSetupColumn("##sel", ImGuiTableColumnFlags.WidthFixed, 42f);
+        ImGui.TableSetupColumn("##open", ImGuiTableColumnFlags.WidthFixed, 64f);
+        ImGui.TableSetupColumn("Name", ImGuiTableColumnFlags.WidthStretch, 2.2f);
         ImGui.TableSetupColumn("Created", ImGuiTableColumnFlags.WidthFixed, 160f);
         ImGui.TableSetupColumn("Range", ImGuiTableColumnFlags.WidthFixed, 130f);
-        ImGui.TableSetupColumn("Source", ImGuiTableColumnFlags.WidthFixed, 90f);
         ImGui.TableSetupColumn("Machine", ImGuiTableColumnFlags.WidthFixed, 120f);
         ImGui.TableSetupColumn("Path", ImGuiTableColumnFlags.WidthStretch, 2f);
         ImGui.TableHeadersRow();
 
         foreach (var session in playbackSessions.Sessions)
         {
+            ImGui.PushID(session.MetadataPath);
             ImGui.TableNextRow();
 
             ImGui.TableNextColumn();
             var selected = _selectedMetadataPaths.Contains(session.MetadataPath);
             if (ImGui.Checkbox($"##select-{session.MetadataPath}", ref selected))
             {
-                if (selected) _selectedMetadataPaths.Add(session.MetadataPath);
-                else _selectedMetadataPaths.Remove(session.MetadataPath);
+                SetSelected(session.MetadataPath, selected);
             }
 
             ImGui.TableNextColumn();
             var isCurrent = string.Equals(playbackSessions.CurrentSessionMetadataPath, session.MetadataPath, StringComparison.Ordinal);
-            if (ImGui.Selectable(session.DisplayName, isCurrent, ImGuiSelectableFlags.SpanAllColumns))
+            if (ImGui.Button(isCurrent
+                    ? $"{IconFonts.FontAwesome6.CirclePlay}##open"
+                    : $"{IconFonts.FontAwesome6.Play}##open"))
             {
                 playbackSessions.OpenSession(session);
             }
+            if (ImGui.IsItemHovered(ImGuiHoveredFlags.ForTooltip))
+                ImGui.SetTooltip("Open");
+
+            ImGui.TableNextColumn();
+            if (isCurrent)
+            {
+                ImGui.PushStyleColor(ImGuiCol.Text, Color.Emerald400);
+                ImGui.TextUnformatted($"{IconFonts.FontAwesome6.Radio} {session.DisplayName}");
+                ImGui.PopStyleColor();
+            }
+            else
+            {
+                ImGui.TextUnformatted(session.DisplayName);
+            }
+            if (ImGui.IsItemHovered() && ImGui.IsMouseReleased(ImGuiMouseButton.Left))
+                ToggleSelected(session.MetadataPath);
+            if (ImGui.IsItemHovered() && ImGui.IsMouseDoubleClicked(ImGuiMouseButton.Left))
+                playbackSessions.OpenSession(session);
+            DrawRowContextMenu(session);
 
             ImGui.TableNextColumn();
             ImGui.TextUnformatted(session.Metadata.CreatedAtUtc.ToLocalTime().ToString("yyyy-MM-dd HH:mm:ss"));
@@ -162,16 +137,16 @@ public sealed class SessionsView(PlaybackSessionManager playbackSessions)
             ImGui.TextUnformatted(session.RangeLabel);
 
             ImGui.TableNextColumn();
-            ImGui.TextUnformatted(isCurrent ? "Opened" : playbackSessions.UsingLive ? "Stored" : "Stored");
-
-            ImGui.TableNextColumn();
             ImGui.TextUnformatted(session.Metadata.MachineName);
 
             ImGui.TableNextColumn();
             ImGui.TextUnformatted(session.SessionDirectory);
+
+            ImGui.PopID();
         }
 
         ImGui.EndTable();
+        DrawRenamePopup();
     }
 
     private List<PlaybackSessionInfo> GetSelectedSessions()
@@ -219,7 +194,6 @@ public sealed class SessionsView(PlaybackSessionManager playbackSessions)
     private void Rename(PlaybackSessionInfo session, string label)
     {
         playbackSessions.RenameSession(session, NormalizeLabel(label));
-        _renameTargetMetadataPath = session.MetadataPath;
         playbackSessions.RefreshSessions();
     }
 
@@ -237,6 +211,18 @@ public sealed class SessionsView(PlaybackSessionManager playbackSessions)
         playbackSessions.RefreshSessions();
     }
 
+    private void ToggleSelected(string metadataPath)
+    {
+        if (!_selectedMetadataPaths.Add(metadataPath))
+            _selectedMetadataPaths.Remove(metadataPath);
+    }
+
+    private void SetSelected(string metadataPath, bool selected)
+    {
+        if (selected) _selectedMetadataPaths.Add(metadataPath);
+        else _selectedMetadataPaths.Remove(metadataPath);
+    }
+
     private static string? NormalizeLabel(string value)
     {
         var trimmed = value.Trim();
@@ -250,5 +236,66 @@ public sealed class SessionsView(PlaybackSessionManager playbackSessions)
         foreach (var ch in value)
             builder.Append(invalidChars.Contains(ch) ? '_' : ch);
         return builder.ToString();
+    }
+
+    private void DrawRowContextMenu(PlaybackSessionInfo session)
+    {
+        if (!ImGui.BeginPopupContextItem($"session-actions-{session.MetadataPath}"))
+            return;
+
+        if (ImGui.Selectable($"{IconFonts.FontAwesome6.Play} Open Session"))
+            playbackSessions.OpenSession(session);
+
+        if (ImGui.Selectable($"{IconFonts.FontAwesome6.FolderOpen} Reveal In Explorer"))
+            playbackSessions.RevealInExplorer(session);
+
+        if (ImGui.Selectable($"{IconFonts.FontAwesome6.FileExport} Export"))
+            ExportSelectedSessions([session]);
+
+        if (ImGui.Selectable($"{IconFonts.FontAwesome6.PenToSquare} Rename"))
+        {
+            _renameSession = session;
+            _renameBuffer = session.Metadata.CaptureLabel ?? string.Empty;
+            ImGui.OpenPopup("Rename Session");
+        }
+
+        if (ImGui.Selectable($"{IconFonts.FontAwesome6.Trash} Delete"))
+            DeleteSelectedSessions([session]);
+
+        ImGui.EndPopup();
+    }
+
+    private void DrawRenamePopup()
+    {
+        if (_renameSession is null)
+            return;
+
+        var open = true;
+        if (!ImGui.BeginPopupModal("Rename Session", ref open, ImGuiWindowFlags.AlwaysAutoResize))
+        {
+            if (!open)
+                _renameSession = null;
+            return;
+        }
+
+        ImGui.TextUnformatted(_renameSession.DisplayName);
+        ImGui.SetNextItemWidth(320f);
+        ImGui.InputTextWithHint("##rename-modal", "Friendly name", ref _renameBuffer, 256);
+
+        if (ImGui.Button("Save"))
+        {
+            Rename(_renameSession, _renameBuffer);
+            _renameSession = null;
+            ImGui.CloseCurrentPopup();
+        }
+
+        ImGui.SameLine();
+        if (ImGui.Button("Cancel"))
+        {
+            _renameSession = null;
+            ImGui.CloseCurrentPopup();
+        }
+
+        ImGui.EndPopup();
     }
 }

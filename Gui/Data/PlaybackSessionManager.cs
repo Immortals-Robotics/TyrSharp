@@ -260,11 +260,10 @@ public sealed record PlaybackSessionInfo(
     {
         get
         {
-            var title = string.IsNullOrWhiteSpace(Metadata.CaptureLabel)
-                ? Metadata.CreatedAtUtc.ToLocalTime().ToString("yyyy-MM-dd HH:mm:ss")
-                : Metadata.CaptureLabel!;
+            if (!string.IsNullOrWhiteSpace(Metadata.CaptureLabel))
+                return Metadata.CaptureLabel!;
 
-            return $"{title} [{Metadata.CreatedAtUtc.ToLocalTime():yyyy-MM-dd HH:mm}]";
+            return Metadata.SessionId;
         }
     }
 }

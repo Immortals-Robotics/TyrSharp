@@ -127,12 +127,25 @@ public sealed partial class PlaybackControl(IDebugDb debugDb, SessionsView sessi
             if (sessionsView.SourceIsLive)
             {
                 ImGui.SameLine();
-                ImGui.Checkbox("Live", ref _live);
+                ImGui.Checkbox("Follow", ref _live);
             }
 
             ImGui.SameLine();
-            if (ImGui.Button($"{IconFonts.FontAwesome6.HardDrive} Sessions"))
+            var wasSourceLive = sessionsView.SourceIsLive;
+            if (wasSourceLive)
+                ImGui.BeginDisabled();
+            if (ImGui.Button($"{IconFonts.FontAwesome6.SatelliteDish}##use-live"))
+                sessionsView.SwitchToLive();
+            if (ImGui.IsItemHovered(ImGuiHoveredFlags.ForTooltip))
+                ImGui.SetTooltip("Use Live");
+            if (wasSourceLive)
+                ImGui.EndDisabled();
+
+            ImGui.SameLine();
+            if (ImGui.Button($"{IconFonts.FontAwesome6.HardDrive}##sessions"))
                 sessionsView.Open();
+            if (ImGui.IsItemHovered(ImGuiHoveredFlags.ForTooltip))
+                ImGui.SetTooltip("Sessions");
 
             if (!_live)
             {
