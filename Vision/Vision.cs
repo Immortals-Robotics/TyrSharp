@@ -185,6 +185,7 @@ public sealed partial class Vision
             Timestamp = timestamp,
             Ball = ball,
             Robots = robots,
+            Meta = Common.Debug.Meta.GetOrCreate("Vision", "WorldState"),
         };
         return frame;
     }

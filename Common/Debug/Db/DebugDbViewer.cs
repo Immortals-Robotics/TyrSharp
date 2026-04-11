@@ -42,7 +42,7 @@ public sealed class DebugDbViewer : IDisposable
         _port = port;
     }
 
-    public DebugDbViewer Register<T>() where T : struct, IEntry
+    public DebugDbViewer Register<T>() where T : IEntry
     {
         _db.RegisterType<T>();
 
@@ -230,7 +230,7 @@ public sealed class DebugDbViewer : IDisposable
             .ToArray();
     }
 
-    private static Dictionary<string, object?> EntryToRow<T>(T entry) where T : struct, IEntry
+    private static Dictionary<string, object?> EntryToRow<T>(T entry) where T : IEntry
     {
         var row = new Dictionary<string, object?>();
         foreach (var prop in GetVisibleProperties(typeof(T)))

@@ -1,4 +1,5 @@
 using ProtoBuf;
+using MemoryPack;
 
 namespace Tyr.Common.Data.Ssl.Vision.Detection;
 
@@ -6,7 +7,8 @@ namespace Tyr.Common.Data.Ssl.Vision.Detection;
 /// Represents a detected ball in the SSL-Vision system.
 /// </summary>
 [ProtoContract]
-public struct Ball : IObject
+[MemoryPackable]
+public partial struct Ball : IObject
 {
     /// <summary>
     /// Confidence in [0-1] of the detection.
@@ -38,6 +40,7 @@ public struct Ball : IObject
     /// <summary>
     /// 2D position vector combining X and Y coordinates.
     /// </summary>
+    [MemoryPackIgnore]
     public System.Numerics.Vector2 Position => new(X, Y);
 
     /// <summary>
@@ -53,5 +56,6 @@ public struct Ball : IObject
     /// <summary>
     /// 2D pixel position vector combining PixelX and PixelY coordinates.
     /// </summary>
+    [MemoryPackIgnore]
     public System.Numerics.Vector2 PixelPosition => new(PixelX, PixelY);
 }

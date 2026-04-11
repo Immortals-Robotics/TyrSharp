@@ -1,8 +1,10 @@
 ﻿using System.Numerics;
+using MemoryPack;
 
 namespace Tyr.Common.Math.Shapes;
 
-public readonly record struct LineSegment
+[MemoryPackable]
+public partial record struct LineSegment
 {
     public Vector2 Start { get; init; }
     public Vector2 End { get; init; }

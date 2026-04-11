@@ -73,16 +73,21 @@ public sealed class DebugDb : IDebugDb
             _moduleIdCache.TryAdd(moduleName, moduleId);
     }
 
-    public DebugDb RegisterType<T>() where T : struct, IEntry
+    public DebugDb RegisterType<T>() where T : IEntry
     {
         GetOrCreateBucketSet(typeof(T));
         return this;
     }
 
-    public void Append<T>(T entry) where T : struct, IEntry
+    public void Append<T>(T entry) where T : IEntry
     {
         var meta = entry.Meta;
         var module = meta.Module;
+        if (module is null)
+        {
+            Trace.WriteLine($"DebugDb warning: skipping append of {typeof(T).FullName} because its Meta.Module is null.");
+            return;
+        }
         var shardKey = entry.ShardKey;
 
         if (!_moduleIdCache.TryGetValue(module, out var moduleId) ||
@@ -125,7 +130,7 @@ public sealed class DebugDb : IDebugDb
         }, buffer.WrittenSpan);
     }
 
-    public IEnumerable<T> Query<T>(string module, Timestamp t0, Timestamp t1, string? shardKey = null, int? maxCount = null) where T : struct, IEntry
+    public IEnumerable<T> Query<T>(string module, Timestamp t0, Timestamp t1, string? shardKey = null, int? maxCount = null) where T : IEntry
     {
         if (!_moduleIdCache.TryGetValue(module, out var moduleId))
             yield break;
@@ -143,7 +148,7 @@ public sealed class DebugDb : IDebugDb
             yield return entry;
     }
 
-    public IEnumerable<T> QueryWithoutMeta<T>(string module, Timestamp t0, Timestamp t1, string? shardKey = null, int? maxCount = null) where T : struct, IEntry
+    public IEnumerable<T> QueryWithoutMeta<T>(string module, Timestamp t0, Timestamp t1, string? shardKey = null, int? maxCount = null) where T : IEntry
     {
         if (!_moduleIdCache.TryGetValue(module, out var moduleId))
             yield break;
@@ -167,7 +172,7 @@ public sealed class DebugDb : IDebugDb
         string? module = null,
         int? sourceLocationId = null,
         string? shardKey = null,
-        int? maxCount = null) where T : struct, IEntry
+        int? maxCount = null) where T : IEntry
     {
         int? moduleId = null;
         if (module is not null)
@@ -191,7 +196,7 @@ public sealed class DebugDb : IDebugDb
             yield return entry;
     }
 
-    public IEnumerable<T> QueryAll<T>(Timestamp t0, Timestamp t1, string? shardKey = null, int? maxCount = null) where T : struct, IEntry
+    public IEnumerable<T> QueryAll<T>(Timestamp t0, Timestamp t1, string? shardKey = null, int? maxCount = null) where T : IEntry
     {
         foreach (var entry in Query<T>(t0, t1, null, null, shardKey, maxCount))
             yield return entry;
@@ -203,7 +208,7 @@ public sealed class DebugDb : IDebugDb
             yield return module;
     }
 
-    public IEnumerable<string> QueryShardKeys<T>(string module) where T : struct, IEntry
+    public IEnumerable<string> QueryShardKeys<T>(string module) where T : IEntry
     {
         if (!_moduleIdCache.TryGetValue(module, out var moduleId))
             yield break;
@@ -223,7 +228,7 @@ public sealed class DebugDb : IDebugDb
             yield return shardKey;
     }
 
-    public IEnumerable<Meta> QuerySourceLocations<T>(string module) where T : struct, IEntry
+    public IEnumerable<Meta> QuerySourceLocations<T>(string module) where T : IEntry
     {
         if (!_moduleIdCache.TryGetValue(module, out var moduleId))
             yield break;
@@ -243,7 +248,7 @@ public sealed class DebugDb : IDebugDb
                 this);
     }
 
-    public Meta? TryGetShardMeta<T>(string module, string shardKey) where T : struct, IEntry
+    public Meta? TryGetShardMeta<T>(string module, string shardKey) where T : IEntry
     {
         if (!_moduleIdCache.TryGetValue(module, out var moduleId))
             return null;
@@ -272,7 +277,7 @@ public sealed class DebugDb : IDebugDb
         int? sourceLocationId,
         int? shardKeyId,
         int? maxCount,
-        bool hydrateMeta) where T : struct, IEntry
+        bool hydrateMeta) where T : IEntry
     {
         if (!TryGetBucketSet(typeof(T), out var bucketSet))
             yield break;
@@ -333,18 +338,18 @@ public sealed class DebugDb : IDebugDb
             yield return entry;
     }
 
-    private IEnumerable<T> EnumerateSingleShardRange<T>(ShardMatch match, bool hydrateMeta) where T : struct, IEntry
+    private IEnumerable<T> EnumerateSingleShardRange<T>(ShardMatch match, bool hydrateMeta) where T : IEntry
     {
         for (var index = match.Lo; index < match.Hi; index++)
         {
             var record = match.Bucket.GetRecord(index);
             var entry = DeserializeEntry<T>(record, match.Bucket, match.Shard.SourceLocationId, hydrateMeta);
-            if (entry.HasValue)
-                yield return entry.Value;
+            if (entry is not null)
+                yield return entry;
         }
     }
 
-    private IEnumerable<T> EnumerateAllMatches<T>(List<ShardMatch> matches, bool hydrateMeta) where T : struct, IEntry
+    private IEnumerable<T> EnumerateAllMatches<T>(List<ShardMatch> matches, bool hydrateMeta) where T : IEntry
     {
         var queue = new PriorityQueue<ShardCursor, long>();
         foreach (var match in matches)
@@ -357,8 +362,8 @@ public sealed class DebugDb : IDebugDb
         {
             var record = cursor.CurrentRecord;
             var entry = DeserializeEntry<T>(record, cursor.Bucket, cursor.Shard.SourceLocationId, hydrateMeta);
-            if (entry.HasValue)
-                yield return entry.Value;
+            if (entry is not null)
+                yield return entry;
 
             cursor.Index++;
             if (cursor.Index < cursor.Hi)
@@ -366,7 +371,7 @@ public sealed class DebugDb : IDebugDb
         }
     }
 
-    private IEnumerable<T> EnumerateSampledSingleShard<T>(ShardMatch match, int totalCount, int maxCount, bool hydrateMeta) where T : struct, IEntry
+    private IEnumerable<T> EnumerateSampledSingleShard<T>(ShardMatch match, int totalCount, int maxCount, bool hydrateMeta) where T : IEntry
     {
         var sampleCount = System.Math.Min(totalCount, maxCount);
         if (sampleCount <= 0)
@@ -376,8 +381,8 @@ public sealed class DebugDb : IDebugDb
         {
             var record = match.Bucket.GetRecord(match.Lo);
             var entry = DeserializeEntry<T>(record, match.Bucket, match.Shard.SourceLocationId, hydrateMeta);
-            if (entry.HasValue)
-                yield return entry.Value;
+            if (entry is not null)
+                yield return entry;
             yield break;
         }
 
@@ -387,12 +392,12 @@ public sealed class DebugDb : IDebugDb
             var absoluteIndex = match.Lo + relativeIndex;
             var record = match.Bucket.GetRecord(absoluteIndex);
             var entry = DeserializeEntry<T>(record, match.Bucket, match.Shard.SourceLocationId, hydrateMeta);
-            if (entry.HasValue)
-                yield return entry.Value;
+            if (entry is not null)
+                yield return entry;
         }
     }
 
-    private IEnumerable<T> EnumerateSampledMatches<T>(List<ShardMatch> matches, int totalCount, int maxCount, bool hydrateMeta) where T : struct, IEntry
+    private IEnumerable<T> EnumerateSampledMatches<T>(List<ShardMatch> matches, int totalCount, int maxCount, bool hydrateMeta) where T : IEntry
     {
         var targetIndices = GetSampledIndices(totalCount, maxCount);
         var targetPosition = 0;
@@ -411,8 +416,8 @@ public sealed class DebugDb : IDebugDb
             {
                 var record = cursor.CurrentRecord;
                 var entry = DeserializeEntry<T>(record, cursor.Bucket, cursor.Shard.SourceLocationId, hydrateMeta);
-                if (entry.HasValue)
-                    yield return entry.Value;
+                if (entry is not null)
+                    yield return entry;
 
                 targetPosition++;
                 if (targetPosition >= targetIndices.Count)
@@ -457,12 +462,13 @@ public sealed class DebugDb : IDebugDb
                _strings.TryGetId(shardKey, out shardKeyId);
     }
 
-    private T? DeserializeEntry<T>(InternalRecord record, Bucket bucket, int sourceLocationId, bool hydrateMeta) where T : struct, IEntry
+    private T? DeserializeEntry<T>(InternalRecord record, Bucket bucket, int sourceLocationId, bool hydrateMeta) where T : IEntry
     {
         try
         {
             var blob = bucket.GetBlob(record);
             var entry = MemoryPackSerializer.Deserialize<T>(blob);
+            if (entry is null) return default;
             var value = entry;
             value.Timestamp = Timestamp.FromNanoseconds(record.Timestamp);
             value.Meta = hydrateMeta
@@ -478,7 +484,7 @@ public sealed class DebugDb : IDebugDb
             Trace.WriteLine(
                 $"DebugDb warning: failed to deserialize {typeof(T).FullName} at timestamp {record.Timestamp}. " +
                 $"Skipping corrupt or incompatible row. {ex}");
-            return null;
+            return default;
         }
     }
 

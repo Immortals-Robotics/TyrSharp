@@ -1,9 +1,11 @@
 ﻿using System.Numerics;
 using Tyr.Common.Math;
+using MemoryPack;
 
 namespace Tyr.Common.Vision.Data;
 
-public readonly record struct RobotState
+[MemoryPackable]
+public partial record struct RobotState
 {
     /// <summary>
     /// Position in millimeters [mm]

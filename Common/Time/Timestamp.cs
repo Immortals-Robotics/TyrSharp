@@ -4,10 +4,11 @@ using Tomlet.Models;
 
 namespace Tyr.Common.Time;
 
-[MemoryPackable]
 public partial record struct Timestamp : IComparable<Timestamp>
 {
     public long Nanoseconds { get; }
+
+    static partial void StaticConstructor();
 
     static partial void StaticConstructor()
     {
@@ -16,7 +17,7 @@ public partial record struct Timestamp : IComparable<Timestamp>
             toml => FromNanoseconds(((TomlLong)toml).Value));
     }
 
-    private Timestamp(long nanoseconds) => Nanoseconds = nanoseconds;
+    public Timestamp(long nanoseconds) => Nanoseconds = nanoseconds;
 
     public static Timestamp FromSeconds(double seconds) => new((long)(seconds * 1e9));
     public static Timestamp FromMilliseconds(double ms) => new((long)(ms * 1e6));

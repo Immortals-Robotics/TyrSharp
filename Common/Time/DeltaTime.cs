@@ -1,9 +1,10 @@
 ﻿using Tomlet;
 using Tomlet.Models;
+using MemoryPack;
 
 namespace Tyr.Common.Time;
 
-public readonly record struct DeltaTime : IComparable<DeltaTime>
+public partial record struct DeltaTime : IComparable<DeltaTime>
 {
     public long Nanoseconds { get; }
 
@@ -14,7 +15,7 @@ public readonly record struct DeltaTime : IComparable<DeltaTime>
             toml => FromSeconds(((TomlDouble)toml).Value));
     }
 
-    private DeltaTime(long nanoseconds) => Nanoseconds = nanoseconds;
+    public DeltaTime(long nanoseconds) => Nanoseconds = nanoseconds;
 
     public static readonly DeltaTime Zero = new(0);
 
@@ -23,8 +24,11 @@ public readonly record struct DeltaTime : IComparable<DeltaTime>
     public static DeltaTime FromMicroseconds(double us) => new((long)(us * 1e3));
     public static DeltaTime FromNanoseconds(long ns) => new(ns);
 
+    [MemoryPackIgnore]
     public double Seconds => Nanoseconds / 1e9;
+    [MemoryPackIgnore]
     public double Milliseconds => Nanoseconds / 1e6;
+    [MemoryPackIgnore]
     public double Microseconds => Nanoseconds / 1e3;
 
     public TimeSpan ToTimeSpan() => TimeSpan.FromTicks(Nanoseconds / TimeSpan.NanosecondsPerTick);

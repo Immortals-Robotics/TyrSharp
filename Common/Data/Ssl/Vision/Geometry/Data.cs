@@ -1,12 +1,16 @@
 using ProtoBuf;
 
+using MemoryPack;
+using Tyr.Common.Debug;
+
 namespace Tyr.Common.Data.Ssl.Vision.Geometry;
 
 /// <summary>
 /// Contains geometry data for the SSL field, including field dimensions, camera calibration, and ball models.
 /// </summary>
 [ProtoContract]
-public class Data
+[MemoryPackable]
+public partial class Data : IEntry
 {
     /// <summary>
     /// Field size information including dimensions, lines, and arcs.
@@ -22,4 +26,8 @@ public class Data
     /// Ball motion models used for prediction.
     /// </summary>
     [ProtoMember(3)] public BallModels? BallModels { get; set; }
+
+    [MemoryPackIgnore] public Timestamp Timestamp { get; set; }
+    [MemoryPackIgnore] public Meta Meta { get; set; }
+    [MemoryPackIgnore] public string? ShardKey => null;
 }

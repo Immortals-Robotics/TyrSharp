@@ -1,4 +1,7 @@
 using ProtoBuf;
+using MemoryPack;
+
+using Tyr.Common.Debug;
 
 namespace Tyr.Common.Data.Ssl.Vision.Geometry;
 
@@ -6,8 +9,13 @@ namespace Tyr.Common.Data.Ssl.Vision.Geometry;
 /// Contains models for ball motion prediction.
 /// </summary>
 [ProtoContract]
-public struct BallModels
+[MemoryPackable]
+public partial struct BallModels : IEntry
 {
+    [MemoryPackIgnore] public Timestamp Timestamp { get; set; }
+    [MemoryPackIgnore] public Meta Meta { get; set; }
+    [MemoryPackIgnore] public string? ShardKey => null;
+
     /// <summary>
     /// Two-Phase model for straight-kicked balls.
     /// </summary>

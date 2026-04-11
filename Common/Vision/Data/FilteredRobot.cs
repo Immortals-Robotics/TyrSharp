@@ -1,9 +1,12 @@
 ﻿using Tyr.Common.Data.Ssl;
 using Tyr.Common.Sender.Data;
+using MemoryPack;
+using Tyr.Common.Time;
 
 namespace Tyr.Common.Vision.Data;
 
-public readonly record struct FilteredRobot
+[MemoryPackable]
+public partial record struct FilteredRobot
 {
     public RobotId Id { get; init; }
 

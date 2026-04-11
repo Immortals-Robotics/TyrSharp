@@ -1,12 +1,16 @@
 using ProtoBuf;
 
+using MemoryPack;
+using Tyr.Common.Debug;
+
 namespace Tyr.Common.Data.Ssl.Vision.Detection;
 
 /// <summary>
 /// Represents a detection frame from the SSL-Vision system containing ball and robot detections.
 /// </summary>
 [ProtoContract]
-public class Frame
+[MemoryPackable]
+public partial class Frame : IEntry
 {
     /// <summary>
     /// Monotonously increasing frame number.
@@ -21,6 +25,7 @@ public class Frame
     /// <summary>
     /// Capture time as a Timestamp object.
     /// </summary>
+    [MemoryPackIgnore]
     public Timestamp CaptureTime => Timestamp.FromSeconds(CaptureTimeSeconds);
 
     /// <summary>
@@ -31,6 +36,7 @@ public class Frame
     /// <summary>
     /// Sent time as a Timestamp object.
     /// </summary>
+    [MemoryPackIgnore]
     public Timestamp SentTime => Timestamp.FromSeconds(SentTimeSeconds);
 
     /// <summary>
@@ -42,6 +48,7 @@ public class Frame
     /// <summary>
     /// Camera capture time as a Timestamp object, if available.
     /// </summary>
+    [MemoryPackIgnore]
     public Timestamp? CameraCaptureTime => CameraCaptureTimeSeconds.HasValue
         ? Timestamp.FromSeconds(CameraCaptureTimeSeconds.Value)
         : null;
@@ -65,4 +72,8 @@ public class Frame
     /// Detected blue robots.
     /// </summary>
     [ProtoMember(7)] public List<Robot> RobotsBlue { get; set; } = [];
+
+    [MemoryPackIgnore] public Timestamp Timestamp { get; set; }
+    [MemoryPackIgnore] public Meta Meta { get; set; }
+    [MemoryPackIgnore] public string? ShardKey => null;
 }

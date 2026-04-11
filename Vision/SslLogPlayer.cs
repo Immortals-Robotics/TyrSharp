@@ -182,18 +182,36 @@ public sealed partial class SslLogPlayer : IDisposable
     private void PublishVision(WrapperPacket data)
     {
         if (data.Detection != null)
+        {
+            data.Detection.Timestamp = data.Detection.CaptureTime;
+            data.Detection.Meta = Common.Debug.Meta.GetOrCreate("Vision", "SslDetection");
             Hub.RawDetection.Publish(data.Detection);
+        }
 
         if (data.Geometry != null)
         {
-            Hub.FieldSize.Publish(data.Geometry.Field);
+            var timestamp = data.Detection?.CaptureTime ?? Tyr.Common.Time.Timestamp.Now;
+            var meta = Common.Debug.Meta.GetOrCreate("Vision", "SslGeometry");
 
-            foreach (var calibration in data.Geometry.Calibrations)
+            var field = data.Geometry.Field;
+            field.Timestamp = timestamp;
+            field.Meta = meta;
+            Hub.FieldSize.Publish(field);
+
+            foreach (var calib in data.Geometry.Calibrations)
+            {
+                var calibration = calib;
+                calibration.Timestamp = timestamp;
+                calibration.Meta = meta;
                 Hub.CameraCalibration.Publish(calibration);
+            }
 
             if (data.Geometry.BallModels.HasValue)
             {
-                Hub.BallModels.Publish(data.Geometry.BallModels.Value);
+                var ballModels = data.Geometry.BallModels.Value;
+                ballModels.Timestamp = timestamp;
+                ballModels.Meta = meta;
+                Hub.BallModels.Publish(ballModels);
             }
         }
     }

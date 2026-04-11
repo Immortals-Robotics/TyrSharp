@@ -145,8 +145,16 @@ BigPenaltyAddition = 220.0 # default: 220
 [Soccer.Skills.MarkToBall]
 OppPredictTime = 0.15 # default: 0.150000s
 
+[Soccer.Skills.KickBall]
+PredictionTime = 0.2 # default: 0.200000s
+
 [Soccer.Skills.DefenceWall]
 Radius = 550.0 # default: 550
+
+[Soccer.Skills.OneTouch]
+Beta = 0.4000000059604645 # default: 0.4
+Gamma = 0.14000000059604645 # default: 0.14
+ShootK = 4000.0 # default: 4000
 
 [Soccer.Skills.MarkToGoal]
 OppPredictTime = 0.15 # default: 0.150000s

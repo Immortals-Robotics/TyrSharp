@@ -1,5 +1,6 @@
 using System.Numerics;
 using ProtoBuf;
+using MemoryPack;
 
 namespace Tyr.Common.Data.Ssl.Vision.Geometry;
 
@@ -8,7 +9,8 @@ namespace Tyr.Common.Data.Ssl.Vision.Geometry;
 /// start angle, an end angle, and an arc thickness.
 /// </summary>
 [ProtoContract]
-public struct FieldCircularArc
+[MemoryPackable]
+public partial struct FieldCircularArc
 {
     /// <summary>
     /// Name of this field marking.

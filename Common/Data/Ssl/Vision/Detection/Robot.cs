@@ -1,4 +1,5 @@
 using ProtoBuf;
+using MemoryPack;
 
 namespace Tyr.Common.Data.Ssl.Vision.Detection;
 
@@ -6,7 +7,8 @@ namespace Tyr.Common.Data.Ssl.Vision.Detection;
 /// Represents a detected robot in the SSL-Vision system.
 /// </summary>
 [ProtoContract]
-public struct Robot : IObject
+[MemoryPackable]
+public partial struct Robot : IObject
 {
     /// <summary>
     /// Confidence in [0-1] of the detection.
@@ -31,6 +33,7 @@ public struct Robot : IObject
     /// <summary>
     /// 2D position vector combining X and Y coordinates.
     /// </summary>
+    [MemoryPackIgnore]
     public System.Numerics.Vector2 Position => new(X, Y);
 
     /// <summary>
@@ -41,6 +44,7 @@ public struct Robot : IObject
     /// <summary>
     /// Orientation as an angle object.
     /// </summary>
+    [MemoryPackIgnore]
     public Math.Angle? Orientation => OrientationRad.HasValue ? Math.Angle.FromRad(OrientationRad.Value) : null;
 
     /// <summary>
@@ -56,6 +60,7 @@ public struct Robot : IObject
     /// <summary>
     /// 2D pixel position vector combining PixelX and PixelY coordinates.
     /// </summary>
+    [MemoryPackIgnore]
     public System.Numerics.Vector2 PixelPosition => new(PixelX, PixelY);
 
     /// <summary>

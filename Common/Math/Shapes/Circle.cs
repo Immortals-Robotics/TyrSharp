@@ -1,14 +1,18 @@
 ﻿using System.Numerics;
+using MemoryPack;
 
 namespace Tyr.Common.Math.Shapes;
 
-public readonly record struct Circle : IObstacleShape
+[MemoryPackable]
+public partial record struct Circle : IObstacleShape
 {
     public Vector2 Center { get; init; }
     public float Radius { get; init; }
 
+    [MemoryPackIgnore]
     public float Circumference => 2f * MathF.PI * Radius;
 
+    [MemoryPackIgnore]
     public float Area => MathF.PI * Radius * Radius;
 
     public float Distance(Vector2 point) => Vector2.Distance(Center, point) - Radius;

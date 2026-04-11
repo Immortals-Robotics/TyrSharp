@@ -19,6 +19,11 @@ public sealed partial class DebugDbDumper : IDisposable
     private readonly Subscriber<Debug.Drawing.Command> _drawSubscriber = Hub.Draws.Subscribe(Mode.All);
     private readonly Subscriber<Debug.Plotting.Command> _plotSubscriber = Hub.Plots.Subscribe(Mode.All);
     private readonly Subscriber<Debug.Frame> _frameSubscriber = Hub.Frames.Subscribe(Mode.All);
+    private readonly Subscriber<Data.Ssl.Vision.Detection.Frame> _detectionSubscriber = Hub.RawDetection.Subscribe(Mode.All);
+    private readonly Subscriber<Data.Ssl.Vision.Geometry.FieldSize> _fieldSizeSubscriber = Hub.FieldSize.Subscribe(Mode.All);
+    private readonly Subscriber<Data.Ssl.Vision.Geometry.CameraCalibration> _calibrationSubscriber = Hub.CameraCalibration.Subscribe(Mode.All);
+    private readonly Subscriber<Data.Ssl.Vision.Geometry.BallModels> _ballModelsSubscriber = Hub.BallModels.Subscribe(Mode.All);
+    private readonly Subscriber<Vision.Data.FilteredFrame> _visionSubscriber = Hub.Vision.Subscribe(Mode.All);
 
     private readonly RunnerSync _runner;
     private readonly DebugDb _db;
@@ -40,12 +45,22 @@ public sealed partial class DebugDbDumper : IDisposable
         _db = new DebugDb(_session.DatabaseDirectory)
             .RegisterType<Debug.Logging.Entry>()
             .RegisterType<Debug.Plotting.Command>()
-            .RegisterType<Debug.Drawing.Command>();
+            .RegisterType<Debug.Drawing.Command>()
+            .RegisterType<Data.Ssl.Vision.Detection.Frame>()
+            .RegisterType<Data.Ssl.Vision.Geometry.FieldSize>()
+            .RegisterType<Data.Ssl.Vision.Geometry.CameraCalibration>()
+            .RegisterType<Data.Ssl.Vision.Geometry.BallModels>()
+            .RegisterType<Vision.Data.FilteredFrame>();
 
         _viewer = new DebugDbViewer(_db, ViewerPort)
             .Register<Debug.Logging.Entry>()
             .Register<Debug.Plotting.Command>()
-            .Register<Debug.Drawing.Command>();
+            .Register<Debug.Drawing.Command>()
+            .Register<Data.Ssl.Vision.Detection.Frame>()
+            .Register<Data.Ssl.Vision.Geometry.FieldSize>()
+            .Register<Data.Ssl.Vision.Geometry.CameraCalibration>()
+            .Register<Data.Ssl.Vision.Geometry.BallModels>()
+            .Register<Vision.Data.FilteredFrame>();
 
         Log.ZLogInformation($"DebugDb session started: {_session.SessionDirectory}");
         _viewer.Start();
@@ -84,6 +99,36 @@ public sealed partial class DebugDbDumper : IDisposable
             dumped = true;
         }
 
+        while (_detectionSubscriber.Reader.TryRead(out var detection))
+        {
+            _db.Append(detection);
+            dumped = true;
+        }
+
+        while (_fieldSizeSubscriber.Reader.TryRead(out var fieldSize))
+        {
+            _db.Append(fieldSize);
+            dumped = true;
+        }
+
+        while (_calibrationSubscriber.Reader.TryRead(out var calibration))
+        {
+            _db.Append(calibration);
+            dumped = true;
+        }
+
+        while (_ballModelsSubscriber.Reader.TryRead(out var ballModels))
+        {
+            _db.Append(ballModels);
+            dumped = true;
+        }
+
+        while (_visionSubscriber.Reader.TryRead(out var vision))
+        {
+            _db.Append(vision);
+            dumped = true;
+        }
+
         if (!dumped)
         {
             Thread.Sleep(SleepTime.ToTimeSpan());
@@ -99,6 +144,11 @@ public sealed partial class DebugDbDumper : IDisposable
         _drawSubscriber.Dispose();
         _plotSubscriber.Dispose();
         _frameSubscriber.Dispose();
+        _detectionSubscriber.Dispose();
+        _fieldSizeSubscriber.Dispose();
+        _calibrationSubscriber.Dispose();
+        _ballModelsSubscriber.Dispose();
+        _visionSubscriber.Dispose();
 
         _runner.Stop();
 

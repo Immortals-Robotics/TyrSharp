@@ -1,4 +1,7 @@
 using ProtoBuf;
+using MemoryPack;
+
+using Tyr.Common.Debug;
 
 namespace Tyr.Common.Data.Ssl.Vision.Geometry;
 
@@ -6,8 +9,13 @@ namespace Tyr.Common.Data.Ssl.Vision.Geometry;
 /// Contains calibration data for a camera in the SSL-Vision system.
 /// </summary>
 [ProtoContract]
-public struct CameraCalibration
+[MemoryPackable]
+public partial struct CameraCalibration : IEntry
 {
+    [MemoryPackIgnore] public Timestamp Timestamp { get; set; }
+    [MemoryPackIgnore] public Meta Meta { get; set; }
+    [MemoryPackIgnore] public string? ShardKey => null;
+
     /// <summary>
     /// Identifier of the camera.
     /// </summary>
@@ -31,6 +39,7 @@ public struct CameraCalibration
     /// <summary>
     /// Vector representation of the principal point.
     /// </summary>
+    [MemoryPackIgnore]
     public System.Numerics.Vector2 PrincipalPoint => new(PrincipalPointX, PrincipalPointY);
 
     /// <summary>
@@ -76,6 +85,7 @@ public struct CameraCalibration
     /// <summary>
     /// Vector representation of the camera translation.
     /// </summary>
+    [MemoryPackIgnore]
     public System.Numerics.Vector3 T => new(Tx, Ty, Tz);
 
     /// <summary>
@@ -96,6 +106,7 @@ public struct CameraCalibration
     /// <summary>
     /// Vector representation of the derived camera position in world coordinates.
     /// </summary>
+    [MemoryPackIgnore]
     public System.Numerics.Vector3 DerivedCameraWorld => new(
         DerivedCameraWorldTx.GetValueOrDefault(),
         DerivedCameraWorldTy.GetValueOrDefault(),

@@ -1,4 +1,5 @@
 using ProtoBuf;
+using MemoryPack;
 
 namespace Tyr.Common.Data.Ssl.Vision.Geometry;
 
@@ -7,7 +8,8 @@ namespace Tyr.Common.Data.Ssl.Vision.Geometry;
 /// Uses fixed damping factors for xy and z direction per hop.
 /// </summary>
 [ProtoContract]
-public struct BallModelChipFixedLoss
+[MemoryPackable]
+public partial struct BallModelChipFixedLoss
 {
     /// <summary>
     /// Chip kick velocity damping factor in XY direction for the first hop.

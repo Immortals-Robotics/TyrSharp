@@ -1,4 +1,5 @@
 using ProtoBuf;
+using MemoryPack;
 
 namespace Tyr.Common.Data.Ssl.Vision.Geometry;
 
@@ -11,7 +12,8 @@ namespace Tyr.Common.Data.Ssl.Vision.Geometry;
 /// https://ssl.robocup.org/wp-content/uploads/2019/01/2016_ETDP_ER-Force.pdf
 /// </summary>
 [ProtoContract]
-public struct BallModelStraightTwoPhase
+[MemoryPackable]
+public partial struct BallModelStraightTwoPhase
 {
     /// <summary>
     /// Ball sliding acceleration [m/s^2] (should be negative).

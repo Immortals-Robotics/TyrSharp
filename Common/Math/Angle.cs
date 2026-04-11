@@ -1,10 +1,11 @@
 ﻿using System.Numerics;
 using Tomlet;
 using Tomlet.Models;
+using MemoryPack;
 
 namespace Tyr.Common.Math;
 
-public readonly record struct Angle
+public partial record struct Angle
 {
     public float Rad { get; }
 
@@ -15,9 +16,9 @@ public readonly record struct Angle
             toml => FromDeg((float)((TomlDouble)toml).Value));
     }
 
-    private Angle(float radians)
+    public Angle(float rad)
     {
-        Rad = radians;
+        Rad = rad;
     }
 
     public static Angle FromDeg(float deg) => new(float.DegreesToRadians(deg));
@@ -35,12 +36,16 @@ public readonly record struct Angle
     public static Angle Zero => FromRad(0f);
 
     // normalized to [-π, π]
+    [MemoryPackIgnore]
     public float RadNormalized => MathF.IEEERemainder(Rad, 2f * MathF.PI);
 
+    [MemoryPackIgnore]
     public float Deg => float.RadiansToDegrees(Rad);
 
     // normalized to [-180, 180]
+    [MemoryPackIgnore]
     public float DegNormalized => float.RadiansToDegrees(RadNormalized);
+    [MemoryPackIgnore]
     public float Deg360 => (DegNormalized + 360f) % 360f;
 
     public float Sin() => MathF.Sin(Rad);

@@ -1,17 +1,19 @@
 ﻿using System.Numerics;
+using MemoryPack;
 
 namespace Tyr.Common.Math.Shapes;
 
-public readonly record struct Rectangle : IObstacleShape
+[MemoryPackable]
+public partial record struct Rectangle : IObstacleShape
 {
     public Vector2 Min { get; }
 
     public Vector2 Max { get; }
 
-    public Rectangle(Vector2 p1, Vector2 p2)
+    public Rectangle(Vector2 min, Vector2 max)
     {
-        Min = Vector2.Min(p1, p2);
-        Max = Vector2.Max(p1, p2);
+        Min = min;
+        Max = max;
     }
 
     public static Rectangle FromCornerAndSize(Vector2 corner, Vector2 size) => new(corner, corner + size);
@@ -24,12 +26,18 @@ public readonly record struct Rectangle : IObstacleShape
     public static Rectangle FromCenterAndSize(Vector2 center, float width, float height) =>
         FromCenterAndSize(center, new Vector2(width, height));
 
+    [MemoryPackIgnore]
     public float Circumference => (Width + Height) * 2f;
+    [MemoryPackIgnore]
     public float Area => Width * Height;
 
+    [MemoryPackIgnore]
     public Vector2 Size => Max - Min;
+    [MemoryPackIgnore]
     public float Width => Max.X - Min.X;
+    [MemoryPackIgnore]
     public float Height => Max.Y - Min.Y;
+    [MemoryPackIgnore]
     public Vector2 Center => (Min + Max) / 2f;
 
     public float Distance(Vector2 point)

@@ -2,6 +2,9 @@ using Tyr.Common.Config;
 using Tyr.Common.Data.Ssl;
 using ProtoBuf;
 using Tyr.Common.Math.Shapes;
+using MemoryPack;
+
+using Tyr.Common.Debug;
 
 namespace Tyr.Common.Data.Ssl.Vision.Geometry;
 
@@ -10,15 +13,22 @@ namespace Tyr.Common.Data.Ssl.Vision.Geometry;
 /// </summary>
 [ProtoContract]
 [Configurable]
-public struct FieldSize
+[MemoryPackable]
+public partial struct FieldSize : IEntry
 {
     public FieldSize()
     {
     }
 
+    [MemoryPackIgnore] public Timestamp Timestamp { get; set; }
+    [MemoryPackIgnore] public Meta Meta { get; set; }
+    [MemoryPackIgnore] public string? ShardKey => null;
+
     [ConfigEntry("Division used to fill in missing optional SSL-Vision geometry fields")]
+    [MemoryPackIgnore]
     public static Division DefaultDivision { get; set; } = Division.A;
 
+    [MemoryPackIgnore]
     public static FieldSize Default => DefaultDivision switch
     {
         Division.B => DivisionB,
@@ -32,12 +42,14 @@ public struct FieldSize
     public int FieldLength { get; set; }
 
     // Compatibility alias for the old Tyr naming.
+    [MemoryPackIgnore]
     public int FullWidth
     {
         get => FieldLength;
         set => FieldLength = value;
     }
 
+    [MemoryPackIgnore]
     public int Width => FieldLength / 2;
 
     /// <summary>
@@ -47,12 +59,14 @@ public struct FieldSize
     public int FieldWidth { get; set; }
 
     // Compatibility alias for the old Tyr naming.
+    [MemoryPackIgnore]
     public int FullHeight
     {
         get => FieldWidth;
         set => FieldWidth = value;
     }
 
+    [MemoryPackIgnore]
     public int Height => FieldWidth / 2;
 
     /// <summary>
@@ -64,12 +78,14 @@ public struct FieldSize
     /// <summary>
     /// Rectangle representing the field boundaries without the boundary width.
     /// </summary>
+    [MemoryPackIgnore]
     public Rectangle Rectangle =>
         Rectangle.FromCenterAndSize(System.Numerics.Vector2.Zero, FieldLength, FieldWidth);
 
     /// <summary>
     /// Rectangle representing the field boundaries including the boundary width.
     /// </summary>
+    [MemoryPackIgnore]
     public Rectangle RectangleWithBoundary => Rectangle.FromCenterAndSize(System.Numerics.Vector2.Zero,
         FieldLength + 2 * BoundaryWidthGoalLine,
         FieldWidth + 2 * BoundaryWidth);
@@ -104,6 +120,7 @@ public struct FieldSize
     [ProtoMember(8, Name = "penalty_area_depth")]
     private int? PenaltyAreaDepthRaw { get; set; }
 
+    [MemoryPackIgnore]
     public int PenaltyAreaDepth
     {
         get => PenaltyAreaDepthRaw ?? ResolvedDefaults.PenaltyAreaDepthRaw.GetValueOrDefault();
@@ -116,6 +133,7 @@ public struct FieldSize
     [ProtoMember(9, Name = "penalty_area_width")]
     private int? PenaltyAreaWidthRaw { get; set; }
 
+    [MemoryPackIgnore]
     public int PenaltyAreaWidth
     {
         get => PenaltyAreaWidthRaw ?? ResolvedDefaults.PenaltyAreaWidthRaw.GetValueOrDefault();
@@ -128,6 +146,7 @@ public struct FieldSize
     [ProtoMember(10, Name = "center_circle_radius")]
     private int? CenterCircleRadiusRaw { get; set; }
 
+    [MemoryPackIgnore]
     public int CenterCircleRadius
     {
         get => CenterCircleRadiusRaw ?? ResolvedDefaults.CenterCircleRadiusRaw.GetValueOrDefault();
@@ -137,6 +156,7 @@ public struct FieldSize
     /// <summary>
     /// Circle representing the center circle of the field.
     /// </summary>
+    [MemoryPackIgnore]
     public Circle CenterCircle => new()
         { Center = System.Numerics.Vector2.Zero, Radius = CenterCircleRadius };
 
@@ -146,6 +166,7 @@ public struct FieldSize
     [ProtoMember(11, Name = "line_thickness")]
     private int? LineThicknessRaw { get; set; }
 
+    [MemoryPackIgnore]
     public int LineThickness
     {
         get => LineThicknessRaw ?? ResolvedDefaults.LineThicknessRaw.GetValueOrDefault();
@@ -158,6 +179,7 @@ public struct FieldSize
     [ProtoMember(12, Name = "goal_center_to_penalty_mark")]
     private int? GoalCenterToPenaltyMarkRaw { get; set; }
 
+    [MemoryPackIgnore]
     public int GoalCenterToPenaltyMark
     {
         get => GoalCenterToPenaltyMarkRaw ?? ResolvedDefaults.GoalCenterToPenaltyMarkRaw.GetValueOrDefault();
@@ -170,6 +192,7 @@ public struct FieldSize
     [ProtoMember(13, Name = "goal_height")]
     private int? GoalHeightRaw { get; set; }
 
+    [MemoryPackIgnore]
     public int GoalHeight
     {
         get => GoalHeightRaw ?? ResolvedDefaults.GoalHeightRaw.GetValueOrDefault();
@@ -182,6 +205,7 @@ public struct FieldSize
     [ProtoMember(14, Name = "ball_radius")]
     private float? BallRadiusRaw { get; set; }
 
+    [MemoryPackIgnore]
     public float BallRadius
     {
         get => BallRadiusRaw ?? ResolvedDefaults.BallRadiusRaw.GetValueOrDefault();
@@ -194,6 +218,7 @@ public struct FieldSize
     [ProtoMember(15, Name = "max_robot_radius")]
     private float? MaxRobotRadiusRaw { get; set; }
 
+    [MemoryPackIgnore]
     public float MaxRobotRadius
     {
         get => MaxRobotRadiusRaw ?? ResolvedDefaults.MaxRobotRadiusRaw.GetValueOrDefault();
@@ -201,6 +226,7 @@ public struct FieldSize
     }
 
     // Compatibility alias for the old Tyr naming.
+    [MemoryPackIgnore]
     public float RobotRadius
     {
         get => MaxRobotRadius;
@@ -213,6 +239,7 @@ public struct FieldSize
     [ProtoMember(16, Name = "boundary_width_goal_line")]
     private int? BoundaryWidthGoalLineRaw { get; set; }
 
+    [MemoryPackIgnore]
     public int BoundaryWidthGoalLine
     {
         get => BoundaryWidthGoalLineRaw ?? ResolvedDefaults.BoundaryWidthGoalLineRaw ?? BoundaryWidth;
@@ -225,14 +252,17 @@ public struct FieldSize
     [ProtoMember(17, Name = "goal_substitution_area_width")]
     private int? GoalSubstitutionAreaWidthRaw { get; set; }
 
+    [MemoryPackIgnore]
     public int GoalSubstitutionAreaWidth
     {
         get => GoalSubstitutionAreaWidthRaw ?? ResolvedDefaults.GoalSubstitutionAreaWidthRaw.GetValueOrDefault();
         set => GoalSubstitutionAreaWidthRaw = value;
     }
 
+    [MemoryPackIgnore]
     private FieldSize ResolvedDefaults => Default;
 
+    [MemoryPackIgnore]
     public static readonly FieldSize DivisionA = new()
     {
         FieldLength = 12000,

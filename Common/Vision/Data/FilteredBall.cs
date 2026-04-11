@@ -1,6 +1,10 @@
-﻿namespace Tyr.Common.Vision.Data;
+﻿using MemoryPack;
+using Tyr.Common.Time;
 
-public readonly record struct FilteredBall
+namespace Tyr.Common.Vision.Data;
+
+[MemoryPackable]
+public partial record struct FilteredBall
 {
     public Timestamp Timestamp { get; init; }
     public Timestamp LastVisibleTimestamp { get; init; }

@@ -1,10 +1,12 @@
 using System.Buffers.Text;
 using ProtoBuf;
+using MemoryPack;
 
 namespace Tyr.Common.Data.Ssl;
 
 [ProtoContract]
-public record struct RobotId : ISpanFormattable, IUtf8SpanFormattable
+[MemoryPackable]
+public partial record struct RobotId : ISpanFormattable, IUtf8SpanFormattable
 {
     [ProtoMember(1)] public uint? Id { get; set; }
     [ProtoMember(2)] public TeamColor? Team { get; set; }

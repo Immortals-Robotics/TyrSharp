@@ -1,6 +1,7 @@
 using System.Numerics;
 using ProtoBuf;
 using Tyr.Common.Math.Shapes;
+using MemoryPack;
 
 namespace Tyr.Common.Data.Ssl.Vision.Geometry;
 
@@ -11,7 +12,8 @@ namespace Tyr.Common.Data.Ssl.Vision.Geometry;
 /// on either side of the line.
 /// </summary>
 [ProtoContract]
-public struct FieldLineSegment
+[MemoryPackable]
+public partial struct FieldLineSegment
 {
     /// <summary>
     /// Name of this field marking.
@@ -31,6 +33,7 @@ public struct FieldLineSegment
     /// <summary>
     /// Line segment representation combining P1 and P2.
     /// </summary>
+    [MemoryPackIgnore]
     public LineSegment LineSegment => new() { Start = P1, End = P2 };
 
     /// <summary>
