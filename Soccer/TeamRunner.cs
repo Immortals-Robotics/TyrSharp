@@ -156,6 +156,10 @@ public sealed partial class TeamRunner : IDisposable
             false,
             0,
             ManualSkillAction.GoToPoint,
+            ManualShotMode.Kick,
+            6f,
+            4f,
+            ManualShotTargetMode.TargetPoint,
             false,
             Vector2.Zero,
             GoToPointFacingMode.Angle,
@@ -182,6 +186,26 @@ public sealed partial class TeamRunner : IDisposable
     public static void SetManualAction(TeamColor color, ManualSkillAction action)
     {
         GetRunner(color)?._manualControl.SetAction(action);
+    }
+
+    public static void SetManualShotMode(TeamColor color, ManualShotMode shotMode)
+    {
+        GetRunner(color)?._manualControl.SetShotMode(shotMode);
+    }
+
+    public static void SetManualKickSpeedMps(TeamColor color, float kickSpeedMps)
+    {
+        GetRunner(color)?._manualControl.SetKickSpeedMps(kickSpeedMps);
+    }
+
+    public static void SetManualChipDistanceMeters(TeamColor color, float chipDistanceMeters)
+    {
+        GetRunner(color)?._manualControl.SetChipDistanceMeters(chipDistanceMeters);
+    }
+
+    public static void SetManualShotTargetMode(TeamColor color, ManualShotTargetMode shotTargetMode)
+    {
+        GetRunner(color)?._manualControl.SetShotTargetMode(shotTargetMode);
     }
 
     public static void SetManualTargetPoint(TeamColor color, Vector2 point)

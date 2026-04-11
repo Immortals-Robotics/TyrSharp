@@ -4,6 +4,7 @@ using Tyr.Common.Data;
 using Tyr.Common.Debug.Drawing;
 using Tyr.Common.Extensions;
 using Tyr.Common.Math;
+using Tyr.Soccer.Helpers;
 using Tyr.Soccer.Robot;
 using Tyr.Soccer.Skills;
 
@@ -26,12 +27,28 @@ public enum GoToPointFacingMode
     LookAtTarget,
 }
 
+public enum ManualShotMode
+{
+    Kick,
+    Chip,
+}
+
+public enum ManualShotTargetMode
+{
+    TargetPoint,
+    OpenAngle,
+}
+
 public readonly record struct ManualControlSnapshot(
     TeamColor Team,
     bool Enabled,
     bool Running,
     int SelectedRobotId,
     ManualSkillAction Action,
+    ManualShotMode ShotMode,
+    float KickSpeedMps,
+    float ChipDistanceMeters,
+    ManualShotTargetMode ShotTargetMode,
     bool HasTargetPoint,
     Vector2 TargetPoint,
     GoToPointFacingMode GoToPointFacingMode,
@@ -48,6 +65,10 @@ internal sealed class ManualControlState(TeamColor team)
     private bool _running;
     private int _selectedRobotId;
     private ManualSkillAction _action = ManualSkillAction.GoToPoint;
+    private ManualShotMode _shotMode = ManualShotMode.Kick;
+    private float _kickSpeedMps = 6f;
+    private float _chipDistanceMeters = 4f;
+    private ManualShotTargetMode _shotTargetMode;
     private bool _hasTargetPoint;
     private Vector2 _targetPoint;
     private GoToPointFacingMode _goToPointFacingMode;
@@ -73,6 +94,10 @@ internal sealed class ManualControlState(TeamColor team)
                 _running,
                 _selectedRobotId,
                 _action,
+                _shotMode,
+                _kickSpeedMps,
+                _chipDistanceMeters,
+                _shotTargetMode,
                 _hasTargetPoint,
                 _targetPoint,
                 _goToPointFacingMode,
@@ -117,6 +142,38 @@ internal sealed class ManualControlState(TeamColor team)
         lock (_gate)
         {
             _action = action;
+        }
+    }
+
+    public void SetShotMode(ManualShotMode shotMode)
+    {
+        lock (_gate)
+        {
+            _shotMode = shotMode;
+        }
+    }
+
+    public void SetKickSpeedMps(float kickSpeedMps)
+    {
+        lock (_gate)
+        {
+            _kickSpeedMps = Math.Max(0f, kickSpeedMps);
+        }
+    }
+
+    public void SetChipDistanceMeters(float chipDistanceMeters)
+    {
+        lock (_gate)
+        {
+            _chipDistanceMeters = Math.Max(0f, chipDistanceMeters);
+        }
+    }
+
+    public void SetShotTargetMode(ManualShotTargetMode shotTargetMode)
+    {
+        lock (_gate)
+        {
+            _shotTargetMode = shotTargetMode;
         }
     }
 
@@ -283,15 +340,16 @@ internal sealed class ManualControlState(TeamColor team)
                 return;
 
             case ManualSkillAction.KickBall:
-                if (!_hasTargetPoint)
+                if (RequiresTargetPoint() && !_hasTargetPoint)
                 {
                     robot.Halt();
                     return;
                 }
 
-                _kickBall.Angle = Context.Ball.State.Position.AngleWith(_targetPoint);
-                _kickBall.Kick = 6f;
-                _kickBall.Chip = 0f;
+                _kickBall.Angle = ResolveBallSkillAngle(robot);
+                ApplyShot(out var kickBallKick, out var kickBallChip);
+                _kickBall.Kick = kickBallKick;
+                _kickBall.Chip = kickBallChip;
                 _kickBall.IsGoalkeeper = false;
                 _kickBall.Execute(robot);
                 return;
@@ -314,22 +372,30 @@ internal sealed class ManualControlState(TeamColor team)
                 return;
 
             case ManualSkillAction.OneTouch:
-                _oneTouch.TargetPoint = _hasTargetPoint ? _targetPoint : null;
-                _oneTouch.Kick = 6f;
-                _oneTouch.Chip = 0f;
-                _oneTouch.Execute(robot);
-                return;
-
-            case ManualSkillAction.TurnAndShoot:
-                if (!_hasTargetPoint)
+                if (RequiresTargetPoint() && !_hasTargetPoint)
                 {
                     robot.Halt();
                     return;
                 }
 
-                _turnAndShoot.Angle = Context.Ball.State.Position.AngleWith(_targetPoint);
-                _turnAndShoot.Kick = 6f;
-                _turnAndShoot.Chip = 0f;
+                _oneTouch.TargetPoint = _shotTargetMode == ManualShotTargetMode.OpenAngle ? null : _targetPoint;
+                ApplyShot(out var oneTouchKick, out var oneTouchChip);
+                _oneTouch.Kick = oneTouchKick;
+                _oneTouch.Chip = oneTouchChip;
+                _oneTouch.Execute(robot);
+                return;
+
+            case ManualSkillAction.TurnAndShoot:
+                if (RequiresTargetPoint() && !_hasTargetPoint)
+                {
+                    robot.Halt();
+                    return;
+                }
+
+                _turnAndShoot.Angle = ResolveBallSkillAngle(robot);
+                ApplyShot(out var turnAndShootKick, out var turnAndShootChip);
+                _turnAndShoot.Kick = turnAndShootKick;
+                _turnAndShoot.Chip = turnAndShootChip;
                 _turnAndShoot.Execute(robot);
                 return;
 
@@ -340,7 +406,7 @@ internal sealed class ManualControlState(TeamColor team)
                     return;
                 }
 
-                _dribbleToDirection.Direction = Context.Ball.State.Position.AngleWith(_targetPoint);
+                _dribbleToDirection.Direction = _targetPoint.AngleWith(Context.Ball.State.Position);
                 _dribbleToDirection.Execute(robot);
                 return;
 
@@ -359,5 +425,39 @@ internal sealed class ManualControlState(TeamColor team)
             ManualSkillAction.OneTouch or
             ManualSkillAction.TurnAndShoot or
             ManualSkillAction.DribbleToDirection;
+    }
+
+    private bool RequiresTargetPoint()
+    {
+        return _action switch
+        {
+            ManualSkillAction.KickBall or
+            ManualSkillAction.OneTouch or
+            ManualSkillAction.TurnAndShoot => _shotTargetMode == ManualShotTargetMode.TargetPoint,
+            _ => false
+        };
+    }
+
+    private void ApplyShot(out float kick, out float chip)
+    {
+        if (_shotMode == ManualShotMode.Kick)
+        {
+            kick = _kickSpeedMps * 1000f;
+            chip = 0f;
+            return;
+        }
+
+        kick = 0f;
+        chip = _chipDistanceMeters;
+    }
+
+    private Angle ResolveBallSkillAngle(Robot.Robot robot)
+    {
+        if (_shotTargetMode == ManualShotTargetMode.OpenAngle)
+        {
+            return OpenAngle.CalculateOpenAngleToGoal(Context.Ball.State.Position, robot).Center + Angle.Pi;
+        }
+
+        return _targetPoint.AngleWith(Context.Ball.State.Position);
     }
 }

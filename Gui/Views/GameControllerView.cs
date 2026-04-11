@@ -80,6 +80,18 @@ public sealed partial class GameControllerView : IDisposable
         "Look At Target",
     ];
 
+    private static readonly string[] ManualShotModeLabels =
+    [
+        "Kick Speed",
+        "Chip Distance",
+    ];
+
+    private static readonly string[] ManualShotTargetLabels =
+    [
+        "Target Point",
+        "Open Angle",
+    ];
+
     public static TeamColor SelectedManualTeam => ManualTeam;
 
     private readonly GcProcess    _process    = new();
@@ -748,9 +760,56 @@ public sealed partial class GameControllerView : IDisposable
             snapshot = TeamRunner.GetManualControlSnapshot(ManualTeam);
         }
 
-        var requiresPoint = RequiresPoint(snapshot.Action);
-        ImGui.TextColored(requiresPoint ? Color.Yellow300 : Color.Zinc400,
-            requiresPoint ? "This action needs a field point." : "This action does not require a field point.");
+        if (UsesShotTargetMode(snapshot.Action))
+        {
+            var shotTargetModeIndex = snapshot.ShotTargetMode == ManualShotTargetMode.OpenAngle ? 1 : 0;
+            if (ImGui.Combo("Shot Target", ref shotTargetModeIndex, ManualShotTargetLabels, ManualShotTargetLabels.Length))
+            {
+                TeamRunner.SetManualShotTargetMode(ManualTeam,
+                    shotTargetModeIndex == 0 ? ManualShotTargetMode.TargetPoint : ManualShotTargetMode.OpenAngle);
+                snapshot = TeamRunner.GetManualControlSnapshot(ManualTeam);
+            }
+        }
+
+        if (UsesShotMode(snapshot.Action))
+        {
+            var shotModeIndex = snapshot.ShotMode == ManualShotMode.Chip ? 1 : 0;
+            if (ImGui.Combo("Shot Type", ref shotModeIndex, ManualShotModeLabels, ManualShotModeLabels.Length))
+            {
+                TeamRunner.SetManualShotMode(ManualTeam, shotModeIndex == 0 ? ManualShotMode.Kick : ManualShotMode.Chip);
+                snapshot = TeamRunner.GetManualControlSnapshot(ManualTeam);
+            }
+
+            if (snapshot.ShotMode == ManualShotMode.Kick)
+            {
+                var kickSpeedMps = snapshot.KickSpeedMps;
+                if (ImGui.InputFloat("Kick Speed (m/s)", ref kickSpeedMps))
+                {
+                    TeamRunner.SetManualKickSpeedMps(ManualTeam, kickSpeedMps);
+                    snapshot = TeamRunner.GetManualControlSnapshot(ManualTeam);
+                }
+            }
+            else
+            {
+                var chipDistanceMeters = snapshot.ChipDistanceMeters;
+                if (ImGui.InputFloat("Chip Distance (m)", ref chipDistanceMeters))
+                {
+                    TeamRunner.SetManualChipDistanceMeters(ManualTeam, chipDistanceMeters);
+                    snapshot = TeamRunner.GetManualControlSnapshot(ManualTeam);
+                }
+            }
+        }
+
+        var requiresPoint = RequiresPoint(snapshot);
+        if (UsesShotTargetMode(snapshot.Action) && snapshot.ShotTargetMode == ManualShotTargetMode.OpenAngle)
+        {
+            ImGui.TextColored(Color.Green400, "This action will use the open goal angle.");
+        }
+        else
+        {
+            ImGui.TextColored(requiresPoint ? Color.Yellow300 : Color.Zinc400,
+                requiresPoint ? "This action needs a field point." : "This action does not require a field point.");
+        }
 
         if (snapshot.HasTargetPoint)
         {
@@ -761,7 +820,10 @@ public sealed partial class GameControllerView : IDisposable
             ImGui.TextDisabled("Target: none");
         }
 
-        ImGui.TextColored(Color.Zinc400, "Right-click on the field to set the main target immediately.");
+        if (requiresPoint || snapshot.HasTargetPoint)
+        {
+            ImGui.TextColored(Color.Zinc400, "Right-click on the field to set the main target immediately.");
+        }
 
         if (snapshot.Action == ManualSkillAction.GoToPoint)
         {
@@ -835,21 +897,37 @@ public sealed partial class GameControllerView : IDisposable
         }
         else
         {
+            ImGui.BeginDisabled(requiresPoint && !snapshot.HasTargetPoint);
             if (ImGui.Button($"{IconFonts.FontAwesome6.Play}  Start Action"))
             {
                 TeamRunner.SetManualRunning(ManualTeam, true);
             }
+            ImGui.EndDisabled();
         }
 
         ImGui.EndDisabled();
     }
 
-    private static bool RequiresPoint(ManualSkillAction action) => action is
-        ManualSkillAction.GoToPoint or
+    private static bool RequiresPoint(ManualControlSnapshot snapshot) => snapshot.Action switch
+    {
+        ManualSkillAction.GoToPoint => true,
         ManualSkillAction.KickBall or
-        ManualSkillAction.WaitForBall or
-        ManualSkillAction.TurnAndShoot or
-        ManualSkillAction.DribbleToDirection;
+        ManualSkillAction.OneTouch or
+        ManualSkillAction.TurnAndShoot => snapshot.ShotTargetMode == ManualShotTargetMode.TargetPoint,
+        ManualSkillAction.WaitForBall => true,
+        ManualSkillAction.DribbleToDirection => true,
+        _ => false
+    };
+
+    private static bool UsesShotMode(ManualSkillAction action) => action is
+        ManualSkillAction.KickBall or
+        ManualSkillAction.OneTouch or
+        ManualSkillAction.TurnAndShoot;
+
+    private static bool UsesShotTargetMode(ManualSkillAction action) => action is
+        ManualSkillAction.KickBall or
+        ManualSkillAction.OneTouch or
+        ManualSkillAction.TurnAndShoot;
 
     // ── helpers ───────────────────────────────────────────────────────────────
 
