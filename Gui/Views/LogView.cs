@@ -68,7 +68,8 @@ public sealed partial class LogView(IDebugDb debugDb) : IDisposable
             const ImGuiTableFlags flags = ImGuiTableFlags.Resizable | ImGuiTableFlags.Hideable |
                                           ImGuiTableFlags.Reorderable |
                                           ImGuiTableFlags.HighlightHoveredColumn |
-                                          ImGuiTableFlags.RowBg | ImGuiTableFlags.BordersInnerH;
+                                          ImGuiTableFlags.RowBg | ImGuiTableFlags.BordersInnerH |
+                                          ImGuiTableFlags.Sortable;
 
             if (ImGui.BeginTable("logs", 7, flags))
             {
@@ -77,7 +78,8 @@ public sealed partial class LogView(IDebugDb debugDb) : IDisposable
 
                 ImGui.TableSetupColumn("Icon",
                     ImGuiTableColumnFlags.WidthFixed | ImGuiTableColumnFlags.NoHide |
-                    ImGuiTableColumnFlags.NoHeaderLabel | ImGuiTableColumnFlags.NoResize,
+                    ImGuiTableColumnFlags.NoHeaderLabel | ImGuiTableColumnFlags.NoResize |
+                    ImGuiTableColumnFlags.DefaultSort,
                     ImGui.GetFontSize());
                 ImGui.TableSetupColumn("Time", ImGuiTableColumnFlags.WidthStretch, 1.5f);
                 ImGui.TableSetupColumn("Module", ImGuiTableColumnFlags.WidthStretch, 1f);
@@ -88,6 +90,28 @@ public sealed partial class LogView(IDebugDb debugDb) : IDisposable
                 ImGui.TableSetupColumn("Text", ImGuiTableColumnFlags.WidthStretch, 10f);
 
                 ImGui.TableHeadersRow();
+
+                var sortSpecs = ImGui.TableGetSortSpecs();
+                if (!sortSpecs.IsNull && sortSpecs.SpecsCount > 0 && prepared.Entries.Count > 1)
+                {
+                    var spec = sortSpecs.Specs[0];
+                    prepared.Entries.Sort((a, b) =>
+                    {
+                        int result = spec.ColumnIndex switch
+                        {
+                            0 or 3 => a.Level.CompareTo(b.Level),
+                            1 => a.Timestamp.CompareTo(b.Timestamp),
+                            2 => string.Compare(a.Meta.Module, b.Meta.Module, StringComparison.Ordinal),
+                            4 => string.Compare(a.Meta.File, b.Meta.File, StringComparison.Ordinal),
+                            5 => string.Compare(a.Meta.Member, b.Meta.Member, StringComparison.Ordinal),
+                            6 => string.Compare(a.Message, b.Message, StringComparison.Ordinal),
+                            _ => 0
+                        };
+
+                        return spec.SortDirection == ImGuiSortDirection.Ascending ? result : -result;
+                    });
+                    sortSpecs.SpecsDirty = false;
+                }
 
                 ImGui.PushFont(FontRegistry.Instance.MonoFont, FontRegistry.Instance.MonoFont.LegacySize);
 
