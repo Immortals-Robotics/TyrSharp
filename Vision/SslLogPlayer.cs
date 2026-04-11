@@ -57,6 +57,7 @@ public sealed partial class SslLogPlayer : IDisposable
         {
             _logFile = new SslLogFile(FilePath);
             _loadedPath = FilePath;
+            IsPlaying = true;
             Log.ZLogInformation($"Loaded SSL Log: {FilePath} ({_logFile.Duration})");
         }
         catch (Exception ex)
