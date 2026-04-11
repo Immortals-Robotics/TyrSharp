@@ -1,4 +1,4 @@
-﻿using Hexa.NET.ImGui;
+using Hexa.NET.ImGui;
 using Tyr.Common.Config;
 using Tyr.Common.Debug.Drawing;
 using Tyr.Common.Runner;
@@ -43,6 +43,8 @@ public sealed partial class Runner : IDisposable
     private readonly SessionsView _sessions;
     private readonly ConfigsView _configs;
     private readonly GameControllerView _gameController;
+    private SslLogPlayerView? _sslLogPlayerView;
+    private Tyr.Vision.SslLogPlayer? _sslLogPlayer;
     private readonly GuiFramePipeline _pipeline;
     private GuiFramePipeline.PreparedFrame _preparedFrame;
 
@@ -89,6 +91,12 @@ public sealed partial class Runner : IDisposable
         _runner = new RunnerSync(Tick, MaxFps, ModuleName, RunnerPriority);
 
         Configurable.OnUpdated += _ => OnConfigsChanged();
+    }
+
+    public void RegisterSslLogPlayer(Tyr.Vision.SslLogPlayer player)
+    {
+        _sslLogPlayer = player;
+        _sslLogPlayerView = new SslLogPlayerView(player);
     }
 
     private void OnConfigsChanged()
@@ -141,6 +149,8 @@ public sealed partial class Runner : IDisposable
             Configurable.MarkChanged(StorageType.User);
         }
 
+        _sslLogPlayer?.Tick();
+
         // draw
         _window.Clear(Color.Slate950);
         _imgui.NewFrame();
@@ -160,6 +170,8 @@ public sealed partial class Runner : IDisposable
         _field.Draw(_preparedFrame.Field);
         _plots.Draw(_preparedFrame.Plots);
         _filter.Draw();
+
+        _sslLogPlayerView?.Draw();
 
         _pipeline.Enqueue(CreatePrepareRequest());
 

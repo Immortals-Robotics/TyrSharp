@@ -41,6 +41,8 @@ internal static unsafe class DefaultLayout
         ImGuiP.DockBuilderSplitNode(rightNodeId, ImGuiDir.Down, RightBottomPaneRatio, &rightBottomNodeId, &rightTopNodeId);
 
         ImGuiP.DockBuilderDockWindow(PlaybackControl.WindowTitle, playbackNodeId);
+        ImGuiP.DockBuilderDockWindow(SslLogPlayerView.WindowTitle, playbackNodeId);
+        
         ImGuiP.DockBuilderDockWindow(FieldView.WindowTitle, fieldNodeId);
         ImGuiP.DockBuilderDockWindow(LogView.WindowTitle, bottomNodeId);
         ImGuiP.DockBuilderDockWindow(PlotView.WindowTitle, bottomNodeId);

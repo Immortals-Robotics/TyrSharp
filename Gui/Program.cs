@@ -15,7 +15,9 @@ using var vision = new Tyr.Vision.Runner();
 using var soccer = new Tyr.Soccer.Runner();
 
 using var sslVisionPublisher = new Tyr.Vision.SslVisionDataPublisher();
+using var sslLogPlayer = new Tyr.Vision.SslLogPlayer();
 using var gcPublisher = new Tyr.Referee.GcDataPublisher();
 using var robotStatusPublisher = new Tyr.Sender.RobotStatusPublisher(); 
 
+runner.RegisterSslLogPlayer(sslLogPlayer);
 runner.Start();
