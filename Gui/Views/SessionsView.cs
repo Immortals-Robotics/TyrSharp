@@ -12,7 +12,8 @@ namespace Tyr.Gui.Views;
 public sealed partial class SessionsView(PlaybackSessionManager playbackSessions)
 {
     public static readonly string WindowTitle = $"{IconFonts.FontAwesome6.HardDrive} Sessions";
-    [ConfigEntry(StorageType.User)] private static bool KeepWindowOpen { get; set; } = true;
+    [ConfigEntry("Whether to restore the session window on startup.", StorageType.User)] private static bool KeepWindowOpen { get; set; } = true;
+    [ConfigEntry("Automatically compress completed sessions into .tyrlog archives in the background.", StorageType.User)] public static bool AutoCompact { get; set; } = false;
 
     private readonly HashSet<string> _selectedMetadataPaths = [];
     private readonly Dictionary<string, string> _groupSelectedPaths = [];
@@ -60,14 +61,30 @@ public sealed partial class SessionsView(PlaybackSessionManager playbackSessions
 
     private void DrawToolbar()
     {
-        if (ImGui.Button($"{IconFonts.FontAwesome6.Rotate} Refresh"))
-            playbackSessions.RefreshSessions();
-
-        ImGui.SameLine();
         if (ImGui.Button($"{IconFonts.FontAwesome6.FileImport} Import"))
             ImportArchive();
 
         var selectedSessions = GetSelectedSessions();
+        var canCompact = selectedSessions.Any(s => !s.IsCompacted);
+
+        ImGui.SameLine();
+        if (canCompact)
+        {
+            if (ImGui.Button($"{IconFonts.FontAwesome6.FileZipper} Compact"))
+            {
+                playbackSessions.CompactSessions(selectedSessions.Where(s => !s.IsCompacted));
+            }
+        }
+
+        var canCompactAny = playbackSessions.Sessions.Any(s => !s.IsCompacted);
+        ImGui.SameLine();
+        if (canCompactAny)
+        {
+            if (ImGui.Button($"{IconFonts.FontAwesome6.BoxArchive} Compact All"))
+            {
+                playbackSessions.CompactSessions(playbackSessions.Sessions.Where(s => !s.IsCompacted));
+            }
+        }
 
         ImGui.SameLine();
         if (selectedSessions.Count >= 2)
@@ -159,6 +176,12 @@ public sealed partial class SessionsView(PlaybackSessionManager playbackSessions
 
             // Name / Selector
             ImGui.TableNextColumn();
+            if (active.IsCompacted)
+            {
+                ImGui.TextUnformatted(IconFonts.FontAwesome6.FileZipper);
+                ImGui.SameLine();
+            }
+
             if (label != null && groupSessions.Count > 1)
             {
                 ImGui.SetNextItemWidth(-1f);
@@ -312,20 +335,16 @@ public sealed partial class SessionsView(PlaybackSessionManager playbackSessions
 
         foreach (var file in result.Paths)
             playbackSessions.ImportSessionArchive(file);
-
-        playbackSessions.RefreshSessions();
     }
 
     private void Rename(PlaybackSessionInfo session, string label)
     {
         playbackSessions.RenameSession(session, NormalizeLabel(label));
-        playbackSessions.RefreshSessions();
     }
 
     private void MergeLabel(IReadOnlyList<PlaybackSessionInfo> sessions, string label)
     {
         playbackSessions.AssignCaptureLabel(sessions, NormalizeLabel(label));
-        playbackSessions.RefreshSessions();
     }
 
     private void DeleteSelectedSessions(IReadOnlyList<PlaybackSessionInfo> sessions)
@@ -333,7 +352,6 @@ public sealed partial class SessionsView(PlaybackSessionManager playbackSessions
         playbackSessions.DeleteSessions(sessions);
         foreach (var session in sessions)
             _selectedMetadataPaths.Remove(session.MetadataPath);
-        playbackSessions.RefreshSessions();
     }
 
     private void ToggleSelected(string metadataPath)
@@ -376,6 +394,11 @@ public sealed partial class SessionsView(PlaybackSessionManager playbackSessions
 
         if (ImGui.Selectable($"{IconFonts.FontAwesome6.FileExport} Export"))
             ExportSelectedSessions([session]);
+
+        if (!session.IsCompacted && ImGui.Selectable($"{IconFonts.FontAwesome6.FileZipper} Compact"))
+        {
+            playbackSessions.CompactSessions([session]);
+        }
 
         if (ImGui.Selectable($"{IconFonts.FontAwesome6.PenToSquare} Rename"))
         {
