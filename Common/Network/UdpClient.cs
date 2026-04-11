@@ -152,7 +152,11 @@ public sealed partial class UdpClient : IDisposable
         }
     }
 
-    private ReadOnlySpan<byte> ReceiveRaw()
+    /// <summary>
+    /// Receives a raw packet from the UDP socket.
+    /// </summary>
+    /// <returns>A span containing the received data, or an empty span if no data was available.</returns>
+    public ReadOnlySpan<byte> ReceiveRaw()
     {
         try
         {

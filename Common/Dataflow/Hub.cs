@@ -11,8 +11,9 @@ public static class Hub
     // game-controller data
     public static readonly BroadcastChannel<Data.Ssl.Gc.Referee> RawReferee = new();
 
-    // robot status data
+    // robot status and discovery data
     public static readonly BroadcastChannel<Data.Robot.StatusUpdate> RobotStatus = new();
+    public static readonly BroadcastChannel<IReadOnlyList<Data.Robot.DiscoveredRobot>> DiscoveredRobots = new();
 
     // our published data
     public static readonly BroadcastChannel<Vision.Data.FilteredFrame> Vision = new();

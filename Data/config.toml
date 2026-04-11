@@ -188,6 +188,15 @@ WatchdogTimeout = 5.0 # default: 5.000000s
 
 [Common.Network.ZmqReceiverConfigs]
 PollTimeout = 0.01 # default: 0.010000s
+WatchdogTimeout = 5.0 # default: 5.000000s
+
+[Common.Network.ZmqSender]
+MaxPacketSize = 65536 # default: 65536
+
+[Common.Network.RobotDiscoveryConfigs]
+Port = 5669 # default: 5669
+Timeout = 3.0 # default: 3.000000s
+PollTimeout = 0.1 # default: 0.100000s
 
 [Common.Network.UdpClient]
 MaxPacketSize = 65536 # default: 65536

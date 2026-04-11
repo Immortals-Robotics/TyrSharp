@@ -18,6 +18,7 @@ using var sslVisionPublisher = new Tyr.Vision.SslVisionDataPublisher();
 using var sslLogPlayer = new Tyr.Vision.SslLogPlayer();
 using var gcPublisher = new Tyr.Referee.GcDataPublisher();
 using var robotStatusPublisher = new Tyr.Sender.RobotStatusPublisher(); 
+using var robotDiscoveryPublisher = new Tyr.Sender.RobotDiscoveryPublisher();
 
 runner.RegisterSslLogPlayer(sslLogPlayer);
 runner.Start();

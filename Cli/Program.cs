@@ -7,6 +7,8 @@ using var userConfigs = new Config.Storage(
 
 using var sslVisionPublisher = new Tyr.Vision.SslVisionDataPublisher();
 using var gcPublisher = new Tyr.Referee.GcDataPublisher();
+using var robotStatusPublisher = new Tyr.Sender.RobotStatusPublisher();
+using var robotDiscoveryPublisher = new Tyr.Sender.RobotDiscoveryPublisher();
 
 using var referee = new Tyr.Referee.Runner();
 using var vision = new Tyr.Vision.Runner();
