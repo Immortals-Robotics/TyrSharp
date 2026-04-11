@@ -10,33 +10,23 @@ public sealed partial class Vision
 {
     private const string Layer = "Filtered";
 
-    private static void DrawFilteredFrame(FilteredFrame frame)
+    private static void PlotFilteredFrame(FilteredFrame frame)
     {
-        Draw.BeginLayer(Layer);
-
-        DrawFilteredBall(frame.Ball);
+        PlotFilteredBall(frame.Ball);
 
         foreach (var robot in frame.Robots)
         {
-            DrawFilteredRobot(robot);
+            PlotFilteredRobot(robot);
         }
-
-        Draw.EndLayer();
     }
 
-    private static void DrawFilteredRobot(FilteredRobot robot)
+    private static void PlotFilteredRobot(FilteredRobot robot)
     {
-        Draw.DrawRobot(robot.State.Position, robot.State.Angle, robot.Id, null,
-            Options.Filled with { Thickness = 10f });
-
         Plot.Plot($"Robot {robot.Id} velocity", robot.State.Velocity);
     }
 
-    private static void DrawFilteredBall(FilteredBall ball)
+    private static void PlotFilteredBall(FilteredBall ball)
     {
-        Draw.DrawCircle(ball.State.Position, 25f + Math.Clamp(ball.State.Position3D.Z / 3, 0, 200), Color.Orange400,
-            Options.Filled with { Thickness = 5f });
-
         Plot.Plot("ball position", ball.State.Position3D);
         Plot.Plot("ball velocity", ball.State.Velocity);
     }

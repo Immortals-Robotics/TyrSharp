@@ -183,25 +183,25 @@ public sealed partial class SslLogPlayer : IDisposable
     {
         if (data.Detection != null)
         {
-            data.Detection.Timestamp = data.Detection.CaptureTime;
+            data.Detection.ExecutionTimestamp = Tyr.Common.Time.Timestamp.Now;
             data.Detection.Meta = Common.Debug.Meta.GetOrCreate("Vision", "SslDetection");
             Hub.RawDetection.Publish(data.Detection);
         }
 
         if (data.Geometry != null)
         {
-            var timestamp = data.Detection?.CaptureTime ?? Tyr.Common.Time.Timestamp.Now;
+            var timestamp = Tyr.Common.Time.Timestamp.Now;
             var meta = Common.Debug.Meta.GetOrCreate("Vision", "SslGeometry");
 
             var field = data.Geometry.Field;
-            field.Timestamp = timestamp;
+            field.ExecutionTimestamp = timestamp;
             field.Meta = meta;
             Hub.FieldSize.Publish(field);
 
             foreach (var calib in data.Geometry.Calibrations)
             {
                 var calibration = calib;
-                calibration.Timestamp = timestamp;
+                calibration.ExecutionTimestamp = timestamp;
                 calibration.Meta = meta;
                 Hub.CameraCalibration.Publish(calibration);
             }
@@ -209,7 +209,7 @@ public sealed partial class SslLogPlayer : IDisposable
             if (data.Geometry.BallModels.HasValue)
             {
                 var ballModels = data.Geometry.BallModels.Value;
-                ballModels.Timestamp = timestamp;
+                ballModels.ExecutionTimestamp = timestamp;
                 ballModels.Meta = meta;
                 Hub.BallModels.Publish(ballModels);
             }

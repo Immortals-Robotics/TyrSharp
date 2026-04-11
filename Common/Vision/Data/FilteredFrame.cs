@@ -14,4 +14,7 @@ public partial record FilteredFrame : IEntry
 
     [MemoryPackIgnore] public Meta Meta { get; set; }
     [MemoryPackIgnore] public string? ShardKey => null;
+
+    [MemoryPackIgnore] public Timestamp ExecutionTimestamp { get; set; }
+    [MemoryPackIgnore] Timestamp IEntry.Timestamp { get => ExecutionTimestamp; set => ExecutionTimestamp = value; }
 }

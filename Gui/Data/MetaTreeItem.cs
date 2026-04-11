@@ -9,6 +9,7 @@ public record MetaTreeItem : IComparable<MetaTreeItem>
         Log,
         Draw,
         Plot,
+        Data,
     }
 
     public ItemType Type { get; }

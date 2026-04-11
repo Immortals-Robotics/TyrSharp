@@ -235,6 +235,21 @@ public sealed partial class DebugFilter(Tyr.Common.Debug.Db.IDebugDb debugDb) : 
             RegisterMetaTree(module,
                 debugDb.QuerySourceLocations<Tyr.Common.Debug.Plotting.Command>(module),
                 MetaTreeItem.ItemType.Plot);
+            RegisterMetaTree(module,
+                debugDb.QuerySourceLocations<Tyr.Common.Data.Ssl.Vision.Detection.Frame>(module),
+                MetaTreeItem.ItemType.Data);
+            RegisterMetaTree(module,
+                debugDb.QuerySourceLocations<Tyr.Common.Data.Ssl.Vision.Geometry.FieldSize>(module),
+                MetaTreeItem.ItemType.Data);
+            RegisterMetaTree(module,
+                debugDb.QuerySourceLocations<Tyr.Common.Data.Ssl.Vision.Geometry.CameraCalibration>(module),
+                MetaTreeItem.ItemType.Data);
+            RegisterMetaTree(module,
+                debugDb.QuerySourceLocations<Tyr.Common.Data.Ssl.Vision.Geometry.BallModels>(module),
+                MetaTreeItem.ItemType.Data);
+            RegisterMetaTree(module,
+                debugDb.QuerySourceLocations<Tyr.Common.Vision.Data.FilteredFrame>(module),
+                MetaTreeItem.ItemType.Data);
 
             if (!_metaTrees.TryGetValue(module, out var metaTree))
                 continue;
@@ -528,6 +543,7 @@ public sealed partial class DebugFilter(Tyr.Common.Debug.Db.IDebugDb debugDb) : 
             MetaTreeItem.ItemType.Log => IconFonts.FontAwesome6.Terminal,
             MetaTreeItem.ItemType.Draw => IconFonts.FontAwesome6.Shapes,
             MetaTreeItem.ItemType.Plot => IconFonts.FontAwesome6.ChartLine,
+            MetaTreeItem.ItemType.Data => IconFonts.FontAwesome6.Database,
             _ => IconFonts.FontAwesome6.Square // Default to square icon for other types
         };
 

@@ -73,7 +73,8 @@ public partial class Frame : IEntry
     /// </summary>
     [ProtoMember(7)] public List<Robot> RobotsBlue { get; set; } = [];
 
-    [MemoryPackIgnore] public Timestamp Timestamp { get; set; }
+    [MemoryPackIgnore] public Timestamp ExecutionTimestamp { get; set; }
+    [MemoryPackIgnore] Timestamp IEntry.Timestamp { get => ExecutionTimestamp; set => ExecutionTimestamp = value; }
     [MemoryPackIgnore] public Meta Meta { get; set; }
     [MemoryPackIgnore] public string? ShardKey => null;
 }

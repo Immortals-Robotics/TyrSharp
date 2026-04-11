@@ -32,7 +32,6 @@ public sealed partial class FieldView : IDisposable
 
     private Utf8ValueStringBuilder _stringBuilder = ZString.CreateUtf8StringBuilder();
 
-    private readonly Subscriber<FieldSize> _fieldSizeSubscriber = Hub.FieldSize.Subscribe(Mode.Latest);
     private FieldSize? _fieldSize;
 
     private readonly List<Debug.Drawing.Command> _fieldDraws = [];
@@ -104,6 +103,89 @@ public sealed partial class FieldView : IDisposable
 
                 preparedModule ??= prepared.AddModule(module);
                 preparedModule.Commands.Add(draw);
+            }
+
+            var fieldSizes = _debugDb.Query<Tyr.Common.Data.Ssl.Vision.Geometry.FieldSize>(
+                module, frame.Value.Start, frame.Value.End).ToList();
+            if (fieldSizes.Count > 0)
+            {
+                _fieldSize = fieldSizes[^1];
+            }
+
+            var calibrations = _debugDb.Query<Tyr.Common.Data.Ssl.Vision.Geometry.CameraCalibration>(
+                module, frame.Value.Start, frame.Value.End).ToList();
+            foreach (var calib in calibrations)
+            {
+                if (!filterSnapshot.IsEnabled(calib.Meta)) continue;
+                preparedModule ??= prepared.AddModule(module);
+
+                var pos3d = calib.DerivedCameraWorld;
+                var pos2d = new Vector2(pos3d.X, pos3d.Y);
+
+                preparedModule.Commands.Add(new Debug.Drawing.Command
+                {
+                    Drawable = new Debug.Drawing.Drawables.Point { Position = pos2d },
+                    Color = Debug.Drawing.Color.Cyan,
+                    Options = Debug.Drawing.Options.Outline(15f),
+                    Meta = calib.Meta,
+                    Timestamp = calib.ExecutionTimestamp
+                });
+
+                preparedModule.Commands.Add(new Debug.Drawing.Command
+                {
+                    Drawable = new Debug.Drawing.Drawables.Text { Content = calib.CameraId.ToString(), Position = pos2d + new Vector2(0, 50), Size = 150f, Alignment = Debug.Drawing.Drawables.TextAlignment.BottomCenter },
+                    Color = Debug.Drawing.Color.Cyan300,
+                    Options = default,
+                    Meta = calib.Meta,
+                    Timestamp = calib.ExecutionTimestamp
+                });
+            }
+
+            var detections = _debugDb.Query<Tyr.Common.Data.Ssl.Vision.Detection.Frame>(
+                module, frame.Value.Start, frame.Value.End).ToList();
+            if (detections.Count > 0)
+            {
+                var latestDetection = detections[^1];
+                if (filterSnapshot.IsEnabled(latestDetection.Meta))
+                {
+                    preparedModule ??= prepared.AddModule(module);
+
+                    foreach (var ball in latestDetection.Balls)
+                    {
+                        preparedModule.Commands.Add(new Debug.Drawing.Command
+                        {
+                            Drawable = new Debug.Drawing.Drawables.Circle { Center = new Vector2(ball.X, ball.Y), Radius = 20f },
+                            Color = Debug.Drawing.Color.Orange500.WithAlpha(0.6f),
+                            Options = Debug.Drawing.Options.Filled with { Thickness = 3f },
+                            Meta = latestDetection.Meta,
+                            Timestamp = latestDetection.ExecutionTimestamp
+                        });
+                    }
+
+                    foreach (var robot in latestDetection.RobotsYellow)
+                    {
+                        preparedModule.Commands.Add(new Debug.Drawing.Command
+                        {
+                            Drawable = new Debug.Drawing.Drawables.Robot { Position = new Vector2(robot.X, robot.Y), Orientation = robot.Orientation, Id = robot.RobotId, Radius = Debug.Drawing.Drawables.Robot.DefaultRadius },
+                            Color = Debug.Drawing.Color.Yellow500.WithAlpha(0.5f),
+                            Options = Debug.Drawing.Options.Filled with { Thickness = 5f },
+                            Meta = latestDetection.Meta,
+                            Timestamp = latestDetection.ExecutionTimestamp
+                        });
+                    }
+
+                    foreach (var robot in latestDetection.RobotsBlue)
+                    {
+                        preparedModule.Commands.Add(new Debug.Drawing.Command
+                        {
+                            Drawable = new Debug.Drawing.Drawables.Robot { Position = new Vector2(robot.X, robot.Y), Orientation = robot.Orientation, Id = robot.RobotId, Radius = Debug.Drawing.Drawables.Robot.DefaultRadius },
+                            Color = Debug.Drawing.Color.Blue500.WithAlpha(0.5f),
+                            Options = Debug.Drawing.Options.Filled with { Thickness = 5f },
+                            Meta = latestDetection.Meta,
+                            Timestamp = latestDetection.ExecutionTimestamp
+                        });
+                    }
+                }
             }
 
             var filteredFrames = _debugDb.Query<Common.Vision.Data.FilteredFrame>(
@@ -242,27 +324,23 @@ public sealed partial class FieldView : IDisposable
 
     private void DrawField()
     {
-        if (_fieldSizeSubscriber.Reader.TryRead(out var fieldSize))
+        if (!_fieldSize.HasValue) return;
+
+        _fieldDraws.Clear();
+
+        DrawInternal(new Debug.Drawing.Drawables.Rectangle(_fieldSize.Value.RectangleWithBoundary),
+            Debug.Drawing.Color.Green800, Debug.Drawing.Options.Filled);
+
+        foreach (var line in _fieldSize.Value.Lines)
         {
-            _fieldSize = fieldSize;
-            if (!_fieldSize.HasValue) return;
+            DrawInternal(new Debug.Drawing.Drawables.LineSegment(line.LineSegment),
+                LineColor, Debug.Drawing.Options.Outline(line.Thickness));
+        }
 
-            _fieldDraws.Clear();
-
-            DrawInternal(new Debug.Drawing.Drawables.Rectangle(_fieldSize.Value.RectangleWithBoundary),
-                Debug.Drawing.Color.Green800, Debug.Drawing.Options.Filled);
-
-            foreach (var line in _fieldSize.Value.Lines)
-            {
-                DrawInternal(new Debug.Drawing.Drawables.LineSegment(line.LineSegment),
-                    LineColor, Debug.Drawing.Options.Outline(line.Thickness));
-            }
-
-            foreach (var arc in _fieldSize.Value.Arcs)
-            {
-                DrawInternal(new Debug.Drawing.Drawables.Arc(arc),
-                    LineColor, Debug.Drawing.Options.Outline(arc.Thickness));
-            }
+        foreach (var arc in _fieldSize.Value.Arcs)
+        {
+            DrawInternal(new Debug.Drawing.Drawables.Arc(arc),
+                LineColor, Debug.Drawing.Options.Outline(arc.Thickness));
         }
 
         _renderer.Draw(_fieldDraws, null);
@@ -305,6 +383,5 @@ public sealed partial class FieldView : IDisposable
     public void Dispose()
     {
         _stringBuilder.Dispose();
-        _fieldSizeSubscriber.Dispose();
     }
 }

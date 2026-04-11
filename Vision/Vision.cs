@@ -74,7 +74,7 @@ public sealed partial class Vision
             camera.DrawDebug(frame.Timestamp);
         }
 
-        DrawFilteredFrame(frame);
+        PlotFilteredFrame(frame);
 
         _lastFilteredFrame = frame;
     }
@@ -183,6 +183,7 @@ public sealed partial class Vision
         {
             Id = _lastFilteredFrame.Id + 1,
             Timestamp = timestamp,
+            ExecutionTimestamp = Tyr.Common.Time.Timestamp.Now,
             Ball = ball,
             Robots = robots,
             Meta = Common.Debug.Meta.GetOrCreate("Vision", "WorldState"),

@@ -12,7 +12,8 @@ namespace Tyr.Common.Data.Ssl.Vision.Geometry;
 [MemoryPackable]
 public partial struct CameraCalibration : IEntry
 {
-    [MemoryPackIgnore] public Timestamp Timestamp { get; set; }
+    [MemoryPackIgnore] public Timestamp ExecutionTimestamp { get; set; }
+    [MemoryPackIgnore] Timestamp IEntry.Timestamp { get => ExecutionTimestamp; set => ExecutionTimestamp = value; }
     [MemoryPackIgnore] public Meta Meta { get; set; }
     [MemoryPackIgnore] public string? ShardKey => null;
 
