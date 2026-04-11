@@ -201,6 +201,12 @@ PollTimeout = 0.1 # default: 0.100000s
 [Common.Network.UdpClient]
 MaxPacketSize = 65536 # default: 65536
 
+[Common.Network.SeafileClient]
+# The Seafile server base URL
+BaseUrl = "https://seafile.tigers-mannheim.de" # default: https://seafile.tigers-mannheim.de
+# The public share token for the log directory
+ShareToken = "e85851d9bc9944bf95bb" # default: e85851d9bc9944bf95bb
+
 
 [Common.Runner]
 [Common.Runner.ProcessScheduling]
@@ -284,6 +290,12 @@ DebounceDelay = 0.2 # default: 0.200000s
 [Sender.Nrf]
 Enabled = true # default: False
 Address = { Ip = "224.5.92.5", Port = 60005 } # default: 224.5.92.5:60005
+
+[Sender.ZmqRobotSender]
+Enabled = true # default: True
+CmdPort = 5671 # default: 5671
+DefaultDribblerForce = 5.0 # default: 5
+RobotCommandTopic = "CommandTypeRobot" # default: CommandTypeRobot
 
 [Sender.ShootCalibration]
 

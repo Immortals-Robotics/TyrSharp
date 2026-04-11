@@ -202,6 +202,7 @@ public sealed partial class Runner : IDisposable
         _log.Dispose();
         _field.Dispose();
         _gameController.Dispose();
+        _sslLogPlayerView?.Dispose();
     }
 
     private GuiFramePipeline.PrepareRequest CreatePrepareRequest()
