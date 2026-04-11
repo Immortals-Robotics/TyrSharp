@@ -78,13 +78,13 @@ public sealed partial class Runner : IDisposable
         // init our UI views
         _filter = new DebugFilter(debugDb);
         _log = new LogView(debugDb);
-        _field = new FieldView(debugDb);
+        _simulator = new SimulatorView();
+        _field = new FieldView(debugDb) { SimulatorChannel = _simulator.Channel };
         _plots = new PlotView(debugDb);
         _sessions = new SessionsView(playbackSessions);
         _control = new PlaybackControl(debugDb, _sessions);
         _configs = new ConfigsView(projectConfigPath);
         _gameController = new GameControllerView();
-        _simulator = new SimulatorView();
         _manualControl = new ManualControlView();
         _robotDebug = new RobotDebugView();
         _pipeline = new GuiFramePipeline(PrepareFrame);

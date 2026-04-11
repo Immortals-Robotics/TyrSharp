@@ -45,6 +45,9 @@ public sealed partial class SimulatorChannel : IDisposable
     [ConfigEntry("Back-left wheel angle (deg)")]    private static float? WheelBackLeftDeg   { get; set; }
     [ConfigEntry("Front-left wheel angle (deg)")]   private static float? WheelFrontLeftDeg  { get; set; }
 
+    /// <summary>Set by SimulatorView each frame to reflect whether grSim is currently running.</summary>
+    public bool SimulatorRunning { get; set; }
+
     private readonly Socket _socket;
     private readonly byte[] _sendBuf = new byte[65536];
     private readonly byte[] _recvBuf = new byte[65536];

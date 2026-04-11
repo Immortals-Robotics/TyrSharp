@@ -10,6 +10,7 @@ using Tyr.Common.Math;
 using Tyr.Gui.Backend;
 using Tyr.Gui.Data;
 using Tyr.Gui.Rendering;
+using Tyr.Gui.Simulator;
 using Tyr.Soccer;
 using Debug = Tyr.Common.Debug;
 
@@ -36,6 +37,9 @@ public sealed partial class FieldView : IDisposable
     private FieldSize? _fieldSize;
 
     private readonly List<Debug.Drawing.Command> _fieldDraws = [];
+
+    public required SimulatorChannel SimulatorChannel { get; init; }
+    private Vector2 _contextMenuWorldPos;
 
     internal sealed class PreparedModule
     {
@@ -157,6 +161,7 @@ public sealed partial class FieldView : IDisposable
 
             DrawField();
             TryCaptureManualTarget(isLive);
+            TryShowContextMenu();
 
             foreach (var module in prepared.Modules)
             {
@@ -267,6 +272,38 @@ public sealed partial class FieldView : IDisposable
             {
                 TeamRunner.SetManualTargetPoint(team, point);
             }
+        }
+    }
+
+    private void TryShowContextMenu()
+    {
+        // Don't show when manual control is handling right-click
+        var team = ManualControlView.SelectedManualTeam;
+        var manualActive = team != TeamColor.Unknown
+                        && TeamRunner.GetManualControlSnapshot(team).Enabled;
+        if (manualActive) return;
+
+        if (ImGui.IsWindowHovered(ImGuiHoveredFlags.None)
+            && ImGui.IsMouseReleased(ImGuiMouseButton.Right)
+            && !ImGui.IsMouseDragging(ImGuiMouseButton.Right))
+        {
+            _contextMenuWorldPos = _renderer.Camera.ScreenToWorld(ImGui.GetMousePos());
+            ImGui.OpenPopup("##field_ctx");
+        }
+
+        if (ImGui.BeginPopup("##field_ctx"))
+        {
+            ImGui.TextColored(Debug.Drawing.Color.Zinc400,
+                $"{_contextMenuWorldPos.X:F0}, {_contextMenuWorldPos.Y:F0} mm");
+            ImGui.Separator();
+
+            if (SimulatorChannel.SimulatorRunning
+                && ImGui.MenuItem($"{IconFonts.FontAwesome6.Football}  Teleport Ball Here"))
+                SimulatorChannel.TeleportBall(
+                    _contextMenuWorldPos.X / 1000f,
+                    _contextMenuWorldPos.Y / 1000f);
+
+            ImGui.EndPopup();
         }
     }
 

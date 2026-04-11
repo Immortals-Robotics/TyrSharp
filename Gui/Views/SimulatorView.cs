@@ -13,10 +13,6 @@ public sealed class SimulatorView : IDisposable
 {
     public static readonly string WindowTitle = $"{IconFonts.FontAwesome6.Football} Simulator";
 
-    private static readonly string ProcessTabTitle = $"{IconFonts.FontAwesome6.Microchip}  Process";
-    private static readonly string ControlTabTitle = $"{IconFonts.FontAwesome6.Crosshairs}  Control";
-    private static readonly string ConfigTabTitle  = $"{IconFonts.FontAwesome6.Sliders}  Config";
-
     private static readonly string DownloadLatestButtonLabel = $"{IconFonts.FontAwesome6.CloudArrowDown}  Download Latest##simdownload";
     private static readonly string CancelDownloadButtonLabel = $"{IconFonts.FontAwesome6.Xmark}  Cancel##simdownload";
     private static readonly string StopProcessButtonLabel    = $"{IconFonts.FontAwesome6.Stop}  Stop##simproc";
@@ -46,6 +42,7 @@ public sealed class SimulatorView : IDisposable
     public void Draw()
     {
         _process.Refresh();
+        Channel.SimulatorRunning = _process.CurrentStatus == GrSimProcess.Status.Running;
 
         if (!ImGui.Begin(WindowTitle))
         {
@@ -53,28 +50,12 @@ public sealed class SimulatorView : IDisposable
             return;
         }
 
-        if (ImGui.BeginTabBar("sim_tabs"))
-        {
-            if (ImGui.BeginTabItem(ProcessTabTitle))
-            {
-                DrawProcessPanel();
-                ImGui.EndTabItem();
-            }
-
-            if (ImGui.BeginTabItem(ControlTabTitle))
-            {
-                DrawControlPanel();
-                ImGui.EndTabItem();
-            }
-
-            if (ImGui.BeginTabItem(ConfigTabTitle))
-            {
-                DrawConfigPanel();
-                ImGui.EndTabItem();
-            }
-
-            ImGui.EndTabBar();
-        }
+        ImGui.SeparatorText($"{IconFonts.FontAwesome6.Microchip}  Process");
+        DrawProcessPanel();
+        ImGui.SeparatorText($"{IconFonts.FontAwesome6.Crosshairs}  Control");
+        DrawControlPanel();
+        ImGui.SeparatorText($"{IconFonts.FontAwesome6.Sliders}  Config");
+        DrawConfigPanel();
 
         ImGui.End();
     }
