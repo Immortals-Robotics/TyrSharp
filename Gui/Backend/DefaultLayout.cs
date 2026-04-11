@@ -51,6 +51,7 @@ internal static unsafe class DefaultLayout
         ImGuiP.DockBuilderDockWindow(DebugFilter.WindowTitle, rightTopNodeId);
 
         ImGuiP.DockBuilderDockWindow(GameControllerView.WindowTitle, rightBottomNodeId);
+        ImGuiP.DockBuilderDockWindow(SimulatorView.WindowTitle, rightBottomNodeId);
         ImGuiP.DockBuilderDockWindow(ManualControlView.WindowTitle, rightBottomNodeId);
         ImGuiP.DockBuilderDockWindow(SessionsView.WindowTitle, rightBottomNodeId);
         ImGuiP.DockBuilderDockWindow(RobotDebugView.WindowTitle, rightBottomNodeId);
