@@ -6,6 +6,7 @@ using Tyr.Common.Config;
 using Tyr.Common.Data;
 using Tyr.Gui.Backend;
 using Tyr.Gui.GameController;
+using Tyr.Soccer;
 using Color = Tyr.Common.Debug.Drawing.Color;
 
 namespace Tyr.Gui.Views;
@@ -18,6 +19,7 @@ public sealed partial class GameControllerView : IDisposable
     private static readonly string RefereeTabTitle = $"{IconFonts.FontAwesome6.Gavel}  Referee";
     private static readonly string YellowTabTitle = $"{IconFonts.FontAwesome6.Robot}  Yellow";
     private static readonly string BlueTabTitle = $"{IconFonts.FontAwesome6.Robot}  Blue";
+    private static readonly string ManualTabTitle = $"{IconFonts.FontAwesome6.Gamepad}  Manual";
     private static readonly string DownloadLatestButtonLabel = $"{IconFonts.FontAwesome6.CloudArrowDown}  Download Latest##gcdownload";
     private static readonly string CancelDownloadButtonLabel = $"{IconFonts.FontAwesome6.Xmark}  Cancel##gcdownload";
     private static readonly string StopProcessButtonLabel = $"{IconFonts.FontAwesome6.Stop}  Stop##gcproc";
@@ -38,8 +40,47 @@ public sealed partial class GameControllerView : IDisposable
     [ConfigEntry("Team to issue gamepad commands for", StorageType.User)]
     private static TeamColor GamepadTeam { get; set; } = TeamColor.Yellow;
 
+    [ConfigEntry("Team to control from the manual soccer skill tab", StorageType.User)]
+    private static TeamColor ManualTeam { get; set; } = TeamColor.Yellow;
+
     private SDLGamepadPtr _gamepad;
     private readonly bool[] _lastButtons = new bool[32]; // SDL_GAMEPAD_BUTTON_MAX is usually small
+
+    private static readonly ManualSkillAction[] ManualActions =
+    [
+        ManualSkillAction.GoToPoint,
+        ManualSkillAction.KickBall,
+        ManualSkillAction.WaitForBall,
+        ManualSkillAction.InterceptBall,
+        ManualSkillAction.OneTouch,
+        ManualSkillAction.TurnAndShoot,
+        ManualSkillAction.DribbleToDirection,
+    ];
+
+    private static readonly string[] ManualActionLabels =
+    [
+        "Go To Point",
+        "KickBall",
+        "WaitForBall",
+        "InterceptBall",
+        "OneTouch",
+        "TurnAndShoot",
+        "DribbleToDirection",
+    ];
+
+    private static readonly string[] ManualTeamLabels =
+    [
+        "Yellow",
+        "Blue",
+    ];
+
+    private static readonly string[] GoToPointFacingLabels =
+    [
+        "Angle",
+        "Look At Target",
+    ];
+
+    public static TeamColor SelectedManualTeam => ManualTeam;
 
     private readonly GcProcess    _process    = new();
     private readonly GcApiClient  _apiClient  = new();
@@ -87,6 +128,12 @@ public sealed partial class GameControllerView : IDisposable
             if (ImGui.BeginTabItem(BlueTabTitle))
             {
                 DrawTeamPanel(TeamColor.Blue, _rconBlue, ref _keeperInputBlue, ref _keeperDirtyBlue);
+                ImGui.EndTabItem();
+            }
+
+            if (ImGui.BeginTabItem(ManualTabTitle))
+            {
+                DrawManualSkillPanel();
                 ImGui.EndTabItem();
             }
 
@@ -636,6 +683,173 @@ public sealed partial class GameControllerView : IDisposable
             ImGui.EndDisabled();
         }
     }
+
+    // ── Manual tab ────────────────────────────────────────────────────────────
+
+    private void DrawManualSkillPanel()
+    {
+        var yellowRunning = TeamRunner.IsRunning(TeamColor.Yellow);
+        var blueRunning = TeamRunner.IsRunning(TeamColor.Blue);
+
+        if (yellowRunning && !blueRunning)
+        {
+            ManualTeam = TeamColor.Yellow;
+        }
+        else if (blueRunning && !yellowRunning)
+        {
+            ManualTeam = TeamColor.Blue;
+        }
+
+        if (yellowRunning && blueRunning)
+        {
+            var teamIndex = ManualTeam == TeamColor.Blue ? 1 : 0;
+            if (ImGui.Combo("Team", ref teamIndex, ManualTeamLabels, ManualTeamLabels.Length))
+            {
+                ManualTeam = teamIndex == 0 ? TeamColor.Yellow : TeamColor.Blue;
+            }
+        }
+        else
+        {
+            ImGui.TextUnformatted($"Team: {ManualTeam}");
+        }
+
+        var teamRunning = TeamRunner.IsRunning(ManualTeam);
+        var snapshot = TeamRunner.GetManualControlSnapshot(ManualTeam);
+
+        if (!teamRunning)
+        {
+            ImGui.TextColored(Color.Orange400, "Selected team runner is not running.");
+        }
+
+        ImGui.BeginDisabled(!teamRunning);
+
+        var enabled = snapshot.Enabled;
+        if (ImGui.Checkbox("Enable manual mode", ref enabled))
+        {
+            TeamRunner.SetManualEnabled(ManualTeam, enabled);
+            snapshot = TeamRunner.GetManualControlSnapshot(ManualTeam);
+        }
+
+        var robotId = snapshot.SelectedRobotId;
+        if (ImGui.InputInt("Robot", ref robotId))
+        {
+            TeamRunner.SetManualSelectedRobot(ManualTeam, robotId);
+            snapshot = TeamRunner.GetManualControlSnapshot(ManualTeam);
+        }
+
+        robotId = Math.Clamp(robotId, 0, 15);
+        TeamRunner.SetManualSelectedRobot(ManualTeam, robotId);
+
+        var actionIndex = Array.IndexOf(ManualActions, snapshot.Action);
+        if (actionIndex < 0) actionIndex = 0;
+        if (ImGui.Combo("Action", ref actionIndex, ManualActionLabels, ManualActionLabels.Length))
+        {
+            TeamRunner.SetManualAction(ManualTeam, ManualActions[actionIndex]);
+            snapshot = TeamRunner.GetManualControlSnapshot(ManualTeam);
+        }
+
+        var requiresPoint = RequiresPoint(snapshot.Action);
+        ImGui.TextColored(requiresPoint ? Color.Yellow300 : Color.Zinc400,
+            requiresPoint ? "This action needs a field point." : "This action does not require a field point.");
+
+        if (snapshot.HasTargetPoint)
+        {
+            ImGui.TextUnformatted($"Target: ({snapshot.TargetPoint.X:F0}, {snapshot.TargetPoint.Y:F0})");
+        }
+        else
+        {
+            ImGui.TextDisabled("Target: none");
+        }
+
+        ImGui.TextColored(Color.Zinc400, "Right-click on the field to set the main target immediately.");
+
+        if (snapshot.Action == ManualSkillAction.GoToPoint)
+        {
+            var facingModeIndex = snapshot.GoToPointFacingMode == GoToPointFacingMode.LookAtTarget ? 1 : 0;
+            if (ImGui.Combo("Facing", ref facingModeIndex, GoToPointFacingLabels, GoToPointFacingLabels.Length))
+            {
+                TeamRunner.SetGoToPointFacingMode(ManualTeam,
+                    facingModeIndex == 0 ? GoToPointFacingMode.Angle : GoToPointFacingMode.LookAtTarget);
+                snapshot = TeamRunner.GetManualControlSnapshot(ManualTeam);
+            }
+
+            if (snapshot.GoToPointFacingMode == GoToPointFacingMode.Angle)
+            {
+                var facingAngle = snapshot.GoToPointFacingAngleDeg;
+                if (ImGui.InputFloat("Facing Angle", ref facingAngle))
+                {
+                    TeamRunner.SetGoToPointFacingAngle(ManualTeam, facingAngle);
+                    snapshot = TeamRunner.GetManualControlSnapshot(ManualTeam);
+                }
+            }
+            else
+            {
+                if (snapshot.HasLookTarget)
+                {
+                    ImGui.TextUnformatted($"Look Target: ({snapshot.LookTarget.X:F0}, {snapshot.LookTarget.Y:F0})");
+                }
+                else
+                {
+                    ImGui.TextDisabled("Look Target: none");
+                }
+
+                if (ImGui.Button($"{IconFonts.FontAwesome6.Crosshairs}  Pick Look Target"))
+                {
+                    TeamRunner.SetManualAwaitingPoint(ManualTeam, true);
+                    snapshot = TeamRunner.GetManualControlSnapshot(ManualTeam);
+                }
+
+                ImGui.SameLine();
+
+                ImGui.BeginDisabled(!snapshot.HasLookTarget);
+                if (ImGui.Button($"{IconFonts.FontAwesome6.Eraser}  Clear Look Target"))
+                {
+                    TeamRunner.ClearManualLookTarget(ManualTeam);
+                    snapshot = TeamRunner.GetManualControlSnapshot(ManualTeam);
+                }
+
+                ImGui.EndDisabled();
+            }
+        }
+
+        ImGui.BeginDisabled(!snapshot.HasTargetPoint);
+        if (ImGui.Button($"{IconFonts.FontAwesome6.Eraser}  Clear Target"))
+        {
+            TeamRunner.ClearManualTargetPoint(ManualTeam);
+            snapshot = TeamRunner.GetManualControlSnapshot(ManualTeam);
+        }
+
+        ImGui.EndDisabled();
+
+        if (snapshot.AwaitingLookTarget)
+        {
+            ImGui.TextColored(Color.Green400, "Right-click the field to set the look target.");
+        }
+
+        if (snapshot.Running)
+        {
+            if (ImGui.Button($"{IconFonts.FontAwesome6.Stop}  Stop Action"))
+            {
+                TeamRunner.SetManualRunning(ManualTeam, false);
+            }
+        }
+        else
+        {
+            if (ImGui.Button($"{IconFonts.FontAwesome6.Play}  Start Action"))
+            {
+                TeamRunner.SetManualRunning(ManualTeam, true);
+            }
+        }
+
+        ImGui.EndDisabled();
+    }
+
+    private static bool RequiresPoint(ManualSkillAction action) => action is
+        ManualSkillAction.GoToPoint or
+        ManualSkillAction.KickBall or
+        ManualSkillAction.WaitForBall or
+        ManualSkillAction.TurnAndShoot or
+        ManualSkillAction.DribbleToDirection;
 
     // ── helpers ───────────────────────────────────────────────────────────────
 

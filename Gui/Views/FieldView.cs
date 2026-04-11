@@ -2,6 +2,7 @@ using System.Numerics;
 using Cysharp.Text;
 using Hexa.NET.ImGui;
 using Tyr.Common.Config;
+using Tyr.Common.Data;
 using Tyr.Common.Data.Ssl.Vision.Geometry;
 using Tyr.Common.Dataflow;
 using Tyr.Common.Debug.Db;
@@ -9,6 +10,7 @@ using Tyr.Common.Math;
 using Tyr.Gui.Backend;
 using Tyr.Gui.Data;
 using Tyr.Gui.Rendering;
+using Tyr.Soccer;
 using Debug = Tyr.Common.Debug;
 
 namespace Tyr.Gui.Views;
@@ -154,6 +156,7 @@ public sealed partial class FieldView : IDisposable
             }
 
             DrawField();
+            TryCaptureManualTarget(isLive);
 
             foreach (var module in prepared.Modules)
             {
@@ -231,6 +234,40 @@ public sealed partial class FieldView : IDisposable
         }
 
         _renderer.Draw(_fieldDraws, null);
+    }
+
+    private void TryCaptureManualTarget(bool isLive)
+    {
+        if (!isLive || !ImGui.IsWindowHovered(ImGuiHoveredFlags.None))
+        {
+            return;
+        }
+
+        var team = GameControllerView.SelectedManualTeam;
+        if (team == TeamColor.Unknown)
+        {
+            return;
+        }
+
+        var snapshot = TeamRunner.GetManualControlSnapshot(team);
+        if (!snapshot.Enabled)
+        {
+            return;
+        }
+
+        if (ImGui.IsMouseReleased(ImGuiMouseButton.Right) && !ImGui.IsMouseDragging(ImGuiMouseButton.Right))
+        {
+            var point = _renderer.Camera.ScreenToWorld(ImGui.GetMousePos());
+
+            if (snapshot.AwaitingLookTarget)
+            {
+                TeamRunner.SetManualLookTarget(team, point);
+            }
+            else
+            {
+                TeamRunner.SetManualTargetPoint(team, point);
+            }
+        }
     }
 
     public void Dispose()
