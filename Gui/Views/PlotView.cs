@@ -316,7 +316,7 @@ public partial class PlotView(IDebugDb debugDb)
 
             if (!xAxis.Held && !plot.Held)
             {
-                xAxis.SetMin(series.Min.Seconds);
+                xAxis.SetMin(series.Max.Seconds - _linkedHistoryRange.Seconds);
                 xAxis.SetMax(series.Max.Seconds);
             }
 

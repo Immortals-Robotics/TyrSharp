@@ -315,7 +315,8 @@ public sealed class DebugDb : IDebugDb
                 yield break;
             }
 
-            foreach (var entry in EnumerateSampledSingleShard<T>(matches[0], totalCount, maxCount.Value, hydrateMeta))
+            var rangeNs = t1.Nanoseconds - t0.Nanoseconds;
+            foreach (var entry in EnumerateSampledSingleShard<T>(matches[0], rangeNs, maxCount.Value, hydrateMeta))
                 yield return entry;
 
             yield break;
@@ -329,8 +330,11 @@ public sealed class DebugDb : IDebugDb
             yield break;
         }
 
-        foreach (var entry in EnumerateSampledMatches<T>(matches, totalCount, maxCount.Value, hydrateMeta))
-            yield return entry;
+        {
+            var rangeNs = t1.Nanoseconds - t0.Nanoseconds;
+            foreach (var entry in EnumerateSampledMatches<T>(matches, rangeNs, maxCount.Value, hydrateMeta))
+                yield return entry;
+        }
     }
 
     private IEnumerable<T> EnumerateSingleShardRange<T>(ShardMatch match, bool hydrateMeta) where T : struct, IEntry
@@ -366,37 +370,27 @@ public sealed class DebugDb : IDebugDb
         }
     }
 
-    private IEnumerable<T> EnumerateSampledSingleShard<T>(ShardMatch match, int totalCount, int maxCount, bool hydrateMeta) where T : struct, IEntry
+    private IEnumerable<T> EnumerateSampledSingleShard<T>(ShardMatch match, long rangeNs, int maxCount, bool hydrateMeta) where T : struct, IEntry
     {
-        var sampleCount = System.Math.Min(totalCount, maxCount);
-        if (sampleCount <= 0)
-            yield break;
-
-        if (sampleCount == 1)
+        var bucketSizeNs = System.Math.Max(1, rangeNs / maxCount);
+        var lastBucket = long.MinValue;
+        for (var index = match.Lo; index < match.Hi; index++)
         {
-            var record = match.Bucket.GetRecord(match.Lo);
-            var entry = DeserializeEntry<T>(record, match.Bucket, match.Shard.SourceLocationId, hydrateMeta);
-            if (entry.HasValue)
-                yield return entry.Value;
-            yield break;
-        }
+            var record = match.Bucket.GetRecord(index);
+            var bucket = record.Timestamp / bucketSizeNs;
+            if (bucket == lastBucket) continue;
+            lastBucket = bucket;
 
-        for (int i = 0; i < sampleCount; i++)
-        {
-            var relativeIndex = (int)((long)i * (totalCount - 1) / (sampleCount - 1));
-            var absoluteIndex = match.Lo + relativeIndex;
-            var record = match.Bucket.GetRecord(absoluteIndex);
             var entry = DeserializeEntry<T>(record, match.Bucket, match.Shard.SourceLocationId, hydrateMeta);
             if (entry.HasValue)
                 yield return entry.Value;
         }
     }
 
-    private IEnumerable<T> EnumerateSampledMatches<T>(List<ShardMatch> matches, int totalCount, int maxCount, bool hydrateMeta) where T : struct, IEntry
+    private IEnumerable<T> EnumerateSampledMatches<T>(List<ShardMatch> matches, long rangeNs, int maxCount, bool hydrateMeta) where T : struct, IEntry
     {
-        var targetIndices = GetSampledIndices(totalCount, maxCount);
-        var targetPosition = 0;
-        var logicalIndex = 0;
+        var bucketSizeNs = System.Math.Max(1, rangeNs / maxCount);
+        var lastBucket = long.MinValue;
 
         var queue = new PriorityQueue<ShardCursor, long>();
         foreach (var match in matches)
@@ -407,42 +401,20 @@ public sealed class DebugDb : IDebugDb
 
         while (queue.TryDequeue(out var cursor, out _))
         {
-            if (logicalIndex == targetIndices[targetPosition])
+            var record = cursor.CurrentRecord;
+            var bucket = record.Timestamp / bucketSizeNs;
+            if (bucket != lastBucket)
             {
-                var record = cursor.CurrentRecord;
+                lastBucket = bucket;
                 var entry = DeserializeEntry<T>(record, cursor.Bucket, cursor.Shard.SourceLocationId, hydrateMeta);
                 if (entry.HasValue)
                     yield return entry.Value;
-
-                targetPosition++;
-                if (targetPosition >= targetIndices.Count)
-                    yield break;
             }
 
-            logicalIndex++;
             cursor.Index++;
             if (cursor.Index < cursor.Hi)
                 queue.Enqueue(cursor, cursor.CurrentRecord.Timestamp);
         }
-    }
-
-    private static List<int> GetSampledIndices(int totalCount, int maxCount)
-    {
-        var sampleCount = System.Math.Min(totalCount, maxCount);
-        var indices = new List<int>(sampleCount);
-
-        if (sampleCount == 1)
-        {
-            indices.Add(0);
-            return indices;
-        }
-
-        for (int i = 0; i < sampleCount; i++)
-        {
-            indices.Add((int)((long)i * (totalCount - 1) / (sampleCount - 1)));
-        }
-
-        return indices;
     }
 
     private bool TryGetShardKeyId(string? shardKey, out int shardKeyId)
