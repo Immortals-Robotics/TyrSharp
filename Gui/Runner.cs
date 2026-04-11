@@ -43,6 +43,7 @@ public sealed partial class Runner : IDisposable
     private readonly SessionsView _sessions;
     private readonly ConfigsView _configs;
     private readonly GameControllerView _gameController;
+    private readonly ManualControlView _manualControl;
     private readonly RobotDebugView _robotDebug;
     private readonly RobotStatusView _robotStatus;
     private SslLogPlayerView? _sslLogPlayerView;
@@ -83,6 +84,7 @@ public sealed partial class Runner : IDisposable
         _control = new PlaybackControl(debugDb, _sessions);
         _configs = new ConfigsView(projectConfigPath);
         _gameController = new GameControllerView();
+        _manualControl = new ManualControlView();
         _robotDebug = new RobotDebugView();
         _robotStatus = new RobotStatusView();
         _pipeline = new GuiFramePipeline(PrepareFrame);
@@ -167,6 +169,7 @@ public sealed partial class Runner : IDisposable
 
         _configs.Draw();
         _gameController.Draw();
+        _manualControl.Draw();
         _robotStatus.Draw();
         _robotDebug.Draw();
 

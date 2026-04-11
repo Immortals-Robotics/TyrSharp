@@ -83,8 +83,8 @@ public sealed partial class ZmqRobotSender : ISender
                 Vy = cmd.Motion.Y / 1000.0f,
                 CurrentAngle = (float)cmd.CurrentAngle.Deg,
                 TargetAngle = (float)cmd.TargetAngle.Deg,
-                Shoot = cmd.Shoot > 0 ? 1.0f : 0.0f, // Simplified for now
-                Chip = cmd.Chip > 0 ? 1.0f : 0.0f,
+                Shoot = GetShootPower(cmd),
+                Chip = GetChipPower(cmd),
                 DribblerSpeed = cmd.Dribbler,
                 DribblerForce = DefaultDribblerForce
             };
@@ -97,6 +97,28 @@ public sealed partial class ZmqRobotSender : ISender
         }
 
         return anySent;
+    }
+
+    private static float GetShootPower(Command cmd)
+    {
+        if (cmd.Shoot <= 0f)
+        {
+            return 0f;
+        }
+
+        var raw = Math.Clamp(cmd.Shoot, 0.0f, 6500.0f) / 1000.0f;
+        return ShootCalibration.GetCalibratedPower(raw, ShootCalibration.ShootType.Shoot, cmd.VisionId);
+    }
+
+    private static float GetChipPower(Command cmd)
+    {
+        if (cmd.Chip <= 0f)
+        {
+            return 0f;
+        }
+
+        var raw = Math.Clamp(cmd.Chip, 0.0f, 150.0f);
+        return ShootCalibration.GetCalibratedPower(raw, ShootCalibration.ShootType.Chip, cmd.VisionId);
     }
 
     public void Dispose()

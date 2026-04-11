@@ -243,7 +243,7 @@ public sealed partial class FieldView : IDisposable
             return;
         }
 
-        var team = GameControllerView.SelectedManualTeam;
+        var team = ManualControlView.SelectedManualTeam;
         if (team == TeamColor.Unknown)
         {
             return;
