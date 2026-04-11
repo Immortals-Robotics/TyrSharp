@@ -1,27 +1,32 @@
 using System.Numerics;
 using Hexa.NET.ImGui;
 using NativeFileDialogSharp;
+using Tyr.Common.Config;
 using Tyr.Gui.Backend;
 using Tyr.Gui.Data;
 using Color = Tyr.Common.Debug.Drawing.Color;
 
 namespace Tyr.Gui.Views;
 
-public sealed class SessionsView(PlaybackSessionManager playbackSessions)
+[Configurable]
+public sealed partial class SessionsView(PlaybackSessionManager playbackSessions)
 {
+    [ConfigEntry(StorageType.User)] private static bool KeepWindowOpen { get; set; } = true;
+
     private readonly HashSet<string> _selectedMetadataPaths = [];
     private string _mergeLabelBuffer = string.Empty;
     private string _renameBuffer = string.Empty;
     private PlaybackSessionInfo? _renameSession;
+    private bool _openRenamePopup;
 
-    public bool IsOpen { get; set; }
+    public bool IsOpen { get; private set; } = KeepWindowOpen;
     public int SourceRevision => playbackSessions.SourceRevision;
     public bool SourceIsLive => playbackSessions.UsingLive;
     public string CurrentSourceLabel => playbackSessions.CurrentSourceLabel;
 
     public void Open()
     {
-        IsOpen = true;
+        SetOpen(true);
     }
 
     public void SwitchToLive()
@@ -34,15 +39,15 @@ public sealed class SessionsView(PlaybackSessionManager playbackSessions)
         if (!IsOpen)
             return;
 
-        var isOpen = IsOpen;
+        var isOpen = true;
         if (!ImGui.Begin($"{IconFonts.FontAwesome6.HardDrive} Sessions", ref isOpen))
         {
-            IsOpen = isOpen;
+            SetOpen(isOpen);
             ImGui.End();
             return;
         }
 
-        IsOpen = isOpen;
+        SetOpen(isOpen);
 
         DrawToolbar();
         ImGui.Separator();
@@ -78,19 +83,18 @@ public sealed class SessionsView(PlaybackSessionManager playbackSessions)
         const ImGuiTableFlags flags = ImGuiTableFlags.RowBg | ImGuiTableFlags.BordersOuter | ImGuiTableFlags.BordersV |
                                       ImGuiTableFlags.Resizable | ImGuiTableFlags.ScrollY | ImGuiTableFlags.Sortable;
 
-        if (!ImGui.BeginTable("sessions", 7, flags, new Vector2(0f, -1f)))
+        if (!ImGui.BeginTable("sessions", 6, flags, new Vector2(0f, -1f)))
             return;
 
-        ImGui.TableSetupColumn("##sel", ImGuiTableColumnFlags.WidthFixed, 42f);
-        ImGui.TableSetupColumn("##open", ImGuiTableColumnFlags.WidthFixed, 64f);
+        ImGui.TableSetupColumn("##sel", ImGuiTableColumnFlags.WidthFixed | ImGuiTableColumnFlags.NoSort, 42f);
+        ImGui.TableSetupColumn("##open", ImGuiTableColumnFlags.WidthFixed | ImGuiTableColumnFlags.NoSort, 64f);
         ImGui.TableSetupColumn("Name", ImGuiTableColumnFlags.WidthStretch, 2.2f);
-        ImGui.TableSetupColumn("Created", ImGuiTableColumnFlags.WidthFixed, 160f);
+        ImGui.TableSetupColumn("Created", ImGuiTableColumnFlags.WidthFixed | ImGuiTableColumnFlags.DefaultSort, 160f);
         ImGui.TableSetupColumn("Range", ImGuiTableColumnFlags.WidthFixed, 130f);
         ImGui.TableSetupColumn("Machine", ImGuiTableColumnFlags.WidthFixed, 120f);
-        ImGui.TableSetupColumn("Path", ImGuiTableColumnFlags.WidthStretch, 2f);
         ImGui.TableHeadersRow();
 
-        foreach (var session in playbackSessions.Sessions)
+        foreach (var session in GetSortedSessions())
         {
             ImGui.PushID(session.MetadataPath);
             ImGui.TableNextRow();
@@ -138,15 +142,32 @@ public sealed class SessionsView(PlaybackSessionManager playbackSessions)
 
             ImGui.TableNextColumn();
             ImGui.TextUnformatted(session.Metadata.MachineName);
-
-            ImGui.TableNextColumn();
-            ImGui.TextUnformatted(session.SessionDirectory);
-
             ImGui.PopID();
         }
 
         ImGui.EndTable();
         DrawRenamePopup();
+    }
+
+    private IEnumerable<PlaybackSessionInfo> GetSortedSessions()
+    {
+        var sessions = playbackSessions.Sessions;
+        var sortSpecs = ImGui.TableGetSortSpecs();
+        if (sortSpecs.IsNull || sortSpecs.SpecsCount <= 0)
+            return sessions;
+
+        var sortSpec = sortSpecs.Specs[0];
+        var descending = sortSpec.SortDirection == ImGuiSortDirection.Descending;
+        sortSpecs.SpecsDirty = false;
+
+        return sortSpec.ColumnIndex switch
+        {
+            2 => OrderBy(sessions, static session => session.DisplayName, descending, StringComparer.OrdinalIgnoreCase),
+            3 => OrderBy(sessions, static session => session.Metadata.CreatedAtUtc, descending),
+            4 => OrderBy(sessions, GetSessionRangeValue, descending),
+            5 => OrderBy(sessions, static session => session.Metadata.MachineName, descending, StringComparer.OrdinalIgnoreCase),
+            _ => sessions,
+        };
     }
 
     private List<PlaybackSessionInfo> GetSelectedSessions()
@@ -256,7 +277,7 @@ public sealed class SessionsView(PlaybackSessionManager playbackSessions)
         {
             _renameSession = session;
             _renameBuffer = session.Metadata.CaptureLabel ?? string.Empty;
-            ImGui.OpenPopup("Rename Session");
+            _openRenamePopup = true;
         }
 
         if (ImGui.Selectable($"{IconFonts.FontAwesome6.Trash} Delete"))
@@ -270,11 +291,20 @@ public sealed class SessionsView(PlaybackSessionManager playbackSessions)
         if (_renameSession is null)
             return;
 
+        if (_openRenamePopup)
+        {
+            ImGui.OpenPopup("Rename Session");
+            _openRenamePopup = false;
+        }
+
         var open = true;
         if (!ImGui.BeginPopupModal("Rename Session", ref open, ImGuiWindowFlags.AlwaysAutoResize))
         {
             if (!open)
+            {
                 _renameSession = null;
+                _openRenamePopup = false;
+            }
             return;
         }
 
@@ -297,5 +327,47 @@ public sealed class SessionsView(PlaybackSessionManager playbackSessions)
         }
 
         ImGui.EndPopup();
+    }
+
+    private static IEnumerable<PlaybackSessionInfo> OrderBy<TKey>(
+        IEnumerable<PlaybackSessionInfo> sessions,
+        Func<PlaybackSessionInfo, TKey> keySelector,
+        bool descending,
+        IComparer<TKey>? comparer = null)
+    {
+        if (descending)
+            return comparer is null
+                ? sessions.OrderByDescending(keySelector)
+                : sessions.OrderByDescending(keySelector, comparer);
+
+        return comparer is null
+            ? sessions.OrderBy(keySelector)
+            : sessions.OrderBy(keySelector, comparer);
+    }
+
+    private static double GetSessionRangeValue(PlaybackSessionInfo session)
+    {
+        if (session.Metadata.FirstFrameTimestamp.HasValue && session.Metadata.LastFrameTimestamp.HasValue)
+            return (session.Metadata.LastFrameTimestamp.Value - session.Metadata.FirstFrameTimestamp.Value).Seconds;
+
+        if (session.Metadata.ClosedAtUtc.HasValue)
+            return (session.Metadata.ClosedAtUtc.Value - session.Metadata.CreatedAtUtc).TotalSeconds;
+
+        return double.NegativeInfinity;
+    }
+
+    private static void MarkWindowStateChanged()
+    {
+        Configurable.MarkChanged(StorageType.User);
+    }
+
+    private void SetOpen(bool isOpen)
+    {
+        if (IsOpen == isOpen)
+            return;
+
+        IsOpen = isOpen;
+        KeepWindowOpen = isOpen;
+        MarkWindowStateChanged();
     }
 }
