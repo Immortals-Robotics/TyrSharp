@@ -91,6 +91,7 @@ public sealed partial class ZmqRobotSender : ISender
 
             if (sender.Send(RobotCommandTopic, robotCmd))
             {
+                Log.ZLogTrace($"Dispatched command to Robot {cmd.VisionId} at {_robotIps[cmd.VisionId]}");
                 anySent = true;
             }
         }
