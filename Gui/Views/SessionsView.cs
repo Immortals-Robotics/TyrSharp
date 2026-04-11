@@ -15,6 +15,7 @@ public sealed partial class SessionsView(PlaybackSessionManager playbackSessions
     [ConfigEntry(StorageType.User)] private static bool KeepWindowOpen { get; set; } = true;
 
     private readonly HashSet<string> _selectedMetadataPaths = [];
+    private readonly Dictionary<string, string> _groupSelectedPaths = [];
     private string _mergeLabelBuffer = string.Empty;
     private string _renameBuffer = string.Empty;
     private PlaybackSessionInfo? _renameSession;
@@ -87,67 +88,169 @@ public sealed partial class SessionsView(PlaybackSessionManager playbackSessions
         if (!ImGui.BeginTable("sessions", 6, flags, new Vector2(0f, -1f)))
             return;
 
-        ImGui.TableSetupColumn("##sel", ImGuiTableColumnFlags.WidthFixed | ImGuiTableColumnFlags.NoSort, 42f);
-        ImGui.TableSetupColumn("##open", ImGuiTableColumnFlags.WidthFixed | ImGuiTableColumnFlags.NoSort, 64f);
+        ImGui.TableSetupColumn("##sel", ImGuiTableColumnFlags.WidthFixed | ImGuiTableColumnFlags.NoSort | ImGuiTableColumnFlags.NoResize, 26f);
+        ImGui.TableSetupColumn("##open", ImGuiTableColumnFlags.WidthFixed | ImGuiTableColumnFlags.NoSort | ImGuiTableColumnFlags.NoResize, 32f);
         ImGui.TableSetupColumn("Name", ImGuiTableColumnFlags.WidthStretch, 2.2f);
         ImGui.TableSetupColumn("Created", ImGuiTableColumnFlags.WidthFixed | ImGuiTableColumnFlags.DefaultSort, 160f);
-        ImGui.TableSetupColumn("Range", ImGuiTableColumnFlags.WidthFixed, 130f);
+        ImGui.TableSetupColumn("Duration", ImGuiTableColumnFlags.WidthFixed, 130f);
         ImGui.TableSetupColumn("Machine", ImGuiTableColumnFlags.WidthFixed, 120f);
         ImGui.TableHeadersRow();
 
-        foreach (var session in GetSortedSessions())
+        var sessions = playbackSessions.Sessions;
+        var groups = sessions.GroupBy(s => s.Metadata.CaptureLabel).ToList();
+        var processedGroups = new List<(string? Label, List<PlaybackSessionInfo> Sessions, PlaybackSessionInfo Active)>();
+
+        foreach (var group in groups)
         {
-            ImGui.PushID(session.MetadataPath);
+            var label = group.Key;
+            var groupSessions = group.OrderByDescending(s => s.Metadata.CreatedAtUtc).ToList();
+
+            if (string.IsNullOrWhiteSpace(label))
+            {
+                foreach (var s in groupSessions)
+                {
+                    processedGroups.Add((null, [s], s));
+                }
+            }
+            else
+            {
+                if (!_groupSelectedPaths.TryGetValue(label, out var activePath) || groupSessions.All(s => s.MetadataPath != activePath))
+                {
+                    activePath = groupSessions[0].MetadataPath;
+                    _groupSelectedPaths[label] = activePath;
+                }
+                var activeSession = groupSessions.First(s => s.MetadataPath == activePath);
+                processedGroups.Add((label, groupSessions, activeSession));
+            }
+        }
+
+        // Apply sorting to the groups based on the Active session
+        var sortedGroups = ApplyGroupSorting(processedGroups);
+
+        foreach (var (label, groupSessions, active) in sortedGroups)
+        {
+            ImGui.PushID(label ?? active.MetadataPath);
             ImGui.TableNextRow();
 
+            // Selection
             ImGui.TableNextColumn();
-            var selected = _selectedMetadataPaths.Contains(session.MetadataPath);
-            if (ImGui.Checkbox($"##select-{session.MetadataPath}", ref selected))
-            {
-                SetSelected(session.MetadataPath, selected);
-            }
+            var allSelected = groupSessions.All(s => _selectedMetadataPaths.Contains(s.MetadataPath));
+            var anySelected = groupSessions.Any(s => _selectedMetadataPaths.Contains(s.MetadataPath));
+            if (anySelected && !allSelected) ImGui.PushStyleColor(ImGuiCol.CheckMark, Color.Zinc400);
 
+            var groupSel = allSelected;
+            if (ImGui.Checkbox("##select", ref groupSel))
+            {
+                foreach (var s in groupSessions) SetSelected(s.MetadataPath, groupSel);
+            }
+            if (anySelected && !allSelected) ImGui.PopStyleColor();
+
+            // Open
             ImGui.TableNextColumn();
-            var isCurrent = string.Equals(playbackSessions.CurrentSessionMetadataPath, session.MetadataPath, StringComparison.Ordinal);
+            var isCurrent = string.Equals(playbackSessions.CurrentSessionMetadataPath, active.MetadataPath, StringComparison.Ordinal);
             if (ImGui.Button(isCurrent
                     ? $"{IconFonts.FontAwesome6.CirclePlay}##open"
                     : $"{IconFonts.FontAwesome6.Play}##open"))
             {
-                playbackSessions.OpenSession(session);
+                playbackSessions.OpenSession(active);
             }
             if (ImGui.IsItemHovered(ImGuiHoveredFlags.ForTooltip))
-                ImGui.SetTooltip("Open");
+                ImGui.SetTooltip("Open selected session");
 
+            // Name / Selector
             ImGui.TableNextColumn();
-            if (isCurrent)
+            if (label != null && groupSessions.Count > 1)
             {
-                ImGui.PushStyleColor(ImGuiCol.Text, Color.Emerald400);
-                ImGui.TextUnformatted($"{IconFonts.FontAwesome6.Radio} {session.DisplayName}");
-                ImGui.PopStyleColor();
+                ImGui.SetNextItemWidth(-1f);
+                if (ImGui.BeginCombo("##selector", $"{IconFonts.FontAwesome6.LayerGroup} {label} ({groupSessions.Count})"))
+                {
+                    foreach (var s in groupSessions)
+                    {
+                        var isSelected = s.MetadataPath == active.MetadataPath;
+                        var sCurrent = string.Equals(playbackSessions.CurrentSessionMetadataPath, s.MetadataPath, StringComparison.Ordinal);
+                        var sLabel = $"{s.Metadata.CreatedAtUtc.ToLocalTime():yyyy-MM-dd HH:mm:ss} ({s.RangeLabel})";
+
+                        if (sCurrent) ImGui.PushStyleColor(ImGuiCol.Text, Color.Emerald400);
+                        if (ImGui.Selectable(sLabel, isSelected))
+                        {
+                            _groupSelectedPaths[label] = s.MetadataPath;
+                        }
+                        if (sCurrent) ImGui.PopStyleColor();
+
+                        if (isSelected) ImGui.SetItemDefaultFocus();
+                    }
+                    ImGui.EndCombo();
+                }
             }
             else
             {
-                ImGui.TextUnformatted(session.DisplayName);
+                if (isCurrent)
+                {
+                    ImGui.PushStyleColor(ImGuiCol.Text, Color.Emerald400);
+                    ImGui.TextUnformatted($"{IconFonts.FontAwesome6.Radio} {active.DisplayName}");
+                    ImGui.PopStyleColor();
+                }
+                else
+                {
+                    ImGui.TextUnformatted(active.DisplayName);
+                }
             }
-            if (ImGui.IsItemHovered() && ImGui.IsMouseReleased(ImGuiMouseButton.Left))
-                ToggleSelected(session.MetadataPath);
-            if (ImGui.IsItemHovered() && ImGui.IsMouseDoubleClicked(ImGuiMouseButton.Left))
-                playbackSessions.OpenSession(session);
-            DrawRowContextMenu(session);
+            DrawRowContextMenu(active);
 
+            // Created
             ImGui.TableNextColumn();
-            ImGui.TextUnformatted(session.Metadata.CreatedAtUtc.ToLocalTime().ToString("yyyy-MM-dd HH:mm:ss"));
+            ImGui.TextUnformatted(active.Metadata.CreatedAtUtc.ToLocalTime().ToString("yyyy-MM-dd HH:mm:ss"));
 
+            // Range
             ImGui.TableNextColumn();
-            ImGui.TextUnformatted(session.RangeLabel);
+            ImGui.TextUnformatted(active.RangeLabel);
 
+            // Machine
             ImGui.TableNextColumn();
-            ImGui.TextUnformatted(session.Metadata.MachineName);
+            ImGui.TextUnformatted(active.Metadata.MachineName);
+
             ImGui.PopID();
         }
 
         ImGui.EndTable();
         DrawRenamePopup();
+    }
+
+    private List<(string? Label, List<PlaybackSessionInfo> Sessions, PlaybackSessionInfo Active)> ApplyGroupSorting(
+        List<(string? Label, List<PlaybackSessionInfo> Sessions, PlaybackSessionInfo Active)> groups)
+    {
+        var sortSpecs = ImGui.TableGetSortSpecs();
+        if (sortSpecs.IsNull || sortSpecs.SpecsCount <= 0)
+            return groups;
+
+        var sortSpec = sortSpecs.Specs[0];
+        var descending = sortSpec.SortDirection == ImGuiSortDirection.Descending;
+        sortSpecs.SpecsDirty = false;
+
+        return sortSpec.ColumnIndex switch
+        {
+            2 => OrderByGroup(groups, g => g.Label ?? g.Active.DisplayName, descending, StringComparer.OrdinalIgnoreCase),
+            3 => OrderByGroup(groups, g => g.Active.Metadata.CreatedAtUtc, descending),
+            4 => OrderByGroup(groups, g => GetSessionRangeValue(g.Active), descending),
+            5 => OrderByGroup(groups, g => g.Active.Metadata.MachineName, descending, StringComparer.OrdinalIgnoreCase),
+            _ => groups,
+        };
+    }
+
+    private static List<T> OrderByGroup<T, TKey>(
+        List<T> groups,
+        Func<T, TKey> keySelector,
+        bool descending,
+        IComparer<TKey>? comparer = null)
+    {
+        if (descending)
+            return comparer is null
+                ? groups.OrderByDescending(keySelector).ToList()
+                : groups.OrderByDescending(keySelector, comparer).ToList();
+
+        return comparer is null
+            ? groups.OrderBy(keySelector).ToList()
+            : groups.OrderBy(keySelector, comparer).ToList();
     }
 
     private IEnumerable<PlaybackSessionInfo> GetSortedSessions()

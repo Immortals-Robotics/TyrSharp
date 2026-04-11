@@ -234,7 +234,9 @@ public sealed record PlaybackSessionInfo(
     string SessionDirectory,
     string DatabaseDirectory)
 {
-    public string RangeLabel
+    public string RangeLabel => FormatDuration(DurationSeconds);
+
+    public double DurationSeconds
     {
         get
         {
@@ -242,18 +244,29 @@ public sealed record PlaybackSessionInfo(
             {
                 var frameSpan = Metadata.LastFrameTimestamp.Value - Metadata.FirstFrameTimestamp.Value;
                 if (frameSpan > DeltaTime.Zero)
-                    return $"{frameSpan.Seconds:0.###} s";
+                    return frameSpan.Seconds;
             }
 
             if (Metadata.ClosedAtUtc.HasValue)
             {
                 var wallClockSpan = Metadata.ClosedAtUtc.Value - Metadata.CreatedAtUtc;
                 if (wallClockSpan > TimeSpan.Zero)
-                    return $"{wallClockSpan.TotalSeconds:0.###} s";
+                    return wallClockSpan.TotalSeconds;
             }
 
-            return "n/a";
+            return 0.0;
         }
+    }
+
+    private static string FormatDuration(double seconds)
+    {
+        if (seconds <= 0) return "n/a";
+        var t = TimeSpan.FromSeconds(seconds);
+        if (t.TotalHours >= 1)
+            return $"{(int)t.TotalHours}h {t.Minutes}m {t.Seconds}s";
+        if (t.TotalMinutes >= 1)
+            return $"{t.Minutes}m {t.Seconds}s";
+        return $"{seconds:F2} s";
     }
 
     public string DisplayName
