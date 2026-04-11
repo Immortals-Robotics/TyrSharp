@@ -31,8 +31,8 @@ public sealed partial class Simulator : ISender
         foreach (var command in commands.Commands)
         {
             var localVel = command.Motion.Rotated(Angle.FromDeg(90.0f) - command.CurrentAngle);
-            // TODO: w should be in radians
-            var w = (command.TargetAngle - command.CurrentAngle).Deg / 10.0f;
+            // Use the shortest signed angle delta so wraparound near +/-180 does not cause a long spin.
+            var w = (command.TargetAngle - command.CurrentAngle).DegNormalized / 10.0f;
 
             var kickSpeed = 0f;
             var kickAngle = Angle.Zero;
