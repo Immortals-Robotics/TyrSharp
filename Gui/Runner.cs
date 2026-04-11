@@ -45,7 +45,6 @@ public sealed partial class Runner : IDisposable
     private readonly GameControllerView _gameController;
     private readonly ManualControlView _manualControl;
     private readonly RobotDebugView _robotDebug;
-    private readonly RobotStatusView _robotStatus;
     private SslLogPlayerView? _sslLogPlayerView;
     private Tyr.Vision.SslLogPlayer? _sslLogPlayer;
     private readonly GuiFramePipeline _pipeline;
@@ -86,7 +85,6 @@ public sealed partial class Runner : IDisposable
         _gameController = new GameControllerView();
         _manualControl = new ManualControlView();
         _robotDebug = new RobotDebugView();
-        _robotStatus = new RobotStatusView();
         _pipeline = new GuiFramePipeline(PrepareFrame);
         _preparedFrame = new GuiFramePipeline.PreparedFrame();
         var initialRequest = CreatePrepareRequest();
@@ -170,7 +168,6 @@ public sealed partial class Runner : IDisposable
         _configs.Draw();
         _gameController.Draw();
         _manualControl.Draw();
-        _robotStatus.Draw();
         _robotDebug.Draw();
 
         _control.Draw();
@@ -211,7 +208,6 @@ public sealed partial class Runner : IDisposable
         _log.Dispose();
         _field.Dispose();
         _gameController.Dispose();
-        _robotStatus.Dispose();
         _robotDebug.Dispose();
         _sslLogPlayerView?.Dispose();
     }
