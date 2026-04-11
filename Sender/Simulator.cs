@@ -11,10 +11,10 @@ namespace Tyr.Sender;
 public sealed partial class Simulator : ISender
 {
     [ConfigEntry] private static bool Enabled { get; set; } = false;
-    
+
     [ConfigEntry] private static Address BlueAddress { get; set; } = new() { Ip = "127.0.0.1", Port = 10301 };
     [ConfigEntry] private static Address YellowAddress { get; set; } = new() { Ip = "127.0.0.1", Port = 10302 };
-    
+
     [ConfigEntry] private static Angle ChipAngle { get; set; } = Angle.FromDeg(45f);
 
     private readonly UdpServer _udp = new();
@@ -36,17 +36,17 @@ public sealed partial class Simulator : ISender
 
             var kickSpeed = 0f;
             var kickAngle = Angle.Zero;
-            
+
             if (command.Shoot > 0)
             {
-                kickSpeed = command.Shoot / 1000f;
+                kickSpeed = command.Shoot;
             }
             else if (command.Chip > 0)
             {
-                kickSpeed = command.Chip / 20f;
+                kickSpeed = command.Chip * 5;
                 kickAngle = ChipAngle;
             }
-            
+
             var pbCommand = new RobotCommand()
             {
                 Id = (uint)command.VisionId,
@@ -63,7 +63,7 @@ public sealed partial class Simulator : ISender
                 KickAngle = kickAngle,
                 DribblerSpeed = command.Dribbler,
             };
-            
+
             pbControl.RobotCommands.Add(pbCommand);
         }
 
