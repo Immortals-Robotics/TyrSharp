@@ -122,7 +122,7 @@ public sealed class DebugDbTests
     }
 
     [Fact]
-    public void Query_WithMaxCount_SamplesEvenlyAcrossMatchingEntries()
+    public void Query_WithMaxCount_SamplesWithTimeBucketsAcrossMatchingEntries()
     {
         var directory = CreateTempDirectory();
 
@@ -130,27 +130,37 @@ public sealed class DebugDbTests
         {
             using (var db = new DebugDb(directory).RegisterType<PlotCommand>())
             {
-                for (int i = 0; i < 10; i++)
+                // 100 entries spanning 1 second (10ms apart)
+                for (int i = 0; i < 100; i++)
                 {
                     db.Append(new PlotCommand
                     {
                         Value = PlotValue.From(i),
-                        Meta = Meta.GetOrCreate("Vision", layer: "TestLayer", file: "DebugDbTests.cs", member: nameof(Query_WithMaxCount_SamplesEvenlyAcrossMatchingEntries), line: 1),
+                        Meta = Meta.GetOrCreate("Vision", layer: "TestLayer", file: "DebugDbTests.cs", member: nameof(Query_WithMaxCount_SamplesWithTimeBucketsAcrossMatchingEntries), line: 1),
                         ShardKey = "velocity",
-                        Timestamp = Timestamp.FromNanoseconds(i),
+                        Timestamp = Timestamp.FromNanoseconds(i * 10_000_000L), // 10ms steps → 1s total
                     });
                 }
             }
 
             using var reopened = new DebugDb(directory).RegisterType<PlotCommand>();
 
-            var commands = reopened.Query<PlotCommand>("Vision", Timestamp.Zero, Timestamp.FromNanoseconds(9), "velocity", 4).ToArray();
+            var t0 = Timestamp.Zero;
+            var t1 = Timestamp.FromNanoseconds(99 * 10_000_000L);
+            const int maxCount = 10;
+            var commands = reopened.Query<PlotCommand>("Vision", t0, t1, "velocity", maxCount).ToArray();
 
-            Assert.Equal(4, commands.Length);
+            // Time-bucket sampling: bucketSize = rangeNs / maxCount.
+            // Count is approximate (≈ maxCount); exact count may vary by ±1.
+            Assert.InRange(commands.Length, maxCount - 1, maxCount + 1);
+
+            // First sample is at or near the start, last at or near the end.
             Assert.Equal(0, commands[0].Timestamp.Nanoseconds);
-            Assert.Equal(3, commands[1].Timestamp.Nanoseconds);
-            Assert.Equal(6, commands[2].Timestamp.Nanoseconds);
-            Assert.Equal(9, commands[3].Timestamp.Nanoseconds);
+            Assert.Equal(99 * 10_000_000L, commands[^1].Timestamp.Nanoseconds);
+
+            // Samples are monotonically increasing and span the full range.
+            for (int i = 1; i < commands.Length; i++)
+                Assert.True(commands[i].Timestamp > commands[i - 1].Timestamp);
         }
         finally
         {
