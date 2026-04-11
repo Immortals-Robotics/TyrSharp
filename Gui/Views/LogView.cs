@@ -1,4 +1,4 @@
-﻿using Cysharp.Text;
+using Cysharp.Text;
 using Hexa.NET.ImGui;
 using Microsoft.Extensions.Logging;
 using Tyr.Common.Config;
@@ -61,7 +61,7 @@ public sealed partial class LogView(IDebugDb debugDb) : IDisposable
         }
     }
 
-    internal void Draw(PreparedData prepared)
+    internal void Draw(PreparedData prepared, bool isLive)
     {
         if (ImGui.Begin(WindowTitle, ImGuiWindowFlags.AlwaysVerticalScrollbar))
         {
@@ -116,6 +116,14 @@ public sealed partial class LogView(IDebugDb debugDb) : IDisposable
                     ImGui.Separator();
                     ImGui.TextColored(Color.Zinc400, $"{_filterPassed} of {_filterTested} items matching");
                 }
+            }
+
+            if (!isLive)
+            {
+                // Draw a red border to indicate that we're showing playback data, not live data.
+                var min = ImGui.GetWindowPos();
+                var max = min + ImGui.GetWindowSize();
+                ImGui.GetWindowDrawList().AddRect(min, max, ImGui.ColorConvertFloat4ToU32(Color.Red), 0f, ImDrawFlags.None, 4f);
             }
         }
 

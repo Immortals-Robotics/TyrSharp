@@ -1,4 +1,4 @@
-﻿using System.Numerics;
+using System.Numerics;
 using Cysharp.Text;
 using Hexa.NET.ImGui;
 using Tyr.Common.Config;
@@ -106,7 +106,7 @@ public sealed partial class FieldView : IDisposable
         }
     }
 
-    internal void Draw(PreparedData prepared)
+    internal void Draw(PreparedData prepared, bool isLive)
     {
         _timer.Update();
 
@@ -163,6 +163,14 @@ public sealed partial class FieldView : IDisposable
             ShowStats();
 
             ImGui.PopFont();
+
+            if (!isLive)
+            {
+                // Draw a red border to indicate that we're showing playback data, not live data.
+                var min = ImGui.GetWindowPos();
+                var max = min + ImGui.GetWindowSize();
+                ImGui.GetWindowDrawList().AddRect(min, max, ImGui.ColorConvertFloat4ToU32(Debug.Drawing.Color.Red), 0f, ImDrawFlags.None, 4f);
+            }
         }
 
         ImGui.End();

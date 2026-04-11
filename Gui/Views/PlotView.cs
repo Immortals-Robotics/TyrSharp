@@ -186,7 +186,7 @@ public partial class PlotView(IDebugDb debugDb)
         }
     }
 
-    internal void Draw(PreparedData prepared)
+    internal void Draw(PreparedData prepared, bool isLive)
     {
         if (ImGui.Begin(WindowTitle))
         {
@@ -201,6 +201,14 @@ public partial class PlotView(IDebugDb debugDb)
             {
                 ImGui.Separator();
                 ImGui.TextColored(Color.Zinc400, $"{_filterPassed} of {_filterTested} items matching");
+            }
+
+            if (!isLive)
+            {
+                // Draw a red border to indicate that we're showing playback data, not live data.
+                var min = ImGui.GetWindowPos();
+                var max = min + ImGui.GetWindowSize();
+                ImGui.GetWindowDrawList().AddRect(min, max, ImGui.ColorConvertFloat4ToU32(Color.Red), 0f, ImDrawFlags.None, 4f);
             }
         }
 

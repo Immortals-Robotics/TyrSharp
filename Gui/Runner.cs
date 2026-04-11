@@ -166,9 +166,9 @@ public sealed partial class Runner : IDisposable
 
         _control.Draw();
         _sessions.Draw();
-        _log.Draw(_preparedFrame.Log);
-        _field.Draw(_preparedFrame.Field);
-        _plots.Draw(_preparedFrame.Plots);
+        _log.Draw(_preparedFrame.Log, _preparedFrame.Time.Live);
+        _field.Draw(_preparedFrame.Field, _preparedFrame.Time.Live);
+        _plots.Draw(_preparedFrame.Plots, _preparedFrame.Time.Live);
         _filter.Draw();
 
         _sslLogPlayerView?.Draw();
