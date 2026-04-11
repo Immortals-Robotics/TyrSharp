@@ -245,26 +245,19 @@ internal sealed class GrSimProcess : IDisposable
 
         try
         {
+            LaunchDetached(exe);
             _process?.Dispose();
-            _process = new Process();
-            _process.StartInfo.FileName         = exe;
-            _process.StartInfo.UseShellExecute  = false;
-            _process.StartInfo.CreateNoWindow   = false; // grSim is a GUI app
-            _process.StartInfo.WorkingDirectory = Path.GetDirectoryName(exe)!;
-            _process.EnableRaisingEvents        = true;
-            _process.Exited += (_, _) =>
+            _process = null;
+
+            _statusMessage = "Starting detached...";
+            _status = Status.Idle;
+            _nextExternalScan = DateTime.MinValue;
+            AttachExternalProcess();
+
+            if (_status != Status.Running)
             {
-                if (_status == Status.Running)
-                {
-                    _statusMessage = $"Process exited (code {_process.ExitCode})";
-                    _status = Status.Exited;
-                }
-            };
-
-            _process.Start();
-
-            _statusMessage = $"PID {_process.Id}";
-            _status = Status.Running;
+                _statusMessage = "Started detached. Waiting for grSim process...";
+            }
         }
         catch (Exception ex)
         {
@@ -289,6 +282,47 @@ internal sealed class GrSimProcess : IDisposable
     }
 
     // ── helpers ──────────────────────────────────────────────────────────────
+
+    private static void LaunchDetached(string exe)
+    {
+        var workingDirectory = Path.GetDirectoryName(exe)!;
+
+        if (OperatingSystem.IsWindows())
+        {
+            using var launcher = Process.Start(new ProcessStartInfo
+            {
+                FileName = "cmd.exe",
+                Arguments = $"/c start \"\" \"{exe}\"",
+                WorkingDirectory = workingDirectory,
+                UseShellExecute = false,
+                CreateNoWindow = true,
+            });
+
+            launcher?.WaitForExit();
+            return;
+        }
+
+        static string QuoteForShell(string value) =>
+            $"'{value.Replace("'", "'\\''")}'";
+
+        var shellCommand = OperatingSystem.IsMacOS()
+            ? $"nohup {QuoteForShell(exe)} >/dev/null 2>&1 &"
+            : $"setsid {QuoteForShell(exe)} >/dev/null 2>&1 < /dev/null &";
+
+        var unixLauncherInfo = new ProcessStartInfo
+        {
+            FileName = "/bin/sh",
+            WorkingDirectory = workingDirectory,
+            UseShellExecute = false,
+            CreateNoWindow = true,
+        };
+        unixLauncherInfo.ArgumentList.Add("-c");
+        unixLauncherInfo.ArgumentList.Add(shellCommand);
+
+        using var unixLauncher = Process.Start(unixLauncherInfo);
+
+        unixLauncher?.WaitForExit();
+    }
 
     private static void ExtractTarGz(string tarGzPath, string destDir)
     {
