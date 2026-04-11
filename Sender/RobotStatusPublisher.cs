@@ -28,10 +28,10 @@ public sealed partial class RobotStatusPublisher : IDisposable
     }
 
     // Multipart frame layout: frame[0] = 1-byte StatusTopic, frame[1] = protobuf payload
-    private static StatusUpdate Deserialize(byte[][] frames)
+    private static StatusUpdate Deserialize(IReadOnlyList<byte[]> frames)
     {
-        if (frames.Length < 2 || frames[0].Length < 1)
-            throw new InvalidDataException($"Unexpected ZMQ frame count: {frames.Length}");
+        if (frames.Count < 2 || frames[0].Length < 1)
+            throw new InvalidDataException($"Unexpected ZMQ frame count: {frames.Count}");
 
         var topic = (StatusTopic)frames[0][0];
         var payload = new ReadOnlySpan<byte>(frames[1]);
