@@ -75,9 +75,6 @@ public sealed partial class ZmqSender : IDisposable
         try
         {
             using var ms = new MemoryStream(_buffer);
-            // First byte is the topic/type
-            ms.WriteByte((byte)topic);
-            
             Serializer.Serialize(ms, message);
             var size = (int)ms.Position;
 
@@ -87,7 +84,8 @@ public sealed partial class ZmqSender : IDisposable
                 return false;
             }
 
-            // Send single frame: [Topic (1 byte)][Protobuf Payload]
+            // Send multipart: [Topic (as byte)][Protobuf Payload]
+            _socket.SendMoreFrame([(byte)topic]);
             _socket.SendFrame(_buffer, size);
             
             Log.ZLogTrace($"ZMQ (proto) PUSH sent {typeof(T).Name} on topic {topic} ({size} bytes) to {_currentAddress}");

@@ -75,7 +75,7 @@ public sealed partial class RobotStatusPublisher : IDisposable
         return true;
     }
 
-    // Multipart frame layout: frame[0] = 1-byte StatusTopic, frame[1] = protobuf payload
+    // Multipart frame layout: frame[0] = 1-byte Topic, frame[1] = protobuf payload
     private static StatusUpdate Deserialize(int robotId, IReadOnlyList<byte[]> frames)
     {
         if (frames.Count < 2 || frames[0].Length < 1)
