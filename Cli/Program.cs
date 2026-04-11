@@ -2,7 +2,7 @@
 
 using var projectConfigs = new Config.Storage(args[0], Config.StorageType.Project);
 using var userConfigs = new Config.Storage(
-    Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "Tyr", "user.toml"),
+    Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Tyr", "user.toml"),
     Config.StorageType.User);
 
 using var sslVisionPublisher = new Tyr.Vision.SslVisionDataPublisher();
