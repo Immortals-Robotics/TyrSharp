@@ -73,4 +73,7 @@ public struct TeamInfo
 
     /// <summary> The time left for bot substitution in microseconds. </summary>
     [ProtoMember(18)] public uint? BotSubstitutionTimeLeft { get; set; } = null;
+
+    /// <summary> The color of the hull of the robots of this team. </summary>
+    [ProtoMember(19)] public HullColor? HullColor { get; set; } = null;
 }

@@ -329,4 +329,84 @@ public class GameEvent
         get => _eventUnion.Is(36) ? (UnsportingBehaviorMajor)_eventUnion.Object : null;
         set => _eventUnion = new DiscriminatedUnionObject(36, value);
     }
-}
+
+    /// Both teams are prepared
+    [ProtoMember(1)]
+    public Prepared? Prepared
+    {
+        get => _eventUnion.Is(1) ? (Prepared)_eventUnion.Object : null;
+        set => _eventUnion = new DiscriminatedUnionObject(1, value);
+    }
+
+    /// The ball entered the goal directly during an indirect free kick
+    [ProtoMember(9)]
+    public IndirectGoal? IndirectGoal
+    {
+        get => _eventUnion.Is(9) ? (IndirectGoal)_eventUnion.Object : null;
+        set => _eventUnion = new DiscriminatedUnionObject(9, value);
+    }
+
+    /// The ball entered the goal, but was initially chipped
+    [ProtoMember(10)]
+    public ChippedGoal? ChippedGoal
+    {
+        get => _eventUnion.Is(10) ? (ChippedGoal)_eventUnion.Object : null;
+        set => _eventUnion = new DiscriminatedUnionObject(10, value);
+    }
+
+    /// Timeout waiting for the attacking team to perform the free kick
+    [ProtoMember(12)]
+    public KickTimeout? KickTimeout
+    {
+        get => _eventUnion.Is(12) ? (KickTimeout)_eventUnion.Object : null;
+        set => _eventUnion = new DiscriminatedUnionObject(12, value);
+    }
+
+    /// An attacker touched the opponent robot inside defense area
+    [ProtoMember(16)]
+    public AttackerTouchedOpponentInDefenseArea? AttackerTouchedOpponentInDefenseArea
+    {
+        get => _eventUnion.Is(16) ? (AttackerTouchedOpponentInDefenseArea)_eventUnion.Object : null;
+        set => _eventUnion = new DiscriminatedUnionObject(16, value);
+    }
+
+    /// Obsolete
+    [ProtoMember(42)]
+    public AttackerTouchedOpponentInDefenseArea? AttackerTouchedOpponentInDefenseAreaSkipped
+    {
+        get => _eventUnion.Is(42) ? (AttackerTouchedOpponentInDefenseArea)_eventUnion.Object : null;
+        set => _eventUnion = new DiscriminatedUnionObject(42, value);
+    }
+
+    /// Obsolete
+    [ProtoMember(23)]
+    public BotCrashUnique? BotCrashUniqueSkipped
+    {
+        get => _eventUnion.Is(23) ? (BotCrashUnique)_eventUnion.Object : null;
+        set => _eventUnion = new DiscriminatedUnionObject(23, value);
+    }
+
+    /// Obsolete
+    [ProtoMember(25)]
+    public BotPushedBot? BotPushedBotSkipped
+    {
+        get => _eventUnion.Is(25) ? (BotPushedBot)_eventUnion.Object : null;
+        set => _eventUnion = new DiscriminatedUnionObject(25, value);
+    }
+
+    /// A defender other than the keeper was partially located inside its own defense area and touched the ball
+    [ProtoMember(30)]
+    public DefenderInDefenseAreaPartially? DefenderInDefenseAreaPartially
+    {
+        get => _eventUnion.Is(30) ? (DefenderInDefenseAreaPartially)_eventUnion.Object : null;
+        set => _eventUnion = new DiscriminatedUnionObject(30, value);
+    }
+
+    /// A team failed to place the ball multiple times in a row
+    [ProtoMember(33)]
+    public MultiplePlacementFailures? MultiplePlacementFailures
+    {
+        get => _eventUnion.Is(33) ? (MultiplePlacementFailures)_eventUnion.Object : null;
+        set => _eventUnion = new DiscriminatedUnionObject(33, value);
+    }
+    }

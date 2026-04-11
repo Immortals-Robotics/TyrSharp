@@ -1,4 +1,4 @@
-﻿using ProtoBuf;
+using ProtoBuf;
 
 namespace Tyr.Common.Data.Ssl.Gc.Events;
 
@@ -58,4 +58,16 @@ public enum Type
 
     UnsportingBehaviorMinor = 35, // triggered by human ref
     UnsportingBehaviorMajor = 36, // triggered by human ref
+
+    // Deprecated types
+    Prepared = 1,
+    IndirectGoal = 9,
+    ChippedGoal = 10,
+    KickTimeout = 12,
+    AttackerTouchedOpponentInDefenseArea = 16,
+    AttackerTouchedOpponentInDefenseAreaSkipped = 40,
+    BotCrashUniqueSkipped = 23,
+    BotPushedBotSkipped = 25,
+    DefenderInDefenseAreaPartially = 30,
+    MultiplePlacementFailures = 33,
 }

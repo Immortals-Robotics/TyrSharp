@@ -25,6 +25,10 @@ public enum Command
     DirectFreeYellow = 8,
     /// <summary> The blue team may take a direct free kick. </summary>
     DirectFreeBlue = 9,
+    /// <summary> The yellow team may take an indirect free kick. </summary>
+    IndirectFreeYellow = 10,
+    /// <summary> The blue team may take an indirect free kick. </summary>
+    IndirectFreeBlue = 11,
     /// <summary> The yellow team is currently in a timeout. </summary>
     TimeoutYellow = 12,
     /// <summary> The blue team is currently in a timeout. </summary>
