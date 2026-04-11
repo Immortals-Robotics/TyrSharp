@@ -33,6 +33,8 @@ public sealed partial class TeamRunner : IDisposable
 
     private readonly Knowledge.Knowledge _knowledge = new();
 
+    public List<Robot.Robot> OwnRobots { get; } = [];
+
     private static TeamRunner? _yellowRunner;
     private static TeamRunner? _blueRunner;
 
@@ -67,7 +69,7 @@ public sealed partial class TeamRunner : IDisposable
             Color = _color,
             Ball = default,
             OppRobots = [],
-            OwnRobots = [],
+            OwnRobots = OwnRobots,
             Referee = _referee,
             Field = _field,
             Timer = _runner.Timer,
@@ -95,15 +97,17 @@ public sealed partial class TeamRunner : IDisposable
             var status = robot.HardwareStatus;
 
             Plot.Plot($"Robot {status.Info?.RobotId} battery", status.Power?.V24Voltage ?? 0f);
-            Plot.Plot($"Robot {status.Info?.RobotId} gyro", new Vector3(status.Imu?.GyroX ?? 0f, status.Imu?.GyroY ?? 0f, status.Imu?.GyroZ ?? 0f));
-            Plot.Plot($"Robot {status.Info?.RobotId} accelometer", new Vector3(status.Imu?.AccelX ?? 0f, status.Imu?.AccelY ?? 0f, status.Imu?.AccelZ ?? 0f));
+            Plot.Plot($"Robot {status.Info?.RobotId} gyro",
+                new Vector3(status.Imu?.GyroX ?? 0f, status.Imu?.GyroY ?? 0f, status.Imu?.GyroZ ?? 0f));
+            Plot.Plot($"Robot {status.Info?.RobotId} accelometer",
+                new Vector3(status.Imu?.AccelX ?? 0f, status.Imu?.AccelY ?? 0f, status.Imu?.AccelZ ?? 0f));
 
             if (status.Motors?.Motors != null)
             {
                 for (var i = 0; i < status.Motors.Motors.Count; i++)
                 {
                     Plot.Plot($"Robot {status.Info?.RobotId} motor {i}",
-                       new Vector2(status.Motors.Motors[i].Actual, status.Motors.Motors[i].Target));
+                        new Vector2(status.Motors.Motors[i].Actual, status.Motors.Motors[i].Target));
                 }
             }
 
@@ -236,6 +240,11 @@ public sealed partial class TeamRunner : IDisposable
     public static void SetManualLookTarget(TeamColor color, Vector2 point)
     {
         GetRunner(color)?._manualControl.SetLookTarget(point);
+    }
+
+    public static List<Robot.Robot>? GetOwnRobots(TeamColor color)
+    {
+        return GetRunner(color)?.OwnRobots;
     }
 
     public static void ClearManualLookTarget(TeamColor color)

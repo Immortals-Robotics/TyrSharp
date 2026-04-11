@@ -1,3 +1,5 @@
+using Tyr.Common.Time;
+
 namespace Tyr.Common.Data.Robot;
 
 /// <summary>
@@ -16,6 +18,7 @@ public class HardwareStatus
     public DiagStatus?             Diag             { get; private set; }
     public IrSensorStatus?         IrSensor         { get; private set; }
     public DribblerFeedbackStatus? DribblerFeedback { get; private set; }
+    public Timestamp LastUpdate { get; private set; } = Timestamp.Zero;
 
     /// <summary>
     /// Applies one StatusUpdate, overwriting whichever sub-status it carries.
@@ -29,6 +32,7 @@ public class HardwareStatus
         if (update.Mikona           is { } mikona)   Mikona           = mikona;
         if (update.Diag             is { } diag)     Diag             = diag;
         if (update.IrSensor         is { } ir)       IrSensor         = ir;
+        LastUpdate = Timestamp.Now;
         if (update.DribblerFeedback is { } dribbler) DribblerFeedback = dribbler;
 
         if (update.Info is { } info)
