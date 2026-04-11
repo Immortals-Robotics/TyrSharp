@@ -14,6 +14,8 @@ public sealed partial class SslVisionDataPublisher : IDisposable
 
     private static Address Address => UseSimulator ? SimulatorAddress : VisionAddress;
 
+    public static int SimulatorVisionPort => SimulatorAddress.Port;
+
     private readonly UdpReceiver<WrapperPacket> _udpReceiver;
 
     public SslVisionDataPublisher()

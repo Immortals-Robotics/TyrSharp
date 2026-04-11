@@ -1,6 +1,10 @@
 using Hexa.NET.ImGui;
+using Tyr.Common.Data;
+using Tyr.Common.Data.Ssl.Simulation;
+using Tyr.Common.Math;
 using Tyr.Gui.Backend;
 using Tyr.Gui.Simulator;
+using Tyr.Vision;
 using Color = Tyr.Common.Debug.Drawing.Color;
 
 namespace Tyr.Gui.Views;
@@ -9,12 +13,35 @@ public sealed class SimulatorView : IDisposable
 {
     public static readonly string WindowTitle = $"{IconFonts.FontAwesome6.Football} Simulator";
 
+    private static readonly string ProcessTabTitle = $"{IconFonts.FontAwesome6.Microchip}  Process";
+    private static readonly string ControlTabTitle = $"{IconFonts.FontAwesome6.Crosshairs}  Control";
+    private static readonly string ConfigTabTitle  = $"{IconFonts.FontAwesome6.Sliders}  Config";
+
     private static readonly string DownloadLatestButtonLabel = $"{IconFonts.FontAwesome6.CloudArrowDown}  Download Latest##simdownload";
     private static readonly string CancelDownloadButtonLabel = $"{IconFonts.FontAwesome6.Xmark}  Cancel##simdownload";
     private static readonly string StopProcessButtonLabel    = $"{IconFonts.FontAwesome6.Stop}  Stop##simproc";
     private static readonly string StartProcessButtonLabel   = $"{IconFonts.FontAwesome6.Play}  Start##simproc";
 
+    private static readonly string[] TeamNames = ["Yellow", "Blue"];
+
     private readonly GrSimProcess _process = new();
+    public  readonly SimulatorChannel Channel = new();
+
+    // ── ball state (mm) ───────────────────────────────────────────────────────
+    private float _ballX, _ballY;
+    private float _ballZ;
+    private bool  _ballRolling;
+
+    // ── robot state ───────────────────────────────────────────────────────────
+    private int   _robotTeamIdx; // 0 = Yellow, 1 = Blue
+    private int   _robotId;
+    private float _robotX, _robotY; // mm
+    private float _robotOrientDeg;
+
+    // ── speed state ───────────────────────────────────────────────────────────
+    private float _simSpeed = 1f;
+
+    // ── Draw ──────────────────────────────────────────────────────────────────
 
     public void Draw()
     {
@@ -26,10 +53,33 @@ public sealed class SimulatorView : IDisposable
             return;
         }
 
-        DrawProcessPanel();
+        if (ImGui.BeginTabBar("sim_tabs"))
+        {
+            if (ImGui.BeginTabItem(ProcessTabTitle))
+            {
+                DrawProcessPanel();
+                ImGui.EndTabItem();
+            }
+
+            if (ImGui.BeginTabItem(ControlTabTitle))
+            {
+                DrawControlPanel();
+                ImGui.EndTabItem();
+            }
+
+            if (ImGui.BeginTabItem(ConfigTabTitle))
+            {
+                DrawConfigPanel();
+                ImGui.EndTabItem();
+            }
+
+            ImGui.EndTabBar();
+        }
 
         ImGui.End();
     }
+
+    // ── Process tab ───────────────────────────────────────────────────────────
 
     private void DrawProcessPanel()
     {
@@ -84,8 +134,120 @@ public sealed class SimulatorView : IDisposable
             ImGui.SetTooltip("grSim is a GUI application — it will open its own window.\nDownloads from github.com/Immortals-Robotics/grSim");
     }
 
+    // ── Control tab ───────────────────────────────────────────────────────────
+
+    private void DrawControlPanel()
+    {
+        // ── Ball ──────────────────────────────────────────────────────────────
+        ImGui.SeparatorText("Ball");
+
+        DrawMmInput("X##ballx", ref _ballX); ImGui.SameLine();
+        DrawMmInput("Y##bally", ref _ballY); ImGui.SameLine();
+        DrawMmInput("Z##ballz", ref _ballZ, minMm: 0f, maxMm: 2000f);
+
+        ImGui.Checkbox("Rolling##ball", ref _ballRolling);
+        ImGui.SameLine();
+
+        if (ImGui.Button($"{IconFonts.FontAwesome6.LocationCrosshairs}  Teleport Ball##sim"))
+            Channel.TeleportBall(new TeleportBall
+            {
+                X    = _ballX / 1000f,
+                Y    = _ballY / 1000f,
+                Z    = _ballZ / 1000f,
+                Roll = _ballRolling,
+            });
+
+        // ── Robot ─────────────────────────────────────────────────────────────
+        ImGui.SeparatorText("Robot");
+
+        var teamColor = _robotTeamIdx == 0 ? Color.Yellow300 : Color.Sky300;
+        ImGui.TextColored(teamColor, IconFonts.FontAwesome6.Robot); ImGui.SameLine();
+        ImGui.SetNextItemWidth(80f);
+        ImGui.Combo("##robotteam", ref _robotTeamIdx, TeamNames, TeamNames.Length); ImGui.SameLine();
+        ImGui.Text("ID"); ImGui.SameLine();
+        ImGui.SetNextItemWidth(80f);
+        ImGui.DragInt("##robotid", ref _robotId, 1f, 0, 15);
+
+        DrawMmInput("X##robotx", ref _robotX); ImGui.SameLine();
+        DrawMmInput("Y##roboty", ref _robotY); ImGui.SameLine();
+        ImGui.Text("Angle"); ImGui.SameLine();
+        ImGui.SetNextItemWidth(75f);
+        ImGui.DragFloat("##robotangle", ref _robotOrientDeg, 1f, -180f, 180f, "%.0f°");
+
+        var team = _robotTeamIdx == 0 ? TeamColor.Yellow : TeamColor.Blue;
+
+        if (ImGui.Button($"{IconFonts.FontAwesome6.LocationCrosshairs}  Teleport##robot"))
+            Channel.TeleportRobot(team, (uint)_robotId,
+                                  _robotX / 1000f, _robotY / 1000f,
+                                  Angle.FromDeg(_robotOrientDeg));
+
+        ImGui.SameLine();
+
+        ImGui.PushStyleColor(ImGuiCol.Button, Color.Red900.RGBA);
+        if (ImGui.Button($"{IconFonts.FontAwesome6.CircleXmark}  Remove##robot"))
+            Channel.RemoveRobot(team, (uint)_robotId);
+        ImGui.PopStyleColor();
+
+        // ── Simulation speed ──────────────────────────────────────────────────
+        ImGui.SeparatorText("Simulation Speed");
+
+        ImGui.Text("Speed"); ImGui.SameLine();
+        ImGui.SetNextItemWidth(100f);
+        ImGui.DragFloat("##simspeed", ref _simSpeed, 0.05f, 0f, 10f, "%.2fx");
+        ImGui.SameLine();
+        if (ImGui.Button($"{IconFonts.FontAwesome6.Play}  Set##simspeed"))
+            Channel.SetSimulationSpeed(_simSpeed);
+        ImGui.SameLine();
+        if (ImGui.Button($"{IconFonts.FontAwesome6.Pause}  Pause##simspeed"))
+            Channel.SetSimulationSpeed(0f);
+    }
+
+    // ── Config tab ────────────────────────────────────────────────────────────
+
+    private void DrawConfigPanel()
+    {
+        ImGui.SeparatorText("Vision");
+
+        var visionPort = SslVisionDataPublisher.SimulatorVisionPort;
+        ImGui.TextColored(Color.Zinc400, $"Simulator vision port: {visionPort}");
+        ImGui.SameLine();
+        if (ImGui.Button($"{IconFonts.FontAwesome6.PaperPlane}  Send##simvision"))
+            Channel.SendConfig(visionPort: (uint)visionPort);
+
+        ImGui.Spacing();
+        ImGui.SeparatorText("Robot Specs");
+
+        ImGui.TextColored(Color.Zinc500,
+            "Edit robot geometry, limits, and wheel angles\n" +
+            "in the Configs panel (SimulatorChannel section),\n" +
+            "then send them to grSim with the button below.");
+        ImGui.Spacing();
+
+        if (ImGui.Button($"{IconFonts.FontAwesome6.PaperPlane}  Send Robot Specs##simspecs"))
+            Channel.SendRobotSpecs();
+    }
+
+    // ── helpers ───────────────────────────────────────────────────────────────
+
+    /// Renders "Label [drag input] mm" with the label on the left.
+    private static void DrawMmInput(string id, ref float valueMm,
+                                    float minMm = -10000f, float maxMm = 10000f)
+    {
+        // Extract the display label (everything before ##)
+        var label = id.Contains("##") ? id[..id.IndexOf('#')] : id;
+        ImGui.Text(label);
+        ImGui.SameLine();
+        ImGui.SetNextItemWidth(75f);
+        ImGui.DragFloat($"##{id}", ref valueMm, 10f, minMm, maxMm, "%.0f");
+        ImGui.SameLine();
+        ImGui.TextColored(Color.Zinc500, "mm");
+    }
+
+    // ── Dispose ───────────────────────────────────────────────────────────────
+
     public void Dispose()
     {
+        Channel.Dispose();
         _process.Dispose();
     }
 }
