@@ -1,5 +1,4 @@
 using System.Globalization;
-using System.Runtime.InteropServices;
 using Hexa.NET.ImGui;
 using Hexa.NET.SDL3;
 using Tyr.Common.Config;
@@ -252,7 +251,7 @@ public sealed partial class GameControllerView : IDisposable
 
         if (_gamepad.Handle != null)
         {
-            var name = Marshal.PtrToStringAnsi((nint)SDL.GetGamepadName(_gamepad)) ?? "Unknown Gamepad";
+            var name = Gamepad.GetName(_gamepad);
             ImGui.SameLine();
             ImGui.TextColored(Color.Zinc700, "|");
             ImGui.SameLine();
@@ -697,27 +696,15 @@ public sealed partial class GameControllerView : IDisposable
 
     private unsafe void HandleGamepadInput()
     {
-        int count = 0;
-        int* gamepads = SDL.GetGamepads(ref count);
-        if (count == 0)
+        if (RobotDebugView.CapturesGamepad)
         {
-            if (_gamepad.Handle != null)
-            {
-                SDL.CloseGamepad(_gamepad);
-                _gamepad = default;
-            }
-            if (gamepads != null) SDL.Free(gamepads);
+            Gamepad.Close(ref _gamepad);
+            Array.Clear(_lastButtons);
             return;
         }
 
-        if (_gamepad.Handle == null)
-        {
-            _gamepad = SDL.OpenGamepad(gamepads[0]);
-        }
-
-        if (gamepads != null) SDL.Free(gamepads);
-
-        if (_gamepad.Handle == null) return;
+        Gamepad.Refresh(ref _gamepad);
+        if (!Gamepad.IsConnected(_gamepad)) return;
 
         var team = GamepadTeam.ToString().ToUpperInvariant();
         var connected = _apiClient.State == GcApiClient.ConnectionState.Connected;
@@ -740,7 +727,7 @@ public sealed partial class GameControllerView : IDisposable
 
     public unsafe void Dispose()
     {
-        if (_gamepad.Handle != null) SDL.CloseGamepad(_gamepad);
+        Gamepad.Close(ref _gamepad);
         _rconYellow.Dispose();
         _rconBlue.Dispose();
         _apiClient.Dispose();

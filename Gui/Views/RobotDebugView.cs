@@ -1,6 +1,7 @@
 using System.Numerics;
 using System.Collections.Concurrent;
 using Hexa.NET.ImGui;
+using Hexa.NET.SDL3;
 using Tyr.Common.Config;
 using Tyr.Common.Data.Robot;
 using Tyr.Common.Dataflow;
@@ -14,14 +15,25 @@ namespace Tyr.Gui.Views;
 public sealed partial class RobotDebugView : IDisposable
 {
     public static readonly string WindowTitle = $"{IconFonts.FontAwesome6.Microchip} Robot Debug";
+    public static bool CapturesGamepad => UseGamepadControl;
+    private const float MaxGamepadDribblerSpeed = 3.0f;
 
     [ConfigEntry("Command port for the robot", StorageType.User)]
     private static int CommandPort { get; set; } = 5671;
 
+    [ConfigEntry("Use the first connected gamepad to drive the selected robot from Robot Debug", StorageType.User)]
+    private static bool UseGamepadControl { get; set; } = false;
+
+    [ConfigEntry("Left-stick full-scale robot speed in m/s", StorageType.User)]
+    private static float GamepadMaxSpeed { get; set; } = 2.5f;
+
+    [ConfigEntry("Stick deadzone for robot debug gamepad control", StorageType.User)]
+    private static float GamepadDeadzone { get; set; } = 0.18f;
+
     private readonly Subscriber<IReadOnlyList<DiscoveredRobot>> _discoverySubscriber;
     private readonly Subscriber<StatusUpdate> _statusSubscriber;
     private readonly ConcurrentDictionary<int, HardwareStatus> _hardwareStatuses = new();
-    
+
     private int _selectedRobotId = -1;
     private readonly Dictionary<int, ZmqSender> _senders = new();
     private readonly Dictionary<int, string> _robotIps = new();
@@ -37,6 +49,8 @@ public sealed partial class RobotDebugView : IDisposable
     private float _dribblerForce = 5.0f;
     private bool _halted;
     private bool _continuousSend;
+    private SDLGamepadPtr _gamepad;
+    private readonly bool[] _lastButtons = new bool[32];
 
     public RobotDebugView()
     {
@@ -46,14 +60,15 @@ public sealed partial class RobotDebugView : IDisposable
 
     public void Draw()
     {
+        UpdateDiscovery();
+        UpdateStatuses();
+        HandleGamepadInput();
+
         if (!ImGui.Begin(WindowTitle))
         {
             ImGui.End();
             return;
         }
-
-        UpdateDiscovery();
-        UpdateStatuses();
 
         if (ImGui.BeginChild("robot_list", new Vector2(200, 0), ImGuiChildFlags.None, ImGuiWindowFlags.None))
         {
@@ -66,6 +81,7 @@ public sealed partial class RobotDebugView : IDisposable
                     _selectedRobotId = id;
                 }
             }
+
             ImGui.EndChild();
         }
 
@@ -81,6 +97,7 @@ public sealed partial class RobotDebugView : IDisposable
             {
                 ImGui.TextDisabled("Select a robot from the list to send commands.");
             }
+
             ImGui.EndChild();
         }
 
@@ -110,7 +127,7 @@ public sealed partial class RobotDebugView : IDisposable
             if (!_senders.TryGetValue(robot.Id, out var sender) || _robotIps[robot.Id] != robot.Ip)
             {
                 sender?.Dispose();
-                
+
                 var address = new Address { Ip = robot.Ip, Port = CommandPort };
                 _robotIps[robot.Id] = robot.Ip;
                 _senders[robot.Id] = new ZmqSender(address, ZmqMode.Connect);
@@ -138,13 +155,41 @@ public sealed partial class RobotDebugView : IDisposable
         {
             ImGui.TextColored(Color.Yellow400, $"{IconFonts.FontAwesome6.BatteryFull} {status.Power?.V24Voltage:F2}V");
             ImGui.SameLine();
-            ImGui.TextColored(status.IrSensor?.Blocked ?? false ? Color.Orange400 : Color.Zinc500, 
+            ImGui.TextColored(status.IrSensor?.Blocked ?? false ? Color.Orange400 : Color.Zinc500,
                 $"{IconFonts.FontAwesome6.CircleDot} Ball Detected");
             ImGui.SameLine();
-            ImGui.TextColored(Color.Zinc400, $"{IconFonts.FontAwesome6.TemperatureHalf} {status.Diag?.ImuTemp:F1}Â°C");
+            ImGui.TextColored(Color.Zinc400, $"{IconFonts.FontAwesome6.TemperatureHalf} {status.Diag?.ImuTemp:F1}C");
         }
 
-        if (ImGui.Checkbox("HALTED", ref _halted)) { /* State update only */ }
+        ImGui.TextColored(Color.Zinc500, $"Gamepad Control: {(UseGamepadControl ? "On" : "Off")} (set in Configs)");
+        ImGui.SameLine();
+        if (UseGamepadControl)
+        {
+            if (Gamepad.IsConnected(_gamepad))
+            {
+                ImGui.TextColored(Color.Green400, $"{IconFonts.FontAwesome6.Gamepad} {Gamepad.GetName(_gamepad)}");
+            }
+            else
+            {
+                ImGui.TextColored(Color.Orange400, $"{IconFonts.FontAwesome6.Gamepad} No gamepad detected");
+            }
+        }
+        else
+        {
+            ImGui.TextColored(Color.Zinc500, "Referee gamepad shortcuts are active.");
+        }
+
+        if (UseGamepadControl)
+        {
+            ImGui.TextColored(Color.Zinc400,
+                "Robot Debug owns the gamepad. Left stick moves, right stick aims, A shoots, B chips, LT/RT control dribbler speed, Start halts.");
+        }
+
+        if (ImGui.Checkbox("HALTED", ref _halted))
+        {
+            /* State update only */
+        }
+
         ImGui.SameLine();
         ImGui.Checkbox("Continuous Send", ref _continuousSend);
 
@@ -152,10 +197,11 @@ public sealed partial class RobotDebugView : IDisposable
         ImGui.SeparatorText("Movement (m/s)");
         ImGui.SliderFloat("VX (Forward)", ref _vx, -4.0f, 4.0f);
         ImGui.SliderFloat("VY (Left)", ref _vy, -4.0f, 4.0f);
-        
+
         if (ImGui.Button("Reset Motion"))
         {
-            _vx = 0; _vy = 0;
+            _vx = 0;
+            _vy = 0;
         }
 
         ImGui.Spacing();
@@ -185,7 +231,7 @@ public sealed partial class RobotDebugView : IDisposable
 
         ImGui.Spacing();
         ImGui.Separator();
-        
+
         if (_continuousSend)
         {
             SendCommand(sender);
@@ -203,14 +249,21 @@ public sealed partial class RobotDebugView : IDisposable
         if (ImGui.Button("EMERGENCY STOP", new Vector2(-1, 40)))
         {
             _halted = true;
-            _vx = 0; _vy = 0;
+            _vx = 0;
+            _vy = 0;
             _continuousSend = false;
             SendCommand(sender);
         }
+
         ImGui.PopStyleColor();
     }
 
     private void SendCommand(ZmqSender sender, float shoot = 0, float chip = 0)
+    {
+        SendCommand(sender, shoot, chip, _dribblerSpeed, _dribblerForce);
+    }
+
+    private void SendCommand(ZmqSender sender, float shoot, float chip, float dribblerSpeed, float dribblerForce)
     {
         var robotCmd = new RobotCommand
         {
@@ -221,15 +274,88 @@ public sealed partial class RobotDebugView : IDisposable
             TargetAngle = _targetAngle,
             Shoot = shoot,
             Chip = chip,
-            DribblerSpeed = _dribblerSpeed,
-            DribblerForce = _dribblerForce
+            DribblerSpeed = dribblerSpeed,
+            DribblerForce = dribblerForce
         };
 
         sender.Send(CommandType.CommandTypeRobot, robotCmd);
     }
 
+    private unsafe void HandleGamepadInput()
+    {
+        if (!UseGamepadControl)
+        {
+            Gamepad.Close(ref _gamepad);
+            Array.Clear(_lastButtons);
+            return;
+        }
+
+        Gamepad.Refresh(ref _gamepad);
+        if (!Gamepad.IsConnected(_gamepad))
+        {
+            return;
+        }
+
+        if (_selectedRobotId == -1 || !_senders.TryGetValue(_selectedRobotId, out var sender))
+        {
+            return;
+        }
+
+        _continuousSend = false;
+
+        _vx = Gamepad.GetStickAxis(_gamepad, SDLGamepadAxis.Lefty, GamepadDeadzone) * GamepadMaxSpeed;
+        _vy = -Gamepad.GetStickAxis(_gamepad, SDLGamepadAxis.Leftx, GamepadDeadzone) * GamepadMaxSpeed;
+
+        var rightX = Gamepad.GetStickAxis(_gamepad, SDLGamepadAxis.Rightx, GamepadDeadzone);
+        var leftTrigger = Gamepad.GetTriggerAxis(_gamepad, SDLGamepadAxis.LeftTrigger, GamepadDeadzone);
+        var rightTrigger = Gamepad.GetTriggerAxis(_gamepad, SDLGamepadAxis.RightTrigger, GamepadDeadzone);
+        var dribblerTrigger = Math.Max(leftTrigger, rightTrigger);
+
+        _targetAngle = rightX * 90;
+
+
+        var shoot = ConsumeButton(SDLGamepadButton.South) ? _shootPower : 0f;
+        var chip = ConsumeButton(SDLGamepadButton.East) ? _chipPower : 0f;
+        _dribblerSpeed = dribblerTrigger * MaxGamepadDribblerSpeed;
+        var haltPressed = ConsumeButton(SDLGamepadButton.Start);
+
+        if (haltPressed)
+        {
+            _halted = true;
+            _vx = 0f;
+            _vy = 0f;
+            _dribblerSpeed = 0f;
+        }
+        else if (_vx != 0f || _vy != 0f || shoot > 0f || chip > 0f || _dribblerSpeed > 0f || rightX != 0f)
+        {
+            _halted = false;
+        }
+
+        SendCommand(sender, shoot, chip, _dribblerSpeed, _dribblerSpeed > 0f ? _dribblerForce : 0f);
+    }
+
+    private unsafe bool IsButtonDown(SDLGamepadButton button)
+    {
+        return _gamepad.Handle != null && SDL.GetGamepadButton(_gamepad, button);
+    }
+
+    private unsafe bool ConsumeButton(SDLGamepadButton button)
+    {
+        if (_gamepad.Handle == null)
+        {
+            return false;
+        }
+
+        var idx = (int)button;
+        var down = SDL.GetGamepadButton(_gamepad, button);
+        var pressed = down && !_lastButtons[idx];
+        _lastButtons[idx] = down;
+        return pressed;
+    }
+
     public void Dispose()
     {
+        Gamepad.Close(ref _gamepad);
         foreach (var sender in _senders.Values)
             sender.Dispose();
         _senders.Clear();
