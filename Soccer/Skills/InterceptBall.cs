@@ -1,6 +1,7 @@
 using Tyr.Common.Extensions;
 using Tyr.Common.Math;
 using Tyr.Common.Time;
+using Tyr.Soccer.Helpers;
 using Tyr.Soccer.Robot;
 
 namespace Tyr.Soccer.Skills;
@@ -21,8 +22,8 @@ public sealed class InterceptBall : ISkill
 
         var profile = VelocityProfile.Mamooli;
         var interceptionAngle = ballVelocity.ToAngle();
-        var interceptionTime = SkillMath.CalculateBallRobotReachTime(robot, interceptionAngle, profile, WaitTimeSeconds);
-        var ballState = SkillMath.PredictBall(DeltaTime.FromSeconds(interceptionTime));
+        var interceptionTime = BallPrediction.CalculateBallRobotReachTime(robot, interceptionAngle, profile, WaitTimeSeconds);
+        var ballState = BallPrediction.PredictBall(DeltaTime.FromSeconds(interceptionTime));
         var interceptionPoint = ballState.Position.CircleAroundPoint(ballVelocity.ToAngle(), Context.RobotRadius);
 
         robot.Navigate(interceptionPoint, profile, NavigationFlags.BallMediumObstacle);

@@ -3,6 +3,7 @@ using Tyr.Common.Config;
 using Tyr.Common.Extensions;
 using Tyr.Common.Math;
 using Tyr.Common.Math.Shapes;
+using Tyr.Soccer.Helpers;
 using Tyr.Soccer.Robot;
 
 namespace Tyr.Soccer.Skills;
@@ -40,11 +41,6 @@ public sealed partial class OneTouch : ISkill
     private static Vector2 CalculatePassPos(Vector2 target, Vector2 staticPos, float bar)
     {
         var ballVelocity = Context.Ball.State.Velocity.Xy();
-        if (Utils.ApproximatelyZero(ballVelocity.LengthSquared()))
-        {
-            return staticPos;
-        }
-
         var ballLine = Line.FromPointAndAngle(Context.Ball.State.Position, ballVelocity.ToAngle());
         var angleWithTarget = staticPos.AngleWith(target);
         var ans = ballLine.ClosestPoint(staticPos + angleWithTarget.ToUnitVec() * bar);
@@ -55,7 +51,7 @@ public sealed partial class OneTouch : ISkill
     {
         var v0 = Context.Ball.State.Velocity.Xy();
         var targetLine = Context.Field.OppGoalLine();
-        var openAngle = SkillMath.CalculateOpenAngleToGoal(oneTouchPosition, robot);
+        var openAngle = OpenAngle.CalculateOpenAngleToGoal(oneTouchPosition, robot);
         var ballLine = Line.FromPointAndAngle(oneTouchPosition, openAngle.Center);
         var goal = Geometry.Intersection(ballLine, targetLine) ?? new Vector2(Context.Field.OppGoal().X, 0f);
 

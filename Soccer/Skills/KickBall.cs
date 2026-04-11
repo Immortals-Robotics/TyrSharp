@@ -3,6 +3,7 @@ using Tyr.Common.Config;
 using Tyr.Common.Extensions;
 using Tyr.Common.Math;
 using Tyr.Common.Time;
+using Tyr.Soccer.Helpers;
 using Tyr.Soccer.Robot;
 
 namespace Tyr.Soccer.Skills;
@@ -21,7 +22,7 @@ public sealed partial class KickBall : ISkill
     {
         var maxForwardOffset = IsGoalkeeper ? 200f : 300f;
         var navigationFlags = GetNavigationFlags(robot);
-        var ball = SkillMath.PredictBall(PredictionTime);
+        var ball = BallPrediction.PredictBall(PredictionTime);
 
         var toTarget = -Angle.ToUnitVec();
         var robotToBall = ball.Position - robot.Position;
@@ -36,7 +37,7 @@ public sealed partial class KickBall : ISkill
         var alignmentFactor = Math.Clamp(ballTargetDot, 0f, 1f);
         var axialDistanceToBall = Vector2.Dot(toTarget, robotToBall);
         var distanceProgress = 1f - Math.Clamp(axialDistanceToBall / behindBallDistance, 0f, 1f);
-        var distanceFactor = SkillMath.SmoothStep01(distanceProgress);
+        var distanceFactor = SmoothStep01(distanceProgress);
         var forwardOffset = maxForwardOffset * alignmentFactor * distanceFactor;
         var finalPos = behindBallPos + toTarget * forwardOffset;
 
@@ -58,6 +59,12 @@ public sealed partial class KickBall : ISkill
 
         robot.Shoot = Kick;
         robot.Chip = Chip;
+    }
+
+    private static float SmoothStep01(float value)
+    {
+        var t = Math.Clamp(value, 0f, 1f);
+        return t * t * (3f - 2f * t);
     }
 
     private NavigationFlags GetNavigationFlags(Robot.Robot robot)
