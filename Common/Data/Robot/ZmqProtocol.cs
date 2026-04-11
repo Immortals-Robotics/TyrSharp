@@ -70,6 +70,30 @@ namespace Tyr.Common.Data.Robot
     }
 
     [global::ProtoBuf.ProtoContract()]
+    public partial class IrSensorStatus : global::ProtoBuf.IExtensible
+    {
+        private global::ProtoBuf.IExtension __pbn__extensionData;
+        global::ProtoBuf.IExtension global::ProtoBuf.IExtensible.GetExtensionObject(bool createIfMissing)
+            => global::ProtoBuf.Extensible.GetExtensionObject(ref __pbn__extensionData, createIfMissing);
+
+        [global::ProtoBuf.ProtoMember(1, Name = @"blocked")]
+        public bool Blocked { get; set; }
+
+    }
+
+    [global::ProtoBuf.ProtoContract()]
+    public partial class DribblerFeedbackStatus : global::ProtoBuf.IExtensible
+    {
+        private global::ProtoBuf.IExtension __pbn__extensionData;
+        global::ProtoBuf.IExtension global::ProtoBuf.IExtensible.GetExtensionObject(bool createIfMissing)
+            => global::ProtoBuf.Extensible.GetExtensionObject(ref __pbn__extensionData, createIfMissing);
+
+        [global::ProtoBuf.ProtoMember(1, Name = @"actual_force_n")]
+        public float ActualForceN { get; set; }
+
+    }
+
+    [global::ProtoBuf.ProtoContract()]
     public partial class PowerStatus : global::ProtoBuf.IExtensible
     {
         private global::ProtoBuf.IExtension __pbn__extensionData;
@@ -115,6 +139,24 @@ namespace Tyr.Common.Data.Robot
         [global::ProtoBuf.ProtoMember(4, Name = @"voltage")]
         public float Voltage { get; set; }
 
+        [global::ProtoBuf.ProtoMember(5, Name = @"fault")]
+        public bool Fault { get; set; }
+
+        [global::ProtoBuf.ProtoMember(6, Name = @"fault_invalid_cmd")]
+        public bool FaultInvalidCmd { get; set; }
+
+        [global::ProtoBuf.ProtoMember(7, Name = @"fault_charge_timeout")]
+        public bool FaultChargeTimeout { get; set; }
+
+        [global::ProtoBuf.ProtoMember(8, Name = @"fault_discharge_stuck")]
+        public bool FaultDischargeStuck { get; set; }
+
+        [global::ProtoBuf.ProtoMember(9, Name = @"fault_kick_a_no_drop")]
+        public bool FaultKickANoDrop { get; set; }
+
+        [global::ProtoBuf.ProtoMember(10, Name = @"fault_kick_b_no_drop")]
+        public bool FaultKickBNoDrop { get; set; }
+
     }
 
     [global::ProtoBuf.ProtoContract()]
@@ -132,9 +174,6 @@ namespace Tyr.Common.Data.Robot
 
         [global::ProtoBuf.ProtoMember(3, Name = @"button")]
         public bool Button { get; set; }
-
-        [global::ProtoBuf.ProtoMember(4, Name = @"ball_detected")]
-        public bool BallDetected { get; set; }
 
     }
 
@@ -379,6 +418,15 @@ namespace Tyr.Common.Data.Robot
         [global::ProtoBuf.ProtoMember(3, Name = @"value")]
         public float Value { get; set; }
 
+        [global::ProtoBuf.ProtoMember(4, Name = @"use_physical_dribbler_command")]
+        public bool UsePhysicalDribblerCommand { get; set; }
+
+        [global::ProtoBuf.ProtoMember(5, Name = @"surface_speed_mm_per_s")]
+        public float SurfaceSpeedMmPerS { get; set; }
+
+        [global::ProtoBuf.ProtoMember(6, Name = @"torque_limit_nm")]
+        public float TorqueLimitNm { get; set; }
+
     }
 
     [global::ProtoBuf.ProtoContract()]
@@ -405,6 +453,9 @@ namespace Tyr.Common.Data.Robot
 
         [global::ProtoBuf.ProtoMember(2, Name = @"discharge")]
         public bool Discharge { get; set; }
+
+        [global::ProtoBuf.ProtoMember(3, Name = @"clear_fault")]
+        public bool ClearFault { get; set; }
 
     }
 
@@ -435,6 +486,54 @@ namespace Tyr.Common.Data.Robot
 
         [global::ProtoBuf.ProtoMember(1, Name = @"enable")]
         public bool Enable { get; set; }
+
+    }
+
+    [global::ProtoBuf.ProtoContract()]
+    public partial class BuzzerCommand : global::ProtoBuf.IExtensible
+    {
+        private global::ProtoBuf.IExtension __pbn__extensionData;
+        global::ProtoBuf.IExtension global::ProtoBuf.IExtensible.GetExtensionObject(bool createIfMissing)
+            => global::ProtoBuf.Extensible.GetExtensionObject(ref __pbn__extensionData, createIfMissing);
+
+        [global::ProtoBuf.ProtoMember(1, Name = @"sequence")]
+        public BuzzerSequence Sequence { get; set; }
+
+    }
+
+    [global::ProtoBuf.ProtoContract()]
+    public partial class RobotCommand : global::ProtoBuf.IExtensible
+    {
+        private global::ProtoBuf.IExtension __pbn__extensionData;
+        global::ProtoBuf.IExtension global::ProtoBuf.IExtensible.GetExtensionObject(bool createIfMissing)
+            => global::ProtoBuf.Extensible.GetExtensionObject(ref __pbn__extensionData, createIfMissing);
+
+        [global::ProtoBuf.ProtoMember(1, Name = @"halted")]
+        public bool Halted { get; set; }
+
+        [global::ProtoBuf.ProtoMember(2, Name = @"vx")]
+        public float Vx { get; set; }
+
+        [global::ProtoBuf.ProtoMember(3, Name = @"vy")]
+        public float Vy { get; set; }
+
+        [global::ProtoBuf.ProtoMember(4, Name = @"current_angle")]
+        public float CurrentAngle { get; set; }
+
+        [global::ProtoBuf.ProtoMember(5, Name = @"target_angle")]
+        public float TargetAngle { get; set; }
+
+        [global::ProtoBuf.ProtoMember(6, Name = @"shoot")]
+        public float Shoot { get; set; }
+
+        [global::ProtoBuf.ProtoMember(7, Name = @"chip")]
+        public float Chip { get; set; }
+
+        [global::ProtoBuf.ProtoMember(8, Name = @"dribbler_speed")]
+        public float DribblerSpeed { get; set; }
+
+        [global::ProtoBuf.ProtoMember(9, Name = @"dribbler_force")]
+        public float DribblerForce { get; set; }
 
     }
 
@@ -478,6 +577,31 @@ namespace Tyr.Common.Data.Robot
     }
 
     [global::ProtoBuf.ProtoContract()]
+    public enum BuzzerSequence
+    {
+        [global::ProtoBuf.ProtoEnum(Name = @"BUZZER_SEQUENCE_NONE")]
+        BuzzerSequenceNone = 0,
+        [global::ProtoBuf.ProtoEnum(Name = @"BUZZER_SEQUENCE_BOOT_JINGLE")]
+        BuzzerSequenceBootJingle = 1,
+        [global::ProtoBuf.ProtoEnum(Name = @"BUZZER_SEQUENCE_TRIPLE_ALERT")]
+        BuzzerSequenceTripleAlert = 2,
+        [global::ProtoBuf.ProtoEnum(Name = @"BUZZER_SEQUENCE_CHIRP")]
+        BuzzerSequenceChirp = 3,
+        [global::ProtoBuf.ProtoEnum(Name = @"BUZZER_SEQUENCE_SAD_TROMBONE")]
+        BuzzerSequenceSadTrombone = 4,
+        [global::ProtoBuf.ProtoEnum(Name = @"BUZZER_SEQUENCE_MARIO_COIN")]
+        BuzzerSequenceMarioCoin = 5,
+        [global::ProtoBuf.ProtoEnum(Name = @"BUZZER_SEQUENCE_MARIO_1UP")]
+        BuzzerSequenceMario1up = 6,
+        [global::ProtoBuf.ProtoEnum(Name = @"BUZZER_SEQUENCE_ZELDA_ITEM_GET")]
+        BuzzerSequenceZeldaItemGet = 7,
+        [global::ProtoBuf.ProtoEnum(Name = @"BUZZER_SEQUENCE_TETRIS")]
+        BuzzerSequenceTetris = 8,
+        [global::ProtoBuf.ProtoEnum(Name = @"BUZZER_SEQUENCE_PAC_MAN_DEATH")]
+        BuzzerSequencePacManDeath = 9,
+    }
+
+    [global::ProtoBuf.ProtoContract()]
     public enum StatusTopic
     {
         [global::ProtoBuf.ProtoEnum(Name = @"STATUS_TOPIC_IMU")]
@@ -492,6 +616,10 @@ namespace Tyr.Common.Data.Robot
         StatusTopicInfo = 4,
         [global::ProtoBuf.ProtoEnum(Name = @"STATUS_TOPIC_DIAG")]
         StatusTopicDiag = 5,
+        [global::ProtoBuf.ProtoEnum(Name = @"STATUS_TOPIC_IR_SENSOR")]
+        StatusTopicIrSensor = 6,
+        [global::ProtoBuf.ProtoEnum(Name = @"STATUS_TOPIC_DRIBBLER_FEEDBACK")]
+        StatusTopicDribblerFeedback = 7,
     }
 
     [global::ProtoBuf.ProtoContract()]
@@ -505,6 +633,10 @@ namespace Tyr.Common.Data.Robot
         CommandTypeKick = 2,
         [global::ProtoBuf.ProtoEnum(Name = @"COMMAND_TYPE_MOTOR_ENABLE")]
         CommandTypeMotorEnable = 3,
+        [global::ProtoBuf.ProtoEnum(Name = @"COMMAND_TYPE_BUZZER")]
+        CommandTypeBuzzer = 4,
+        [global::ProtoBuf.ProtoEnum(Name = @"COMMAND_TYPE_ROBOT")]
+        CommandTypeRobot = 5,
     }
 
 }

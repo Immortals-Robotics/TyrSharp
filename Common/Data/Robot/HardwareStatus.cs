@@ -7,13 +7,15 @@ namespace Tyr.Common.Data.Robot;
 /// </summary>
 public class HardwareStatus
 {
-    public uint            RobotId { get; private set; }
-    public ImuStatus?      Imu     { get; private set; }
-    public MotorStatus?    Motors  { get; private set; }
-    public PowerStatus?    Power   { get; private set; }
-    public MikonaStatus?   Mikona  { get; private set; }
-    public RobotInfo?      Info    { get; private set; }
-    public DiagStatus?     Diag    { get; private set; }
+    public uint                    RobotId          { get; private set; }
+    public ImuStatus?              Imu              { get; private set; }
+    public MotorStatus?            Motors           { get; private set; }
+    public PowerStatus?            Power            { get; private set; }
+    public MikonaStatus?           Mikona           { get; private set; }
+    public RobotInfo?              Info             { get; private set; }
+    public DiagStatus?             Diag             { get; private set; }
+    public IrSensorStatus?         IrSensor         { get; private set; }
+    public DribblerFeedbackStatus? DribblerFeedback { get; private set; }
 
     /// <summary>
     /// Applies one StatusUpdate, overwriting whichever sub-status it carries.
@@ -21,11 +23,13 @@ public class HardwareStatus
     /// </summary>
     public bool Apply(StatusUpdate update)
     {
-        if (update.Imu    is { } imu)    Imu    = imu;
-        if (update.Motors is { } motors) Motors = motors;
-        if (update.Power  is { } power)  Power  = power;
-        if (update.Mikona is { } mikona) Mikona = mikona;
-        if (update.Diag   is { } diag)   Diag   = diag;
+        if (update.Imu              is { } imu)      Imu              = imu;
+        if (update.Motors           is { } motors)   Motors           = motors;
+        if (update.Power            is { } power)    Power            = power;
+        if (update.Mikona           is { } mikona)   Mikona           = mikona;
+        if (update.Diag             is { } diag)     Diag             = diag;
+        if (update.IrSensor         is { } ir)       IrSensor         = ir;
+        if (update.DribblerFeedback is { } dribbler) DribblerFeedback = dribbler;
 
         if (update.Info is { } info)
         {

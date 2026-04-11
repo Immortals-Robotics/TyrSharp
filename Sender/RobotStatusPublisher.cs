@@ -1,34 +1,82 @@
+using System.Buffers.Binary;
+using System.Collections.Concurrent;
 using ProtoBuf;
 using Tyr.Common.Config;
 using Tyr.Common.Data.Robot;
 using Tyr.Common.Dataflow;
 using Tyr.Common.Network;
+using Tyr.Common.Runner;
+using Tyr.Common.Time;
 
 namespace Tyr.Sender;
 
 [Configurable]
 public sealed partial class RobotStatusPublisher : IDisposable
 {
-    [ConfigEntry] private static Address RobotStatusAddress { get; set; } = new() { Ip = "localhost", Port = 5555 };
-    [ConfigEntry] private static int TickRateHz { get; set; } = 100;
-
-    private readonly ZmqReceiver<StatusUpdate> _zmqReceiver;
+    [ConfigEntry] private static int StatusPort { get; set; } = 5670;
+    
+    private readonly ConcurrentDictionary<int, ZmqReceiver<StatusUpdate>> _receivers = new();
+    private readonly Subscriber<IReadOnlyList<DiscoveredRobot>> _discoverySubscriber;
+    private readonly RunnerSync _managementRunner;
 
     public RobotStatusPublisher()
     {
-        _zmqReceiver = new ZmqReceiver<StatusUpdate>(RobotStatusAddress, OnData, "RobotStatus",
-            deserializer: Deserialize);
+        _discoverySubscriber = Hub.DiscoveredRobots.Subscribe(Mode.Latest);
+        _managementRunner = new RunnerSync(ManageConnections, 1, "StatusManager");
+        _managementRunner.Start();
 
-        Configurable.OnUpdated += _ =>
+        Log.ZLogInformation($"Robot Status publisher initialized (watching discovery on port {StatusPort})");
+    }
+
+    private bool ManageConnections()
+    {
+        if (!_discoverySubscriber.Reader.TryRead(out var robots))
+            return false;
+
+        var activeIds = new HashSet<int>();
+        foreach (var robot in robots)
         {
-            _zmqReceiver?.ChangeAddress(RobotStatusAddress);
-        };
+            if (!robot.IsOnline) continue;
+            activeIds.Add(robot.Id);
 
-        Log.ZLogInformation($"Robot Status publisher initialized on {RobotStatusAddress}.");
+            if (!_receivers.TryGetValue(robot.Id, out var receiver))
+            {
+                var address = new Address { Ip = robot.Ip, Port = StatusPort };
+                Log.ZLogInformation($"Connecting to status stream for Robot {robot.Id} at {address}");
+                
+                var robotId = robot.Id; // Capture for closure
+                receiver = new ZmqReceiver<StatusUpdate>(
+                    address, 
+                    update => OnData(robotId, update), 
+                    $"Status{robotId}",
+                    deserializer: frames => Deserialize(robotId, frames));
+                
+                _receivers[robot.Id] = receiver;
+            }
+            else if (receiver.CurrentAddress.Ip != robot.Ip)
+            {
+                // IP changed? Re-connect
+                Log.ZLogInformation($"Robot {robot.Id} moved to {robot.Ip}, updating connection");
+                receiver.ChangeAddress(new Address { Ip = robot.Ip, Port = StatusPort });
+            }
+        }
+
+        // Clean up timed-out robots
+        var toRemove = _receivers.Keys.Where(id => !activeIds.Contains(id)).ToList();
+        foreach (var id in toRemove)
+        {
+            if (_receivers.TryRemove(id, out var receiver))
+            {
+                Log.ZLogInformation($"Closing status stream for Robot {id}");
+                receiver.Dispose();
+            }
+        }
+
+        return true;
     }
 
     // Multipart frame layout: frame[0] = 1-byte StatusTopic, frame[1] = protobuf payload
-    private static StatusUpdate Deserialize(IReadOnlyList<byte[]> frames)
+    private static StatusUpdate Deserialize(int robotId, IReadOnlyList<byte[]> frames)
     {
         if (frames.Count < 2 || frames[0].Length < 1)
             throw new InvalidDataException($"Unexpected ZMQ frame count or topic size: {frames.Count}, {frames[0].Length}");
@@ -36,7 +84,7 @@ public sealed partial class RobotStatusPublisher : IDisposable
         var topic = (StatusTopic)frames[0][0];
         var payload = new ReadOnlySpan<byte>(frames[1]);
 
-        return topic switch
+        var update = topic switch
         {
             StatusTopic.StatusTopicImu    => new StatusUpdate { Imu    = Serializer.Deserialize<ImuStatus>(payload) },
             StatusTopic.StatusTopicMotors => new StatusUpdate { Motors = Serializer.Deserialize<MotorStatus>(payload) },
@@ -44,17 +92,24 @@ public sealed partial class RobotStatusPublisher : IDisposable
             StatusTopic.StatusTopicMikona => new StatusUpdate { Mikona = Serializer.Deserialize<MikonaStatus>(payload) },
             StatusTopic.StatusTopicInfo   => new StatusUpdate { Info   = Serializer.Deserialize<RobotInfo>(payload) },
             StatusTopic.StatusTopicDiag   => new StatusUpdate { Diag   = Serializer.Deserialize<DiagStatus>(payload) },
+            StatusTopic.StatusTopicIrSensor => new StatusUpdate { IrSensor = Serializer.Deserialize<IrSensorStatus>(payload) },
+            StatusTopic.StatusTopicDribblerFeedback => new StatusUpdate { DribblerFeedback = Serializer.Deserialize<DribblerFeedbackStatus>(payload) },
             _ => throw new InvalidDataException($"Unknown StatusTopic: {topic}")
         };
+
+        return update with { RobotId = robotId };
     }
 
-    private void OnData(StatusUpdate data)
+    private void OnData(int robotId, StatusUpdate data)
     {
         Hub.RobotStatus.Publish(data);
     }
 
     public void Dispose()
     {
-        _zmqReceiver.Dispose();
+        _managementRunner.Stop();
+        foreach (var receiver in _receivers.Values)
+            receiver.Dispose();
+        _receivers.Clear();
     }
 }

@@ -31,9 +31,6 @@ public sealed partial class TeamRunner : IDisposable
 
     private readonly Knowledge.Knowledge _knowledge = new();
 
-    // Robot ID learned from the first RobotInfo frame; -1 until known
-    private int _hwRobotId = -1;
-
     public TeamRunner(TeamColor color)
     {
         _color = color;
@@ -105,7 +102,7 @@ public sealed partial class TeamRunner : IDisposable
                 $"Robot {status.Info!.RobotId}: " +
                 $"battery={status.Power?.V24Voltage:F2}V " +
                 $"temp={status.Diag?.ImuTemp:F1}°C " +
-                $"ball={status.Info.BallDetected} " +
+                $"ball={status.IrSensor?.Blocked} " +
                 $"motors=[{string.Join(", ", status.Motors?.Motors.Select(m => $"{m.Target:F0}/{m.Actual:F0}") ?? [])}]");
         }
 
@@ -126,13 +123,9 @@ public sealed partial class TeamRunner : IDisposable
 
     private void ApplyRobotStatus(Common.Data.Robot.StatusUpdate update)
     {
-        // RobotInfo is the only frame that carries the robot ID — learn it first
-        if (update.Info is { } info)
-            _hwRobotId = (int)info.RobotId;
+        if (update.RobotId < 0 || update.RobotId >= Context.OwnRobots.Count) return;
 
-        if (_hwRobotId < 0 || _hwRobotId >= Context.OwnRobots.Count) return;
-
-        Context.OwnRobots[_hwRobotId].HardwareStatus.Apply(update);
+        Context.OwnRobots[update.RobotId].HardwareStatus.Apply(update);
     }
 
     public void Dispose()

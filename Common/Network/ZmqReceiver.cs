@@ -21,6 +21,7 @@ public sealed class ZmqReceiver<T> : IDisposable where T : class
     private readonly Action<T> _onData;
     private readonly Func<IReadOnlyList<byte[]>, T> _deserializer;
     private SubscriberSocket? _socket;
+    public Address CurrentAddress => _currentAddress;
     private Address _currentAddress;
     private volatile Address? _newAddress;
     private List<byte[]> _frames = [];
