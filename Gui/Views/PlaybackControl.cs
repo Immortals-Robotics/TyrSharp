@@ -12,6 +12,7 @@ namespace Tyr.Gui.Views;
 [Configurable]
 public sealed partial class PlaybackControl(IDebugDb debugDb, SessionsView sessionsView)
 {
+    public static readonly string WindowTitle = $"{IconFonts.FontAwesome6.Clapperboard} Playback";
     [ConfigEntry(StorageType.User)] private static double StepMilliseconds { get; set; } = 16.0;
     [ConfigEntry(StorageType.User)] private static double ShuttleMaxSpeedSecondsPerSecond { get; set; } = 0.5;
 
@@ -44,7 +45,7 @@ public sealed partial class PlaybackControl(IDebugDb debugDb, SessionsView sessi
         var elapsedSeconds = (nowTicks - _lastDrawTimestamp) / (double)Stopwatch.Frequency;
         _lastDrawTimestamp = nowTicks;
 
-        if (ImGui.Begin($"{IconFonts.FontAwesome6.Clapperboard} Playback", ImGuiWindowFlags.NoResize))
+        if (ImGui.Begin(WindowTitle, ImGuiWindowFlags.NoResize))
         {
             var frameRange = debugDb.GetFrameRange();
             var liveEndTime = frameRange?.End ?? Timestamp.Zero;

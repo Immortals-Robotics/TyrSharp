@@ -8,6 +8,7 @@ namespace Tyr.Gui.Views;
 
 public partial class ConfigsView
 {
+    public static readonly string WindowTitle = $"{IconFonts.FontAwesome6.Gear} Configs";
     private ImGuiTextFilterPtr _filter = ImGui.ImGuiTextFilter();
     private bool IsFiltering => _filter.IsActive();
 
@@ -17,7 +18,7 @@ public partial class ConfigsView
 
     public void Draw()
     {
-        if (ImGui.Begin($"{IconFonts.FontAwesome6.Gear} Configs"))
+        if (ImGui.Begin(WindowTitle))
         {
             DrawSearchBar();
             DrawTree(Registry.Tree);

@@ -16,6 +16,7 @@ namespace Tyr.Gui.Views;
 [Configurable]
 public sealed partial class FieldView : IDisposable
 {
+    public static readonly string WindowTitle = $"{IconFonts.FontAwesome6.Video} Field";
     [ConfigEntry] private static float ZoomFactor { get; set; } = 1.1f;
     [ConfigEntry] private static float ZoomDefault { get; set; } = 0.1f;
     [ConfigEntry] private static float ZoomLimitFactor { get; set; } = 10f;
@@ -109,7 +110,7 @@ public sealed partial class FieldView : IDisposable
     {
         _timer.Update();
 
-        if (ImGui.Begin($"{IconFonts.FontAwesome6.Video} Field"))
+        if (ImGui.Begin(WindowTitle))
         {
             ImGui.PushFont(FontRegistry.Instance.MonoFont, FontRegistry.Instance.MonoFont.LegacySize);
 

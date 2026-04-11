@@ -15,6 +15,7 @@ namespace Tyr.Gui.Views;
 [Configurable]
 public sealed partial class LogView(IDebugDb debugDb) : IDisposable
 {
+    public static readonly string WindowTitle = $"{IconFonts.FontAwesome6.Terminal} Logs";
     [ConfigEntry(StorageType.User)] private static LogLevel LogLevel { get; set; } = LogLevel.Debug;
 
     private Utf8ValueStringBuilder _stringBuilder = ZString.CreateUtf8StringBuilder();
@@ -62,7 +63,7 @@ public sealed partial class LogView(IDebugDb debugDb) : IDisposable
 
     internal void Draw(PreparedData prepared)
     {
-        if (ImGui.Begin($"{IconFonts.FontAwesome6.Terminal} Logs", ImGuiWindowFlags.AlwaysVerticalScrollbar))
+        if (ImGui.Begin(WindowTitle, ImGuiWindowFlags.AlwaysVerticalScrollbar))
         {
             const ImGuiTableFlags flags = ImGuiTableFlags.Resizable | ImGuiTableFlags.Hideable |
                                           ImGuiTableFlags.Reorderable |

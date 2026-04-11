@@ -24,8 +24,10 @@ public sealed partial class Runner : IDisposable
     [ConfigEntry(StorageType.User, false)] private static int WindowPosY { get; set; }
 
     [ConfigEntry(StorageType.User, false)] private static bool WindowMaximized { get; set; }
+    [ConfigEntry(StorageType.User, editable: false)] private static string ImGuiIni { get; set; } = "";
 
     private readonly RunnerSync _runner;
+    private bool _defaultLayoutPending;
 
     // backend
     private readonly SdlWindow _window;
@@ -57,6 +59,11 @@ public sealed partial class Runner : IDisposable
         _window.SetVSync(VSync);
 
         _imgui = new ImGuiController(_window);
+
+        if (ImGuiIni != "")
+            _imgui.LoadIniFromMemory(ImGuiIni);
+        else
+            _defaultLayoutPending = true;
 
         Style.Apply();
 
@@ -137,8 +144,11 @@ public sealed partial class Runner : IDisposable
         // draw
         _window.Clear(Color.Slate950);
         _imgui.NewFrame();
-        ImGui.ShowDemoWindow();
-
+        if (_defaultLayoutPending)
+        {
+            DefaultLayout.Apply();
+            _defaultLayoutPending = false;
+        }
         _pipeline.TrySwapLatest(ref _preparedFrame);
 
         _configs.Draw();
@@ -155,6 +165,12 @@ public sealed partial class Runner : IDisposable
 
         _imgui.Render();
         _window.SwapBuffers();
+
+        if (_imgui.WantsIniSave)
+        {
+            ImGuiIni = _imgui.SaveIniToMemory();
+            Configurable.MarkChanged(StorageType.User);
+        }
 
         if (_window.ShouldClose)
         {

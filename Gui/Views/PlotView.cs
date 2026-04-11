@@ -16,6 +16,7 @@ namespace Tyr.Gui.Views;
 [Configurable]
 public partial class PlotView(IDebugDb debugDb)
 {
+    public static readonly string WindowTitle = $"{IconFonts.FontAwesome6.ChartLine} Plots";
     [ConfigEntry] private static double TimeAxisMinRange { get; set; } = 1;
     [ConfigEntry] private static double TimeAxisMaxRange { get; set; } = 200;
 
@@ -187,7 +188,7 @@ public partial class PlotView(IDebugDb debugDb)
 
     internal void Draw(PreparedData prepared)
     {
-        if (ImGui.Begin($"{IconFonts.FontAwesome6.ChartLine} Plots"))
+        if (ImGui.Begin(WindowTitle))
         {
             _filterTested = 0;
             _filterPassed = 0;

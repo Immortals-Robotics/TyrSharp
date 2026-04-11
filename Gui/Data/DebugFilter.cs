@@ -12,6 +12,7 @@ namespace Tyr.Gui.Data;
 [Configurable]
 public sealed partial class DebugFilter(Tyr.Common.Debug.Db.IDebugDb debugDb) : IDisposable
 {
+    public static readonly string WindowTitle = $"{IconFonts.FontAwesome6.Filter} Debug Filter";
     // Dictionary to track the enabled state of each node in the tree
     // Format: "module" or "module/file" or "module/layer/file" or "module/layer/file/member" or "module/layer/file/member/line"
     [ConfigEntry(StorageType.User, editable: false)]
@@ -123,7 +124,7 @@ public sealed partial class DebugFilter(Tyr.Common.Debug.Db.IDebugDb debugDb) : 
 
     public void Draw()
     {
-        if (ImGui.Begin($"{IconFonts.FontAwesome6.Filter} Debug Filter"))
+        if (ImGui.Begin(WindowTitle))
         {
             _dirty = false;
 

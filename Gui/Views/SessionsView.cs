@@ -11,6 +11,7 @@ namespace Tyr.Gui.Views;
 [Configurable]
 public sealed partial class SessionsView(PlaybackSessionManager playbackSessions)
 {
+    public static readonly string WindowTitle = $"{IconFonts.FontAwesome6.HardDrive} Sessions";
     [ConfigEntry(StorageType.User)] private static bool KeepWindowOpen { get; set; } = true;
 
     private readonly HashSet<string> _selectedMetadataPaths = [];
@@ -40,7 +41,7 @@ public sealed partial class SessionsView(PlaybackSessionManager playbackSessions
             return;
 
         var isOpen = true;
-        if (!ImGui.Begin($"{IconFonts.FontAwesome6.HardDrive} Sessions", ref isOpen))
+        if (!ImGui.Begin(WindowTitle, ref isOpen))
         {
             SetOpen(isOpen);
             ImGui.End();

@@ -1,3 +1,5 @@
+﻿using System.Runtime.InteropServices;
+using System.Text;
 using Hexa.NET.ImGui;
 using Hexa.NET.ImGui.Backends.OpenGL3;
 using Hexa.NET.ImGui.Backends.SDL3;
@@ -24,12 +26,29 @@ internal unsafe class ImGuiController : IDisposable
         ImPlot.StyleColorsDark(ImPlot.GetStyle());
 
         var io = ImGui.GetIO();
+        io.IniFilename = null; // disable file-based save/load; we manage ini ourselves
         io.ConfigFlags |= ImGuiConfigFlags.NavEnableKeyboard;
         io.ConfigFlags |= ImGuiConfigFlags.NavEnableGamepad;
         io.ConfigFlags |= ImGuiConfigFlags.DockingEnable;
         io.ConfigFlags |= ImGuiConfigFlags.ViewportsEnable;
         io.ConfigViewportsNoAutoMerge = false;
         io.ConfigViewportsNoTaskBarIcon = false;
+    }
+
+    public bool WantsIniSave => ImGui.GetIO().WantSaveIniSettings;
+
+    public void LoadIniFromMemory(string ini)
+    {
+        var bytes = Encoding.UTF8.GetBytes(ini);
+        fixed (byte* ptr = bytes)
+            ImGui.LoadIniSettingsFromMemory(ptr, (nuint)bytes.Length);
+    }
+
+    public string SaveIniToMemory()
+    {
+        var ptr = ImGui.SaveIniSettingsToMemory();
+        ImGui.GetIO().WantSaveIniSettings = false;
+        return Marshal.PtrToStringUTF8((nint)ptr) ?? "";
     }
 
     public void InitializeBackends()
@@ -65,7 +84,7 @@ internal unsafe class ImGuiController : IDisposable
         ImGuiImplSDL3.NewFrame();
         ImGui.NewFrame();
 
-        ImGui.DockSpaceOverViewport();
+        ImGui.DockSpaceOverViewport(DefaultLayout.DockSpaceId);
     }
 
     public void Render()

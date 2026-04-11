@@ -11,7 +11,7 @@ namespace Tyr.Gui.Views;
 [Configurable]
 public sealed partial class GameControllerView : IDisposable
 {
-    private static readonly string WindowTitle = $"{IconFonts.FontAwesome6.Flag} Game Controller";
+    public static readonly string WindowTitle = $"{IconFonts.FontAwesome6.Flag} Game Controller";
     private static readonly string ProcessTabTitle = $"{IconFonts.FontAwesome6.Microchip}  Process";
     private static readonly string RefereeTabTitle = $"{IconFonts.FontAwesome6.Gavel}  Referee";
     private static readonly string YellowTabTitle = $"{IconFonts.FontAwesome6.Robot}  Yellow";
