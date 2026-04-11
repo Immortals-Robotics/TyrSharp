@@ -35,7 +35,13 @@ public sealed class ZmqReceiver<T> : IDisposable where T : class
         Func<IReadOnlyList<byte[]>, T>? deserializer = null)
     {
         _onData = onData;
-        _deserializer = deserializer ?? (frames => Serializer.Deserialize<T>(new ReadOnlySpan<byte>(frames[0])));
+        _deserializer = deserializer ?? (frames =>
+        {
+            // Default deserializer assumes frame 0 is a 1-byte topic (which we skip here)
+            // and frame 1 is the protobuf payload.
+            var payloadFrame = frames.Count > 1 ? 1 : 0;
+            return Serializer.Deserialize<T>(new ReadOnlySpan<byte>(frames[payloadFrame]));
+        });
         _currentAddress = address;
 
         Log.ZLogDebug($"Initializing ZmqReceiver<{typeof(T).Name}> for {address}");

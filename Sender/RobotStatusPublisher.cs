@@ -31,7 +31,7 @@ public sealed partial class RobotStatusPublisher : IDisposable
     private static StatusUpdate Deserialize(IReadOnlyList<byte[]> frames)
     {
         if (frames.Count < 2 || frames[0].Length < 1)
-            throw new InvalidDataException($"Unexpected ZMQ frame count: {frames.Count}");
+            throw new InvalidDataException($"Unexpected ZMQ frame count or topic size: {frames.Count}, {frames[0].Length}");
 
         var topic = (StatusTopic)frames[0][0];
         var payload = new ReadOnlySpan<byte>(frames[1]);
