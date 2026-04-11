@@ -70,9 +70,12 @@ public partial class Robot
         }
 
         // ball obstacles
+        var disallowByReferee = !Context.Referee.AllowedNearBall() && !IgnoreRefereeBallObstacle;
+
         var ballRadius = flags switch
         {
-            _ when flags.HasFlag(NavigationFlags.BallObstacle) || !Context.Referee.AllowedNearBall() => BallAreaRadius,
+            _ when flags.HasFlag(NavigationFlags.NoBallObstacle) => 0.0f,
+            _ when flags.HasFlag(NavigationFlags.BallObstacle) || disallowByReferee => BallAreaRadius,
             _ when flags.HasFlag(NavigationFlags.BallMediumObstacle) => 230.0f,
             _ when flags.HasFlag(NavigationFlags.BallSmallObstacle) => 60.0f,
             _ when flags.HasFlag(NavigationFlags.DynamicBallObstacle) => DynamicBallObstacleRadius,

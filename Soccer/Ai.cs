@@ -23,6 +23,12 @@ public partial class Ai
 
     private readonly Dictionary<int, LinkedList<(Timestamp, Command)>> _commandHistories = [];
     private LinkedList<(Timestamp, Command)> CommandHistory(int id) => _commandHistories[id];
+    private readonly ManualControlState _manualControl;
+
+    internal Ai(ManualControlState manualControl)
+    {
+        _manualControl = manualControl;
+    }
 
     public void Init()
     {
@@ -148,20 +154,15 @@ public partial class Ai
             zone.DrawZone();
         }
 
+        if (_manualControl.TryExecute())
+        {
+            return;
+        }
+
         foreach (var robot in Context.OwnRobots)
         {
-            if (!robot.Seen || true)
-            {
-                robot.Halt();
-            }
-            else
-            {
-                robot.TargetAngle = Angle.FromDeg(90f);
-                var x = -2000f;
-                var sin = MathF.Floor(Angle.FromRad((float)Context.Timer.Time.Seconds + robot.Id).Sin());
-                var y = (2f * sin + 1f) * 1500f;
-                robot.Navigate(new Vector2(x, y), VelocityProfile.Mamooli);
-            }
+            if (!robot.Seen) continue;
+            robot.Halt();
         }
     }
 }

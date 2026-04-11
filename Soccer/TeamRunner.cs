@@ -3,6 +3,7 @@ using Tyr.Common.Config;
 using Tyr.Common.Data;
 using Tyr.Common.Data.Ssl.Vision.Geometry;
 using Tyr.Common.Dataflow;
+using Tyr.Common.Extensions;
 using Tyr.Common.Runner;
 using Tyr.Common.Time;
 using Vision = Tyr.Common.Vision.Data;
@@ -28,8 +29,12 @@ public sealed partial class TeamRunner : IDisposable
 
     private readonly TeamColor _color;
     private readonly Ai _ai;
+    private readonly ManualControlState _manualControl;
 
     private readonly Knowledge.Knowledge _knowledge = new();
+
+    private static TeamRunner? _yellowRunner;
+    private static TeamRunner? _blueRunner;
 
     public TeamRunner(TeamColor color)
     {
@@ -44,7 +49,11 @@ public sealed partial class TeamRunner : IDisposable
         _runner.SetInit(Init);
         Configurable.OnUpdated += _ => _runner.SetPriority(RunnerPriority);
 
-        _ai = new Ai();
+        _manualControl = new ManualControlState(color);
+        _ai = new Ai(_manualControl);
+
+        if (color == TeamColor.Yellow) _yellowRunner = this;
+        else if (color == TeamColor.Blue) _blueRunner = this;
     }
 
     public void Start() => _runner.Start();
@@ -136,5 +145,111 @@ public sealed partial class TeamRunner : IDisposable
         _robotStatusSubscriber.Dispose();
 
         _runner.Stop();
+    }
+
+    public static bool IsRunning(TeamColor color) => GetRunner(color)?._runner.IsRunning ?? false;
+
+    public static ManualControlSnapshot GetManualControlSnapshot(TeamColor color) =>
+        GetRunner(color)?._manualControl.GetSnapshot() ?? new ManualControlSnapshot(
+            color,
+            false,
+            false,
+            0,
+            ManualSkillAction.GoToPoint,
+            ManualShotMode.Kick,
+            6f,
+            4f,
+            ManualShotTargetMode.TargetPoint,
+            false,
+            Vector2.Zero,
+            GoToPointFacingMode.Angle,
+            90f,
+            false,
+            false,
+            Vector2.Zero);
+
+    public static void SetManualEnabled(TeamColor color, bool enabled)
+    {
+        GetRunner(color)?._manualControl.SetEnabled(enabled);
+    }
+
+    public static void SetManualRunning(TeamColor color, bool running)
+    {
+        GetRunner(color)?._manualControl.SetRunning(running);
+    }
+
+    public static void SetManualSelectedRobot(TeamColor color, int robotId)
+    {
+        GetRunner(color)?._manualControl.SetSelectedRobot(robotId);
+    }
+
+    public static void SetManualAction(TeamColor color, ManualSkillAction action)
+    {
+        GetRunner(color)?._manualControl.SetAction(action);
+    }
+
+    public static void SetManualShotMode(TeamColor color, ManualShotMode shotMode)
+    {
+        GetRunner(color)?._manualControl.SetShotMode(shotMode);
+    }
+
+    public static void SetManualKickSpeedMps(TeamColor color, float kickSpeedMps)
+    {
+        GetRunner(color)?._manualControl.SetKickSpeedMps(kickSpeedMps);
+    }
+
+    public static void SetManualChipDistanceMeters(TeamColor color, float chipDistanceMeters)
+    {
+        GetRunner(color)?._manualControl.SetChipDistanceMeters(chipDistanceMeters);
+    }
+
+    public static void SetManualShotTargetMode(TeamColor color, ManualShotTargetMode shotTargetMode)
+    {
+        GetRunner(color)?._manualControl.SetShotTargetMode(shotTargetMode);
+    }
+
+    public static void SetManualTargetPoint(TeamColor color, Vector2 point)
+    {
+        GetRunner(color)?._manualControl.SetTargetPoint(point);
+    }
+
+    public static void ClearManualTargetPoint(TeamColor color)
+    {
+        GetRunner(color)?._manualControl.ClearTargetPoint();
+    }
+
+    public static void SetManualAwaitingPoint(TeamColor color, bool awaitingPoint)
+    {
+        GetRunner(color)?._manualControl.SetAwaitingLookTarget(awaitingPoint);
+    }
+
+    public static void SetGoToPointFacingMode(TeamColor color, GoToPointFacingMode mode)
+    {
+        GetRunner(color)?._manualControl.SetGoToPointFacingMode(mode);
+    }
+
+    public static void SetGoToPointFacingAngle(TeamColor color, float angleDeg)
+    {
+        GetRunner(color)?._manualControl.SetGoToPointFacingAngle(angleDeg);
+    }
+
+    public static void SetManualLookTarget(TeamColor color, Vector2 point)
+    {
+        GetRunner(color)?._manualControl.SetLookTarget(point);
+    }
+
+    public static void ClearManualLookTarget(TeamColor color)
+    {
+        GetRunner(color)?._manualControl.ClearLookTarget();
+    }
+
+    private static TeamRunner? GetRunner(TeamColor color)
+    {
+        return color switch
+        {
+            TeamColor.Yellow => _yellowRunner,
+            TeamColor.Blue => _blueRunner,
+            _ => null
+        };
     }
 }

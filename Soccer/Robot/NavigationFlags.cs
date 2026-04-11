@@ -14,4 +14,5 @@ public enum NavigationFlags
     BallPlacementLine = 1 << 8,
     TheirHalf = 1 << 9,
     DynamicBallObstacle = 1 << 10,
+    NoBallObstacle = 1 << 11,
 }

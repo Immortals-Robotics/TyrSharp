@@ -11,10 +11,10 @@ namespace Tyr.Sender;
 public sealed partial class Simulator : ISender
 {
     [ConfigEntry] private static bool Enabled { get; set; } = false;
-    
+
     [ConfigEntry] private static Address BlueAddress { get; set; } = new() { Ip = "127.0.0.1", Port = 10301 };
     [ConfigEntry] private static Address YellowAddress { get; set; } = new() { Ip = "127.0.0.1", Port = 10302 };
-    
+
     [ConfigEntry] private static Angle ChipAngle { get; set; } = Angle.FromDeg(45f);
 
     private readonly UdpServer _udp = new();
@@ -31,22 +31,22 @@ public sealed partial class Simulator : ISender
         foreach (var command in commands.Commands)
         {
             var localVel = command.Motion.Rotated(Angle.FromDeg(90.0f) - command.CurrentAngle);
-            // TODO: w should be in radians
-            var w = (command.TargetAngle - command.CurrentAngle).Deg / 10.0f;
+            // Use the shortest signed angle delta so wraparound near +/-180 does not cause a long spin.
+            var w = (command.TargetAngle - command.CurrentAngle).DegNormalized / 10.0f;
 
             var kickSpeed = 0f;
             var kickAngle = Angle.Zero;
-            
+
             if (command.Shoot > 0)
             {
-                kickSpeed = command.Shoot / 1000f;
+                kickSpeed = command.Shoot;
             }
             else if (command.Chip > 0)
             {
-                kickSpeed = command.Chip / 20f;
+                kickSpeed = command.Chip * 5;
                 kickAngle = ChipAngle;
             }
-            
+
             var pbCommand = new RobotCommand()
             {
                 Id = (uint)command.VisionId,
@@ -63,7 +63,7 @@ public sealed partial class Simulator : ISender
                 KickAngle = kickAngle,
                 DribblerSpeed = command.Dribbler,
             };
-            
+
             pbControl.RobotCommands.Add(pbCommand);
         }
 
