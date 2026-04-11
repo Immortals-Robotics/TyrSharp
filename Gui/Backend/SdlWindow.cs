@@ -1,5 +1,7 @@
 using Hexa.NET.OpenGL;
 using Hexa.NET.SDL3;
+using System.Reflection;
+using System.Runtime.InteropServices;
 using Tyr.Common.Debug.Drawing;
 using Color = Tyr.Common.Debug.Drawing.Color;
 
@@ -37,6 +39,8 @@ internal unsafe class SdlWindow : IDisposable
         _handle = SDL.CreateWindow(title, width, height, flags);
         if (_handle.Handle == null) throw new Exception("SDL3 window creation failed");
 
+        SetWindowIcon();
+
         _windowId = SDL.GetWindowID(_handle);
 
         if (x.HasValue && y.HasValue)
@@ -47,6 +51,34 @@ internal unsafe class SdlWindow : IDisposable
 
         _gl = new GL(new BindingsContext(_handle, GlContext));
     }
+
+    private void SetWindowIcon()
+    {
+        var resourceName = $"{Assembly.GetExecutingAssembly().GetName().Name}.Assets.AppIcon.png";
+        using var iconStream = Assembly.GetExecutingAssembly().GetManifestResourceStream(resourceName);
+        if (iconStream is null)
+            return;
+
+        using var memory = new MemoryStream((int)iconStream.Length);
+        iconStream.CopyTo(memory);
+        var iconBytes = memory.ToArray();
+
+        fixed (byte* iconPtr = iconBytes)
+        {
+            var io = SDL.IOFromConstMem((IntPtr)iconPtr, (nuint)iconBytes.Length);
+            if (io.Handle == null)
+                throw new InvalidOperationException($"Failed to open icon stream from embedded resource '{resourceName}': {GetSdlError()}");
+
+            var surface = SDL.LoadSurfaceIO(io, true);
+            if (surface.Handle == null)
+                throw new InvalidOperationException($"Failed to decode embedded icon resource '{resourceName}': {GetSdlError()}");
+
+            SDL.SetWindowIcon(_handle, surface);
+            SDL.DestroySurface(surface);
+        }
+    }
+
+    private static string GetSdlError() => Marshal.PtrToStringUTF8((IntPtr)SDL.GetError()) ?? "unknown SDL error";
 
     public void SetVSync(bool enabled) => SDL.GLSetSwapInterval(enabled ? 1 : 0);
 

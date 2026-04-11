@@ -9,6 +9,7 @@
         <AssemblyName>Tyr.Gui</AssemblyName>
         <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
         <LangVersion>14</LangVersion>
+        <ApplicationIcon>Assets\AppIcon.ico</ApplicationIcon>
     </PropertyGroup>
 
     <ItemGroup>
@@ -35,6 +36,12 @@
       <EmbeddedResource Include="Fonts\seguiemj.ttf" />
       <EmbeddedResource Include="Fonts\InterVariable.ttf" />
       <EmbeddedResource Include="Fonts\JetBrainsMono[wght].ttf" />
+      <EmbeddedResource Include="Assets\AppIcon.png" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <None Include="Assets\AppIcon.ico" />
+      <None Include="Assets\AppIcon.icns" />
     </ItemGroup>
 
 </Project>
