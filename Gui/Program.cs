@@ -7,7 +7,7 @@ using var userConfigs = new Config.Storage(
 
 using var debugDbDumper = new Tyr.Common.Debug.Db.DebugDbDumper();
 using var playbackSessions = new Tyr.Gui.Data.PlaybackSessionManager(debugDbDumper.Db, Path.Combine(debugDbDumper.SessionRootDirectory, "sessions"));
-using var runner = new Tyr.Gui.Runner(playbackSessions);
+using var runner = new Tyr.Gui.Runner(playbackSessions, args[0]);
 
 using var sender = new Tyr.Sender.Runner();
 using var referee = new Tyr.Referee.Runner();

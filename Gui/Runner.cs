@@ -46,7 +46,7 @@ public sealed partial class Runner : IDisposable
     private readonly GuiFramePipeline _pipeline;
     private GuiFramePipeline.PreparedFrame _preparedFrame;
 
-    public Runner(PlaybackSessionManager playbackSessions)
+    public Runner(PlaybackSessionManager playbackSessions, string projectConfigPath)
     {
         var debugDb = playbackSessions.PlaybackDb;
 
@@ -77,7 +77,7 @@ public sealed partial class Runner : IDisposable
         _plots = new PlotView(debugDb);
         _sessions = new SessionsView(playbackSessions);
         _control = new PlaybackControl(debugDb, _sessions);
-        _configs = new ConfigsView();
+        _configs = new ConfigsView(projectConfigPath);
         _gameController = new GameControllerView();
         _pipeline = new GuiFramePipeline(PrepareFrame);
         _preparedFrame = new GuiFramePipeline.PreparedFrame();
