@@ -16,18 +16,9 @@ public sealed partial class Nrf : ISender // TODO: this is untested, test at the
     private Span<byte> Buffer => _udp.GetBuffer();
     private int _buffIdx;
 
-    // TODO: probably not needed anymore
-    private int _startup = 5;
-
     public bool Send(CommandsWrapper commands)
     {
         if (!Enabled) return false;
-
-        if (_startup > 0)
-        {
-            _startup--;
-            return false;
-        }
 
         foreach (var command in commands.Commands)
         {
