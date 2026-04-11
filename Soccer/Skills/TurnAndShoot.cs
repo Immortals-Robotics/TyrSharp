@@ -15,7 +15,7 @@ public sealed class TurnAndShoot : ISkill
 
     public void Execute(Robot.Robot robot)
     {
-        var shootDir = -Angle.ToUnitVec();
+        var shootDir = Angle.ToUnitVec();
         var shootAngle = shootDir.ToAngle();
         var ballPos = Context.Ball.State.Position;
 

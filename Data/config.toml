@@ -145,8 +145,16 @@ BigPenaltyAddition = 220.0 # default: 220
 [Soccer.Skills.MarkToBall]
 OppPredictTime = 0.15 # default: 0.150000s
 
+[Soccer.Skills.KickBall]
+PredictionTime = 0.2 # default: 0.200000s
+
 [Soccer.Skills.DefenceWall]
 Radius = 550.0 # default: 550
+
+[Soccer.Skills.OneTouch]
+Beta = 0.4000000059604645 # default: 0.4
+Gamma = 0.14000000059604645 # default: 0.14
+ShootK = 4000.0 # default: 4000
 
 [Soccer.Skills.MarkToGoal]
 OppPredictTime = 0.15 # default: 0.150000s
@@ -171,10 +179,14 @@ VisionPredictionTime = 0.15 # default: 0.120000s
 [Soccer.Tactics.Mark]
 Distance = 220.0 # default: 220
 
+[Soccer.Tactics.Attacker]
+KickSpeed = 6500.0 # default: 6500
+ChipSpeed = 2000.0 # default: 2000
+
 
 [Soccer.Runner]
 RunYellow = false # default: False
-RunBlue = false # default: False
+RunBlue = true # default: False
 
 
 [Common]
@@ -646,6 +658,14 @@ LineColor = "#FFFFFFB2" # default: #FFFFFFB2
 [Gui.Backend]
 [Gui.Backend.FontRegistry]
 FontSize = 17 # default: 17
+
+
+[Gui.Simulator]
+[Gui.Simulator.SimulatorChannel]
+# IP address of the machine running grSim
+Host = "127.0.0.1" # default: 127.0.0.1
+# UDP port for the grSim simulator control channel
+ControlPort = 10300 # default: 10300
 
 
 

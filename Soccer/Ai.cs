@@ -24,6 +24,7 @@ public partial class Ai
     private readonly Dictionary<int, LinkedList<(Timestamp, Command)>> _commandHistories = [];
     private LinkedList<(Timestamp, Command)> CommandHistory(int id) => _commandHistories[id];
     private readonly ManualControlState _manualControl;
+    private readonly Tactics.Attacker _attacker = new();
 
     internal Ai(ManualControlState manualControl)
     {
@@ -159,9 +160,23 @@ public partial class Ai
             return;
         }
 
+        var firstRobot = Context.OwnRobots.FirstOrDefault(r => r.Seen);
+        if (firstRobot != null)
+        {
+            if (Context.Referee.Running())
+            {
+                var skill = _attacker.Tick(firstRobot);
+                skill.Execute(firstRobot);
+            }
+            else
+            {
+                firstRobot.Halt();
+            }
+        }
+
         foreach (var robot in Context.OwnRobots)
         {
-            if (!robot.Seen) continue;
+            if (!robot.Seen || robot == firstRobot) continue;
             robot.Halt();
         }
     }

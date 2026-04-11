@@ -24,7 +24,7 @@ public sealed partial class KickBall : ISkill
         var navigationFlags = GetNavigationFlags(robot);
         var ball = BallPrediction.PredictBall(PredictionTime);
 
-        var toTarget = -Angle.ToUnitVec();
+        var toTarget = Angle.ToUnitVec();
         var robotToBall = ball.Position - robot.Position;
         var toBall = Utils.ApproximatelyZero(robotToBall.LengthSquared()) ? Vector2.Zero : Vector2.Normalize(robotToBall);
 
@@ -33,7 +33,7 @@ public sealed partial class KickBall : ISkill
         var radius = MathF.Min((IsGoalkeeper ? 70f : 50f) + 120f * rScaleFactor, 500f);
         var behindBallDistance = Context.RobotRadius + radius;
 
-        var behindBallPos = ball.Position.CircleAroundPoint(Angle, behindBallDistance);
+        var behindBallPos = ball.Position.CircleAroundPoint(Angle + Angle.FromDeg(180f), behindBallDistance);
         var alignmentFactor = Math.Clamp(ballTargetDot, 0f, 1f);
         var axialDistanceToBall = Vector2.Dot(toTarget, robotToBall);
         var distanceProgress = 1f - Math.Clamp(axialDistanceToBall / behindBallDistance, 0f, 1f);

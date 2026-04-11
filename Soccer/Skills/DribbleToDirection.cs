@@ -11,7 +11,7 @@ public sealed class DribbleToDirection : ISkill
 
     public void Execute(Robot.Robot robot)
     {
-        var targetDir = -Direction.ToUnitVec();
+        var targetDir = Direction.ToUnitVec();
         var targetAngle = targetDir.ToAngle();
         var ballPos = Context.Ball.State.Position;
 
