@@ -17,6 +17,7 @@ public sealed partial class SessionsView(PlaybackSessionManager playbackSessions
 
     private readonly HashSet<string> _selectedMetadataPaths = [];
     private readonly Dictionary<string, string> _groupSelectedPaths = [];
+    private readonly ImGuiTextFilterPtr _filter = ImGui.ImGuiTextFilter();
     private string _mergeLabelBuffer = string.Empty;
     private string _renameBuffer = string.Empty;
     private PlaybackSessionInfo? _renameSession;
@@ -61,6 +62,9 @@ public sealed partial class SessionsView(PlaybackSessionManager playbackSessions
 
     private void DrawToolbar()
     {
+        DrawSearchBar();
+        ImGui.Separator();
+
         if (ImGui.Button($"{IconFonts.FontAwesome6.FileImport} Import"))
             ImportArchive();
 
@@ -114,6 +118,11 @@ public sealed partial class SessionsView(PlaybackSessionManager playbackSessions
         ImGui.TableHeadersRow();
 
         var sessions = playbackSessions.Sessions;
+        if (_filter.IsActive())
+        {
+            sessions = sessions.Where(s => _filter.PassFilter(s.DisplayName) || _filter.PassFilter(s.Metadata.MachineName)).ToList();
+        }
+
         var groups = sessions.GroupBy(s => s.Metadata.CaptureLabel).ToList();
         var processedGroups = new List<(string? Label, List<PlaybackSessionInfo> Sessions, PlaybackSessionInfo Active)>();
 
@@ -411,6 +420,24 @@ public sealed partial class SessionsView(PlaybackSessionManager playbackSessions
             DeleteSelectedSessions([session]);
 
         ImGui.EndPopup();
+    }
+
+    private void DrawSearchBar()
+    {
+        ImGui.PushItemWidth(-32f);
+        _filter.Draw("##search");
+        ImGui.PopItemWidth();
+
+        ImGui.SameLine();
+        if (_filter.IsActive())
+        {
+            if (ImGui.Button($"{IconFonts.FontAwesome6.Xmark}##clear"))
+                _filter.Clear();
+        }
+        else
+        {
+            ImGui.TextColored(Color.Zinc600, $"{IconFonts.FontAwesome6.MagnifyingGlass}");
+        }
     }
 
     private void DrawRenamePopup()

@@ -63,9 +63,11 @@ public sealed class PlaybackSessionManager : IDisposable
                 return;
             }
 
+            var livePath = Path.GetFullPath(_liveDatabaseDirectory);
             var uncompacted = Directory.EnumerateFiles(_sessionRootDirectory, "session.json", SearchOption.AllDirectories)
                 .Select(TryLoadSession)
-                .OfType<PlaybackSessionInfo>();
+                .OfType<PlaybackSessionInfo>()
+                .Where(s => !string.Equals(Path.GetFullPath(s.DatabaseDirectory), livePath, StringComparison.OrdinalIgnoreCase));
 
             var compacted = Directory.EnumerateFiles(_sessionRootDirectory, "*.tyrlog", SearchOption.AllDirectories)
                 .Select(TryLoadCompactSession)

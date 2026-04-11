@@ -2,9 +2,10 @@
 
 ## Session Management Improvements
 
-### UI Grouping
+### UI Grouping & Search
 - Sessions are now grouped by `CaptureLabel` in the `SessionsView`.
 - Each group occupies a single row with a dropdown (Combo) to select between sessions in that group.
+- **Search:** Added a search bar to filter sessions by name or machine name in real-time.
 - The "Name" column shows either the label (with an icon) or the session ID.
 - Compacted sessions (archived) are indicated with a zip icon.
 
