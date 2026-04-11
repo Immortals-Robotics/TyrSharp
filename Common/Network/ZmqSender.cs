@@ -6,6 +6,12 @@ using Tyr.Common.Data.Robot;
 
 namespace Tyr.Common.Network;
 
+public enum ZmqMode
+{
+    Bind,
+    Connect
+}
+
 [Configurable]
 public sealed partial class ZmqSender : IDisposable
 {
@@ -14,13 +20,42 @@ public sealed partial class ZmqSender : IDisposable
     private readonly PublisherSocket _socket;
     private readonly byte[] _buffer;
     private readonly byte[] _topicBuffer = new byte[1];
+    private readonly ZmqMode _mode;
+    private Address _currentAddress;
 
-    public ZmqSender(Address address)
+    public ZmqSender(Address address, ZmqMode mode = ZmqMode.Bind)
     {
         _buffer = new byte[MaxPacketSize];
+        _mode = mode;
+        _currentAddress = address;
         _socket = new PublisherSocket();
-        _socket.Bind($"tcp://{address}");
-        Log.ZLogInformation($"ZMQ (proto) publisher bound to {address}");
+        
+        ApplyAddress(address);
+    }
+
+    private void ApplyAddress(Address address)
+    {
+        var addrString = $"tcp://{address}";
+        if (_mode == ZmqMode.Bind)
+        {
+            _socket.Bind(addrString);
+            Log.ZLogInformation($"ZMQ (proto) publisher bound to {address}");
+        }
+        else
+        {
+            _socket.Connect(addrString);
+            Log.ZLogInformation($"ZMQ (proto) publisher connected to {address}");
+        }
+    }
+
+    public void ChangeAddress(Address address)
+    {
+        var oldAddr = $"tcp://{_currentAddress}";
+        if (_mode == ZmqMode.Bind) _socket.Unbind(oldAddr);
+        else _socket.Disconnect(oldAddr);
+
+        _currentAddress = address;
+        ApplyAddress(address);
     }
 
     /// <summary>

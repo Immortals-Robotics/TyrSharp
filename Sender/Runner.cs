@@ -23,6 +23,7 @@ public sealed partial class Runner : IDisposable
         [
             new Nrf(),
             new Simulator(),
+            new ZmqRobotSender(),
         ];
 
         _commandsSubscriber = Hub.Commands.Subscribe(Mode.All);
