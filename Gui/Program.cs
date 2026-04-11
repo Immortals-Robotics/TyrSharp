@@ -1,7 +1,9 @@
 ﻿using Config = Tyr.Common.Config;
 
 using var projectConfigs = new Config.Storage(args[0], Config.StorageType.Project);
-using var userConfigs = new Config.Storage("user.toml", Config.StorageType.User);
+using var userConfigs = new Config.Storage(
+    Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "Tyr", "user.toml"),
+    Config.StorageType.User);
 
 using var debugDbDumper = new Tyr.Common.Debug.Db.DebugDbDumper();
 using var playbackSessions = new Tyr.Gui.Data.PlaybackSessionManager(debugDbDumper.Db, Path.Combine(debugDbDumper.SessionRootDirectory, "sessions"));

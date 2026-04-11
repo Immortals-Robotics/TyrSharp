@@ -38,6 +38,8 @@ public sealed partial class Storage : IDisposable
         _loadDebouncer = new Debouncer(DebounceDelay, Load);
         _saveDebouncer = new Debouncer(DebounceDelay, Save);
 
+        Directory.CreateDirectory(directory);
+
         _watcher = new FileSystemWatcher(directory, filename)
         {
             NotifyFilter = NotifyFilters.LastWrite | NotifyFilters.Size,
