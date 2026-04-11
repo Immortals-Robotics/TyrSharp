@@ -1,5 +1,10 @@
 [Soccer]
 [Soccer.Navigation]
+[Soccer.Navigation.Trajectory]
+[Soccer.Navigation.Trajectory.TrajectoryUtils]
+DrawTimeStep = 0.10000000149011612 # default: 0.1
+
+
 [Soccer.Navigation.Obstacle]
 [Soccer.Navigation.Obstacle.Map]
 CollisionDetectStepSize = 50.0 # default: 50
@@ -9,7 +14,7 @@ CollisionDetectStepSize = 50.0 # default: 50
 [Soccer.Navigation.Planner.Planner]
 ChainSearchTimeStep = 0.20000000298023224 # default: 0.2
 LookaheadTime = 3.0 # default: 3
-MinRadius = 100.0 # default: 100
+MinRadius = 50.0 # default: 100
 RadiusStep = 1000.0 # default: 1000
 RadiusStepCount = 2 # default: 2
 AngleStepCount = 16 # default: 16
@@ -17,34 +22,6 @@ AcceptableFreeDistance = 50.0 # default: 50
 NearestFreeIterations = 1000 # default: 1000
 
 
-[Soccer.Navigation.Trajectory]
-[Soccer.Navigation.Trajectory.TrajectoryUtils]
-DrawTimeStep = 0.10000000149011612 # default: 0.1
-
-
-
-[Soccer.TeamRunner]
-SleepTime = 0.001 # default: 0.001000s
-
-[Soccer.Skills]
-[Soccer.Skills.DefenceWall]
-Radius = 550.0 # default: 550
-
-[Soccer.Skills.MarkToBall]
-OppPredictTime = 0.15 # default: 0.150000s
-
-[Soccer.Skills.MarkToGoal]
-OppPredictTime = 0.15 # default: 0.150000s
-PenaltyAreaMark = false # default: False
-PenaltyAreaMarkDistance = 200.0 # default: 200
-
-
-[Soccer.Runner]
-RunYellow = false # default: False
-RunBlue = false # default: False
-
-[Soccer.Ai]
-VisionPredictionTime = 0.15 # default: 0.120000s
 
 [Soccer.Robot]
 [Soccer.Robot.PhysicalStatus]
@@ -164,14 +141,76 @@ PenaltyAreaExtensionBehindGoal = 300.0 # default: 300
 BigPenaltyAddition = 220.0 # default: 220
 
 
+[Soccer.Skills]
+[Soccer.Skills.MarkToBall]
+OppPredictTime = 0.15 # default: 0.150000s
+
+[Soccer.Skills.DefenceWall]
+Radius = 550.0 # default: 550
+
+[Soccer.Skills.MarkToGoal]
+OppPredictTime = 0.15 # default: 0.150000s
+PenaltyAreaMark = false # default: False
+PenaltyAreaMarkDistance = 200.0 # default: 200
+
+
+[Soccer.TeamRunner]
+SleepTime = 0.001 # default: 0.001000s
+RunnerPriority = "Highest" # default: Highest
+
+[Soccer.Knowledge]
+[Soccer.Knowledge.Zone]
+ZoneCountX = 6 # default: 6
+ZoneCountY = 4 # default: 4
+
+
+[Soccer.Ai]
+VisionPredictionTime = 0.15 # default: 0.120000s
+
 [Soccer.Tactics]
 [Soccer.Tactics.Mark]
 Distance = 220.0 # default: 220
 
 
+[Soccer.Runner]
+RunYellow = false # default: False
+RunBlue = false # default: False
+
 
 [Common]
+[Common.Network]
+[Common.Network.UdpServer]
+MaxPacketSize = 65536 # default: 65536
+
+[Common.Network.UdpReceiverConfigs]
+PollTimeout = 0.001 # default: 0.001000s
+WatchdogTimeout = 5.0 # default: 5.000000s
+
+[Common.Network.ZmqReceiverConfigs]
+PollTimeout = 0.01 # default: 0.010000s
+
+[Common.Network.UdpClient]
+MaxPacketSize = 65536 # default: 65536
+
+
+[Common.Runner]
+[Common.Runner.ProcessScheduling]
+# Windows process priority class applied to the whole Tyr process.
+PriorityClass = "AboveNormal" # default: AboveNormal
+# Windows execution-speed throttling for the process. Keep this false to avoid background slowdowns.
+PowerThrottling = false # default: False
+# When true on Windows, the OS may ignore high-resolution timer requests for this process.
+IgnoreTimerResolution = false # default: False
+# Prevents macOS App Nap from throttling the process while the app is doing real-time work.
+DisableAppNap = true # default: True
+
+
 [Common.Debug]
+[Common.Debug.Assertion]
+[Common.Debug.Assertion.Assert]
+Enabled = true # default: True
+
+
 [Common.Debug.Drawing]
 [Common.Debug.Drawing.Drawables]
 [Common.Debug.Drawing.Drawables.Arrow]
@@ -190,16 +229,38 @@ TextColor = "#09090BFF" # default: #09090BFF
 
 
 
-[Common.Debug.Assertion]
-[Common.Debug.Assertion.Assert]
-Enabled = true # default: True
-
-
 [Common.Debug.Logging]
 [Common.Debug.Logging.Logging]
 # The level logs are filtered at the source. Anything below this will be rejected on the log call.
 Level = "Trace" # default: Debug
+# The minimum level written to the console/stdout sink. Anything below this will still be available to other log sinks.
+ConsoleLevel = "Information" # default: Information
 
+
+[Common.Debug.Db]
+[Common.Debug.Db.DebugDbDumper]
+SleepTime = 0.001 # default: 0.001000s
+ViewerPort = 9000 # default: 9000
+RunnerPriority = "BelowNormal" # default: BelowNormal
+
+
+
+[Common.Data]
+[Common.Data.Ssl]
+[Common.Data.Ssl.Vision]
+[Common.Data.Ssl.Vision.Geometry]
+[Common.Data.Ssl.Vision.Geometry.FieldSize]
+# Division used to fill in missing optional SSL-Vision geometry fields
+DefaultDivision = "A" # default: A
+
+
+
+
+[Common.Data.CommonConfigs]
+# The variety of standard patterns that we can have is 16
+MaxRobots = 16 # default: 16
+# Hope it lasts
+ImmortalsIsTheBestTeam = true # default: True
 
 
 [Common.Config]
@@ -209,159 +270,11 @@ LoadAttemptsDelay = 0.1 # default: 0.100000s
 DebounceDelay = 0.2 # default: 0.200000s
 
 
-[Common.Network]
-[Common.Network.UdpClient]
-MaxPacketSize = 65536 # default: 65536
-
-[Common.Network.UdpReceiverConfigs]
-PollTimeout = 0.001 # default: 0.001000s
-
-[Common.Network.UdpServer]
-MaxPacketSize = 65536 # default: 65536
-
-
-[Common.Data]
-[Common.Data.CommonConfigs]
-# The variety of standard patterns that we can have is 16
-MaxRobots = 16 # default: 16
-# Hope it lasts
-ImmortalsIsTheBestTeam = true # default: True
-
-
-
-[Vision]
-[Vision.Data]
-[Vision.Data.BallParameters]
-# Radius of the ball in [mm]
-Radius = 21.0 # default: 21
-# Sliding acceleration in [mm/s^2], expected to be negative
-AccelerationSlide = -3000.0 # default: -3000
-# Rolling acceleration in [mm/s^2], expected to be negative
-AccelerationRoll = -260.0 # default: -260
-# Fraction of the initial velocity where the ball starts to roll
-KSwitch = 0.6399999856948853 # default: 0.64
-# Ball inertia distribution between 0.4 (massive sphere) and 0.66 (hollow sphere)
-InertiaDistribution = 0.5 # default: 0.5
-# Amount of spin transferred during a redirect.
-RedirectSpinFactor = 0.800000011920929 # default: 0.8
-# Restitution coefficient for redirected balls from a bot.
-RedirectRestitutionCoefficient = 0.20000000298023224 # default: 0.2
-# Chip kick velocity damping factor in XY direction for the first hop
-ChipDampingXyFirstHop = 0.800000011920929 # default: 0.8
-# Chip kick velocity damping factor in XY direction for all following hops
-ChipDampingXyOtherHops = 0.8500000238418579 # default: 0.85
-# Chip kick velocity damping factor in Z direction
-ChipDampingZ = 0.4699999988079071 # default: 0.47
-# If a chipped ball does not reach this height it is considered rolling [mm]
-MinHopHeight = 10.0 # default: 10
-# Max. ball height that can be intercepted by robots [mm]
-MaxInterceptableHeight = 150.0 # default: 150
-
-
-[Vision.Vision]
-CameraTooOldTime = 1.0 # default: 1.000000s
-
-[Vision.Tracking]
-[Vision.Tracking.BallTracker]
-InitialCovariance = 1000.0 # default: 1000
-ModelError = 0.10000000149011612 # default: 0.1
-MeasurementError = 100.0 # default: 100
-# Maximum assumed ball speed in [mm/s] to filter outliers
-MaxLinearVelocity = 15000.0 # default: 15000
-# Reciprocal health is used as uncertainty, increased on update, decreased on prediction
-MaxHealth = 20 # default: 20
-# How many updates are required until this tracker is grown up?
-GrownUpAge = 3 # default: 3
-
-[Vision.Tracking.BallMerger]
-# Factor to weight stdDeviation during tracker merging, reasonable range: 1.0 - 2.0. High values lead to more jitter
-MergePower = 1.5 # default: 1.5
-# Minimum search radius for cam balls around last known position [mm]
-MinSearchRadius = 300.0 # default: 300
-
-[Vision.Tracking.RobotTracker]
-InitialCovarianceXy = 100.0 # default: 100
-ModelErrorXy = 0.10000000149011612 # default: 0.1
-MeasurementErrorXy = 20.0 # default: 20
-InitialCovarianceW = 100.0 # default: 100
-ModelErrorW = 0.10000000149011612 # default: 0.1
-MeasurementErrorW = 2.0 # default: 2
-# Maximum assumed robot speed in [mm/s] to filter outliers
-MaxLinearVelocity = 6000.0 # default: 6000
-# Maximum assumed angular robot speed in [deg/s] to filter outliers
-MaxAngularVelocity = 1700.0 # default: 1700
-# Reciprocal health is used as uncertainty, increased on update, decreased on prediction
-MaxHealth = 20 # default: 20
-
-[Vision.Tracking.RobotMerger]
-# Factor to weight stdDeviation during tracker merging, reasonable range: 1.0 - 2.0. High values lead to more jitter
-MergePower = 1.5 # default: 1.5
-
-
-[Vision.SslVisionDataPublisher]
-VisionAddress = { Ip = "224.5.23.2", Port = 10006 } # default: 224.5.23.2:10006
-SimulatorAddress = { Ip = "224.5.23.2", Port = 10025 } # default: 224.5.23.2:10025
-
-[Vision.Camera]
-# Time after which an invisible ball is removed
-InvisibleLifetimeBall = 1.0 # default: 1.000000s
-# Time after which an invisible robot is removed
-InvisibleLifetimeRobot = 2.0 # default: 2.000000s
-# Maximum number of ball trackers
-MaxBallTrackers = 10 # default: 10
-# Max. distance to copy state from filtered bot to new trackers
-CopyTrackerMaxDistance = 200.0 # default: 200
-
-[Vision.Runner]
-TickRateHz = 100 # default: 100
-
-
-[Referee]
-[Referee.GcDataPublisher]
-GcAddress = { Ip = "224.5.23.1", Port = 10003 } # default: 224.5.23.1:10003
-
-[Referee.Referee]
-RequiredHys = 5 # default: 5
-BallMoveDis = 50.0 # default: 50
-
-[Referee.Runner]
-SleepTime = 0.001 # default: 0.001000s
-
-
-[Gui]
-[Gui.Backend]
-[Gui.Backend.FontRegistry]
-FontSize = 17 # default: 17
-FieldFontMinSize = 10 # default: 10
-FieldFontMaxSize = 100 # default: 100
-FieldFontCount = 5 # default: 5
-FontSizeDistributionPow = 0.5 # default: 0.5
-
-
-[Gui.Rendering]
-[Gui.Rendering.DrawableRenderer]
-FilledOutlineColor = "#09090B7F" # default: #09090B7F
-
-
-[Gui.Views]
-[Gui.Views.PlotView]
-TimeAxisExtension = 5.0 # default: 5
-TimeAxisMinRange = 1.0 # default: 1
-TimeAxisMaxRange = 200.0 # default: 200
-YAxisMinRange = 1.0 # default: 1
-MaxPoints = 500 # default: 500
-
-[Gui.Views.FieldView]
-ZoomFactor = 1.100000023841858 # default: 1.1
-ZoomDefault = 0.10000000149011612 # default: 0.1
-ZoomLimitFactor = 10.0 # default: 10
-LineColor = "#FFFFFFB2" # default: #FFFFFFB2
-
-
 
 [Sender]
-[Sender.Runner]
-SleepTime = 0.001 # default: 0.001000s
+[Sender.Nrf]
+Enabled = true # default: False
+Address = { Ip = "224.5.92.5", Port = 60005 } # default: 224.5.92.5:60005
 
 [Sender.ShootCalibration]
 
@@ -494,14 +407,225 @@ X = 1.0
 Y = 0.0
 
 
-[Sender.Nrf]
-Enabled = true # default: False
-Address = { Ip = "224.5.92.5", Port = 60005 } # default: 224.5.92.5:60005
+[Sender.Runner]
+SleepTime = 0.001 # default: 0.001000s
+RunnerPriority = "AboveNormal" # default: AboveNormal
 
 [Sender.Simulator]
 Enabled = true # default: False
 BlueAddress = { Ip = "127.0.0.1", Port = 10301 } # default: 127.0.0.1:10301
 YellowAddress = { Ip = "127.0.0.1", Port = 10302 } # default: 127.0.0.1:10302
 ChipAngle = 45.0 # default: 45.00°
+
+[Sender.RobotStatusPublisher]
+RobotStatusAddress = { Ip = "localhost", Port = 5555 } # default: localhost:5555
+TickRateHz = 100 # default: 100
+
+
+[Referee]
+[Referee.GcDataPublisher]
+GcAddress = { Ip = "224.5.23.1", Port = 10003 } # default: 224.5.23.1:10003
+
+[Referee.Referee]
+RequiredHys = 5 # default: 5
+BallMoveDis = 50.0 # default: 50
+
+[Referee.Runner]
+SleepTime = 0.001 # default: 0.001000s
+RunnerPriority = "AboveNormal" # default: AboveNormal
+
+
+[Vision]
+[Vision.Tracking]
+[Vision.Tracking.RobotMerger]
+# Factor to weight stdDeviation during tracker merging, reasonable range: 1.0 - 2.0. High values lead to more jitter
+MergePower = 1.5 # default: 1.5
+
+[Vision.Tracking.RobotTracker]
+InitialCovarianceXy = 100.0 # default: 100
+ModelErrorXy = 0.10000000149011612 # default: 0.1
+MeasurementErrorXy = 20.0 # default: 20
+InitialCovarianceW = 100.0 # default: 100
+ModelErrorW = 0.10000000149011612 # default: 0.1
+MeasurementErrorW = 2.0 # default: 2
+# Maximum assumed robot speed in [mm/s] to filter outliers
+MaxLinearVelocity = 6000.0 # default: 6000
+# Maximum assumed angular robot speed in [deg/s] to filter outliers
+MaxAngularVelocity = 1700.0 # default: 1700
+# Reciprocal health is used as uncertainty, increased on update, decreased on prediction
+MaxHealth = 20 # default: 20
+
+[Vision.Tracking.BallTracker]
+InitialCovariance = 1000.0 # default: 1000
+ModelError = 0.10000000149011612 # default: 0.1
+MeasurementError = 100.0 # default: 100
+# Maximum assumed ball speed in [mm/s] to filter outliers
+MaxLinearVelocity = 15000.0 # default: 15000
+# Reciprocal health is used as uncertainty, increased on update, decreased on prediction
+MaxHealth = 20 # default: 20
+# How many updates are required until this tracker is grown up?
+GrownUpAge = 3 # default: 3
+
+[Vision.Tracking.BallMerger]
+# Factor to weight stdDeviation during tracker merging, reasonable range: 1.0 - 2.0. High values lead to more jitter
+MergePower = 1.5 # default: 1.5
+# Minimum search radius for cam balls around last known position [mm]
+MinSearchRadius = 300.0 # default: 300
+
+
+[Vision.Estimators]
+[Vision.Estimators.Chip]
+[Vision.Estimators.Chip.ChipKickEstimator]
+# Minimum number of records to start chip estimation
+MinRecords = 8 # default: 8
+# Max fitting failures until this chip estimator is dropped
+MaxFailures = 12 # default: 12
+# Max fitting error until this chip estimator is dropped [mm]
+MaxFittingError = 100.0 # default: 100
+# Max number of records to keep over all cameras
+MaxNumberOfRecords = 50 # default: 50
+# Estimate chip kick position if the ball is visible on two cameras
+UseKickPositionEstimator = false # default: False
+
+
+[Vision.Estimators.Direct]
+[Vision.Estimators.Direct.DirectKickEstimator]
+# Max fitting error until this estimator is dropped [mm]
+MaxFittingError = 100.0 # default: 100
+# Max direction deviation until this estimator is dropped [deg]
+MaxDirectionErrorDegrees = 20.0 # default: 20
+# Max number of records to keep over all cameras
+MaxNumberOfRecords = 50 # default: 50
+
+
+[Vision.Estimators.KickEstimators]
+# Factor by which a new estimator must be better than the last one to become active
+EstimatorSwitchHysteresis = 0.2 # default: 0.2
+# Maximum angle deviation between two detected kicks before a new flat estimator is spawned [deg]
+SpawnAngleDeviationDegrees = 20.0 # default: 20
+# Maximum distance between two detected kicks before a new flat estimator is spawned [mm]
+SpawnPositionDeviation = 500.0 # default: 500
+# Maximum number of kick events to keep for debug history
+KickEventHistorySize = 10 # default: 10
+# Maximum number of filtered ball states to keep for estimator warm-start history
+FilteredBallHistorySize = 20 # default: 20
+
+
+[Vision.Util]
+[Vision.Util.SlowKickDetector]
+# Minimum time between two kicks [s]
+MinDeltaTime = 0.1 # default: 0.1
+
+[Vision.Util.KickValidator]
+# Maximum angle difference for a valid kick
+MaxAngleDiff = 45.0 # default: 45
+# Minimum distance (in mm) that at least one ball sample must be from the robot to consider a kick
+AtLeastOneBeyondDist = 160.0 # default: 160
+# Distance threshold (in mm) for kick validation: first sample must be closer, all others further away
+ThresholdDist1 = 130.0 # default: 130
+# Alternative distance threshold (in mm) for kick validation: first sample must be closer, all others further away
+ThresholdDist2 = 170.0 # default: 170
+# Minimum distance from bot to lead point on orientation line
+MinDistanceInFront = 70.0 # default: 70
+# Minimum distance from orientation line to ball position (distance is increased with distance from bot)
+MinDistanceOrthogonal = 40.0 # default: 40
+# Minimum required ball velocity [mm/s]
+MinVelocity = 600.0 # default: 600
+
+[Vision.Util.FastKickDetector]
+# Minimum distance to ball for kick detection [mm]
+KickNearBallMinDist = 150.0 # default: 150
+# Ball velocity threshold [mm/s]
+VelocityThreshold = 1000.0 # default: 1000
+# Fast ball direction change threshold [deg]
+DirectionThreshold = 20.0 # default: 20
+# Ball velocity threshold for direction change [mm/s]
+VelocityThresholdDirection = 2000.0 # default: 2000
+
+
+[Vision.SslVisionDataPublisher]
+VisionAddress = { Ip = "224.5.23.2", Port = 10006 } # default: 224.5.23.2:10006
+SimulatorAddress = { Ip = "224.5.23.2", Port = 10025 } # default: 224.5.23.2:10025
+
+[Vision.Vision]
+CameraTooOldTime = 1.0 # default: 1.000000s
+
+[Vision.Runner]
+TickRateHz = 100 # default: 100
+RunnerPriority = "Highest" # default: Highest
+
+[Vision.Camera]
+# Time after which an invisible ball is removed
+InvisibleLifetimeBall = 1.0 # default: 1.000000s
+# Time after which an invisible robot is removed
+InvisibleLifetimeRobot = 2.0 # default: 2.000000s
+# Maximum number of ball trackers
+MaxBallTrackers = 10 # default: 10
+# Max. distance to copy state from filtered bot to new trackers
+CopyTrackerMaxDistance = 200.0 # default: 200
+# Maximum speed loss against the robot hull during ball collisions
+MaxBallBotHullLoss = 0.6000000238418579 # default: 0.6
+# Maximum speed loss against the robot front during ball collisions
+MaxBallBotFrontLoss = 1.0 # default: 1
+# Maximum filtered ball height where robot collisions are considered
+MaxHeightForCollision = 130.0 # default: 130
+# Fallback distance from robot center to dribbler when no robot-specific geometry is available
+RobotCenterToDribbler = 75.0 # default: 75
+
+[Vision.Data]
+[Vision.Data.BallParameters]
+# Radius of the ball in [mm]
+Radius = 21.0 # default: 21
+# Use ball radius and ball model parameters from SSL-Vision geometry when available
+UseVisionBallParameters = false # default: False
+# Sliding acceleration in [mm/s^2], expected to be negative
+AccelerationSlide = -3000.0 # default: -3000
+# Rolling acceleration in [mm/s^2], expected to be negative
+AccelerationRoll = -260.0 # default: -260
+# Fraction of the initial velocity where the ball starts to roll
+KSwitch = 0.6399999856948853 # default: 0.64
+# Ball inertia distribution between 0.4 (massive sphere) and 0.66 (hollow sphere)
+InertiaDistribution = 0.5 # default: 0.5
+# Amount of spin transferred during a redirect.
+RedirectSpinFactor = 0.800000011920929 # default: 0.8
+# Restitution coefficient for redirected balls from a bot.
+RedirectRestitutionCoefficient = 0.20000000298023224 # default: 0.2
+# Chip kick velocity damping factor in XY direction for the first hop
+ChipDampingXyFirstHop = 0.800000011920929 # default: 0.8
+# Chip kick velocity damping factor in XY direction for all following hops
+ChipDampingXyOtherHops = 0.8500000238418579 # default: 0.85
+# Chip kick velocity damping factor in Z direction
+ChipDampingZ = 0.4699999988079071 # default: 0.47
+# If a chipped ball does not reach this height it is considered rolling [mm]
+MinHopHeight = 10.0 # default: 10
+# Max. ball height that can be intercepted by robots [mm]
+MaxInterceptableHeight = 150.0 # default: 150
+
+
+
+[Gui]
+[Gui.Rendering]
+[Gui.Rendering.DrawableRenderer]
+FilledOutlineColor = "#09090B7F" # default: #09090B7F
+
+
+[Gui.Views]
+[Gui.Views.PlotView]
+TimeAxisMinRange = 1.0 # default: 1
+TimeAxisMaxRange = 200.0 # default: 200
+YAxisMinRange = 1.0 # default: 1
+MaxPoints = 500 # default: 500
+
+[Gui.Views.FieldView]
+ZoomFactor = 1.100000023841858 # default: 1.1
+ZoomDefault = 0.10000000149011612 # default: 0.1
+ZoomLimitFactor = 10.0 # default: 10
+LineColor = "#FFFFFFB2" # default: #FFFFFFB2
+
+
+[Gui.Backend]
+[Gui.Backend.FontRegistry]
+FontSize = 17 # default: 17
+
 
 
