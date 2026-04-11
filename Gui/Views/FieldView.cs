@@ -105,6 +105,38 @@ public sealed partial class FieldView : IDisposable
                 preparedModule ??= prepared.AddModule(module);
                 preparedModule.Commands.Add(draw);
             }
+
+            var filteredFrames = _debugDb.Query<Common.Vision.Data.FilteredFrame>(
+                module, frame.Value.Start, frame.Value.End).ToList();
+            if (filteredFrames.Count > 0)
+            {
+                var lastFilteredFrame = filteredFrames[^1];
+                if (filterSnapshot.IsEnabled(lastFilteredFrame.Meta))
+                {
+                    preparedModule ??= prepared.AddModule(module);
+
+                    preparedModule.Commands.Add(new Debug.Drawing.Command
+                    {
+                        Drawable = new Debug.Drawing.Drawables.Circle { Center = lastFilteredFrame.Ball.State.Position, Radius = 25f + System.Math.Clamp(lastFilteredFrame.Ball.State.Position3D.Z / 3f, 0f, 200f) },
+                        Color = Debug.Drawing.Color.Orange400,
+                        Options = Debug.Drawing.Options.Filled with { Thickness = 5f },
+                        Meta = lastFilteredFrame.Meta,
+                        Timestamp = lastFilteredFrame.Timestamp
+                    });
+
+                    foreach (var robot in lastFilteredFrame.Robots)
+                    {
+                        preparedModule.Commands.Add(new Debug.Drawing.Command
+                        {
+                            Drawable = new Debug.Drawing.Drawables.Robot { Position = robot.State.Position, Orientation = robot.State.Angle, Id = robot.Id.Id, Radius = Debug.Drawing.Drawables.Robot.DefaultRadius },
+                            Color = robot.Id.Team.ToColor(),
+                            Options = Debug.Drawing.Options.Filled with { Thickness = 10f },
+                            Meta = lastFilteredFrame.Meta,
+                            Timestamp = lastFilteredFrame.Timestamp
+                        });
+                    }
+                }
+            }
         }
     }
 
