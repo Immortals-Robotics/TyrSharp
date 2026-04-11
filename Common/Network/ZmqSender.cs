@@ -20,6 +20,7 @@ public sealed partial class ZmqSender : IDisposable
 
     private readonly PushSocket _socket;
     private readonly byte[] _buffer;
+    private readonly byte[] _topicBuffer = new byte[1];
     private readonly ZmqMode _mode;
     private Address _currentAddress;
 
@@ -85,7 +86,8 @@ public sealed partial class ZmqSender : IDisposable
             }
 
             // Send multipart: [Topic (as byte)][Protobuf Payload]
-            _socket.SendMoreFrame([(byte)topic]);
+            _topicBuffer[0] = (byte)topic;
+            _socket.SendMoreFrame(_topicBuffer);
             _socket.SendFrame(_buffer, size);
             
             Log.ZLogTrace($"ZMQ (proto) PUSH sent {typeof(T).Name} on topic {topic} ({size} bytes) to {_currentAddress}");
