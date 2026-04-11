@@ -20,8 +20,8 @@ public sealed partial class Runner : IDisposable
     [ConfigEntry(StorageType.User)] private static int WindowWidth { get; set; } = 1280;
     [ConfigEntry(StorageType.User)] private static int WindowHeight { get; set; } = 720;
 
-    [ConfigEntry(StorageType.User, false)] private static int WindowPosX { get; set; }
-    [ConfigEntry(StorageType.User, false)] private static int WindowPosY { get; set; }
+    [ConfigEntry(StorageType.User, false)] private static int? WindowPosX { get; set; }
+    [ConfigEntry(StorageType.User, false)] private static int? WindowPosY { get; set; }
 
     [ConfigEntry(StorageType.User, false)] private static bool WindowMaximized { get; set; }
     [ConfigEntry(StorageType.User, editable: false)] private static string ImGuiIni { get; set; } = "";

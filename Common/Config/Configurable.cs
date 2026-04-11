@@ -53,6 +53,7 @@ public class Configurable
         foreach (var entry in Entries)
         {
             if (entry.StorageType != storageType) continue;
+            if (entry.Value is null) continue;
 
             try
             {
