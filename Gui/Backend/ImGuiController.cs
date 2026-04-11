@@ -28,7 +28,6 @@ internal unsafe class ImGuiController : IDisposable
         var io = ImGui.GetIO();
         io.IniFilename = null; // disable file-based save/load; we manage ini ourselves
         io.ConfigFlags |= ImGuiConfigFlags.NavEnableKeyboard;
-        io.ConfigFlags |= ImGuiConfigFlags.NavEnableGamepad;
         io.ConfigFlags |= ImGuiConfigFlags.DockingEnable;
         io.ConfigFlags |= ImGuiConfigFlags.ViewportsEnable;
         io.ConfigViewportsNoAutoMerge = false;

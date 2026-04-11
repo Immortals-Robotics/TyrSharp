@@ -1,5 +1,7 @@
 using System.Globalization;
+using System.Runtime.InteropServices;
 using Hexa.NET.ImGui;
+using Hexa.NET.SDL3;
 using Tyr.Common.Config;
 using Tyr.Common.Data;
 using Tyr.Gui.Backend;
@@ -33,6 +35,12 @@ public sealed partial class GameControllerView : IDisposable
     [ConfigEntry("Automatically connect referee API and team rcon after starting the managed process", StorageType.User)]
     private static bool AutoConnect { get; set; } = true;
 
+    [ConfigEntry("Team to issue gamepad commands for", StorageType.User)]
+    private static TeamColor GamepadTeam { get; set; } = TeamColor.Yellow;
+
+    private SDLGamepadPtr _gamepad;
+    private readonly bool[] _lastButtons = new bool[32]; // SDL_GAMEPAD_BUTTON_MAX is usually small
+
     private readonly GcProcess    _process    = new();
     private readonly GcApiClient  _apiClient  = new();
     private readonly GcRconClient _rconYellow = new();
@@ -48,6 +56,8 @@ public sealed partial class GameControllerView : IDisposable
 
     public void Draw()
     {
+        HandleGamepadInput();
+
         if (!ImGui.Begin(WindowTitle))
         {
             ImGui.End();
@@ -210,7 +220,7 @@ public sealed partial class GameControllerView : IDisposable
         DrawStageControls(ms);
     }
 
-    private void DrawApiConnectionBar(GcApiClient.ConnectionState state)
+    private unsafe void DrawApiConnectionBar(GcApiClient.ConnectionState state)
     {
         var (color, label) = state switch
         {
@@ -220,10 +230,13 @@ public sealed partial class GameControllerView : IDisposable
             _                                      => (Color.Zinc500,   "Disconnected"),
         };
 
-        ImGui.TextColored(color, $"{IconFonts.FontAwesome6.Circle}  {label}");
+        ImGui.TextColored(color, IconFonts.FontAwesome6.Circle);
+        if (ImGui.IsItemHovered()) ImGui.SetTooltip(label);
 
         ImGui.SameLine();
+        ImGui.TextColored(Color.Zinc500, $"{GameControllerHost}:{WebUiPort}");
 
+        ImGui.SameLine();
         var disconnected = state is GcApiClient.ConnectionState.Disconnected
                                    or GcApiClient.ConnectionState.Error;
         if (disconnected)
@@ -237,8 +250,18 @@ public sealed partial class GameControllerView : IDisposable
                 _apiClient.Disconnect();
         }
 
-        ImGui.SameLine();
-        ImGui.TextColored(Color.Zinc500, $"{GameControllerHost}:{WebUiPort}");
+        if (_gamepad.Handle != null)
+        {
+            var name = Marshal.PtrToStringAnsi((nint)SDL.GetGamepadName(_gamepad)) ?? "Unknown Gamepad";
+            ImGui.SameLine();
+            ImGui.TextColored(Color.Zinc700, "|");
+            ImGui.SameLine();
+            ImGui.TextColored(Color.Green400, IconFonts.FontAwesome6.Gamepad);
+            if (ImGui.IsItemHovered())
+            {
+                ImGui.SetTooltip($"{name} Connected\n\nA: Force Start\nB: Stop\nX: Direct Free Kick\nY: Kickoff\nStart: Halt\nRB: Normal Start");
+            }
+        }
     }
 
     private void DrawMatchHeader(GcMatchState ms)
@@ -672,8 +695,52 @@ public sealed partial class GameControllerView : IDisposable
         return $"{left} left";
     }
 
-    public void Dispose()
+    private unsafe void HandleGamepadInput()
     {
+        int count = 0;
+        int* gamepads = SDL.GetGamepads(ref count);
+        if (count == 0)
+        {
+            if (_gamepad.Handle != null)
+            {
+                SDL.CloseGamepad(_gamepad);
+                _gamepad = default;
+            }
+            if (gamepads != null) SDL.Free(gamepads);
+            return;
+        }
+
+        if (_gamepad.Handle == null)
+        {
+            _gamepad = SDL.OpenGamepad(gamepads[0]);
+        }
+
+        if (gamepads != null) SDL.Free(gamepads);
+
+        if (_gamepad.Handle == null) return;
+
+        var team = GamepadTeam.ToString().ToUpperInvariant();
+        var connected = _apiClient.State == GcApiClient.ConnectionState.Connected;
+
+        PollButton(SDLGamepadButton.South, () => { if (connected) _apiClient.Send(GcInput.Command("FORCE_START")); }); // A
+        PollButton(SDLGamepadButton.East, () => { if (connected) _apiClient.Send(GcInput.Command("STOP")); });         // B
+        PollButton(SDLGamepadButton.West, () => { if (connected) _apiClient.Send(GcInput.Command("DIRECT", team)); }); // X
+        PollButton(SDLGamepadButton.North, () => { if (connected) _apiClient.Send(GcInput.Command("KICKOFF", team)); }); // Y
+        PollButton(SDLGamepadButton.Start, () => { if (connected) _apiClient.Send(GcInput.Command("HALT")); });       // Options/Start
+        PollButton(SDLGamepadButton.RightShoulder, () => { if (connected) _apiClient.Send(GcInput.Command("NORMAL_START")); }); // RB
+    }
+
+    private unsafe void PollButton(SDLGamepadButton button, Action action)
+    {
+        bool down = SDL.GetGamepadButton(_gamepad, button);
+        int idx = (int)button;
+        if (down && !_lastButtons[idx]) action();
+        _lastButtons[idx] = down;
+    }
+
+    public unsafe void Dispose()
+    {
+        if (_gamepad.Handle != null) SDL.CloseGamepad(_gamepad);
         _rconYellow.Dispose();
         _rconBlue.Dispose();
         _apiClient.Dispose();

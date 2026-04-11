@@ -19,7 +19,7 @@ internal unsafe class SdlWindow : IDisposable
     {
         SDL.SetHint(SDL.SDL_HINT_MOUSE_FOCUS_CLICKTHROUGH, "1");
         SDL.SetHint(SDL.SDL_HINT_MOUSE_AUTO_CAPTURE, "1");
-        SDL.Init((uint)(SDLInitFlags.Events | SDLInitFlags.Video));
+        SDL.Init((uint)(SDLInitFlags.Events | SDLInitFlags.Video | SDLInitFlags.Gamepad));
     }
 
     public SdlWindow(string title, int width, int height, int? x = null, int? y = null, bool? maximized = null)
