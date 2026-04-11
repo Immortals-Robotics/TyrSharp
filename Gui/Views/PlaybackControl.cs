@@ -56,12 +56,21 @@ public sealed partial class PlaybackControl(IDebugDb debugDb, SessionsView sessi
             if (_pendingSourceReset)
             {
                 _live = sessionsView.SourceIsLive;
-                _playing = false;
-                _offset = 0f;
                 _shuttle = 0f;
                 _frozenEndTime = liveEndTime;
                 _frozenRange = liveRange;
                 _pendingSourceReset = false;
+
+                if (_live)
+                {
+                    _playing = false;
+                    _offset = 0f;
+                }
+                else
+                {
+                    _offset = -liveRange;
+                    _playing = true;
+                }
             }
 
             var wasLive = _live;

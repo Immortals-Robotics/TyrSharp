@@ -76,7 +76,6 @@ public sealed class PlaybackSessionManager : IDisposable
             _sessions = uncompacted.Concat(compacted)
                 .OrderByDescending(static session => session.Metadata.CreatedAtUtc)
                 .ToArray();
-            _sourceRevision++;
         }
     }
 
@@ -106,12 +105,13 @@ public sealed class PlaybackSessionManager : IDisposable
 
         if (session.IsCompacted && session.ArchivePath != null)
         {
-            tempDir = Path.Combine(_tempRoot, session.Metadata.SessionId);
-            if (Directory.Exists(tempDir))
-                Directory.Delete(tempDir, recursive: true);
-
-            ZipFile.ExtractToDirectory(session.ArchivePath, _tempRoot);
-            databaseDirectory = Path.Combine(tempDir, "db");
+            // Each open gets a unique extraction directory so we never conflict with
+            // a previously retained DebugDb that still holds file handles on the same session.
+            // _tempRoot is wiped on startup, so stale dirs from prior runs are cleaned up.
+            tempDir = Path.Combine(_tempRoot, Guid.NewGuid().ToString("N"));
+            Directory.CreateDirectory(tempDir);
+            ZipFile.ExtractToDirectory(session.ArchivePath, tempDir);
+            databaseDirectory = Path.Combine(tempDir, session.Metadata.SessionId, "db");
         }
 
         var db = new DebugDb(databaseDirectory)
@@ -291,7 +291,6 @@ public sealed class PlaybackSessionManager : IDisposable
             }
         }
         _sessions = list;
-        _sourceRevision++;
     }
 
     private void BackgroundLoop()
@@ -356,7 +355,6 @@ public sealed class PlaybackSessionManager : IDisposable
                 sessionsList.RemoveAll(s => s.MetadataPath == session.MetadataPath);
             }
             _sessions = sessionsList;
-            _sourceRevision++;
         }
     }
 
