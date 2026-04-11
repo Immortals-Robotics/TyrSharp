@@ -23,6 +23,7 @@ public sealed partial class DebugFilter(Tyr.Common.Debug.Db.IDebugDb debugDb) : 
 
     private readonly Dictionary<string, Dictionary<string, Dictionary<string, Dictionary<string, HashSet<MetaTreeItem>>>>> _metaTrees = [];
     private Utf16ValueStringBuilder _stringBuilder = ZString.CreateStringBuilder();
+    private ImGuiTextFilterPtr _filter = ImGui.ImGuiTextFilter();
 
     private bool _dirty;
     private bool _snapshotDirty = true;
@@ -128,13 +129,16 @@ public sealed partial class DebugFilter(Tyr.Common.Debug.Db.IDebugDb debugDb) : 
         {
             _dirty = false;
 
+            DrawSearchBar();
+
             RegisterModules();
 
             foreach (var moduleName in debugDb.QueryModules())
             {
                 if (!_metaTrees.TryGetValue(moduleName, out var metaTree) || metaTree.Count == 0) continue;
 
-                DrawModuleNode(moduleName, metaTree);
+                if (ModuleMatches(moduleName, metaTree))
+                    DrawModuleNode(moduleName, metaTree);
             }
 
             if (_dirty)
@@ -145,6 +149,74 @@ public sealed partial class DebugFilter(Tyr.Common.Debug.Db.IDebugDb debugDb) : 
         }
 
         ImGui.End();
+    }
+
+    private void DrawSearchBar()
+    {
+        ImGui.PushItemWidth(-50f);
+        _filter.Draw("##search");
+        ImGui.PopItemWidth();
+
+        ImGui.SameLine();
+        if (_filter.IsActive())
+        {
+            if (ImGui.Button($"{IconFonts.FontAwesome6.Xmark}##clear"))
+                _filter.Clear();
+        }
+        else
+        {
+            ImGui.TextColored(Color.Zinc600, $"{IconFonts.FontAwesome6.MagnifyingGlass}");
+        }
+
+        ImGui.SameLine();
+        if (ImGui.Button($"{IconFonts.FontAwesome6.RotateLeft}##reset"))
+        {
+            FilterState.Clear();
+            _dirty = true;
+        }
+
+        if (ImGui.IsItemHovered(ImGuiHoveredFlags.ForTooltip))
+            ImGui.SetTooltip("Reset all filters");
+
+        ImGui.Separator();
+    }
+
+    private bool ModuleMatches(string module, Dictionary<string, Dictionary<string, Dictionary<string, HashSet<MetaTreeItem>>>> metaTree)
+    {
+        if (!_filter.IsActive()) return true;
+        if (_filter.PassFilter(module)) return true;
+        foreach (var (layer, files) in metaTree)
+            if (LayerMatches(layer, files)) return true;
+        return false;
+    }
+
+    private bool LayerMatches(string layer, Dictionary<string, Dictionary<string, HashSet<MetaTreeItem>>> files)
+    {
+        if (!_filter.IsActive()) return true;
+        var layerName = Meta.IsDebugLayer(layer) ? layer[Meta.DebugLayerPrefix.Length..] : layer;
+        if (_filter.PassFilter(layerName)) return true;
+        foreach (var (file, functions) in files)
+            if (FileMatches(file, functions)) return true;
+        return false;
+    }
+
+    private bool FileMatches(string file, Dictionary<string, HashSet<MetaTreeItem>> functions)
+    {
+        if (!_filter.IsActive()) return true;
+        var fileName = Path.GetFileName(file);
+        if (_filter.PassFilter(fileName)) return true;
+        foreach (var (member, items) in functions)
+            if (MemberMatches(member, items)) return true;
+        return false;
+    }
+
+    private bool MemberMatches(string member, HashSet<MetaTreeItem> items)
+    {
+        if (!_filter.IsActive()) return true;
+        if (_filter.PassFilter(member)) return true;
+        foreach (var item in items)
+            if (_filter.PassFilter(item.Expression ?? "")) return true;
+        return false;
     }
 
     // Register all modules, files, and functions
@@ -231,9 +303,12 @@ public sealed partial class DebugFilter(Tyr.Common.Debug.Db.IDebugDb debugDb) : 
         // Get current state
         var isEnabled = FilterState[module];
 
+        bool matches = !_filter.IsActive() || _filter.PassFilter(module);
+        var flags = _filter.IsActive() ? ImGuiTreeNodeFlags.DefaultOpen : ImGuiTreeNodeFlags.None;
+
         // Create tree node with checkbox
         ImGui.PushID(module);
-        var isOpen = ImGui.TreeNode("");
+        var isOpen = ImGui.TreeNodeEx("##node", flags);
         ImGui.SameLine();
         _dirty |= ImGui.Checkbox("##enabled", ref isEnabled);
         ImGui.SameLine();
@@ -248,10 +323,13 @@ public sealed partial class DebugFilter(Tyr.Common.Debug.Db.IDebugDb debugDb) : 
         {
             ImGui.BeginDisabled(!isEnabled);
 
-            // Draw files
+            // Draw layers
             foreach (var (layer, files) in metaTree)
             {
-                DrawLayerNode(module, layer, files, isEnabled);
+                if (matches || LayerMatches(layer, files))
+                {
+                    DrawLayerNode(module, layer, files, isEnabled, matches);
+                }
             }
 
             ImGui.TreePop();
@@ -262,7 +340,7 @@ public sealed partial class DebugFilter(Tyr.Common.Debug.Db.IDebugDb debugDb) : 
     }
 
     private void DrawLayerNode(string module, string layer,
-        Dictionary<string, Dictionary<string, HashSet<MetaTreeItem>>> files, bool parentEnabled)
+        Dictionary<string, Dictionary<string, HashSet<MetaTreeItem>>> files, bool parentEnabled, bool parentMatched)
     {
         var path = MakePath(module, layer);
 
@@ -271,15 +349,18 @@ public sealed partial class DebugFilter(Tyr.Common.Debug.Db.IDebugDb debugDb) : 
 
         var emptyLayer = string.IsNullOrWhiteSpace(layer);
 
+        var debugLayer = Meta.IsDebugLayer(layer);
+        var layerName = debugLayer ? layer[Meta.DebugLayerPrefix.Length..] : layer;
+        bool matches = parentMatched || !_filter.IsActive() || _filter.PassFilter(layerName);
+        var flags = _filter.IsActive() ? ImGuiTreeNodeFlags.DefaultOpen : ImGuiTreeNodeFlags.None;
+
         var isOpen = true;
 
         if (!emptyLayer)
         {
-            var debugLayer = Meta.IsDebugLayer(layer);
-            var layerName = debugLayer ? layer[Meta.DebugLayerPrefix.Length..] : layer;
             // Create tree node with checkbox
             ImGui.PushID(layer);
-            isOpen = ImGui.TreeNode("");
+            isOpen = ImGui.TreeNodeEx("##node", flags);
             ImGui.SameLine();
 
             ImGui.PushFont(FontRegistry.Instance.MonoFont, FontRegistry.Instance.MonoFont.LegacySize);
@@ -303,10 +384,13 @@ public sealed partial class DebugFilter(Tyr.Common.Debug.Db.IDebugDb debugDb) : 
         {
             ImGui.BeginDisabled(!isEnabled);
 
-            // Draw functions
+            // Draw files
             foreach (var (file, functions) in files)
             {
-                DrawFileNode(module, layer, file, functions, isEnabled);
+                if (matches || FileMatches(file, functions))
+                {
+                    DrawFileNode(module, layer, file, functions, isEnabled, matches);
+                }
             }
 
             ImGui.EndDisabled();
@@ -318,7 +402,7 @@ public sealed partial class DebugFilter(Tyr.Common.Debug.Db.IDebugDb debugDb) : 
     }
 
     private void DrawFileNode(string module, string layer, string file,
-        Dictionary<string, HashSet<MetaTreeItem>> functions, bool parentEnabled)
+        Dictionary<string, HashSet<MetaTreeItem>> functions, bool parentEnabled, bool parentMatched)
     {
         var path = MakePath(module, layer, file);
 
@@ -328,9 +412,12 @@ public sealed partial class DebugFilter(Tyr.Common.Debug.Db.IDebugDb debugDb) : 
         // Extract filename from the path for display
         var displayName = Path.GetFileName(file);
 
+        bool matches = parentMatched || !_filter.IsActive() || _filter.PassFilter(displayName);
+        var flags = _filter.IsActive() ? ImGuiTreeNodeFlags.DefaultOpen : ImGuiTreeNodeFlags.None;
+
         // Create tree node with checkbox
         ImGui.PushID(file);
-        var isOpen = ImGui.TreeNode("");
+        var isOpen = ImGui.TreeNodeEx("##node", flags);
         ImGui.SameLine();
         ImGui.PushFont(FontRegistry.Instance.MonoFont, FontRegistry.Instance.MonoFont.LegacySize);
         _dirty |= ImGui.Checkbox("##enabled", ref isEnabled);
@@ -361,7 +448,10 @@ public sealed partial class DebugFilter(Tyr.Common.Debug.Db.IDebugDb debugDb) : 
             // Draw functions
             foreach (var (member, items) in functions)
             {
-                DrawMemberNode(module, layer, file, member, items, isEnabled);
+                if (matches || MemberMatches(member, items))
+                {
+                    DrawMemberNode(module, layer, file, member, items, isEnabled, matches);
+                }
             }
 
             ImGui.EndDisabled();
@@ -372,16 +462,19 @@ public sealed partial class DebugFilter(Tyr.Common.Debug.Db.IDebugDb debugDb) : 
     }
 
     private void DrawMemberNode(string module, string layer, string file, string member,
-        HashSet<MetaTreeItem> items, bool parentEnabled)
+        HashSet<MetaTreeItem> items, bool parentEnabled, bool parentMatched)
     {
         var path = MakePath(module, layer, file, member);
 
         // Get current state
         var isEnabled = parentEnabled && _lookup[path];
 
+        bool matches = parentMatched || !_filter.IsActive() || _filter.PassFilter(member);
+        var flags = _filter.IsActive() ? ImGuiTreeNodeFlags.DefaultOpen : ImGuiTreeNodeFlags.None;
+
         // Create tree node with checkbox
         ImGui.PushID(member);
-        var isOpen = ImGui.TreeNode("");
+        var isOpen = ImGui.TreeNodeEx("##node", flags);
         ImGui.SameLine();
         ImGui.PushFont(FontRegistry.Instance.MonoFont, FontRegistry.Instance.MonoFont.LegacySize);
         _dirty |= ImGui.Checkbox("##enabled", ref isEnabled);
@@ -404,7 +497,10 @@ public sealed partial class DebugFilter(Tyr.Common.Debug.Db.IDebugDb debugDb) : 
             // Draw lines
             foreach (var item in items)
             {
-                DrawItemNode(module, layer, file, member, item, isEnabled);
+                if (matches || _filter.PassFilter(item.Expression ?? ""))
+                {
+                    DrawItemNode(module, layer, file, member, item, isEnabled);
+                }
             }
 
             ImGui.EndDisabled();
