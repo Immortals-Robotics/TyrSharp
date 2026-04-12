@@ -45,49 +45,49 @@ public sealed partial class PlaybackControl(IDebugDb debugDb, SessionsView sessi
         var elapsedSeconds = (nowTicks - _lastDrawTimestamp) / (double)Stopwatch.Frequency;
         _lastDrawTimestamp = nowTicks;
 
-        if (ImGui.Begin(WindowTitle, ImGuiWindowFlags.NoResize))
+        var frameRange = debugDb.GetFrameRange();
+        var liveEndTime = frameRange?.End ?? Timestamp.Zero;
+        var liveRange = frameRange.HasValue
+            ? (float)(frameRange.Value.End - frameRange.Value.Start).Seconds
+            : 0f;
+
+        if (_pendingSourceReset)
         {
-            var frameRange = debugDb.GetFrameRange();
-            var liveEndTime = frameRange?.End ?? Timestamp.Zero;
-            var liveRange = frameRange.HasValue
-                ? (float)(frameRange.Value.End - frameRange.Value.Start).Seconds
-                : 0f;
+            _live = sessionsView.SourceIsLive;
+            _shuttle = 0f;
+            _frozenEndTime = liveEndTime;
+            _frozenRange = liveRange;
+            _pendingSourceReset = false;
 
-            if (_pendingSourceReset)
-            {
-                _live = sessionsView.SourceIsLive;
-                _shuttle = 0f;
-                _frozenEndTime = liveEndTime;
-                _frozenRange = liveRange;
-                _pendingSourceReset = false;
-
-                if (_live)
-                {
-                    _playing = false;
-                    _offset = 0f;
-                }
-                else
-                {
-                    _offset = -liveRange;
-                    _playing = true;
-                }
-            }
-
-            var wasLive = _live;
             if (_live)
             {
                 _playing = false;
-                _frozenEndTime = liveEndTime;
-                _frozenRange = liveRange;
                 _offset = 0f;
             }
             else
             {
-                _offset = Math.Clamp(_offset, -_frozenRange, 0f);
-                AdvancePlayback(elapsedSeconds);
-                AdvanceShuttle(elapsedSeconds);
+                _offset = -liveRange;
+                _playing = true;
             }
+        }
 
+        var wasLive = _live;
+        if (_live)
+        {
+            _playing = false;
+            _frozenEndTime = liveEndTime;
+            _frozenRange = liveRange;
+            _offset = 0f;
+        }
+        else
+        {
+            _offset = Math.Clamp(_offset, -_frozenRange, 0f);
+            AdvancePlayback(elapsedSeconds);
+            AdvanceShuttle(elapsedSeconds);
+        }
+
+        if (ImGui.Begin(WindowTitle, ImGuiWindowFlags.NoResize))
+        {
             if (_live)
                 ImGui.BeginDisabled();
 
@@ -181,11 +181,11 @@ public sealed partial class PlaybackControl(IDebugDb debugDb, SessionsView sessi
                 _frozenRange = liveRange;
                 _offset = 0f;
             }
-
-            Current = CreatePlaybackTime(liveEndTime, _live, _frozenEndTime, _offset);
         }
 
         ImGui.End();
+
+        Current = CreatePlaybackTime(liveEndTime, _live, _frozenEndTime, _offset);
     }
 
     private static PlaybackTime CreatePlaybackTime(Timestamp liveEndTime, bool live, Timestamp frozenEndTime, float offset)
