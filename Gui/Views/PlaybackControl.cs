@@ -10,7 +10,7 @@ using Stopwatch = System.Diagnostics.Stopwatch;
 namespace Tyr.Gui.Views;
 
 [Configurable]
-public sealed partial class PlaybackControl(IDebugDb debugDb, SessionsView sessionsView)
+public sealed partial class PlaybackControl(SwitchableDebugDb debugDb, SessionsView sessionsView)
 {
     public static readonly string WindowTitle = $"{IconFonts.FontAwesome6.Clapperboard} Playback";
     [ConfigEntry(StorageType.User)] private static double StepMilliseconds { get; set; } = 16.0;

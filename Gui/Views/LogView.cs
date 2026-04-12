@@ -13,7 +13,7 @@ using Color = Tyr.Common.Debug.Drawing.Color;
 namespace Tyr.Gui.Views;
 
 [Configurable]
-public sealed partial class LogView(IDebugDb debugDb) : IDisposable
+public sealed partial class LogView(SwitchableDebugDb debugDb) : IDisposable
 {
     public static readonly string WindowTitle = $"{IconFonts.FontAwesome6.Terminal} Logs";
     [ConfigEntry(StorageType.User)] private static LogLevel LogLevel { get; set; } = LogLevel.Debug;

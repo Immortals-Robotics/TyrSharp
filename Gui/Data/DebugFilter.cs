@@ -10,7 +10,7 @@ using Color = Tyr.Common.Debug.Drawing.Color;
 namespace Tyr.Gui.Data;
 
 [Configurable]
-public sealed partial class DebugFilter(Tyr.Common.Debug.Db.IDebugDb debugDb) : IDisposable
+public sealed partial class DebugFilter(SwitchableDebugDb debugDb) : IDisposable
 {
     public static readonly string WindowTitle = $"{IconFonts.FontAwesome6.Filter} Debug Filter";
     // Dictionary to track the enabled state of each node in the tree

@@ -19,7 +19,4 @@ public static class Hub
     public static readonly BroadcastChannel<Vision.Data.FilteredFrame> Vision = new();
     public static readonly BroadcastChannel<Referee.Data.State> Referee = new();
     public static readonly BroadcastChannel<Sender.Data.CommandsWrapper> Commands = new();
-
-    // debug
-    public static readonly BroadcastChannel<Debug.Frame> Frames = new();
 }

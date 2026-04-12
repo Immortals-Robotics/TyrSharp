@@ -7,22 +7,22 @@ namespace Tyr.Gui.Data;
 
 public sealed class PlaybackSessionManager : IDisposable
 {
-    private readonly IDebugDb _liveDb;
+    private readonly DebugDb _liveDb;
     private readonly string _liveDatabaseDirectory;
     private readonly SwitchableDebugDb _playbackDb;
     private readonly string _sessionRootDirectory;
     private readonly string _tempRoot;
-    private readonly List<IDebugDb> _retainedDbs = [];
+    private readonly List<DebugDb> _retainedDbs = [];
     private readonly CancellationTokenSource _cts = new();
     private readonly object _lock = new();
 
-    private IDebugDb? _openedDb;
+    private DebugDb? _openedDb;
     private PlaybackSessionInfo? _openedSession;
     private string? _openedTempDirectory;
     private IReadOnlyList<PlaybackSessionInfo> _sessions = [];
     private int _sourceRevision;
 
-    public PlaybackSessionManager(IDebugDb liveDb, string liveDatabaseDirectory, string sessionRootDirectory)
+    public PlaybackSessionManager(DebugDb liveDb, string liveDatabaseDirectory, string sessionRootDirectory)
     {
         _liveDb = liveDb;
         _liveDatabaseDirectory = liveDatabaseDirectory;
@@ -45,7 +45,7 @@ public sealed class PlaybackSessionManager : IDisposable
         thread.Start();
     }
 
-    public IDebugDb PlaybackDb => _playbackDb;
+    public SwitchableDebugDb PlaybackDb => _playbackDb;
     public bool UsingLive => _openedDb is null;
     public string? CurrentSessionMetadataPath => _openedSession?.MetadataPath;
     public string CurrentSourceLabel => UsingLive ? "Live" : _openedSession?.DisplayName ?? "Opened Session";
@@ -117,11 +117,10 @@ public sealed class PlaybackSessionManager : IDisposable
         var db = new DebugDb(databaseDirectory)
             .RegisterKnownTypes();
 
-        var readOnlyDb = new ReadOnlyDebugDb(db);
-        _playbackDb.SetSource(readOnlyDb);
+        _playbackDb.SetSource(db);
 
         RetainForDispose(_openedDb);
-        _openedDb = readOnlyDb;
+        _openedDb = db;
         _openedSession = session;
 
         if (_openedTempDirectory != null && _openedTempDirectory != tempDir)
@@ -384,7 +383,7 @@ public sealed class PlaybackSessionManager : IDisposable
         }
     }
 
-    private void RetainForDispose(IDebugDb? db)
+    private void RetainForDispose(DebugDb? db)
     {
         if (db is not null && !ReferenceEquals(db, _liveDb))
             _retainedDbs.Add(db);

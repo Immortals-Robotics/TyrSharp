@@ -5,8 +5,8 @@ using var userConfigs = new Config.Storage(
     Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Tyr", "user.toml"),
     Config.StorageType.User);
 
-using var debugDbDumper = new Tyr.Common.Debug.Db.DebugDbDumper();
-using var playbackSessions = new Tyr.Gui.Data.PlaybackSessionManager(debugDbDumper.Db, debugDbDumper.DatabaseDirectory, Path.Combine(debugDbDumper.SessionRootDirectory, "sessions"));
+using var debugDbSession = new Tyr.Common.Debug.Db.DebugDbSession();
+using var playbackSessions = new Tyr.Gui.Data.PlaybackSessionManager(debugDbSession.Db, debugDbSession.DatabaseDirectory, Path.Combine(debugDbSession.SessionRootDirectory, "sessions"));
 using var runner = new Tyr.Gui.Runner(playbackSessions, args[0]);
 
 using var sender = new Tyr.Sender.Runner();

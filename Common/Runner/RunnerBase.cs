@@ -1,5 +1,4 @@
-﻿using Tyr.Common.Dataflow;
-using Tyr.Common.Debug;
+﻿using Tyr.Common.Debug;
 using Tyr.Common.Time;
 
 namespace Tyr.Common.Runner;
@@ -41,6 +40,6 @@ public abstract class RunnerBase(int tickRateHz)
             ModuleName = ModuleContext.Current.Value,
             StartTimestamp = CurrentTickStartTimestamp,
         };
-        Hub.Frames.Publish(frame);
+        DebugBus.AppendFrame(frame);
     }
 }

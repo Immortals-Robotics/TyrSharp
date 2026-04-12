@@ -14,7 +14,7 @@ using Color = Tyr.Common.Debug.Drawing.Color;
 namespace Tyr.Gui.Views;
 
 [Configurable]
-public partial class PlotView(IDebugDb debugDb)
+public partial class PlotView(SwitchableDebugDb debugDb)
 {
     public static readonly string WindowTitle = $"{IconFonts.FontAwesome6.ChartLine} Plots";
     [ConfigEntry] private static double TimeAxisMinRange { get; set; } = 1;
