@@ -35,7 +35,7 @@ public sealed partial class Nrf : ISender // TODO: this is untested, test at the
             else AppendCommand(command);
         }
 
-        AppendDemoData();
+        AppendHeartbeat();
 
         Log.ZLogTrace($"Sending {_buffIdx}  bytes to {Address}");
 
@@ -105,8 +105,7 @@ public sealed partial class Nrf : ISender // TODO: this is untested, test at the
         AppendByte(0x00);
     }
 
-    // TODO: rename
-    private void AppendDemoData()
+    private void AppendHeartbeat()
     {
         AppendByte(25);
         AppendByte(0x0A);
