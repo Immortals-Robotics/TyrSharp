@@ -62,7 +62,7 @@ public class GlobalsGenerator : IIncrementalGenerator
                              private static bool UseCachedInstance => CallingModuleName == null || CallingModuleName == ModuleName;
 
                              internal static ILogger Log => UseCachedInstance ? _log : Common.Debug.Registry.GetLogger(CallingModuleName!);
-                             internal static Common.Debug.Assertion.Assert Assert => UseCachedInstance ? _assert : Common.Debug.Registry.GetAssert(CallingModuleName!);
+                             internal static Common.Debug.Assertion.AssertProxy Assert => new(_assert, _assertResolver);
                              internal static Common.Debug.Drawing.Drawer Draw => UseCachedInstance ? _draw : Common.Debug.Registry.GetDrawer(CallingModuleName!);
                              internal static Common.Debug.Plotting.Plotter Plot => UseCachedInstance ? _plot : Common.Debug.Registry.GetPlotter(CallingModuleName!);
                              internal static Random Rand { get; private set; } = null!;
@@ -70,8 +70,17 @@ public class GlobalsGenerator : IIncrementalGenerator
                              // cached owned instances to avoid registry lookups
                              private static ILogger _log = null!;
                              private static Common.Debug.Assertion.Assert _assert = null!;
+                             private static readonly Func<Common.Debug.Assertion.Assert> _assertResolver = ResolveAssert;
                              private static Common.Debug.Drawing.Drawer _draw = null!;
                              private static Common.Debug.Plotting.Plotter _plot = null!;
+
+                             private static Common.Debug.Assertion.Assert ResolveAssert()
+                             {
+                                 var callingModuleName = Common.Debug.ModuleContext.Current.Value;
+                                 return callingModuleName == null || callingModuleName == ModuleName
+                                     ? _assert
+                                     : Common.Debug.Registry.GetAssert(callingModuleName);
+                             }
 
                              [ModuleInitializer]
                              internal static void Init()
