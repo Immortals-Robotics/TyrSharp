@@ -1,3 +1,4 @@
+using Tyr.Common;
 using Tyr.Common.Extensions;
 using Tyr.Common.Math;
 using Tyr.Common.Time;
@@ -11,22 +12,49 @@ public sealed class InterceptBall : ISkill
     public Angle Angle { get; set; }
     public float WaitTimeSeconds { get; set; }
 
+    private BallInterception.InterceptPlan? _lastPlan;
+
     public void Execute(Robot.Robot robot)
     {
+        var ballPosition = Context.Ball.State.Position;
         var ballVelocity = Context.Ball.State.Velocity.Xy();
-        if (ballVelocity.Length() < 100f)
+
+        var trajectory = ServiceLocator.BallTrajectoryFactory.FromState(Context.Ball.State);
+        var centerToDribbler = BallReceiving.ResolveCenterToDribbler(Context.RobotRadius);
+
+        var hasPlan = BallInterception.TryFindPlan(
+            Context.Ball,
+            trajectory,
+            robot.Position,
+            robot.Velocity,
+            robot.TargetAngle,
+            VelocityProfile.Mamooli,
+            Context.Field.RectangleWithBoundary,
+            Context.Field.BallRadius,
+            centerToDribbler,
+            out var plan,
+            _lastPlan);
+
+        if (!hasPlan)
         {
             robot.Halt();
+            _lastPlan = null;
             return;
         }
 
-        var profile = VelocityProfile.Mamooli;
-        var interceptionAngle = ballVelocity.ToAngle();
-        var interceptionTime = BallPrediction.CalculateBallRobotReachTime(robot, interceptionAngle, profile, WaitTimeSeconds);
-        var ballState = BallPrediction.PredictBall(DeltaTime.FromSeconds(interceptionTime));
-        var interceptionPoint = ballState.Position.CircleAroundPoint(ballVelocity.ToAngle(), Context.RobotRadius);
+        var destination = BallReceiving.ClampToLegalDestination(
+            plan.CenterDestination,
+            Context.Field.RectangleWithBoundary,
+            Context.Field.OwnPenaltyArea(),
+            Context.Field.OppPenaltyArea(),
+            BallReceiving.PenaltyAreaMargin);
 
-        robot.Navigate(interceptionPoint, profile, NavigationFlags.BallMediumObstacle);
-        robot.TargetAngle = (ballState.Position - interceptionPoint).ToAngle();
+        robot.Navigate(destination, VelocityProfile.Mamooli, NavigationFlags.NoBallObstacle);
+        robot.TargetAngle = plan.FacingAngle;
+        
+        // Use 0.2s as default activation time for standard InterceptBall
+        robot.Dribbler = plan.TimeSeconds < 0.2f ? 2f : 0f;
+
+        _lastPlan = plan;
     }
 }
