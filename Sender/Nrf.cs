@@ -13,7 +13,7 @@ public sealed partial class Nrf : ISender // TODO: this is untested, test at the
     [ConfigEntry] private static Address Address { get; set; } = new() { Ip = "224.5.92.5", Port = 60005 };
 
     [ConfigEntry("Scale factor to convert mm/s to NRF protocol units")]
-    private static float MotionScaleFactor { get; set; } = 20.0f;
+    private static float MotionScaleFactor { get; set; } = 22.0f;
 
     [ConfigEntry("NRF Move command packet length")]
     private static byte MoveCommandLength { get; set; } = 15;
