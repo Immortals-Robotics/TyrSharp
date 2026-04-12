@@ -1,5 +1,7 @@
 using System.Numerics;
 using Tyr.Common.Extensions;
+using Tyr.Common.Math;
+using Tyr.Common.Math.Shapes;
 using Tyr.Common.Time;
 using Tyr.Common.Vision.Data;
 using Tyr.Vision.Data;
@@ -144,6 +146,25 @@ public readonly struct BallChip : IBallTrajectory, IBallTouchdownTrajectory
             Acceleration = rollingAcceleration2D.Xyz(),
             SpinRadians = spin
         };
+    }
+
+    public Vector2 ClosestRollingPoint(Vector2 point)
+    {
+        var start = _initialPosition.Xy();
+        var end = GetState(RestTime()).Position;
+
+        if (Utils.ApproximatelyEqual(start, end))
+        {
+            return start;
+        }
+
+        return new LineSegment { Start = start, End = end }.ClosestPoint(point);
+    }
+
+    public float GetTravelDistance(DeltaTime time)
+    {
+        var state = GetState(time);
+        return Vector2.Distance(_initialPosition.Xy(), state.Position);
     }
 
     private DeltaTime RestTime()

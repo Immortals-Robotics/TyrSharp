@@ -1,4 +1,6 @@
-﻿using System.Numerics;
+using System.Numerics;
+using Tyr.Common.Math;
+using Tyr.Common.Math.Shapes;
 using Tyr.Common.Time;
 using Tyr.Common.Vision.Data;
 
@@ -107,6 +109,35 @@ public readonly struct BallFlat : IBallTrajectory
             Acceleration = _accelerationRoll.Xyz(),
             SpinRadians = rollSpinRadians
         };
+    }
+
+    public Vector2 ClosestRollingPoint(Vector2 point)
+    {
+        var start = _initial.Position;
+        var end = GetState(RestTime()).Position;
+
+        if (Utils.ApproximatelyEqual(start, end))
+        {
+            return start;
+        }
+
+        if (Utils.ApproximatelyEqual(_switchPosition, start))
+        {
+            return new LineSegment { Start = start, End = end }.ClosestPoint(point);
+        }
+
+        var first = new LineSegment { Start = start, End = _switchPosition }.ClosestPoint(point);
+        var second = new LineSegment { Start = _switchPosition, End = end }.ClosestPoint(point);
+
+        return Vector2.DistanceSquared(point, first) <= Vector2.DistanceSquared(point, second)
+            ? first
+            : second;
+    }
+
+    public float GetTravelDistance(DeltaTime time)
+    {
+        var state = GetState(time);
+        return Vector2.Distance(_initial.Position, state.Position);
     }
 
     private DeltaTime RestTime()

@@ -1,4 +1,5 @@
-﻿using Tyr.Common.Time;
+using System.Numerics;
+using Tyr.Common.Time;
 
 namespace Tyr.Common.Vision.Data;
 
@@ -14,6 +15,7 @@ public interface IBallTrajectory
     /// <returns>The ball state at the specified time</returns>
     public BallState GetState(DeltaTime time);
 
-    // TODO: tigers has tons of useful helpers here
-    // replicate if / when needed
+    public Vector2 ClosestRollingPoint(Vector2 point);
+
+    public float GetTravelDistance(DeltaTime time);
 }
