@@ -16,6 +16,7 @@ public sealed partial class RobotStatusPublisher : IDisposable
     [ConfigEntry] private static int StatusPort { get; set; } = 5670;
     
     private readonly ConcurrentDictionary<int, ZmqReceiver<StatusUpdate>> _receivers = new();
+    private readonly HashSet<int> _activeIds = [];
     private readonly Subscriber<IReadOnlyList<DiscoveredRobot>> _discoverySubscriber;
     private readonly RunnerSync _managementRunner;
 
@@ -33,11 +34,11 @@ public sealed partial class RobotStatusPublisher : IDisposable
         if (!_discoverySubscriber.Reader.TryRead(out var robots))
             return false;
 
-        var activeIds = new HashSet<int>();
+        _activeIds.Clear();
         foreach (var robot in robots)
         {
             if (!robot.IsOnline) continue;
-            activeIds.Add(robot.Id);
+            _activeIds.Add(robot.Id);
 
             if (!_receivers.TryGetValue(robot.Id, out var receiver))
             {
@@ -62,10 +63,10 @@ public sealed partial class RobotStatusPublisher : IDisposable
         }
 
         // Clean up timed-out robots
-        var toRemove = _receivers.Keys.Where(id => !activeIds.Contains(id)).ToList();
-        foreach (var id in toRemove)
+        foreach (var pair in _receivers)
         {
-            if (_receivers.TryRemove(id, out var receiver))
+            var id = pair.Key;
+            if (!_activeIds.Contains(id) && _receivers.TryRemove(id, out var receiver))
             {
                 Log.ZLogInformation($"Closing status stream for Robot {id}");
                 receiver.Dispose();
