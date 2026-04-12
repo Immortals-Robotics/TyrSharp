@@ -205,7 +205,7 @@ public sealed partial class ManualControlView
 
         if (requiresPoint || snapshot.HasTargetPoint)
         {
-            ImGui.TextColored(Color.Zinc400, "Right-click on the field to set the main target immediately.");
+            ImGui.TextColored(Color.Zinc400, "Right-click on the field and choose 'Set Manual Target Here'.");
         }
 
         if (snapshot.Action == ManualSkillAction.GoToPoint)
@@ -269,7 +269,7 @@ public sealed partial class ManualControlView
 
         if (snapshot.AwaitingLookTarget)
         {
-            ImGui.TextColored(Color.Green400, "Right-click the field to set the look target.");
+            ImGui.TextColored(Color.Green400, "Right-click the field and choose 'Set Manual Look Target Here'.");
         }
 
         if (snapshot.Running)

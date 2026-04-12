@@ -179,6 +179,7 @@ public sealed partial class FieldView : IDisposable
             ImGui.PushClipRect(viewportOffset, viewportOffset + viewportSize, true);
 
             DrawField();
+            TryShowContextMenu(isLive);
 
             foreach (var module in prepared.Modules)
             {
@@ -300,6 +301,7 @@ public sealed partial class FieldView : IDisposable
         _fitCameraPending = false;
     }
 
+            foreach (var arc in _fieldSize.Value.Arcs)
     private static Common.Math.Shapes.Rectangle GetFieldContentBounds(FieldSize fieldSize)
     {
         var halfFieldWidth = fieldSize.FieldLength / 2f;
@@ -434,6 +436,8 @@ public sealed partial class FieldView : IDisposable
             },
             new FieldLineSegment
             {
+                DrawInternal(new Debug.Drawing.Drawables.Arc(arc),
+                    LineColor, Debug.Drawing.Options.Outline(arc.Thickness));
                 Name = "RightPenaltyStretch",
                 Type = FieldShapeType.RightPenaltyStretch,
                 P1 = new Vector2(halfFieldWidth - penaltyDepth, -halfPenaltyWidth),
@@ -466,6 +470,7 @@ public sealed partial class FieldView : IDisposable
             return fieldSize.Arcs;
         }
 
+        _renderer.Draw(_fieldDraws, null);
         return
         [
             new FieldCircularArc
@@ -482,46 +487,16 @@ public sealed partial class FieldView : IDisposable
     }
 
     private void TryCaptureManualTarget(bool isLive)
+    private void TryShowContextMenu(bool isLive)
     {
-        if (!isLive || !ImGui.IsWindowHovered(ImGuiHoveredFlags.None))
-        {
-            return;
-        }
-
         var team = ManualControlView.SelectedManualTeam;
-        if (team == TeamColor.Unknown)
+        var manualActive = false;
+        ManualControlSnapshot manualSnapshot = default;
+        if (isLive && team != TeamColor.Unknown)
         {
-            return;
+            manualSnapshot = TeamRunner.GetManualControlSnapshot(team);
+            manualActive = manualSnapshot.Enabled;
         }
-
-        var snapshot = TeamRunner.GetManualControlSnapshot(team);
-        if (!snapshot.Enabled)
-        {
-            return;
-        }
-
-        if (ImGui.IsMouseReleased(ImGuiMouseButton.Right) && !ImGui.IsMouseDragging(ImGuiMouseButton.Right))
-        {
-            var point = _renderer.Camera.ScreenToWorld(ImGui.GetMousePos());
-
-            if (snapshot.AwaitingLookTarget)
-            {
-                TeamRunner.SetManualLookTarget(team, point);
-            }
-            else
-            {
-                TeamRunner.SetManualTargetPoint(team, point);
-            }
-        }
-    }
-
-    private void TryShowContextMenu()
-    {
-        // Don't show when manual control is handling right-click
-        var team = ManualControlView.SelectedManualTeam;
-        var manualActive = team != TeamColor.Unknown
-                        && TeamRunner.GetManualControlSnapshot(team).Enabled;
-        if (manualActive) return;
 
         if (ImGui.IsWindowHovered(ImGuiHoveredFlags.None)
             && ImGui.IsMouseReleased(ImGuiMouseButton.Right)
@@ -536,6 +511,26 @@ public sealed partial class FieldView : IDisposable
             ImGui.TextColored(Debug.Drawing.Color.Zinc400,
                 $"{_contextMenuWorldPos.X:F0}, {_contextMenuWorldPos.Y:F0} mm");
             ImGui.Separator();
+
+            if (manualActive)
+            {
+                if (manualSnapshot.AwaitingLookTarget)
+                {
+                    if (ImGui.MenuItem($"{IconFonts.FontAwesome6.Crosshairs}  Set Manual Look Target Here"))
+                    {
+                        TeamRunner.SetManualLookTarget(team, _contextMenuWorldPos);
+                    }
+                }
+                else
+                {
+                    if (ImGui.MenuItem($"{IconFonts.FontAwesome6.LocationCrosshairs}  Set Manual Target Here"))
+                    {
+                        TeamRunner.SetManualTargetPoint(team, _contextMenuWorldPos);
+                    }
+                }
+
+                ImGui.Separator();
+            }
 
             if (SimulatorChannel.SimulatorRunning
                 && ImGui.MenuItem($"{IconFonts.FontAwesome6.Football}  Teleport Ball Here"))

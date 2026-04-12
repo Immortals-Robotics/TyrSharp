@@ -406,7 +406,7 @@ internal sealed class ManualControlState(TeamColor team)
                     return;
                 }
 
-                _dribbleToDirection.Direction = _targetPoint.AngleWith(Context.Ball.State.Position);
+                _dribbleToDirection.Direction = Context.Ball.State.Position.AngleWith(_targetPoint);
                 _dribbleToDirection.Execute(robot);
                 return;
 
@@ -455,9 +455,9 @@ internal sealed class ManualControlState(TeamColor team)
     {
         if (_shotTargetMode == ManualShotTargetMode.OpenAngle)
         {
-            return OpenAngle.CalculateOpenAngleToGoal(Context.Ball.State.Position, robot).Center + Angle.Pi;
+            return OpenAngle.CalculateOpenAngleToGoal(Context.Ball.State.Position, robot).Center;
         }
 
-        return _targetPoint.AngleWith(Context.Ball.State.Position);
+        return Context.Ball.State.Position.AngleWith(_targetPoint);
     }
 }
