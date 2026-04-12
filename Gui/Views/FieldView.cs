@@ -187,8 +187,7 @@ public sealed partial class FieldView : IDisposable
 
             ImGui.PopClipRect();
 
-            TryCaptureManualTarget(isLive);
-            TryShowContextMenu();
+            TryShowContextMenu(isLive);
 
             ShowStats();
 
@@ -481,48 +480,8 @@ public sealed partial class FieldView : IDisposable
         ];
     }
 
-    private void TryCaptureManualTarget(bool isLive)
+    private void TryShowContextMenu(bool isLive)
     {
-        if (!isLive || !ImGui.IsWindowHovered(ImGuiHoveredFlags.None))
-        {
-            return;
-        }
-
-        var team = ManualControlView.SelectedManualTeam;
-        if (team == TeamColor.Unknown)
-        {
-            return;
-        }
-
-        var snapshot = TeamRunner.GetManualControlSnapshot(team);
-        if (!snapshot.Enabled)
-        {
-            return;
-        }
-
-        if (ImGui.IsMouseReleased(ImGuiMouseButton.Right) && !ImGui.IsMouseDragging(ImGuiMouseButton.Right))
-        {
-            var point = _renderer.Camera.ScreenToWorld(ImGui.GetMousePos());
-
-            if (snapshot.AwaitingLookTarget)
-            {
-                TeamRunner.SetManualLookTarget(team, point);
-            }
-            else
-            {
-                TeamRunner.SetManualTargetPoint(team, point);
-            }
-        }
-    }
-
-    private void TryShowContextMenu()
-    {
-        // Don't show when manual control is handling right-click
-        var team = ManualControlView.SelectedManualTeam;
-        var manualActive = team != TeamColor.Unknown
-                        && TeamRunner.GetManualControlSnapshot(team).Enabled;
-        if (manualActive) return;
-
         if (ImGui.IsWindowHovered(ImGuiHoveredFlags.None)
             && ImGui.IsMouseReleased(ImGuiMouseButton.Right)
             && !ImGui.IsMouseDragging(ImGuiMouseButton.Right))
@@ -536,6 +495,25 @@ public sealed partial class FieldView : IDisposable
             ImGui.TextColored(Debug.Drawing.Color.Zinc400,
                 $"{_contextMenuWorldPos.X:F0}, {_contextMenuWorldPos.Y:F0} mm");
             ImGui.Separator();
+
+            var team = ManualControlView.SelectedManualTeam;
+            if (isLive && team != TeamColor.Unknown)
+            {
+                var snapshot = TeamRunner.GetManualControlSnapshot(team);
+                if (snapshot.Enabled)
+                {
+                    if (ImGui.MenuItem($"{IconFonts.FontAwesome6.Crosshairs}  Set Manual Target"))
+                    {
+                        TeamRunner.SetManualTargetPoint(team, _contextMenuWorldPos);
+                    }
+
+                    if (ImGui.MenuItem($"{IconFonts.FontAwesome6.Eye}  Set Manual Look Target"))
+                    {
+                        TeamRunner.SetManualLookTarget(team, _contextMenuWorldPos);
+                    }
+                    ImGui.Separator();
+                }
+            }
 
             if (SimulatorChannel.SimulatorRunning
                 && ImGui.MenuItem($"{IconFonts.FontAwesome6.Football}  Teleport Ball Here"))
