@@ -1,4 +1,4 @@
-using Tyr.Common.Config;
+﻿using Tyr.Common.Config;
 using Tyr.Common.Math.Shapes;
 using Tyr.Soccer.Navigation.Trajectory;
 
@@ -11,7 +11,7 @@ public partial class Planner
     // finds a trajectory that consists of
     // 1- init to time t1 somewhere on the input trajectory
     // 2- trajectory from the state at t1 to target
-    private TrajectoryChained FindChainedTrajectory(Trajectory2D trajectory)
+    private Trajectory2DChained FindChainedTrajectory(Trajectory2D trajectory)
     {
         var rndOffset = _random.Get(0f, ChainSearchTimeStep);
 
@@ -37,7 +37,7 @@ public partial class Planner
             var second = TrajectoryBangBang.Make2D(pos, vel, _target, Profile);
 
             if (!Map.HasCollision(second).collided || prefixCollision)
-                return new TrajectoryChained()
+                return new Trajectory2DChained()
                 {
                     First = trajectory,
                     Second = second,
@@ -51,7 +51,7 @@ public partial class Planner
         var velEnd = trajectory.GetVelocity(tEnd);
 
         var targetTrajectory = TrajectoryBangBang.Make2D(posEnd, velEnd, _target, Profile);
-        return new TrajectoryChained()
+        return new Trajectory2DChained()
         {
             First = trajectory,
             Second = targetTrajectory,

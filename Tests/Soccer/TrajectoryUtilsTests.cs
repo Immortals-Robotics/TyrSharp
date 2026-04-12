@@ -34,8 +34,7 @@ public sealed class TrajectoryUtilsTests
 
     private static Trajectory2D CreateTrajectory2D()
     {
-        var trajectoryX = new Trajectory1DPieced();
-        trajectoryX.AddPiece(new Trajectory1DConstantAcc
+        var trajectoryX = Trajectory1DPieced.Create(new Trajectory1DConstantAcc
         {
             StartPosition = 0f,
             StartVelocity = 1f,
@@ -44,8 +43,7 @@ public sealed class TrajectoryUtilsTests
             EndTime = 1f,
         });
 
-        var trajectoryY = new Trajectory1DPieced();
-        trajectoryY.AddPiece(new Trajectory1DConstantAcc
+        var trajectoryY = Trajectory1DPieced.Create(new Trajectory1DConstantAcc
         {
             StartPosition = 0f,
             StartVelocity = 2f,

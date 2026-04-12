@@ -1,26 +1,64 @@
-using MemoryPack;
+using System.Runtime.CompilerServices;
 
 namespace Tyr.Soccer.Navigation.Trajectory;
 
-[MemoryPackable]
-public partial class Trajectory1DPieced : ITrajectory<float>
+[InlineArray(Trajectory1DPieced.MaxParts)]
+public struct TrajectoryPieceBuffer
 {
-    private const int MaxParts = 3;
+    private Trajectory1DConstantAcc _element0;
+}
+
+public readonly struct Trajectory1DPieced : ITrajectory<float>
+{
+    internal const int MaxParts = 3;
     private const int InvalidIdx = -1;
 
-    public List<Trajectory1DConstantAcc> Pieces { get; private set; } = [];
+    private readonly TrajectoryPieceBuffer _pieces;
+    public int Count { get; }
 
-    public void AddPiece(Trajectory1DConstantAcc piece)
+    private Trajectory1DPieced(int count, TrajectoryPieceBuffer pieces)
     {
-        Assert.IsTrue(Pieces.Count < MaxParts);
-        Pieces.Add(piece);
+        Count = count;
+        _pieces = pieces;
+    }
+
+    public static Trajectory1DPieced Empty => default;
+
+    public static Trajectory1DPieced Create(
+        Trajectory1DConstantAcc piece0)
+    {
+        var pieces = default(TrajectoryPieceBuffer);
+        pieces[0] = piece0;
+        return new Trajectory1DPieced(1, pieces);
+    }
+
+    public static Trajectory1DPieced Create(
+        Trajectory1DConstantAcc piece0,
+        Trajectory1DConstantAcc piece1)
+    {
+        var pieces = default(TrajectoryPieceBuffer);
+        pieces[0] = piece0;
+        pieces[1] = piece1;
+        return new Trajectory1DPieced(2, pieces);
+    }
+
+    public static Trajectory1DPieced Create(
+        Trajectory1DConstantAcc piece0,
+        Trajectory1DConstantAcc piece1,
+        Trajectory1DConstantAcc piece2)
+    {
+        var pieces = default(TrajectoryPieceBuffer);
+        pieces[0] = piece0;
+        pieces[1] = piece1;
+        pieces[2] = piece2;
+        return new Trajectory1DPieced(3, pieces);
     }
 
     private int FindPieceIndex(float t)
     {
-        for (var i = 0; i < Pieces.Count; i++)
+        for (var i = 0; i < Count; i++)
         {
-            if (t <= Pieces[i].EndTime)
+            if (t <= _pieces[i].EndTime)
                 return i;
         }
 
@@ -28,31 +66,37 @@ public partial class Trajectory1DPieced : ITrajectory<float>
         return InvalidIdx;
     }
 
-    private Trajectory1DConstantAcc First => Pieces[0];
-    private Trajectory1DConstantAcc Last => Pieces[^1];
-
     public float GetPosition(float t)
     {
         t = Math.Clamp(t, StartTime, EndTime);
         var idx = FindPieceIndex(t);
-        return idx == InvalidIdx ? 0f : Pieces[idx].GetPosition(t);
+        return idx == InvalidIdx ? 0f : _pieces[idx].GetPosition(t);
     }
 
     public float GetVelocity(float t)
     {
         t = Math.Clamp(t, StartTime, EndTime);
         var idx = FindPieceIndex(t);
-        return idx == InvalidIdx ? 0f : Pieces[idx].GetVelocity(t);
+        return idx == InvalidIdx ? 0f : _pieces[idx].GetVelocity(t);
     }
 
     public float GetAcceleration(float t)
     {
         t = Math.Clamp(t, StartTime, EndTime);
         var idx = FindPieceIndex(t);
-        return idx == InvalidIdx ? 0f : Pieces[idx].GetAcceleration(t);
+        return idx == InvalidIdx ? 0f : _pieces[idx].GetAcceleration(t);
+    }
+ 
+    public Trajectory1DConstantAcc this[int index]
+    {
+        get
+        {
+            Assert.IsTrue(index >= 0 && index < Count);
+            return _pieces[index];
+        }
     }
 
-    public float StartTime => Pieces.Count == 0 ? 0f : First.StartTime;
-    public float EndTime => Pieces.Count == 0 ? 0f : Last.EndTime;
+    public float StartTime => Count == 0 ? 0f : _pieces[0].StartTime;
+    public float EndTime => Count == 0 ? 0f : _pieces[Count - 1].EndTime;
     public float Duration => Math.Max(0f, EndTime - StartTime);
 }

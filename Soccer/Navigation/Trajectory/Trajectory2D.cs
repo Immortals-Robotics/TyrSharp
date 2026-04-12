@@ -1,13 +1,11 @@
 using System.Numerics;
-using MemoryPack;
 
 namespace Tyr.Soccer.Navigation.Trajectory;
 
-[MemoryPackable]
-public partial record Trajectory2D : ITrajectory<Vector2>
+public readonly struct Trajectory2D : ITrajectory<Vector2>
 {
-    public Trajectory1DPieced TrajectoryX { get; init; } = new();
-    public Trajectory1DPieced TrajectoryY { get; init; } = new();
+    public Trajectory1DPieced TrajectoryX { get; init; }
+    public Trajectory1DPieced TrajectoryY { get; init; }
 
     public Vector2 GetPosition(float t)
     {

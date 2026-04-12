@@ -50,10 +50,7 @@ public static class TrajectoryBangBang
             StartPosition = s1
         };
 
-        var result = new Trajectory1DPieced();
-        result.AddPiece(p0);
-        result.AddPiece(p1);
-        return result;
+        return Trajectory1DPieced.Create(p0, p1);
     }
 
     private static Trajectory1DPieced CalcTrapz(float s0, float v0, float v1, float s3, float aMax)
@@ -96,11 +93,7 @@ public static class TrajectoryBangBang
             StartPosition = s2
         };
 
-        var result = new Trajectory1DPieced();
-        result.AddPiece(p0);
-        result.AddPiece(p1);
-        result.AddPiece(p2);
-        return result;
+        return Trajectory1DPieced.Create(p0, p1, p2);
     }
 
     public static Trajectory1DPieced Make1D(
@@ -139,8 +132,7 @@ public static class TrajectoryBangBang
 
         while (inc > 1e-7f)
         {
-            var sA = MathF.Sin(alpha);
-            var cA = MathF.Cos(alpha);
+            var (sA, cA) = MathF.SinCos(alpha);
 
             trajectoryX = Make1D(s0.X, s1.X, v0.X, vmax * cA, acc * cA);
             trajectoryY = Make1D(s0.Y, s1.Y, v0.Y, vmax * sA, acc * sA);

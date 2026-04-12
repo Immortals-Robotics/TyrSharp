@@ -46,7 +46,7 @@ public partial class Planner
 
         var intermediatePoints = GenerateIntermediateTargetsSystematic(initialPos);
 
-        TrajectoryChained? bestTrajectory = null;
+        Trajectory2DChained? bestTrajectory = null;
         var minPenalty = float.MaxValue;
 
         foreach (var point in intermediatePoints)
@@ -89,7 +89,7 @@ public partial class Planner
 
         TrajectoryUtils.DrawTrajectory(bestTrajectory, Color.Blue300);
 
-        var first = bestTrajectory.First;
+        var first = bestTrajectory.Value.First;
         var intermediateTarget = first.GetPosition(first.EndTime);
 
         Draw.DrawCircle(intermediateTarget, 40f, Color.Red400, Options.Filled);

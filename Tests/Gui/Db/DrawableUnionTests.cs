@@ -46,7 +46,7 @@ public sealed class DrawableUnionTests
         var restored = MemoryPackSerializer.Deserialize<Command>(bytes);
 
         var trajectory = Assert.IsType<TrajectoryDrawable>(restored.Drawable);
-        Assert.Equal(2, trajectory.Trajectory.TrajectoryX.Pieces.Count);
+        Assert.Equal(2, trajectory.Trajectory.TrajectoryX.Count);
         Assert.Equal(new(2f, 3f), trajectory.Trajectory.GetPosition(1f));
     }
 
@@ -63,41 +63,41 @@ public sealed class DrawableUnionTests
 
     private static Trajectory2D CreateTrajectory2D()
     {
-        var trajectoryX = new Trajectory1DPieced();
-        trajectoryX.AddPiece(new Trajectory1DConstantAcc
-        {
-            StartPosition = 0f,
-            StartVelocity = 2f,
-            Acceleration = 0f,
-            StartTime = 0f,
-            EndTime = 1f,
-        });
-        trajectoryX.AddPiece(new Trajectory1DConstantAcc
-        {
-            StartPosition = 2f,
-            StartVelocity = 2f,
-            Acceleration = 0f,
-            StartTime = 1f,
-            EndTime = 2f,
-        });
+        var trajectoryX = Trajectory1DPieced.Create(
+            new Trajectory1DConstantAcc
+            {
+                StartPosition = 0f,
+                StartVelocity = 2f,
+                Acceleration = 0f,
+                StartTime = 0f,
+                EndTime = 1f,
+            },
+            new Trajectory1DConstantAcc
+            {
+                StartPosition = 2f,
+                StartVelocity = 2f,
+                Acceleration = 0f,
+                StartTime = 1f,
+                EndTime = 2f,
+            });
 
-        var trajectoryY = new Trajectory1DPieced();
-        trajectoryY.AddPiece(new Trajectory1DConstantAcc
-        {
-            StartPosition = 0f,
-            StartVelocity = 3f,
-            Acceleration = 0f,
-            StartTime = 0f,
-            EndTime = 1f,
-        });
-        trajectoryY.AddPiece(new Trajectory1DConstantAcc
-        {
-            StartPosition = 3f,
-            StartVelocity = 3f,
-            Acceleration = 0f,
-            StartTime = 1f,
-            EndTime = 2f,
-        });
+        var trajectoryY = Trajectory1DPieced.Create(
+            new Trajectory1DConstantAcc
+            {
+                StartPosition = 0f,
+                StartVelocity = 3f,
+                Acceleration = 0f,
+                StartTime = 0f,
+                EndTime = 1f,
+            },
+            new Trajectory1DConstantAcc
+            {
+                StartPosition = 3f,
+                StartVelocity = 3f,
+                Acceleration = 0f,
+                StartTime = 1f,
+                EndTime = 2f,
+            });
 
         return new Trajectory2D
         {

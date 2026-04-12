@@ -2,10 +2,10 @@
 
 namespace Tyr.Soccer.Navigation.Trajectory;
 
-public record TrajectoryChained : ITrajectory<Vector2>
+public readonly struct Trajectory2DChained : ITrajectory<Vector2>
 {
-    public required ITrajectory<Vector2> First { get; init; }
-    public required ITrajectory<Vector2> Second { get; init; }
+    public required Trajectory2D First { get; init; }
+    public required Trajectory2D Second { get; init; }
     public float CutTime { get; init; }
 
     public Vector2 GetPosition(float t) =>

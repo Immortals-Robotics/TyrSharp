@@ -5,7 +5,7 @@ namespace Tyr.Soccer.Navigation.Planner;
 
 public partial class Planner
 {
-    private float CalculateTrajectoryPenalty(TrajectoryChained trajectory)
+    private float CalculateTrajectoryPenalty(Trajectory2DChained trajectory)
     {
         var penalty = 0f;
 
