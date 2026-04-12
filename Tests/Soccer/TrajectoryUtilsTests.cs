@@ -1,9 +1,11 @@
 using System.Numerics;
-using Tyr.Common.Dataflow;
 using Tyr.Common.Debug;
+using Tyr.Common.Debug.Db;
 using Tyr.Common.Debug.Drawing;
 using Tyr.Common.Debug.Drawing.Drawables;
+using Tyr.Common.Time;
 using Tyr.Soccer.Navigation.Trajectory;
+using Command = Tyr.Common.Debug.Drawing.Command;
 
 namespace Tyr.Tests.Soccer;
 
@@ -12,24 +14,57 @@ public sealed class TrajectoryUtilsTests
     [Fact]
     public void DrawTrajectory_WithTrajectory2D_PublishesSingleTrajectoryDrawable()
     {
-        using var subscriber = DebugBus.Subscribe<Command>(Mode.All);
+        var directory = Path.Combine(Path.GetTempPath(), "TyrSharp.TrajectoryUtilsTests", Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(directory);
+        try
+        {
+            using var db = new DebugDb(directory).RegisterKnownTypes();
+            DebugBus.SetDb(db);
+            try
+            {
+                TrajectoryUtils.DrawTrajectory(CreateTrajectory2D(), Color.Black);
+            }
+            finally
+            {
+                DebugBus.SetDb(null);
+            }
 
-        TrajectoryUtils.DrawTrajectory(CreateTrajectory2D(), Color.Black);
-
-        Assert.True(subscriber.Reader.TryRead(out var command));
-        Assert.IsType<TrajectoryDrawable>(command.Drawable);
-        Assert.False(subscriber.Reader.TryRead(out _));
+            var commands = db.QueryAll<Command>(Timestamp.Zero, Timestamp.MaxValue).ToArray();
+            Assert.Single(commands);
+            Assert.IsType<TrajectoryDrawable>(commands[0].Drawable);
+        }
+        finally
+        {
+            Directory.Delete(directory, recursive: true);
+        }
     }
 
     [Fact]
     public void DrawTrajectory_WithGenericTrajectory_FallsBackToLineSegments()
     {
-        using var subscriber = DebugBus.Subscribe<Command>(Mode.All);
+        var directory = Path.Combine(Path.GetTempPath(), "TyrSharp.TrajectoryUtilsTests", Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(directory);
+        try
+        {
+            using var db = new DebugDb(directory).RegisterKnownTypes();
+            DebugBus.SetDb(db);
+            try
+            {
+                TrajectoryUtils.DrawTrajectory(new LinearTrajectory(), Color.Black);
+            }
+            finally
+            {
+                DebugBus.SetDb(null);
+            }
 
-        TrajectoryUtils.DrawTrajectory(new LinearTrajectory(), Color.Black);
-
-        Assert.True(subscriber.Reader.TryRead(out var first));
-        Assert.IsType<LineSegment>(first.Drawable);
+            var commands = db.QueryAll<Command>(Timestamp.Zero, Timestamp.MaxValue).ToArray();
+            Assert.NotEmpty(commands);
+            Assert.IsType<LineSegment>(commands[0].Drawable);
+        }
+        finally
+        {
+            Directory.Delete(directory, recursive: true);
+        }
     }
 
     private static Trajectory2D CreateTrajectory2D()

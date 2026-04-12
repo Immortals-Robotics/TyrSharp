@@ -205,25 +205,41 @@ public sealed class DebugDbTests
     [Fact]
     public void DebugBus_PublishesCustomEntryThroughGenericTransport()
     {
-        using var subscriber = DebugBus.Subscribe<TestDebugEntry>(Tyr.Common.Dataflow.Mode.All);
-
-        var entry = new TestDebugEntry
+        var directory = CreateTempDirectory();
+        try
         {
-            Value = 7,
-            Label = "custom",
-            Meta = Meta.GetOrCreate("Vision", layer: "TestLayer", file: "DebugDbTests.cs", member: nameof(DebugBus_PublishesCustomEntryThroughGenericTransport), line: 1),
-            Timestamp = Timestamp.FromNanoseconds(77),
-            ShardKey = "robot-1",
-        };
+            using var db = new DebugDb(directory).RegisterKnownTypes();
+            DebugBus.SetDb(db);
+            try
+            {
+                var entry = new TestDebugEntry
+                {
+                    Value = 7,
+                    Label = "custom",
+                    Meta = Meta.GetOrCreate("Vision", layer: "TestLayer", file: "DebugDbTests.cs", member: nameof(DebugBus_PublishesCustomEntryThroughGenericTransport), line: 1),
+                    Timestamp = Timestamp.FromNanoseconds(77),
+                    ShardKey = "robot-1",
+                };
 
-        DebugBus.Publish(entry);
+                DebugBus.Publish(entry);
 
-        Assert.True(subscriber.Reader.TryRead(out var published));
-        Assert.Equal(entry.Value, published.Value);
-        Assert.Equal(entry.Label, published.Label);
-        Assert.Equal(entry.Meta.Module, published.Meta.Module);
-        Assert.Equal(entry.Timestamp, published.Timestamp);
-        Assert.Equal(entry.ShardKey, published.ShardKey);
+                var results = db.QueryAll<TestDebugEntry>(Timestamp.Zero, Timestamp.MaxValue).ToArray();
+                var published = Assert.Single(results);
+                Assert.Equal(entry.Value, published.Value);
+                Assert.Equal(entry.Label, published.Label);
+                Assert.Equal(entry.Meta.Module, published.Meta.Module);
+                Assert.Equal(entry.Timestamp, published.Timestamp);
+                Assert.Equal(entry.ShardKey, published.ShardKey);
+            }
+            finally
+            {
+                DebugBus.SetDb(null);
+            }
+        }
+        finally
+        {
+            Directory.Delete(directory, recursive: true);
+        }
     }
 
     [Fact]
