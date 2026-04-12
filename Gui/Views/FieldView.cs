@@ -212,7 +212,7 @@ public sealed partial class FieldView : IDisposable
         if (ImGui.Begin("Stats", flags))
         {
             _stringBuilder.Clear();
-            _stringBuilder.AppendFormat("FPS: {0:F1}", _timer.FpsSmooth);
+            _stringBuilder.AppendFormat("FPS: {0:F1}\0", _timer.FpsSmooth);
             ImGui.TextUnformatted(_stringBuilder.AsSpan());
         }
 
