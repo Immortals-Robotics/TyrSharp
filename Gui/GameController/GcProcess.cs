@@ -176,23 +176,34 @@ internal sealed class GcProcess : IDisposable
 
     /// <param name="rconPort">Remote control TCP port (our client connects here).</param>
     /// <param name="uiPort">Web UI port (human browser).</param>
-    public void Start(int rconPort, int uiPort)
+    /// <returns>True if a new process was started, false if already running or attached.</returns>
+    public bool Start(int rconPort, int uiPort)
     {
-        if (_status == Status.Running) return;
+        if (_status == Status.Running) return false;
 
-        if (TryFindExistingProcess()) return;
+        if (TryFindExistingProcess()) return false;
 
         var exe = FindCachedExe();
         if (exe == null)
         {
             _statusMessage = "No binary cached — download first.";
             _status = Status.Error;
-            return;
+            return false;
         }
 
         try
         {
             _process?.Dispose();
+            
+            // Delete state store so we start fresh
+            try
+            {
+                var stateStore = Path.Combine(Environment.CurrentDirectory, "config", "state-store.json.stream");
+                if (File.Exists(stateStore))
+                    File.Delete(stateStore);
+            }
+            catch { /* ignore */ }
+
             _process = new Process();
             _process.StartInfo.FileName = exe;
             _process.StartInfo.Arguments =
@@ -217,11 +228,13 @@ internal sealed class GcProcess : IDisposable
 
             _statusMessage = $"PID {_process.Id}";
             _status = Status.Running;
+            return true;
         }
         catch (Exception ex)
         {
             _statusMessage = ex.Message;
             _status = Status.Error;
+            return false;
         }
     }
 
