@@ -53,10 +53,13 @@ public sealed partial class GameControllerView : IDisposable
     private int  _keeperInputBlue;
     private bool _keeperDirtyBlue;
 
-    public void Draw()
+    public void Update()
     {
         HandleGamepadInput();
+    }
 
+    public void Draw()
+    {
         if (!ImGui.Begin(WindowTitle))
         {
             ImGui.End();

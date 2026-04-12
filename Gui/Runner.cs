@@ -157,6 +157,9 @@ public sealed partial class Runner : IDisposable
 
         _sslLogPlayer?.Tick();
 
+        _gameController.Update();
+        _robotDebug.Update();
+
         // draw
         _window.Clear(Color.Slate950);
         _imgui.NewFrame();

@@ -21,6 +21,7 @@ internal unsafe class SdlWindow : IDisposable
     {
         SDL.SetHint(SDL.SDL_HINT_MOUSE_FOCUS_CLICKTHROUGH, "1");
         SDL.SetHint(SDL.SDL_HINT_MOUSE_AUTO_CAPTURE, "1");
+        SDL.SetHint(SDL.SDL_HINT_JOYSTICK_ALLOW_BACKGROUND_EVENTS, "1");
         SDL.Init((uint)(SDLInitFlags.Events | SDLInitFlags.Video | SDLInitFlags.Gamepad));
     }
 

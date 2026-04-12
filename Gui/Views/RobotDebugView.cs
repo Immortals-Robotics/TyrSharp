@@ -15,7 +15,8 @@ namespace Tyr.Gui.Views;
 public sealed partial class RobotDebugView : IDisposable
 {
     public static readonly string WindowTitle = $"{IconFonts.FontAwesome6.Microchip} Robot Debug";
-    public static bool CapturesGamepad => UseGamepadControl;
+    public static bool CapturesGamepad => UseGamepadControl && _isFocused;
+    private static bool _isFocused;
     private const float MaxGamepadDribblerSpeed = 3.0f;
 
     [ConfigEntry("Command port for the robot", StorageType.User)]
@@ -58,17 +59,23 @@ public sealed partial class RobotDebugView : IDisposable
         _statusSubscriber = Hub.RobotStatus.Subscribe(Mode.All);
     }
 
-    public void Draw()
+    public void Update()
     {
         UpdateDiscovery();
         UpdateStatuses();
         HandleGamepadInput();
+    }
 
+    public void Draw()
+    {
         if (!ImGui.Begin(WindowTitle))
         {
+            _isFocused = false;
             ImGui.End();
             return;
         }
+
+        _isFocused = ImGui.IsWindowFocused(ImGuiFocusedFlags.RootAndChildWindows);
 
         if (ImGui.BeginChild("robot_list", new Vector2(200, 0), ImGuiChildFlags.None, ImGuiWindowFlags.None))
         {
