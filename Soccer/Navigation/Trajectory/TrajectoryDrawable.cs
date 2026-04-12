@@ -14,9 +14,11 @@ public static class TrajectoryDrawableRegistration
 {
     public const ushort Tag = DrawableUnionRegistry.ExternalTagMin;
 
+#pragma warning disable CA2255 // The 'ModuleInitializer' attribute should only be used in
     [ModuleInitializer]
     internal static void Initialize()
     {
         DrawableUnionRegistry.Register(Tag, typeof(TrajectoryDrawable));
     }
+#pragma warning restore CA2255
 }

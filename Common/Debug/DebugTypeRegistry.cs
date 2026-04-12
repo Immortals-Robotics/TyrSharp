@@ -7,6 +7,7 @@ public static class DebugTypeRegistry
 {
     private static readonly ConcurrentDictionary<Type, byte> Types = new();
 
+#pragma warning disable CA2255 // The 'ModuleInitializer' attribute should only be used in
     [ModuleInitializer]
     internal static void Initialize()
     {
@@ -14,6 +15,7 @@ public static class DebugTypeRegistry
         Register<Drawing.Command>();
         Register<Plotting.Command>();
     }
+#pragma warning restore CA2255
 
     public static void Register<T>() where T : struct, IEntry
     {

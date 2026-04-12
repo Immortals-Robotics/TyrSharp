@@ -44,6 +44,7 @@ public static class DrawableUnionRegistry
 
 internal static class CommonDrawableUnionRegistration
 {
+#pragma warning disable CA2255 // The 'ModuleInitializer' attribute should only be used in
     [ModuleInitializer]
     internal static void Initialize()
     {
@@ -59,4 +60,5 @@ internal static class CommonDrawableUnionRegistration
         DrawableUnionRegistry.Register(9, typeof(Text));
         DrawableUnionRegistry.Register(10, typeof(Triangle));
     }
+#pragma warning restore CA2255
 }
