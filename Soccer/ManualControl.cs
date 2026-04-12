@@ -16,6 +16,7 @@ public enum ManualSkillAction
     KickBall,
     WaitForBall,
     InterceptBall,
+    InterceptV2,
     OneTouch,
     TurnAndShoot,
     DribbleToDirection,
@@ -80,6 +81,7 @@ internal sealed class ManualControlState(TeamColor team)
     private readonly KickBall _kickBall = new();
     private readonly WaitForBall _waitForBall = new();
     private readonly InterceptBall _interceptBall = new();
+    private readonly InterceptV2 _interceptV2 = new();
     private readonly OneTouch _oneTouch = new();
     private readonly TurnAndShoot _turnAndShoot = new();
     private readonly DribbleToDirection _dribbleToDirection = new();
@@ -371,6 +373,10 @@ internal sealed class ManualControlState(TeamColor team)
                 _interceptBall.Execute(robot);
                 return;
 
+            case ManualSkillAction.InterceptV2:
+                _interceptV2.Execute(robot);
+                return;
+
             case ManualSkillAction.OneTouch:
                 if (RequiresTargetPoint() && !_hasTargetPoint)
                 {
@@ -422,6 +428,7 @@ internal sealed class ManualControlState(TeamColor team)
             ManualSkillAction.KickBall or
             ManualSkillAction.WaitForBall or
             ManualSkillAction.InterceptBall or
+            ManualSkillAction.InterceptV2 or
             ManualSkillAction.OneTouch or
             ManualSkillAction.TurnAndShoot or
             ManualSkillAction.DribbleToDirection;
