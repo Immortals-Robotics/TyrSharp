@@ -61,6 +61,8 @@ public sealed partial class LogView(IDebugDb debugDb) : IDisposable
         }
     }
 
+    private readonly List<Entry> _filteredEntries = [];
+
     internal void Draw(PreparedData prepared, bool isLive)
     {
         if (ImGui.Begin(WindowTitle, ImGuiWindowFlags.AlwaysVerticalScrollbar))
@@ -69,13 +71,14 @@ public sealed partial class LogView(IDebugDb debugDb) : IDisposable
                                           ImGuiTableFlags.Reorderable |
                                           ImGuiTableFlags.HighlightHoveredColumn |
                                           ImGuiTableFlags.RowBg | ImGuiTableFlags.BordersInnerH |
-                                          ImGuiTableFlags.Sortable;
+                                          ImGuiTableFlags.Sortable | ImGuiTableFlags.ScrollY;
 
             if (ImGui.BeginTable("logs", 7, flags))
             {
                 _filterTested = 0;
                 _filterPassed = 0;
 
+                ImGui.TableSetupScrollFreeze(0, 1);
                 ImGui.TableSetupColumn("Icon",
                     ImGuiTableColumnFlags.WidthFixed | ImGuiTableColumnFlags.NoHide |
                     ImGuiTableColumnFlags.NoHeaderLabel | ImGuiTableColumnFlags.NoResize |
@@ -117,6 +120,7 @@ public sealed partial class LogView(IDebugDb debugDb) : IDisposable
 
                 DrawSearchAndFilterControls();
 
+                _filteredEntries.Clear();
                 foreach (var log in prepared.Entries)
                 {
                     _filterTested += 1;
@@ -124,11 +128,20 @@ public sealed partial class LogView(IDebugDb debugDb) : IDisposable
                         !_filter.PassFilter(log.Meta.Module))
                         continue;
                     _filterPassed += 1;
-
-                    ImGui.TableNextRow();
-
-                    DrawLogEntry(log);
+                    _filteredEntries.Add(log);
                 }
+
+                ImGuiListClipperPtr clipper = ImGui.ImGuiListClipper();
+                clipper.Begin(_filteredEntries.Count);
+                while (clipper.Step())
+                {
+                    for (int i = clipper.DisplayStart; i < clipper.DisplayEnd; i++)
+                    {
+                        ImGui.TableNextRow();
+                        DrawLogEntry(_filteredEntries[i]);
+                    }
+                }
+                clipper.End();
 
                 ImGui.PopFont();
 

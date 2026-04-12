@@ -174,14 +174,21 @@ public sealed partial class FieldView : IDisposable
                 }
             }
 
+            var viewportOffset = _renderer.Camera.Viewport.Offset;
+            var viewportSize = _renderer.Camera.Viewport.Size;
+            ImGui.PushClipRect(viewportOffset, viewportOffset + viewportSize, true);
+
             DrawField();
-            TryCaptureManualTarget(isLive);
-            TryShowContextMenu();
 
             foreach (var module in prepared.Modules)
             {
-                _renderer.Draw(module.Commands, null);
+                _renderer.Draw(module.Commands, null, pushClipRect: false);
             }
+
+            ImGui.PopClipRect();
+
+            TryCaptureManualTarget(isLive);
+            TryShowContextMenu();
 
             ShowStats();
 

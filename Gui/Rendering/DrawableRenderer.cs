@@ -23,7 +23,7 @@ internal partial class DrawableRenderer
 
     private ImDrawListPtr _drawList;
 
-    internal void Draw(IReadOnlyList<Command> commands, DebugFilter? filter)
+    internal void Draw(IReadOnlyList<Command> commands, DebugFilter? filter, bool pushClipRect = true)
     {
         if (commands.Count == 0) return;
 
@@ -32,7 +32,10 @@ internal partial class DrawableRenderer
         _drawList = ImGui.GetWindowDrawList();
 
         // restrict the renderings to the camera viewport
-        ImGui.PushClipRect(Camera.Viewport.Offset, Camera.Viewport.Offset + Camera.Viewport.Size, true);
+        if (pushClipRect)
+        {
+            ImGui.PushClipRect(Camera.Viewport.Offset, Camera.Viewport.Offset + Camera.Viewport.Size, true);
+        }
 
         foreach (var command in commands)
         {
@@ -76,7 +79,10 @@ internal partial class DrawableRenderer
             }
         }
 
-        ImGui.PopClipRect();
+        if (pushClipRect)
+        {
+            ImGui.PopClipRect();
+        }
     }
 
     private void DrawArrow(Arrow arrow, Color color, Options options)
@@ -111,13 +117,13 @@ internal partial class DrawableRenderer
 
         if (options.IsFilled)
         {
-            _drawList.AddCircleFilled(center, radius, ImGui.ColorConvertFloat4ToU32(color));
+            _drawList.AddCircleFilled(center, radius, ImGui.ColorConvertFloat4ToU32(color), 64);
         }
 
         if (!Utils.ApproximatelyZero(thickness))
         {
             var outlineColor = options.IsFilled ? FilledOutlineColor : color;
-            _drawList.AddCircle(center, radius, ImGui.ColorConvertFloat4ToU32(outlineColor), thickness);
+            _drawList.AddCircle(center, radius, ImGui.ColorConvertFloat4ToU32(outlineColor), 64, thickness);
         }
     }
 
@@ -130,13 +136,13 @@ internal partial class DrawableRenderer
 
         if (options.IsFilled)
         {
-            _drawList.PathArcTo(center, radius, -arc.Start.Rad, -arc.End.Rad);
+            _drawList.PathArcTo(center, radius, -arc.Start.Rad, -arc.End.Rad, 64);
             _drawList.PathFillConvex(ImGui.ColorConvertFloat4ToU32(color));
         }
 
         if (!Utils.ApproximatelyZero(thickness))
         {
-            _drawList.PathArcTo(center, radius, -arc.Start.Rad, -arc.End.Rad);
+            _drawList.PathArcTo(center, radius, -arc.Start.Rad, -arc.End.Rad, 64);
             var outlineColor = options.IsFilled ? FilledOutlineColor : color;
             var flags = arc.Closed ? ImDrawFlags.Closed : ImDrawFlags.None;
             _drawList.PathStroke(ImGui.ColorConvertFloat4ToU32(outlineColor), flags, thickness);
