@@ -15,10 +15,8 @@ public sealed partial class DebugDbDumper : IDisposable
     [ConfigEntry] private static int ViewerPort { get; set; } = 9000;
     [ConfigEntry] private static ThreadPriority RunnerPriority { get; set; } = ThreadPriority.BelowNormal;
 
-    private readonly Subscriber<Debug.Logging.Entry> _logSubscriber = Hub.Logs.Subscribe(Mode.All);
-    private readonly Subscriber<Debug.Drawing.Command> _drawSubscriber = Hub.Draws.Subscribe(Mode.All);
-    private readonly Subscriber<Debug.Plotting.Command> _plotSubscriber = Hub.Plots.Subscribe(Mode.All);
     private readonly Subscriber<Debug.Frame> _frameSubscriber = Hub.Frames.Subscribe(Mode.All);
+    private readonly IReadOnlyList<IDebugEntrySubscription> _entrySubscriptions;
 
     private readonly RunnerSync _runner;
     private readonly DebugDb _db;
@@ -38,14 +36,14 @@ public sealed partial class DebugDbDumper : IDisposable
         _metadata.Save(_session.MetadataPath);
 
         _db = new DebugDb(_session.DatabaseDirectory)
-            .RegisterType<Debug.Logging.Entry>()
-            .RegisterType<Debug.Plotting.Command>()
-            .RegisterType<Debug.Drawing.Command>();
+            .RegisterKnownTypes();
 
         _viewer = new DebugDbViewer(_db, ViewerPort)
-            .Register<Debug.Logging.Entry>()
-            .Register<Debug.Plotting.Command>()
-            .Register<Debug.Drawing.Command>();
+            .RegisterAllRegisteredTypes();
+
+        _entrySubscriptions = DebugTypeRegistry.GetRegisteredTypes()
+            .Select(DebugEntrySubscription.Create)
+            .ToArray();
 
         Log.ZLogInformation($"DebugDb session started: {_session.SessionDirectory}");
         _viewer.Start();
@@ -63,23 +61,8 @@ public sealed partial class DebugDbDumper : IDisposable
         // RunnerSync publishes draw/log/plot commands first, then the frame boundary.
         // Processing frames first would make frames appear completed before their data
         // is in the DB, causing the GUI to display an empty frame during that window.
-        while (_logSubscriber.Reader.TryRead(out var log))
-        {
-            _db.Append(log);
-            dumped = true;
-        }
-
-        while (_drawSubscriber.Reader.TryRead(out var draw))
-        {
-            _db.Append(draw);
-            dumped = true;
-        }
-
-        while (_plotSubscriber.Reader.TryRead(out var plot))
-        {
-            _db.Append(plot);
-            dumped = true;
-        }
+        foreach (var subscription in _entrySubscriptions)
+            dumped |= subscription.Drain(_db);
 
         while (_frameSubscriber.Reader.TryRead(out var frame))
         {
@@ -99,9 +82,8 @@ public sealed partial class DebugDbDumper : IDisposable
 
     public void Dispose()
     {
-        _logSubscriber.Dispose();
-        _drawSubscriber.Dispose();
-        _plotSubscriber.Dispose();
+        foreach (var subscription in _entrySubscriptions)
+            subscription.Dispose();
         _frameSubscriber.Dispose();
 
         _runner.Stop();
@@ -111,5 +93,42 @@ public sealed partial class DebugDbDumper : IDisposable
 
         _metadata.ClosedAtUtc = DateTimeOffset.UtcNow;
         _metadata.Save(_session.MetadataPath);
+    }
+
+    private interface IDebugEntrySubscription : IDisposable
+    {
+        bool Drain(DebugDb db);
+    }
+
+    private sealed class DebugEntrySubscription<T> : IDebugEntrySubscription where T : struct, Debug.IEntry
+    {
+        private readonly Subscriber<T> _subscriber = Debug.DebugBus.Subscribe<T>(Mode.All);
+
+        public bool Drain(DebugDb db)
+        {
+            var dumped = false;
+
+            while (_subscriber.Reader.TryRead(out var entry))
+            {
+                db.Append(entry);
+                dumped = true;
+            }
+
+            return dumped;
+        }
+
+        public void Dispose()
+        {
+            _subscriber.Dispose();
+        }
+    }
+
+    private static class DebugEntrySubscription
+    {
+        public static IDebugEntrySubscription Create(Type type)
+        {
+            var subscriptionType = typeof(DebugEntrySubscription<>).MakeGenericType(type);
+            return (IDebugEntrySubscription)Activator.CreateInstance(subscriptionType)!;
+        }
     }
 }

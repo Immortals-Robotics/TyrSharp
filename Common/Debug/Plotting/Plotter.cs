@@ -1,6 +1,4 @@
 using System.Runtime.CompilerServices;
-using Tyr.Common.Dataflow;
-
 namespace Tyr.Common.Debug.Plotting;
 
 public class Plotter(string module)
@@ -30,6 +28,6 @@ public class Plotter(string module)
             Timestamp = Timestamp.Now,
         };
 
-        Hub.Plots.Publish(command);
+        DebugBus.Publish(command);
     }
 }

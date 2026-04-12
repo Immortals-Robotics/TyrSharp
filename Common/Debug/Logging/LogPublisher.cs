@@ -1,5 +1,4 @@
 using System.Buffers;
-using Tyr.Common.Dataflow;
 using ZLogger;
 
 namespace Tyr.Common.Debug.Logging;
@@ -31,7 +30,7 @@ public sealed class LogPublisher : IAsyncLogProcessor
 
         var entry = new Entry{Message = message, Level = info.LogLevel, Meta = meta, Timestamp = timestamp};
 
-        Hub.Logs.Publish(entry);
+        DebugBus.Publish(entry);
 
         log.Return();
     }

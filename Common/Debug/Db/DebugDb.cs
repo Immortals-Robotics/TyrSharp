@@ -79,6 +79,17 @@ public sealed class DebugDb : IDebugDb
         return this;
     }
 
+    public DebugDb RegisterType(Type type)
+    {
+        ArgumentNullException.ThrowIfNull(type);
+
+        if (!type.IsValueType || !typeof(IEntry).IsAssignableFrom(type))
+            throw new ArgumentException($"Debug entry type {type.FullName} must be a value type implementing {nameof(IEntry)}.", nameof(type));
+
+        GetOrCreateBucketSet(type);
+        return this;
+    }
+
     public void Append<T>(T entry) where T : struct, IEntry
     {
         var meta = entry.Meta;

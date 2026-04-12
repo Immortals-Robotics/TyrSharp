@@ -2,7 +2,6 @@
 using System.Runtime.CompilerServices;
 using Cysharp.Text;
 using Tyr.Common.Data;
-using Tyr.Common.Dataflow;
 using Tyr.Common.Debug.Drawing.Drawables;
 using Tyr.Common.Math;
 using Circle = Tyr.Common.Debug.Drawing.Drawables.Circle;
@@ -79,7 +78,7 @@ public sealed class Drawer(string module) : IDisposable
         var command = new Command
             { Drawable = drawable, Color = color, Options = options, Meta = meta, Timestamp = Timestamp.Now };
 
-        Hub.Draws.Publish(command);
+        DebugBus.Publish(command);
     }
 
     public void BeginLayer(string layer)

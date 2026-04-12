@@ -4,6 +4,7 @@ using System.Numerics;
 using System.Reflection;
 using System.Text;
 using System.Text.Json;
+using System.Collections.Concurrent;
 using Tyr.Common.Debug.Plotting;
 using Tyr.Common.Time;
 
@@ -26,6 +27,8 @@ public sealed class DebugDbViewer : IDisposable
     private readonly DebugDb _db;
     private readonly int _port;
     private readonly Dictionary<string, RegisteredType> _types = new();
+    private static readonly ConcurrentDictionary<Type, Func<DebugDb, string?, Timestamp, Timestamp, IEnumerable<Dictionary<string, object?>>>> QueryFactories = new();
+    private static readonly ConcurrentDictionary<Type, Func<string[]>> FieldFactories = new();
 
     private HttpListener? _listener;
     private CancellationTokenSource? _cts;
@@ -44,21 +47,30 @@ public sealed class DebugDbViewer : IDisposable
 
     public DebugDbViewer Register<T>() where T : struct, IEntry
     {
-        _db.RegisterType<T>();
+        return Register(typeof(T));
+    }
 
-        var name = GetRegisteredTypeName(typeof(T));
+    public DebugDbViewer Register(Type type)
+    {
+        ArgumentNullException.ThrowIfNull(type);
+
+        _db.RegisterType(type);
+
+        var name = GetRegisteredTypeName(type);
         _types[name] = new RegisteredType
         {
             Name = name,
-            Query = (module, t0, t1) =>
-            {
-                IEnumerable<T> results = module is null
-                    ? _db.QueryAll<T>(t0, t1)
-                    : _db.Query<T>(module, t0, t1);
-                return results.Select(EntryToRow);
-            },
-            GetFields = GetFieldNames<T>,
+            Query = (module, t0, t1) => QueryFactories.GetOrAdd(type, CreateQueryFactory)(_db, module, t0, t1),
+            GetFields = FieldFactories.GetOrAdd(type, CreateFieldFactory),
         };
+        return this;
+    }
+
+    public DebugDbViewer RegisterAllRegisteredTypes()
+    {
+        foreach (var type in DebugTypeRegistry.GetRegisteredTypes())
+            Register(type);
+
         return this;
     }
 
@@ -323,6 +335,37 @@ public sealed class DebugDbViewer : IDisposable
 
     private static string FormatVectorComponent(float value) =>
         NormalizeFloatingPoint(value).ToString() ?? string.Empty;
+
+    private static Func<DebugDb, string?, Timestamp, Timestamp, IEnumerable<Dictionary<string, object?>>> CreateQueryFactory(Type type)
+    {
+        var method = typeof(DebugDbViewer).GetMethod(nameof(CreateQueryFactoryCore), BindingFlags.Static | BindingFlags.NonPublic)!;
+        return (Func<DebugDb, string?, Timestamp, Timestamp, IEnumerable<Dictionary<string, object?>>>)method
+            .MakeGenericMethod(type)
+            .Invoke(null, null)!;
+    }
+
+    private static Func<string[]> CreateFieldFactory(Type type)
+    {
+        var method = typeof(DebugDbViewer).GetMethod(nameof(CreateFieldFactoryCore), BindingFlags.Static | BindingFlags.NonPublic)!;
+        return (Func<string[]>)method.MakeGenericMethod(type).Invoke(null, null)!;
+    }
+
+    private static Func<DebugDb, string?, Timestamp, Timestamp, IEnumerable<Dictionary<string, object?>>> CreateQueryFactoryCore<T>()
+        where T : struct, IEntry
+    {
+        return static (db, module, t0, t1) =>
+        {
+            IEnumerable<T> results = module is null
+                ? db.QueryAll<T>(t0, t1)
+                : db.Query<T>(module, t0, t1);
+            return results.Select(EntryToRow);
+        };
+    }
+
+    private static Func<string[]> CreateFieldFactoryCore<T>() where T : struct, IEntry
+    {
+        return GetFieldNames<T>;
+    }
 
     private sealed class RegisteredType
     {

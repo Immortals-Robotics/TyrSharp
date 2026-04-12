@@ -195,6 +195,107 @@ public sealed class DebugDbTests
         }
     }
 
+    [Fact]
+    public void DebugTypeRegistry_IncludesCustomTestEntryOutsideCommon()
+    {
+        var types = DebugTypeRegistry.GetRegisteredTypes();
+        Assert.Contains(typeof(TestDebugEntry), types);
+    }
+
+    [Fact]
+    public void DebugBus_PublishesCustomEntryThroughGenericTransport()
+    {
+        using var subscriber = DebugBus.Subscribe<TestDebugEntry>(Tyr.Common.Dataflow.Mode.All);
+
+        var entry = new TestDebugEntry
+        {
+            Value = 7,
+            Label = "custom",
+            Meta = Meta.GetOrCreate("Vision", layer: "TestLayer", file: "DebugDbTests.cs", member: nameof(DebugBus_PublishesCustomEntryThroughGenericTransport), line: 1),
+            Timestamp = Timestamp.FromNanoseconds(77),
+            ShardKey = "robot-1",
+        };
+
+        DebugBus.Publish(entry);
+
+        Assert.True(subscriber.Reader.TryRead(out var published));
+        Assert.Equal(entry.Value, published.Value);
+        Assert.Equal(entry.Label, published.Label);
+        Assert.Equal(entry.Meta.Module, published.Meta.Module);
+        Assert.Equal(entry.Timestamp, published.Timestamp);
+        Assert.Equal(entry.ShardKey, published.ShardKey);
+    }
+
+    [Fact]
+    public void RegisterKnownTypes_RoundTripsCustomEntryOutsideCommon()
+    {
+        var directory = CreateTempDirectory();
+
+        try
+        {
+            using (var db = new DebugDb(directory).RegisterKnownTypes())
+            {
+                db.Append(new TestDebugEntry
+                {
+                    Value = 42,
+                    Label = "outside-common",
+                    Meta = Meta.GetOrCreate("Vision", layer: "TestLayer", file: "DebugDbTests.cs", member: nameof(RegisterKnownTypes_RoundTripsCustomEntryOutsideCommon), line: 1),
+                    Timestamp = Timestamp.FromNanoseconds(123),
+                    ShardKey = "robot-2",
+                });
+            }
+
+            using var reopened = new DebugDb(directory).RegisterKnownTypes();
+            var entries = reopened.QueryAll<TestDebugEntry>(Timestamp.Zero, Timestamp.MaxValue).ToArray();
+            var entry = Assert.Single(entries);
+            Assert.Equal(42, entry.Value);
+            Assert.Equal("outside-common", entry.Label);
+            Assert.Equal("Vision", entry.Meta.Module);
+
+            var filtered = reopened.Query<TestDebugEntry>("Vision", Timestamp.Zero, Timestamp.MaxValue, "robot-2").ToArray();
+            Assert.Single(filtered);
+        }
+        finally
+        {
+            Directory.Delete(directory, recursive: true);
+        }
+    }
+
+    [Fact]
+    public void ViewerRegisterAllRegisteredTypes_LoadsCustomEntryType()
+    {
+        var directory = CreateTempDirectory();
+
+        try
+        {
+            using (var db = new DebugDb(directory).RegisterKnownTypes())
+            {
+                db.Append(new TestDebugEntry
+                {
+                    Value = 9,
+                    Label = "viewer-custom",
+                    Meta = Meta.GetOrCreate("Vision", layer: "TestLayer", file: "DebugDbTests.cs", member: nameof(ViewerRegisterAllRegisteredTypes_LoadsCustomEntryType), line: 1),
+                    Timestamp = Timestamp.FromNanoseconds(999),
+                    ShardKey = "robot-3",
+                });
+            }
+
+            using var reopened = new DebugDb(directory);
+            Assert.Empty(reopened.QueryAll<TestDebugEntry>(Timestamp.Zero, Timestamp.MaxValue));
+
+            using var viewer = new DebugDbViewer(reopened).RegisterAllRegisteredTypes();
+            var entries = reopened.QueryAll<TestDebugEntry>(Timestamp.Zero, Timestamp.MaxValue).ToArray();
+
+            var entry = Assert.Single(entries);
+            Assert.Equal("viewer-custom", entry.Label);
+            Assert.Equal(9, entry.Value);
+        }
+        finally
+        {
+            Directory.Delete(directory, recursive: true);
+        }
+    }
+
     private static Entry CreateEntry(long timestampNs, string module, string message)
     {
         return new Entry
@@ -231,4 +332,5 @@ public sealed class DebugDbTests
                 _messages.Add(message);
         }
     }
+
 }
