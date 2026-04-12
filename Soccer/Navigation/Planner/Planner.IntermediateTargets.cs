@@ -12,14 +12,11 @@ public partial class Planner
 
     [ConfigEntry] private static int AngleStepCount { get; set; } = 16;
 
-    // TODO: make this an IEunumerator
-    private List<Vector2> GenerateIntermediateTargetsSystematic(Vector2 center)
+    private IEnumerable<Vector2> GenerateIntermediateTargetsSystematic(Vector2 center)
     {
         var angleStep = 360f / AngleStepCount;
 
         var rndRadiusOffset = _random.Get(0f, RadiusStep);
-
-        var results = new List<Vector2>(RadiusStepCount * AngleStepCount);
 
         for (var i = 0; i <= RadiusStepCount; i++)
         {
@@ -31,10 +28,8 @@ public partial class Planner
             {
                 var angleDeg = j * angleStep + rndAngleOffset;
                 var angle = Angle.FromDeg(angleDeg);
-                results.Add(center.CircleAroundPoint(angle, radius));
+                yield return center.CircleAroundPoint(angle, radius);
             }
         }
-
-        return results;
     }
 }
