@@ -61,22 +61,25 @@ public partial class Ai
             robot.Filtered = robot.Filtered with { Quality = 0f };
         }
 
-        foreach (var filtered in vision.Robots.Where(robot => robot.Id.Team == Context.Color))
-        {
-            var id = (int)filtered.Id.Id!.Value;
-            var predicted = filtered.Extrapolate(now, CommandHistory(id));
-            Context.OwnRobots[id].Filtered = predicted;
-
-            Draw.DrawRobot(predicted.State.Position, predicted.State.Angle, filtered.Id, options: Options.Outline());
-        }
-
+        // Bolt: eliminates ~2 enumerator & closure allocs/frame by avoiding LINQ Where()
         Context.OppRobots.Clear();
-        foreach (var filtered in vision.Robots.Where(robot => robot.Id.Team != Context.Color))
+        foreach (var filtered in vision.Robots)
         {
-            var predicted = filtered.Extrapolate(now);
-            Context.OppRobots.Add(predicted);
+            if (filtered.Id.Team == Context.Color)
+            {
+                var id = (int)filtered.Id.Id!.Value;
+                var predicted = filtered.Extrapolate(now, CommandHistory(id));
+                Context.OwnRobots[id].Filtered = predicted;
 
-            Draw.DrawRobot(predicted.State.Position, predicted.State.Angle, filtered.Id, options: Options.Outline());
+                Draw.DrawRobot(predicted.State.Position, predicted.State.Angle, filtered.Id, options: Options.Outline());
+            }
+            else
+            {
+                var predicted = filtered.Extrapolate(now);
+                Context.OppRobots.Add(predicted);
+
+                Draw.DrawRobot(predicted.State.Position, predicted.State.Angle, filtered.Id, options: Options.Outline());
+            }
         }
 
         Context.Data.Value = Context.Data.Value! with
@@ -160,7 +163,17 @@ public partial class Ai
             return;
         }
 
-        var firstRobot = Context.OwnRobots.FirstOrDefault(r => r.Seen);
+        // Bolt: eliminates ~1 enumerator & closure alloc/frame by avoiding LINQ FirstOrDefault()
+        Robot.Robot? firstRobot = null;
+        foreach (var r in Context.OwnRobots)
+        {
+            if (r.Seen)
+            {
+                firstRobot = r;
+                break;
+            }
+        }
+
         if (firstRobot != null)
         {
             if (Context.Referee.Running())
