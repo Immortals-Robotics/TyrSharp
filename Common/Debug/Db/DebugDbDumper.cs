@@ -59,13 +59,10 @@ public sealed partial class DebugDbDumper : IDisposable
     {
         var dumped = false;
 
-        while (_frameSubscriber.Reader.TryRead(out var frame))
-        {
-            _db.AppendFrame(frame);
-            _metadata.UpdateFrameRange(frame);
-            dumped = true;
-        }
-
+        // Data must be written before the frame boundary that marks it as "completed".
+        // RunnerSync publishes draw/log/plot commands first, then the frame boundary.
+        // Processing frames first would make frames appear completed before their data
+        // is in the DB, causing the GUI to display an empty frame during that window.
         while (_logSubscriber.Reader.TryRead(out var log))
         {
             _db.Append(log);
@@ -81,6 +78,13 @@ public sealed partial class DebugDbDumper : IDisposable
         while (_plotSubscriber.Reader.TryRead(out var plot))
         {
             _db.Append(plot);
+            dumped = true;
+        }
+
+        while (_frameSubscriber.Reader.TryRead(out var frame))
+        {
+            _db.AppendFrame(frame);
+            _metadata.UpdateFrameRange(frame);
             dumped = true;
         }
 
