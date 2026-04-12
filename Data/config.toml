@@ -7,7 +7,9 @@ DrawTimeStep = 0.10000000149011612 # default: 0.1
 
 [Soccer.Navigation.Obstacle]
 [Soccer.Navigation.Obstacle.Map]
-CollisionDetectStepSize = 50.0 # default: 50
+GridCellSize = 400.0 # default: 400
+MaxTrajectorySegmentLength = 125.0 # default: 125
+MinTrajectoryStepTime = 0.009999999776482582 # default: 0.01
 
 
 [Soccer.Navigation.Planner]
@@ -20,6 +22,7 @@ RadiusStepCount = 2 # default: 2
 AngleStepCount = 16 # default: 16
 AcceptableFreeDistance = 50.0 # default: 50
 NearestFreeIterations = 1000 # default: 1000
+NearestFreeRingSpacing = 120.0 # default: 120
 
 
 

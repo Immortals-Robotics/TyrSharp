@@ -163,34 +163,25 @@ public partial class Ai
             return;
         }
 
-        // Bolt: eliminates ~1 enumerator & closure alloc/frame by avoiding LINQ FirstOrDefault()
-        Robot.Robot? firstRobot = null;
-        foreach (var r in Context.OwnRobots)
+        foreach (var robot in Context.OwnRobots)
         {
-            if (r.Seen)
-            {
-                firstRobot = r;
-                break;
-            }
-        }
+            if (!robot.Seen) continue;
 
-        if (firstRobot != null)
-        {
-            if (Context.Referee.Running())
+            if (!Context.Referee.Running())
             {
-                var skill = _attacker.Tick(firstRobot);
-                skill.Execute(firstRobot);
+                robot.Halt();
+                continue;
+            }
+
+            if (robot.Id == 0)
+            {
+                var skill = _attacker.Tick(robot);
+                skill.Execute(robot);
             }
             else
             {
-                firstRobot.Halt();
+                robot.Navigate(Rand.Get(Context.Field.Rectangle), VelocityProfile.Mamooli);
             }
-        }
-
-        foreach (var robot in Context.OwnRobots)
-        {
-            if (!robot.Seen || robot == firstRobot) continue;
-            robot.Halt();
         }
     }
 }

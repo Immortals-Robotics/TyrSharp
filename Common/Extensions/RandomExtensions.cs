@@ -1,4 +1,7 @@
-﻿namespace Tyr.Common.Extensions;
+﻿using System.Numerics;
+using Tyr.Common.Math.Shapes;
+
+namespace Tyr.Common.Extensions;
 
 public static class RandomExtensions
 {
@@ -6,6 +9,17 @@ public static class RandomExtensions
 
     // min is inclusive, max is exclusive
     public static int Get(this Random random, int min, int max) => random.Next(min, max);
+    
+    public static Vector2 Get(this Random random, Rectangle rectangle) => new(
+        random.Get(rectangle.Min.X, rectangle.Max.X),
+        random.Get(rectangle.Min.Y, rectangle.Max.Y));
+    
+    public static Vector2 Get(this Random random, Circle circle)
+    {
+        var angle = random.Get(0f, 2f * MathF.PI);
+        var radius = MathF.Sqrt(random.NextSingle()) * circle.Radius; // sqrt for uniform distribution
+        return circle.Center + new Vector2(MathF.Cos(angle), MathF.Sin(angle)) * radius;
+    }
 
     public static T Get<T>(this Random random, IReadOnlyList<T> list) => list[random.Get(0, list.Count)];
 

@@ -134,7 +134,7 @@ internal sealed class BenchmarkScenario
     public string Description { get; }
     private readonly Func<ScenarioResult> _run;
 
-    private BenchmarkScenario(string name, string description, Func<ScenarioResult> run)
+    internal BenchmarkScenario(string name, string description, Func<ScenarioResult> run)
     {
         Name = name;
         Description = description;
@@ -205,6 +205,8 @@ internal sealed class BenchmarkScenario
                 $"{config.QueryEntryCount:N0} plot entries sampled to {sampleCount:N0} results across {config.ShardCount:N0} shards",
                 () => RunQuerySampledMultiShard(config, sampleCount)));
         }
+
+        scenarios.AddRange(MapBenchmarkScenarios.CreateScenarios(config));
 
         return scenarios;
     }

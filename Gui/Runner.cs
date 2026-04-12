@@ -200,6 +200,8 @@ public sealed partial class Runner : IDisposable
         {
             _runner.Stop();
         }
+        
+        Plot.Plot("FPS", _runner.Timer.Fps);
 
         return true;
     }

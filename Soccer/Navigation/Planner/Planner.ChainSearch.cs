@@ -1,4 +1,5 @@
-﻿using Tyr.Common.Config;
+using Tyr.Common.Config;
+using Tyr.Common.Math.Shapes;
 using Tyr.Soccer.Navigation.Trajectory;
 
 namespace Tyr.Soccer.Navigation.Planner;
@@ -16,21 +17,34 @@ public partial class Planner
 
         var tStart = trajectory.StartTime + rndOffset;
         var tEnd = MathF.Min(trajectory.StartTime + LookaheadTime, trajectory.EndTime);
+        var lastPos = trajectory.GetPosition(trajectory.StartTime);
+        var prefixCollision = false;
 
         for (var t = tStart; t < tEnd; t += ChainSearchTimeStep)
         {
             var pos = trajectory.GetPosition(t);
             var vel = trajectory.GetVelocity(t);
-            
+
+            if (!prefixCollision)
+            {
+                prefixCollision = Map.CollisionDetect(new LineSegment
+                {
+                    Start = lastPos,
+                    End = pos,
+                });
+            }
+
             var second = TrajectoryBangBang.Make2D(pos, vel, _target, Profile);
 
-            if (!Map.HasCollision(second).collided || Map.HasCollision(trajectory, t).collided)
+            if (!Map.HasCollision(second).collided || prefixCollision)
                 return new TrajectoryChained()
                 {
                     First = trajectory,
                     Second = second,
                     CutTime = t,
                 };
+
+            lastPos = pos;
         }
 
         var posEnd = trajectory.GetPosition(tEnd);
