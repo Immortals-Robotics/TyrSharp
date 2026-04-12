@@ -36,6 +36,7 @@ internal sealed class GcProcess : IDisposable
     {
         Directory.CreateDirectory(CacheDir);
         ScanCache();
+        TryFindExistingProcess();
     }
 
     // ── cache ────────────────────────────────────────────────────────────────
@@ -136,11 +137,50 @@ internal sealed class GcProcess : IDisposable
 
     // ── process ──────────────────────────────────────────────────────────────
 
+    private bool TryFindExistingProcess()
+    {
+        // Search all processes for anything containing the GC name.
+        // This is more robust on Unix where names might be truncated or varied.
+        var existing = Process.GetProcesses()
+            .FirstOrDefault(p =>
+            {
+                try
+                {
+                    return p.ProcessName.Contains("ssl-game-controller", StringComparison.OrdinalIgnoreCase);
+                }
+                catch { return false; }
+            });
+
+        if (existing == null) return false;
+
+        _process = existing;
+        _process.EnableRaisingEvents = true;
+        _process.Exited += OnProcessExited;
+
+        if (OperatingSystem.IsWindows())
+            Win32JobObject.AssignProcess(_process);
+
+        _statusMessage = $"Attached to PID {_process.Id}";
+        _status = Status.Running;
+        return true;
+    }
+
+    private void OnProcessExited(object? sender, EventArgs e)
+    {
+        if (_status == Status.Running)
+        {
+            _statusMessage = $"Process exited (code {_process?.ExitCode ?? -1})";
+            _status = Status.Exited;
+        }
+    }
+
     /// <param name="rconPort">Remote control TCP port (our client connects here).</param>
     /// <param name="uiPort">Web UI port (human browser).</param>
     public void Start(int rconPort, int uiPort)
     {
         if (_status == Status.Running) return;
+
+        if (TryFindExistingProcess()) return;
 
         var exe = FindCachedExe();
         if (exe == null)
@@ -165,16 +205,13 @@ internal sealed class GcProcess : IDisposable
             _process.EnableRaisingEvents = true;
             _process.OutputDataReceived += (_, _) => { };
             _process.ErrorDataReceived  += (_, _) => { };
-            _process.Exited += (_, _) =>
-            {
-                if (_status == Status.Running)
-                {
-                    _statusMessage = $"Process exited (code {_process.ExitCode})";
-                    _status = Status.Exited;
-                }
-            };
+            _process.Exited += OnProcessExited;
 
             _process.Start();
+
+            if (OperatingSystem.IsWindows())
+                Win32JobObject.AssignProcess(_process);
+
             _process.BeginOutputReadLine();
             _process.BeginErrorReadLine();
 
@@ -204,6 +241,93 @@ internal sealed class GcProcess : IDisposable
     }
 
     // ── helpers ──────────────────────────────────────────────────────────────
+
+    private static class Win32JobObject
+    {
+        private static readonly IntPtr JobHandle;
+
+        static Win32JobObject()
+        {
+            if (!OperatingSystem.IsWindows()) return;
+
+            JobHandle = CreateJobObject(IntPtr.Zero, null);
+            var basicInfo = new JOBOBJECT_BASIC_LIMIT_INFORMATION
+            {
+                LimitFlags = JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE
+            };
+            var extendedInfo = new JOBOBJECT_EXTENDED_LIMIT_INFORMATION
+            {
+                BasicLimitInformation = basicInfo
+            };
+
+            int length = Marshal.SizeOf(typeof(JOBOBJECT_EXTENDED_LIMIT_INFORMATION));
+            IntPtr extendedInfoPtr = Marshal.AllocHGlobal(length);
+            try
+            {
+                Marshal.StructureToPtr(extendedInfo, extendedInfoPtr, false);
+                if (!SetInformationJobObject(JobHandle, JobObjectExtendedLimitInformation, extendedInfoPtr, (uint)length))
+                    throw new Exception($"Failed to set Job Object information: {Marshal.GetLastWin32Error()}");
+            }
+            finally
+            {
+                Marshal.FreeHGlobal(extendedInfoPtr);
+            }
+        }
+
+        public static void AssignProcess(Process process)
+        {
+            if (!OperatingSystem.IsWindows() || JobHandle == IntPtr.Zero) return;
+            AssignProcessToJobObject(JobHandle, process.Handle);
+        }
+
+        [DllImport("kernel32.dll", CharSet = CharSet.Unicode)]
+        private static extern IntPtr CreateJobObject(IntPtr lpJobAttributes, string? lpName);
+
+        [DllImport("kernel32.dll")]
+        private static extern bool SetInformationJobObject(IntPtr hJob, int JobObjectInfoClass, IntPtr lpJobObjectInfo, uint cbJobObjectInfoLength);
+
+        [DllImport("kernel32.dll")]
+        private static extern bool AssignProcessToJobObject(IntPtr hJob, IntPtr hProcess);
+
+        private const int JobObjectExtendedLimitInformation = 9;
+        private const uint JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE = 0x2000;
+
+        [StructLayout(LayoutKind.Sequential)]
+        private struct JOBOBJECT_BASIC_LIMIT_INFORMATION
+        {
+            public long PerProcessUserTimeLimit;
+            public long PerJobUserTimeLimit;
+            public uint LimitFlags;
+            public UIntPtr MinimumWorkingSetSize;
+            public UIntPtr MaximumWorkingSetSize;
+            public uint ActiveProcessLimit;
+            public UIntPtr Affinitiy;
+            public uint PriorityClass;
+            public uint SchedulingClass;
+        }
+
+        [StructLayout(LayoutKind.Sequential)]
+        private struct IO_COUNTERS
+        {
+            public ulong ReadOperationCount;
+            public ulong WriteOperationCount;
+            public ulong OtherOperationCount;
+            public ulong ReadTransferCount;
+            public ulong WriteTransferCount;
+            public ulong OtherTransferCount;
+        }
+
+        [StructLayout(LayoutKind.Sequential)]
+        private struct JOBOBJECT_EXTENDED_LIMIT_INFORMATION
+        {
+            public JOBOBJECT_BASIC_LIMIT_INFORMATION BasicLimitInformation;
+            public IO_COUNTERS IoCounters;
+            public UIntPtr ProcessMemoryLimit;
+            public UIntPtr JobMemoryLimit;
+            public UIntPtr PeakProcessMemoryLimit;
+            public UIntPtr PeakJobMemoryLimit;
+        }
+    }
 
     private static string GetAssetName(string version)
     {

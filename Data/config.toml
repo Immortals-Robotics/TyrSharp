@@ -185,7 +185,7 @@ ChipSpeed = 2000.0 # default: 2000
 
 
 [Soccer.Runner]
-RunYellow = false # default: False
+RunYellow = true # default: False
 RunBlue = true # default: False
 
 
@@ -302,6 +302,24 @@ DebounceDelay = 0.2 # default: 0.200000s
 [Sender.Nrf]
 Enabled = true # default: False
 Address = { Ip = "224.5.92.5", Port = 60005 } # default: 224.5.92.5:60005
+# Scale factor to convert mm/s to NRF protocol units
+MotionScaleFactor = 22.0 # default: 22
+# NRF Move command packet length
+MoveCommandLength = 15 # default: 15
+# NRF Move command identifier
+MoveCommandId = 12 # default: 12
+# Maximum shoot power in NRF protocol units
+MaxShootPower = 6500.0 # default: 6500
+# Scale factor for shoot power conversion
+ShootPowerScale = 1000.0 # default: 1000
+# Maximum chip power in NRF protocol units
+MaxChipPower = 150.0 # default: 150
+# NRF Halt command packet length
+HaltCommandLength = 10 # default: 10
+# NRF Halt command identifier
+HaltCommandId = 6 # default: 6
+# NRF Demo/Heartbeat packet length
+DemoCommandLength = 10 # default: 10
 
 [Sender.ZmqRobotSender]
 Enabled = true # default: True
