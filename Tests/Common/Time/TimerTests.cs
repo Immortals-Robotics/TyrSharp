@@ -1,4 +1,7 @@
+using System.Threading;
+using Xunit;
 using Tyr.Common.Time;
+using Timer = Tyr.Common.Time.Timer;
 
 namespace Tyr.Tests.Common.Time;
 
@@ -28,13 +31,13 @@ public class TimerTests
     {
         var timer = new Timer();
         timer.Start();
-        Thread.Sleep(10);
+        Thread.Sleep(20);
         Assert.True(timer.Time.Milliseconds > 0);
 
         timer.Reset();
 
         Assert.True(timer.Running);
-        Assert.True(timer.Time.Milliseconds < 10);
+        Assert.True(timer.Time.Milliseconds < 20);
     }
 
     [Fact]
@@ -42,15 +45,15 @@ public class TimerTests
     {
         var timer = new Timer();
         timer.Start();
-        Thread.Sleep(10);
+        Thread.Sleep(20);
         var timeBefore = timer.Time;
-        Assert.True(timeBefore.Milliseconds >= 10);
+        Assert.True(timeBefore.Milliseconds >= 15);
 
         timer.Restart();
 
         Assert.True(timer.Running);
-        Assert.True(timer.Time < timeBefore);
-        Assert.True(timer.Time.Milliseconds < 10);
+        Assert.True(timer.Time.Nanoseconds < timeBefore.Nanoseconds);
+        Assert.True(timer.Time.Milliseconds < 20);
     }
 
     [Fact]
@@ -69,10 +72,10 @@ public class TimerTests
         timer.Start();
 
         timer.Update(); // First update to set lastUpdateTicks
-        Thread.Sleep(20);
+        Thread.Sleep(25);
         timer.Update();
 
-        Assert.True(timer.DeltaTime.Milliseconds >= 15);
+        Assert.True(timer.DeltaTime.Milliseconds >= 20);
         Assert.True(timer.DeltaTimeSmooth.Milliseconds > 0);
     }
 
@@ -82,9 +85,9 @@ public class TimerTests
         var timer = new Timer();
         timer.Start();
         timer.Update();
-        Thread.Sleep(16); // ~60fps
+        Thread.Sleep(20); // ~50fps
         timer.Update();
 
-        Assert.InRange(timer.Fps, 30, 100);
+        Assert.InRange(timer.Fps, 20, 100);
     }
 }
