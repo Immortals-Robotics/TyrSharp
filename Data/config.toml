@@ -670,7 +670,11 @@ MaxPoints = 500 # default: 500
 ZoomFactor = 1.100000023841858 # default: 1.1
 ZoomDefault = 0.10000000149011612 # default: 0.1
 ZoomLimitFactor = 10.0 # default: 10
+FitPaddingFactor = 1.0499999523162842 # default: 1.05
 LineColor = "#FFFFFFB2" # default: #FFFFFFB2
+BoundaryColor = "#14532DFF" # default: #14532DFF
+FieldColor = "#166534FF" # default: #166534FF
+WallColor = "#D4D4D8D8" # default: #D4D4D8D8
 
 
 [Gui.Backend]
