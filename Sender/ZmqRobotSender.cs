@@ -52,7 +52,7 @@ public sealed partial class ZmqRobotSender : ISender
         }
 
         // Clean up timed-out robots
-        var toRemove = _senders.Keys.Where(id => !activeIds.Contains(id)).ToList();
+        var toRemove = _senders.Keys.Where(id => !activeIds.Contains(id));
         foreach (var id in toRemove)
         {
             if (_senders.TryRemove(id, out var sender))
