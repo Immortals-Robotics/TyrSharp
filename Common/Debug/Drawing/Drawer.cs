@@ -81,6 +81,15 @@ public sealed class Drawer(string module) : IDisposable
         DebugBus.Publish(command);
     }
 
+    public void DrawDrawable(IDrawable drawable, Color color, Options options = default, string? layer = null,
+        string? expression = null,
+        [CallerMemberName] string? member = null,
+        [CallerFilePath] string? file = null,
+        [CallerLineNumber] int line = 0)
+    {
+        Draw(drawable, color, options, member, file, line, expression, layer ?? _layer);
+    }
+
     public void BeginLayer(string layer)
     {
         _layer = layer;

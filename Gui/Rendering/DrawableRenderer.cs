@@ -6,6 +6,7 @@ using Tyr.Common.Debug.Drawing.Drawables;
 using Tyr.Common.Math;
 using Tyr.Gui.Backend;
 using Tyr.Gui.Data;
+using Tyr.Soccer.Navigation.Trajectory;
 using Color = Tyr.Common.Debug.Drawing.Color;
 using Path = Tyr.Common.Debug.Drawing.Drawables.Path;
 using Point = Tyr.Common.Debug.Drawing.Drawables.Point;
@@ -18,6 +19,7 @@ namespace Tyr.Gui.Rendering;
 internal partial class DrawableRenderer
 {
     [ConfigEntry] private static Color FilledOutlineColor { get; set; } = Color.Zinc950.WithAlpha(0.5f);
+    [ConfigEntry] private static float TrajectoryDrawTimeStep { get; set; } = 0.1f;
 
     public Camera2D Camera { get; } = new();
 
@@ -75,6 +77,9 @@ internal partial class DrawableRenderer
                     break;
                 case Triangle triangle:
                     DrawTriangle(triangle, command.Color, command.Options);
+                    break;
+                case TrajectoryDrawable trajectory:
+                    DrawTrajectory(trajectory, command.Color, command.Options);
                     break;
             }
         }
@@ -331,6 +336,53 @@ internal partial class DrawableRenderer
         {
             var outlineColor = options.IsFilled ? FilledOutlineColor : color;
             _drawList.AddTriangle(a, b, c, ImGui.ColorConvertFloat4ToU32(outlineColor), thickness);
+        }
+    }
+
+    private void DrawTrajectory(TrajectoryDrawable trajectory, Color color, Options options)
+    {
+        Assert.IsFalse(options.IsFilled);
+
+        if (TrajectoryDrawTimeStep <= 0f)
+            throw new ArgumentOutOfRangeException(nameof(TrajectoryDrawTimeStep), TrajectoryDrawTimeStep,
+                "Time step must be positive.");
+
+        var startTime = trajectory.Trajectory.StartTime;
+        var endTime = trajectory.Trajectory.EndTime;
+        if (endTime < startTime)
+        {
+            return;
+        }
+
+        var sampleCount = 1;
+        for (var t = startTime; t < endTime; t += TrajectoryDrawTimeStep)
+        {
+            sampleCount++;
+        }
+
+        if (sampleCount < 2)
+        {
+            return;
+        }
+
+        Span<Vector2> screenPoints = stackalloc Vector2[sampleCount];
+        var index = 0;
+        for (var t = startTime; t < endTime; t += TrajectoryDrawTimeStep)
+        {
+            screenPoints[index++] = Camera.WorldToScreen(trajectory.Trajectory.GetPosition(t));
+        }
+
+        screenPoints[index] = Camera.WorldToScreen(trajectory.Trajectory.GetPosition(endTime));
+
+        var thickness = Camera.WorldToScreenLength(options.Thickness);
+
+        unsafe
+        {
+            fixed (Vector2* ptr = screenPoints)
+            {
+                _drawList.AddPolyline(ptr, index + 1, ImGui.ColorConvertFloat4ToU32(color),
+                    ImDrawFlags.None, thickness);
+            }
         }
     }
 }

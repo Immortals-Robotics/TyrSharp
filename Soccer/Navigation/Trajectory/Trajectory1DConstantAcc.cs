@@ -1,6 +1,9 @@
-﻿namespace Tyr.Soccer.Navigation.Trajectory;
+using MemoryPack;
 
-public class Trajectory1DConstantAcc : ITrajectory<float>
+namespace Tyr.Soccer.Navigation.Trajectory;
+
+[MemoryPackable]
+public partial class Trajectory1DConstantAcc : ITrajectory<float>
 {
     public float Acceleration { get; init; }
     public float StartVelocity { get; init; }

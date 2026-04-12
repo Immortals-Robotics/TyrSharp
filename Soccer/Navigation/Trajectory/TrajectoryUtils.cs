@@ -1,4 +1,4 @@
-﻿using System.Numerics;
+using System.Numerics;
 using Tyr.Common.Config;
 using Tyr.Common.Debug.Drawing;
 
@@ -11,6 +11,12 @@ public static partial class TrajectoryUtils
 
     public static void DrawTrajectory(ITrajectory<Vector2> trajectory, Color color)
     {
+        if (trajectory is Trajectory2D trajectory2D)
+        {
+            Draw.DrawDrawable(new TrajectoryDrawable { Trajectory = trajectory2D }, color);
+            return;
+        }
+
         for (var t = trajectory.StartTime; t < trajectory.EndTime - DrawTimeStep; t += DrawTimeStep)
         {
             var p0 = trajectory.GetPosition(t);

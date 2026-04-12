@@ -1,25 +1,26 @@
-﻿namespace Tyr.Soccer.Navigation.Trajectory;
+using MemoryPack;
 
-public class Trajectory1DPieced : ITrajectory<float>
+namespace Tyr.Soccer.Navigation.Trajectory;
+
+[MemoryPackable]
+public partial class Trajectory1DPieced : ITrajectory<float>
 {
     private const int MaxParts = 3;
-    private readonly Trajectory1DConstantAcc[] _pieces = new Trajectory1DConstantAcc[MaxParts];
-    private int _count;
-
     private const int InvalidIdx = -1;
+
+    public List<Trajectory1DConstantAcc> Pieces { get; private set; } = [];
 
     public void AddPiece(Trajectory1DConstantAcc piece)
     {
-        Assert.IsTrue(_count < MaxParts);
-        _pieces[_count] = piece;
-        _count++;
+        Assert.IsTrue(Pieces.Count < MaxParts);
+        Pieces.Add(piece);
     }
 
     private int FindPieceIndex(float t)
     {
-        for (var i = 0; i < _count; i++)
+        for (var i = 0; i < Pieces.Count; i++)
         {
-            if (t <= _pieces[i].EndTime)
+            if (t <= Pieces[i].EndTime)
                 return i;
         }
 
@@ -27,31 +28,31 @@ public class Trajectory1DPieced : ITrajectory<float>
         return InvalidIdx;
     }
 
-    private Trajectory1DConstantAcc First => _pieces[0];
-    private Trajectory1DConstantAcc Last => _pieces[_count - 1];
+    private Trajectory1DConstantAcc First => Pieces[0];
+    private Trajectory1DConstantAcc Last => Pieces[^1];
 
     public float GetPosition(float t)
     {
         t = Math.Clamp(t, StartTime, EndTime);
         var idx = FindPieceIndex(t);
-        return idx == InvalidIdx ? 0f : _pieces[idx].GetPosition(t);
+        return idx == InvalidIdx ? 0f : Pieces[idx].GetPosition(t);
     }
 
     public float GetVelocity(float t)
     {
         t = Math.Clamp(t, StartTime, EndTime);
         var idx = FindPieceIndex(t);
-        return idx == InvalidIdx ? 0f : _pieces[idx].GetVelocity(t);
+        return idx == InvalidIdx ? 0f : Pieces[idx].GetVelocity(t);
     }
 
     public float GetAcceleration(float t)
     {
         t = Math.Clamp(t, StartTime, EndTime);
         var idx = FindPieceIndex(t);
-        return idx == InvalidIdx ? 0f : _pieces[idx].GetAcceleration(t);
+        return idx == InvalidIdx ? 0f : Pieces[idx].GetAcceleration(t);
     }
 
-    public float StartTime => _count == 0 ? 0f : First.StartTime;
-    public float EndTime => _count == 0 ? 0f : Last.EndTime;
+    public float StartTime => Pieces.Count == 0 ? 0f : First.StartTime;
+    public float EndTime => Pieces.Count == 0 ? 0f : Last.EndTime;
     public float Duration => Math.Max(0f, EndTime - StartTime);
 }

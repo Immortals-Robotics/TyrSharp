@@ -1,8 +1,10 @@
-﻿using System.Numerics;
+using System.Numerics;
+using MemoryPack;
 
 namespace Tyr.Soccer.Navigation.Trajectory;
 
-public record Trajectory2D : ITrajectory<Vector2>
+[MemoryPackable]
+public partial record Trajectory2D : ITrajectory<Vector2>
 {
     public Trajectory1DPieced TrajectoryX { get; init; } = new();
     public Trajectory1DPieced TrajectoryY { get; init; } = new();

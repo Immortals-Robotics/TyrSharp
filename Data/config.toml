@@ -657,6 +657,7 @@ MaxInterceptableHeight = 150.0 # default: 150
 [Gui.Rendering]
 [Gui.Rendering.DrawableRenderer]
 FilledOutlineColor = "#09090B7F" # default: #09090B7F
+TrajectoryDrawTimeStep = 0.10000000149011612 # default: 0.1
 
 
 [Gui.Views]
