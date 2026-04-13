@@ -34,7 +34,7 @@ public sealed class DrawableUnionTests
     {
         var command = new Command
         {
-            Drawable = new TrajectoryDrawable
+            Drawable = new Trajectory2DDrawable
             {
                 Trajectory = CreateTrajectory2D(),
             },
@@ -45,7 +45,7 @@ public sealed class DrawableUnionTests
         var bytes = MemoryPackSerializer.Serialize(command);
         var restored = MemoryPackSerializer.Deserialize<Command>(bytes);
 
-        var trajectory = Assert.IsType<TrajectoryDrawable>(restored.Drawable);
+        var trajectory = Assert.IsType<Trajectory2DDrawable>(restored.Drawable);
         Assert.Equal(2, trajectory.Trajectory.TrajectoryX.Count);
         Assert.Equal(new(2f, 3f), trajectory.Trajectory.GetPosition(1f));
     }

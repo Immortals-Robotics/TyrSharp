@@ -78,8 +78,11 @@ internal partial class DrawableRenderer
                 case Triangle triangle:
                     DrawTriangle(triangle, command.Color, command.Options);
                     break;
-                case TrajectoryDrawable trajectory:
+                case Trajectory2DDrawable trajectory:
                     DrawTrajectory(trajectory, command.Color, command.Options);
+                    break;
+                case Trajectory2DChainedDrawable trajectoryChained:
+                    DrawTrajectory(trajectoryChained, command.Color, command.Options);
                     break;
             }
         }
@@ -339,7 +342,54 @@ internal partial class DrawableRenderer
         }
     }
 
-    private void DrawTrajectory(TrajectoryDrawable trajectory, Color color, Options options)
+    private void DrawTrajectory(Trajectory2DDrawable trajectory, Color color, Options options)
+    {
+        Assert.IsFalse(options.IsFilled);
+
+        if (TrajectoryDrawTimeStep <= 0f)
+            throw new ArgumentOutOfRangeException(nameof(TrajectoryDrawTimeStep), TrajectoryDrawTimeStep,
+                "Time step must be positive.");
+
+        var startTime = trajectory.Trajectory.StartTime;
+        var endTime = trajectory.Trajectory.EndTime;
+        if (endTime < startTime)
+        {
+            return;
+        }
+
+        var sampleCount = 1;
+        for (var t = startTime; t < endTime; t += TrajectoryDrawTimeStep)
+        {
+            sampleCount++;
+        }
+
+        if (sampleCount < 2)
+        {
+            return;
+        }
+
+        Span<Vector2> screenPoints = stackalloc Vector2[sampleCount];
+        var index = 0;
+        for (var t = startTime; t < endTime; t += TrajectoryDrawTimeStep)
+        {
+            screenPoints[index++] = Camera.WorldToScreen(trajectory.Trajectory.GetPosition(t));
+        }
+
+        screenPoints[index] = Camera.WorldToScreen(trajectory.Trajectory.GetPosition(endTime));
+
+        var thickness = Camera.WorldToScreenLength(options.Thickness);
+
+        unsafe
+        {
+            fixed (Vector2* ptr = screenPoints)
+            {
+                _drawList.AddPolyline(ptr, index + 1, ImGui.ColorConvertFloat4ToU32(color),
+                    ImDrawFlags.None, thickness);
+            }
+        }
+    }
+    
+    private void DrawTrajectory(Trajectory2DChainedDrawable trajectory, Color color, Options options)
     {
         Assert.IsFalse(options.IsFilled);
 

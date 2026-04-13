@@ -17,7 +17,7 @@ public sealed class TrajectoryUtilsTests
         TrajectoryUtils.DrawTrajectory(CreateTrajectory2D(), Color.Black);
 
         Assert.True(subscriber.Reader.TryRead(out var command));
-        Assert.IsType<TrajectoryDrawable>(command.Drawable);
+        Assert.IsType<Trajectory2DDrawable>(command.Drawable);
         Assert.False(subscriber.Reader.TryRead(out _));
     }
 
