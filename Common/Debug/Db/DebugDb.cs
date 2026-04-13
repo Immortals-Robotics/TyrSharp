@@ -222,15 +222,7 @@ public sealed class DebugDb : IDisposable
         if (!TryGetBucketSet(typeof(T), out var bucketSet))
             yield break;
 
-        var shardKeys = bucketSet.GetByModule(moduleId).Keys
-            .Where(shard => shard.ShardKeyId >= 0)
-            .Select(shard => shard.ShardKeyId)
-            .Distinct()
-            .Select(_strings.Get)
-            .OfType<string>()
-            .Order();
-
-        foreach (var shardKey in shardKeys)
+        foreach (var shardKey in bucketSet.GetShardKeysByModule(moduleId))
             yield return shardKey;
     }
 
@@ -242,12 +234,7 @@ public sealed class DebugDb : IDisposable
         if (!TryGetBucketSet(typeof(T), out var bucketSet))
             yield break;
 
-        var sourceLocationIds = bucketSet.GetByModule(moduleId).Keys
-            .Select(shard => shard.SourceLocationId)
-            .Distinct()
-            .Order();
-
-        foreach (var sourceLocationId in sourceLocationIds)
+        foreach (var sourceLocationId in bucketSet.GetSourceLocationIdsByModule(moduleId))
             yield return _sourceLocationCache.GetOrAdd(
                 sourceLocationId,
                 static (id, db) => db._sources.Get(id, db._strings),
@@ -467,7 +454,7 @@ public sealed class DebugDb : IDisposable
 
     private BucketSet LoadBucketsForType(Type type)
     {
-        var bucketSet = new BucketSet();
+        var bucketSet = new BucketSet(_strings.Get);
         var typeDirectory = GetTypeDirectory(type);
         Directory.CreateDirectory(typeDirectory);
 
@@ -777,12 +764,21 @@ public sealed class DebugDb : IDisposable
 
     private sealed class BucketSet
     {
+        private readonly Func<int, string?> _getString;
+
         public ConcurrentDictionary<EntryShardKey, Lazy<Bucket>> All { get; } = new();
 
         private readonly ConcurrentDictionary<int, ConcurrentDictionary<EntryShardKey, Lazy<Bucket>>> _byModule = new();
         private readonly ConcurrentDictionary<int, ConcurrentDictionary<EntryShardKey, Lazy<Bucket>>> _bySourceLocation = new();
         private readonly ConcurrentDictionary<int, ConcurrentDictionary<EntryShardKey, Lazy<Bucket>>> _byShardKey = new();
         private readonly ConcurrentDictionary<ModuleShardKey, ConcurrentDictionary<EntryShardKey, Lazy<Bucket>>> _byModuleAndShardKey = new();
+        private readonly ConcurrentDictionary<int, OrderedDistinctIntIndex> _sourceLocationIdsByModule = new();
+        private readonly ConcurrentDictionary<int, OrderedDistinctIntIndex> _shardKeyIdsByModule = new();
+
+        public BucketSet(Func<int, string?> getString)
+        {
+            _getString = getString;
+        }
 
         public Lazy<Bucket> GetOrAdd<TState>(EntryShardKey shard, Func<EntryShardKey, TState, Lazy<Bucket>> valueFactory, TState state)
         {
@@ -807,6 +803,16 @@ public sealed class DebugDb : IDisposable
         public ConcurrentDictionary<EntryShardKey, Lazy<Bucket>> GetByModule(int moduleId)
         {
             return _byModule.GetValueOrDefault(moduleId, Empty);
+        }
+
+        public int[] GetSourceLocationIdsByModule(int moduleId)
+        {
+            return _sourceLocationIdsByModule.GetValueOrDefault(moduleId, OrderedDistinctIntIndex.Empty).GetOrderedSnapshot();
+        }
+
+        public string[] GetShardKeysByModule(int moduleId)
+        {
+            return _shardKeyIdsByModule.GetValueOrDefault(moduleId, OrderedDistinctIntIndex.Empty).GetOrderedStringsSnapshot(_getString);
         }
 
         public ConcurrentDictionary<EntryShardKey, Lazy<Bucket>> GetCandidateMap(
@@ -924,8 +930,71 @@ public sealed class DebugDb : IDisposable
             _byModuleAndShardKey.GetOrAdd(
                 new ModuleShardKey(shard.ModuleId, shard.ShardKeyId),
                 static _ => new ConcurrentDictionary<EntryShardKey, Lazy<Bucket>>())[shard] = bucketFactory;
+            _sourceLocationIdsByModule.GetOrAdd(shard.ModuleId, static _ => new OrderedDistinctIntIndex()).Add(shard.SourceLocationId);
+            _shardKeyIdsByModule.GetOrAdd(shard.ModuleId, static _ => new OrderedDistinctIntIndex()).Add(shard.ShardKeyId);
         }
 
         private static readonly ConcurrentDictionary<EntryShardKey, Lazy<Bucket>> Empty = new();
+
+        private sealed class OrderedDistinctIntIndex
+        {
+            public static readonly OrderedDistinctIntIndex Empty = new();
+
+            private readonly Lock _lock = new();
+            private readonly HashSet<int> _values = [];
+            private int[]? _ordered;
+            private string[]? _orderedStrings;
+
+            public void Add(int value)
+            {
+                lock (_lock)
+                {
+                    if (_values.Add(value))
+                    {
+                        _ordered = null;
+                        _orderedStrings = null;
+                    }
+                }
+            }
+
+            public int[] GetOrderedSnapshot()
+            {
+                lock (_lock)
+                {
+                    if (_ordered is null)
+                    {
+                        _ordered = [.. _values];
+                        Array.Sort(_ordered);
+                    }
+
+                    return _ordered;
+                }
+            }
+
+            public string[] GetOrderedStringsSnapshot(Func<int, string?> getString)
+            {
+                lock (_lock)
+                {
+                    if (_orderedStrings is null)
+                    {
+                        var orderedStrings = new List<string>(_values.Count);
+                        foreach (var value in _values)
+                        {
+                            if (value < 0)
+                                continue;
+
+                            var resolved = getString(value);
+                            if (resolved is not null)
+                                orderedStrings.Add(resolved);
+                        }
+
+                        orderedStrings.Sort(StringComparer.Ordinal);
+                        _orderedStrings = [.. orderedStrings];
+                    }
+
+                    return _orderedStrings;
+                }
+            }
+        }
     }
 }
