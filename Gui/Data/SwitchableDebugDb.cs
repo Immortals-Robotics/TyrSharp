@@ -4,7 +4,7 @@ using Tyr.Common.Time;
 
 namespace Tyr.Gui.Data;
 
-internal sealed class SwitchableDebugDb(DebugDb source)
+public sealed class SwitchableDebugDb(DebugDb source)
 {
     private DebugDb _source = source;
 

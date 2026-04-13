@@ -6,6 +6,7 @@ using Tyr.Common.Debug.Drawing.Drawables;
 using Tyr.Common.Time;
 using Tyr.Soccer.Navigation.Trajectory;
 using Command = Tyr.Common.Debug.Drawing.Command;
+using Path = System.IO.Path;
 
 namespace Tyr.Tests.Soccer;
 
