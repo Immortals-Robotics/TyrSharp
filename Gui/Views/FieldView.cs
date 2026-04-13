@@ -37,7 +37,7 @@ public sealed partial class FieldView : IDisposable
     [ConfigEntry]
     private static Debug.Drawing.Color WallColor { get; set; } = Debug.Drawing.Color.Zinc300.WithAlpha(0.85f);
 
-    private readonly IDebugDb _debugDb;
+    private readonly DebugDb _debugDb;
     private readonly DrawableRenderer _renderer = new();
     private readonly Common.Time.Timer _timer = new();
 
@@ -85,7 +85,7 @@ public sealed partial class FieldView : IDisposable
         }
     }
 
-    public FieldView(IDebugDb debugDb)
+    public FieldView(DebugDb debugDb)
     {
         _debugDb = debugDb;
 

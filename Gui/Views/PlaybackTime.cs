@@ -6,7 +6,7 @@ public record PlaybackTime(bool Live, Timestamp EndTime, DeltaTime Offset)
 {
     public Timestamp Time => EndTime + Offset;
 
-    public (Timestamp Start, Timestamp End)? GetVisibleFrame(Tyr.Common.Debug.Db.IDebugDb debugDb, string module)
+    public (Timestamp Start, Timestamp End)? GetVisibleFrame(Tyr.Common.Debug.Db.DebugDb debugDb, string module)
     {
         if (!Live)
             return debugDb.GetFrameAt(module, Time);

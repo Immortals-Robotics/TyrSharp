@@ -7,28 +7,31 @@ namespace Tyr.Gui.Data;
 
 public sealed class PlaybackSessionManager : IDisposable
 {
-    private readonly IDebugDb _liveDb;
+    private DebugDb _playbackDb;
+    
+    private readonly DebugDb _liveDb;
     private readonly string _liveDatabaseDirectory;
-    private readonly SwitchableDebugDb _playbackDb;
-    private readonly string _sessionRootDirectory;
-    private readonly string _tempRoot;
-    private readonly List<IDebugDb> _retainedDbs = [];
-    private readonly CancellationTokenSource _cts = new();
-    private readonly object _lock = new();
-
-    private IDebugDb? _openedDb;
+    
+    private DebugDb? _openedDb;
     private PlaybackSessionInfo? _openedSession;
     private string? _openedTempDirectory;
+    
+    private readonly string _sessionRootDirectory;
+    private readonly string _tempRoot;
+    private readonly List<DebugDb> _retainedDbs = [];
+    private readonly CancellationTokenSource _cts = new();
+    private readonly object _lock = new();
     private IReadOnlyList<PlaybackSessionInfo> _sessions = [];
     private int _sourceRevision;
-
-    public PlaybackSessionManager(IDebugDb liveDb, string liveDatabaseDirectory, string sessionRootDirectory)
+    
+    public PlaybackSessionManager(DebugDb liveDb, string liveDatabaseDirectory, string sessionRootDirectory)
     {
         _liveDb = liveDb;
         _liveDatabaseDirectory = liveDatabaseDirectory;
         _sessionRootDirectory = sessionRootDirectory;
         _tempRoot = Path.Combine(Path.GetTempPath(), "TyrSharp", "Sessions");
-        _playbackDb = new SwitchableDebugDb(liveDb);
+        
+        _playbackDb = liveDb;
 
         if (Directory.Exists(_tempRoot))
             Directory.Delete(_tempRoot, recursive: true);
@@ -45,7 +48,7 @@ public sealed class PlaybackSessionManager : IDisposable
         thread.Start();
     }
 
-    public IDebugDb PlaybackDb => _playbackDb;
+    public DebugDb PlaybackDb => _playbackDb;
     public bool UsingLive => _openedDb is null;
     public string? CurrentSessionMetadataPath => _openedSession?.MetadataPath;
     public string CurrentSourceLabel => UsingLive ? "Live" : _openedSession?.DisplayName ?? "Opened Session";
@@ -81,7 +84,8 @@ public sealed class PlaybackSessionManager : IDisposable
 
     public void SwitchToLive()
     {
-        _playbackDb.SetSource(_liveDb);
+        Interlocked.Exchange(ref _playbackDb, _liveDb);
+        
         RetainForDispose(_openedDb);
         _openedDb = null;
         _openedSession = null;
@@ -117,11 +121,10 @@ public sealed class PlaybackSessionManager : IDisposable
         var db = new DebugDb(databaseDirectory)
             .RegisterKnownTypes();
 
-        var readOnlyDb = new ReadOnlyDebugDb(db);
-        _playbackDb.SetSource(readOnlyDb);
+        Interlocked.Exchange(ref _playbackDb, db);
 
         RetainForDispose(_openedDb);
-        _openedDb = readOnlyDb;
+        _openedDb = db;
         _openedSession = session;
 
         if (_openedTempDirectory != null && _openedTempDirectory != tempDir)
@@ -306,7 +309,7 @@ public sealed class PlaybackSessionManager : IDisposable
                     refreshCounter = 0;
                 }
 
-                if (Tyr.Gui.Views.SessionsView.AutoCompact)
+                if (Views.SessionsView.AutoCompact)
                 {
                     List<PlaybackSessionInfo> toCompact;
                     lock (_lock)
@@ -384,7 +387,7 @@ public sealed class PlaybackSessionManager : IDisposable
         }
     }
 
-    private void RetainForDispose(IDebugDb? db)
+    private void RetainForDispose(DebugDb? db)
     {
         if (db is not null && !ReferenceEquals(db, _liveDb))
             _retainedDbs.Add(db);
@@ -437,7 +440,7 @@ public sealed class PlaybackSessionManager : IDisposable
 }
 
 public sealed record PlaybackSessionInfo(
-    Tyr.Common.Debug.Db.DebugDbSessionMetadata Metadata,
+    DebugDbSessionMetadata Metadata,
     string MetadataPath,
     string SessionDirectory,
     string DatabaseDirectory,
