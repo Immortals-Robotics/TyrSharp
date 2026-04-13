@@ -164,6 +164,16 @@ OppPredictTime = 0.15 # default: 0.150000s
 PenaltyAreaMark = false # default: False
 PenaltyAreaMarkDistance = 200.0 # default: 200
 
+[Soccer.Skills.InterceptV2]
+# Dribbler speed used while receiving a moving ball
+ReceiveDribblerSpeed = 2.0 # default: 2
+# Ball arrival time below which the bot forces blocking on the ball path [s]
+ImminentImpactTimeSeconds = 0.30000001192092896 # default: 0.3
+# Distance from robot kicker to ball path below which the bot forces blocking [mm]
+ImminentImpactDistanceMm = 150.0 # default: 150
+# Time until ball impact below which the dribbler is activated [s]
+DribblerActivationTimeSeconds = 0.20000000298023224 # default: 0.2
+
 
 [Soccer.TeamRunner]
 SleepTime = 0.001 # default: 0.001000s
@@ -177,6 +187,48 @@ ZoneCountY = 4 # default: 4
 
 [Soccer.Ai]
 VisionPredictionTime = 0.15 # default: 0.120000s
+
+[Soccer.Helpers]
+[Soccer.Helpers.BallInterception]
+# Lower planar ball-speed threshold for interception [mm/s]
+MinBallSpeedLowerMmPerS = 100.0 # default: 100
+# Upper planar ball-speed threshold for interception [mm/s]
+MinBallSpeedUpperMmPerS = 250.0 # default: 250
+# Search horizon hard cap for moving-ball interception [s]
+MaxSearchTimeSeconds = 5.0 # default: 5
+# Sampling step for moving-ball interception search [s]
+SearchStepSeconds = 0.05000000074505806 # default: 0.05
+# Sampling step when finding the valid search horizon [s]
+HorizonStepSeconds = 0.05000000074505806 # default: 0.05
+# Height above which interception waits for the next touchdown [mm]
+MaxReceiveHeightMm = 120.0 # default: 120
+# Maximum acceptable absolute slack time between robot and ball [s]
+MaxSlackTimeSeconds = 0.3499999940395355 # default: 0.35
+# Minimum spare time buffer to delay movement [s]
+SpareTimeBufferSeconds = 0.30000001192092896 # default: 0.3
+# Objective bonus bias toward earlier interceptions [s]
+EarlyInterceptionBonus = 2.0 # default: 2
+# Time window over which the early interception bonus fades out [s]
+EarlyInterceptionWindowSeconds = 2.0 # default: 2
+# Hysteresis bonus for sticking to the previous plan [s]
+HysteresisBonusSeconds = 0.15000000596046448 # default: 0.15
+# Distance within which the previous plan's hysteresis bonus applies [mm]
+HysteresisDistanceMm = 150.0 # default: 150
+
+[Soccer.Helpers.BallReceiving]
+# Fallback center-to-dribbler geometry used by receive/intercept skills [mm]
+CenterToDribblerMm = 75.0 # default: 75
+# Maximum expected vision latency for receive-point back projection [s]
+ExpectedVisionDeviationSeconds = 0.10000000149011612 # default: 0.1
+# If the preferred receive point is further than this from the current ball path, keep the preferred point [mm]
+MaxProjectionDistanceMm = 1000.0 # default: 1000
+# Margin to keep between a receive destination and a penalty area [mm]
+PenaltyAreaMarginMm = 110.0 # default: 110
+# Distance from receive point to ball where the receive orientation is locked [mm]
+OrientationLockDistanceMm = 200.0 # default: 200
+# Below this planar ball speed the current orientation is kept for receiving [mm/s]
+FacingFallbackSpeedMmPerS = 50.0 # default: 50
+
 
 [Soccer.Tactics]
 [Soccer.Tactics.Mark]
@@ -268,10 +320,8 @@ ConsoleLevel = "Information" # default: Information
 
 
 [Common.Debug.Db]
-[Common.Debug.Db.DebugDbDumper]
-SleepTime = 0.001 # default: 0.001000s
+[Common.Debug.Db.DebugDbSession]
 ViewerPort = 9000 # default: 9000
-RunnerPriority = "BelowNormal" # default: BelowNormal
 
 
 
