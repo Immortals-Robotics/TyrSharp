@@ -11,6 +11,11 @@ public sealed class WaitForBall : ISkill
 
     public void Execute(Robot.Robot robot)
     {
+        if (InterceptV2.TryExecuteForcedReceive(robot, out _))
+        {
+            return;
+        }
+
         var receiverPos = StaticPosition;
         var ballVelocity = Context.Ball.State.Velocity.Xy();
 
@@ -23,5 +28,6 @@ public sealed class WaitForBall : ISkill
 
         robot.Navigate(receiverPos, VelocityProfile.Mamooli);
         robot.TargetAngle = receiverPos.AngleWith(Context.Ball.State.Position);
+        InterceptV2.SetReceiveDribbler(robot, InterceptV2.IsBallApproachingRobot(robot));
     }
 }

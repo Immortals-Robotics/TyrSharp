@@ -15,6 +15,14 @@ public sealed partial class InterceptV2 : ISkill
 {
     private const float ReceiveDribblerForce = 1f;
 
+    private readonly record struct ImminentImpact(Vector2 InterceptPoint, float BallArrivalTime);
+    public readonly record struct ForcedReceiveExecution(
+        Vector2 BallPosition,
+        Vector2 InterceptPoint,
+        Vector2 Destination,
+        Angle FacingAngle,
+        float BallArrivalTime);
+
     [ConfigEntry("Dribbler speed used while receiving a moving ball")]
     private static float ReceiveDribblerSpeed { get; set; } = 2f;
 
@@ -27,6 +35,67 @@ public sealed partial class InterceptV2 : ISkill
     [ConfigEntry("Time until ball impact below which the dribbler is activated [s]")]
     private static float DribblerActivationTimeSeconds { get; set; } = 0.2f;
 
+    public static bool HasImminentImpact(Robot.Robot robot, Angle? targetAngle = null) =>
+        TryGetImminentImpact(robot, out _, targetAngle);
+
+    public static bool IsBallApproachingRobot(Robot.Robot robot)
+    {
+        return BallReceiving.IsBallMovingTowardsPoint(
+            Context.Ball.State.Position,
+            Context.Ball.State.Velocity.Xy(),
+            robot.Position);
+    }
+
+    public static void SetReceiveDribbler(Robot.Robot robot, bool enabled)
+    {
+        robot.SetDribbler(
+            enabled ? ReceiveDribblerSpeed : 0f,
+            enabled ? ReceiveDribblerForce : 0f);
+    }
+
+    public static bool TryExecuteForcedReceive(Robot.Robot robot, out ForcedReceiveExecution execution,
+        Angle? targetAngle = null)
+    {
+        execution = default;
+
+        if (!TryGetImminentImpact(robot, out var imminentImpact, targetAngle))
+        {
+            return false;
+        }
+
+        var ballPosition = Context.Ball.State.Position;
+        var ballVelocity = Context.Ball.State.Velocity.Xy();
+        var centerToDribbler = robot.CenterToDribbler;
+        var interceptPoint = imminentImpact.InterceptPoint;
+        var ballArrivalTime = imminentImpact.BallArrivalTime;
+        var facingAngle = (-ballVelocity).ToAngle();
+        var destination = BallReceiving.GetCenterDestination(
+            interceptPoint,
+            facingAngle,
+            centerToDribbler,
+            Context.Field.BallRadius);
+
+        destination = BallReceiving.ClampToLegalDestination(
+            destination,
+            Context.Field.RectangleWithBoundary,
+            Context.Field.OwnPenaltyArea(),
+            Context.Field.OppPenaltyArea(),
+            BallReceiving.PenaltyAreaMargin);
+
+        robot.Navigate(destination, VelocityProfile.Mamooli, NavigationFlags.NoBallObstacle);
+        robot.TargetAngle = facingAngle;
+        SetReceiveDribbler(robot, true);
+
+        execution = new ForcedReceiveExecution(
+            ballPosition,
+            interceptPoint,
+            destination,
+            facingAngle,
+            ballArrivalTime);
+
+        return true;
+    }
+
     private bool _hasTargetAngle;
     private Angle _lastTargetAngle;
     private bool _hasDestination;
@@ -37,6 +106,7 @@ public sealed partial class InterceptV2 : ISkill
     {
         var ballPosition = Context.Ball.State.Position;
         var ballVelocity = Context.Ball.State.Velocity.Xy();
+        var navigationFlags = GetInterceptionNavigationFlags(robot, ballPosition, ballVelocity);
 
         var trajectory = ServiceLocator.BallTrajectoryFactory.FromState(Context.Ball.State);
         var centerToDribbler = robot.CenterToDribbler;
@@ -45,40 +115,19 @@ public sealed partial class InterceptV2 : ISkill
             : robot.Position.AngleWith(ballPosition);
 
         // Forced Line Blocking (Safety Fallback)
-        var ballPath = Line.FromPointAndAngle(ballPosition, ballVelocity.ToAngle());
-        var kickerPos = Tyr.Common.Math.Shapes.Robot.GetKickerCenterPos(robot.Position, robot.TargetAngle,
-            centerToDribbler + Context.Field.BallRadius);
-        var distToPath = ballPath.Distance(kickerPos);
-        var ballSpeed = ballVelocity.Length();
-        var ballArrivalDist = Vector2.Distance(ballPosition, ballPath.ClosestPoint(kickerPos));
-        var ballArrivalTime = ballSpeed > 1e-3f ? ballArrivalDist / ballSpeed : float.PositiveInfinity;
-
-        if (distToPath < ImminentImpactDistanceMm && ballArrivalTime < ImminentImpactTimeSeconds)
+        if (TryExecuteForcedReceive(robot, out var forcedReceive))
         {
-            var interceptPoint = ballPath.ClosestPoint(kickerPos);
-            var facingAngle = (-ballVelocity).ToAngle();
-            var destination = BallReceiving.GetCenterDestination(interceptPoint, facingAngle, centerToDribbler,
-                Context.Field.BallRadius);
-
-            destination = BallReceiving.ClampToLegalDestination(
-                destination,
-                Context.Field.RectangleWithBoundary,
-                Context.Field.OwnPenaltyArea(),
-                Context.Field.OppPenaltyArea(),
-                BallReceiving.PenaltyAreaMargin);
-
-            robot.Navigate(destination, VelocityProfile.Mamooli, NavigationFlags.NoBallObstacle);
-            robot.TargetAngle = facingAngle;
-            var dribblerActive = ballArrivalTime < DribblerActivationTimeSeconds;
-            robot.SetDribbler(
-                dribblerActive ? ReceiveDribblerSpeed : 0f,
-                dribblerActive ? ReceiveDribblerForce : 0f);
-
             _hasTargetAngle = true;
-            _lastTargetAngle = facingAngle;
+            _lastTargetAngle = forcedReceive.FacingAngle;
             _hasDestination = true;
-            _lastDestination = destination;
-            DrawDebug(ballPosition, interceptPoint, destination, facingAngle, ballArrivalTime, "FORCED");
+            _lastDestination = forcedReceive.Destination;
+            DrawDebug(
+                forcedReceive.BallPosition,
+                forcedReceive.InterceptPoint,
+                forcedReceive.Destination,
+                forcedReceive.FacingAngle,
+                forcedReceive.BallArrivalTime,
+                "FORCED");
             return;
         }
 
@@ -99,7 +148,7 @@ public sealed partial class InterceptV2 : ISkill
         {
             if (_hasDestination)
             {
-                robot.Navigate(_lastDestination, VelocityProfile.Mamooli, NavigationFlags.NoBallObstacle);
+                robot.Navigate(_lastDestination, VelocityProfile.Mamooli, navigationFlags);
                 robot.TargetAngle = _lastTargetAngle;
                 robot.SetDribbler(0f, 0f); // No impact imminent if plan lost
             }
@@ -133,12 +182,10 @@ public sealed partial class InterceptV2 : ISkill
             }
         }
 
-        robot.Navigate(finalDestination, VelocityProfile.Mamooli, NavigationFlags.NoBallObstacle);
+        robot.Navigate(finalDestination, VelocityProfile.Mamooli, navigationFlags);
         robot.TargetAngle = plan.FacingAngle;
         var shouldActivateDribbler = plan.TimeSeconds < DribblerActivationTimeSeconds;
-        robot.SetDribbler(
-            shouldActivateDribbler ? ReceiveDribblerSpeed : 0f,
-            shouldActivateDribbler ? ReceiveDribblerForce : 0f);
+        SetReceiveDribbler(robot, shouldActivateDribbler);
 
         _hasTargetAngle = true;
         _lastTargetAngle = plan.FacingAngle;
@@ -148,6 +195,37 @@ public sealed partial class InterceptV2 : ISkill
 
         DrawDebug(ballPosition, plan.BallState.Position, finalDestination, plan.FacingAngle, plan.TimeSeconds,
             "SOLVED");
+    }
+
+    private static bool TryGetImminentImpact(Robot.Robot robot, out ImminentImpact imminentImpact,
+        Angle? targetAngle = null)
+    {
+        var ballPosition = Context.Ball.State.Position;
+        var ballVelocity = Context.Ball.State.Velocity.Xy();
+        var ballPath = Line.FromPointAndAngle(ballPosition, ballVelocity.ToAngle());
+        var kickerPos = Tyr.Common.Math.Shapes.Robot.GetKickerCenterPos(
+            robot.Position,
+            targetAngle ?? robot.TargetAngle,
+            robot.CenterToDribbler + Context.Field.BallRadius);
+
+        var interceptPoint = ballPath.ClosestPoint(kickerPos);
+        var distToPath = ballPath.Distance(kickerPos);
+        var ballSpeed = ballVelocity.Length();
+        var ballArrivalDist = Vector2.Distance(ballPosition, interceptPoint);
+        var ballArrivalTime = ballSpeed > 1e-3f ? ballArrivalDist / ballSpeed : float.PositiveInfinity;
+
+        imminentImpact = new ImminentImpact(interceptPoint, ballArrivalTime);
+        return distToPath < ImminentImpactDistanceMm && ballArrivalTime < ImminentImpactTimeSeconds;
+    }
+
+    private static NavigationFlags GetInterceptionNavigationFlags(
+        Robot.Robot robot,
+        Vector2 ballPosition,
+        Vector2 ballVelocity)
+    {
+        return BallReceiving.IsBallMovingTowardsPoint(ballPosition, ballVelocity, robot.Position)
+            ? NavigationFlags.NoBallObstacle
+            : NavigationFlags.BallObstacle;
     }
 
     private void Reset()
