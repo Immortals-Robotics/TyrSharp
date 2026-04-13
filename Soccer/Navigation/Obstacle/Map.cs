@@ -127,7 +127,15 @@ public partial class Map
     }
 
     public (bool collided, float time) HasCollision(
-        ITrajectory<Vector2> trajectory,
+        Trajectory2D trajectory,
+        float lookAhead = 3.0f, float stepT = 0.1f,
+        Physicality physicality = Physicality.All)
+    {
+        return TraceTrajectory(trajectory, lookAhead, stepT, physicality, stopWhenInside: true);
+    }
+
+    public (bool collided, float time) HasCollision(
+        Trajectory2DChained trajectory,
         float lookAhead = 3.0f, float stepT = 0.1f,
         Physicality physicality = Physicality.All)
     {
@@ -135,7 +143,36 @@ public partial class Map
     }
 
     public (bool reachedFree, float time) ReachFree(
-        ITrajectory<Vector2> trajectory,
+        Trajectory2D trajectory,
+        float lookAhead = 3.0f, float stepT = 0.1f,
+        Physicality physicality = Physicality.All)
+    {
+        var tEnd = Math.Min(trajectory.EndTime, trajectory.StartTime + lookAhead);
+        var currentT = trajectory.StartTime;
+        var currentPos = trajectory.GetPosition(currentT);
+
+        if (!Inside(currentPos, 0f, physicality))
+            return (true, currentT);
+
+        while (currentT < tEnd)
+        {
+            var nextT = Math.Min(tEnd, currentT + ComputeTrajectoryStep(trajectory, currentT, stepT));
+            if (nextT <= currentT)
+                break;
+
+            var nextPos = trajectory.GetPosition(nextT);
+            if (!Inside(nextPos, 0f, physicality))
+                return (true, nextT);
+
+            currentT = nextT;
+            currentPos = nextPos;
+        }
+
+        return (false, float.MaxValue);
+    }
+
+    public (bool reachedFree, float time) ReachFree(
+        Trajectory2DChained trajectory,
         float lookAhead = 3.0f, float stepT = 0.1f,
         Physicality physicality = Physicality.All)
     {
@@ -177,7 +214,7 @@ public partial class Map
     }
 
     private (bool result, float time) TraceTrajectory(
-        ITrajectory<Vector2> trajectory,
+        Trajectory2D trajectory,
         float lookAhead,
         float stepT,
         Physicality physicality,
@@ -222,7 +259,66 @@ public partial class Map
         return (false, float.MaxValue);
     }
 
-    private float ComputeTrajectoryStep(ITrajectory<Vector2> trajectory, float currentT, float maxStepTime)
+    private (bool result, float time) TraceTrajectory(
+        Trajectory2DChained trajectory,
+        float lookAhead,
+        float stepT,
+        Physicality physicality,
+        bool stopWhenInside)
+    {
+        var tEnd = Math.Min(trajectory.EndTime, trajectory.StartTime + lookAhead);
+        var currentT = trajectory.StartTime;
+        var currentPos = trajectory.GetPosition(currentT);
+        var currentInside = Inside(currentPos, 0f, physicality);
+
+        if (currentInside == stopWhenInside)
+            return (true, currentT);
+
+        while (currentT < tEnd)
+        {
+            var nextT = Math.Min(tEnd, currentT + ComputeTrajectoryStep(trajectory, currentT, stepT));
+            if (nextT <= currentT)
+                break;
+
+            var nextPos = trajectory.GetPosition(nextT);
+            var segment = new LineSegment { Start = currentPos, End = nextPos };
+
+            if (stopWhenInside)
+            {
+                if (CollisionDetect(segment, physicality))
+                    return (true, nextT);
+            }
+            else
+            {
+                var nextInside = Inside(nextPos, 0f, physicality);
+                if (!nextInside)
+                    return (true, nextT);
+            }
+
+            currentT = nextT;
+            currentPos = nextPos;
+            currentInside = Inside(currentPos, 0f, physicality);
+            if (currentInside == stopWhenInside)
+                return (true, currentT);
+        }
+
+        return (false, float.MaxValue);
+    }
+
+    private float ComputeTrajectoryStep(Trajectory2D trajectory, float currentT, float maxStepTime)
+    {
+        if (maxStepTime <= 0f)
+            return MinTrajectoryStepTime;
+
+        var speed = trajectory.GetVelocity(currentT).Length();
+        if (speed <= 1e-3f)
+            return maxStepTime;
+
+        var adaptive = MaxTrajectorySegmentLength / speed;
+        return Math.Clamp(adaptive, MinTrajectoryStepTime, maxStepTime);
+    }
+
+    private float ComputeTrajectoryStep(Trajectory2DChained trajectory, float currentT, float maxStepTime)
     {
         if (maxStepTime <= 0f)
             return MinTrajectoryStepTime;

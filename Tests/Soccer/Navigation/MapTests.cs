@@ -112,7 +112,7 @@ public sealed class MapTests
         map.AddCircle(new Vector2(0f, 0f), 100f, Physicality.Physical);
         map.Add(Rectangle.FromCenterAndSize(new Vector2(600f, 0f), 200f, 600f), Physicality.Virtual);
 
-        var trajectory = new LinearTrajectory(
+        var trajectory = CreateLinearTrajectory(
             new Vector2(-1000f, 0f),
             new Vector2(1000f, 0f),
             duration: 1f);
@@ -223,6 +223,31 @@ public sealed class MapTests
             random.NextSingle() * 2f * limitY - limitY);
     }
 
+    private static Trajectory2D CreateLinearTrajectory(Vector2 start, Vector2 end, float duration)
+    {
+        var velocity = duration <= 0f ? Vector2.Zero : (end - start) / duration;
+
+        return new Trajectory2D
+        {
+            TrajectoryX = Trajectory1DPieced.Create(new Trajectory1DConstantAcc
+            {
+                StartPosition = start.X,
+                StartVelocity = velocity.X,
+                Acceleration = 0f,
+                StartTime = 0f,
+                EndTime = duration,
+            }),
+            TrajectoryY = Trajectory1DPieced.Create(new Trajectory1DConstantAcc
+            {
+                StartPosition = start.Y,
+                StartVelocity = velocity.Y,
+                Acceleration = 0f,
+                StartTime = 0f,
+                EndTime = duration,
+            }),
+        };
+    }
+
     private readonly record struct TestObstacle
     {
         public Circle Circle { get; init; }
@@ -327,22 +352,5 @@ public sealed class MapTests
         {
             Context.Data.Value = _previous!;
         }
-    }
-
-    private sealed class LinearTrajectory(Vector2 start, Vector2 end, float duration) : ITrajectory<Vector2>
-    {
-        public Vector2 GetPosition(float t)
-        {
-            var normalized = duration <= 0f ? 1f : Math.Clamp((t - StartTime) / duration, 0f, 1f);
-            return Vector2.Lerp(start, end, normalized);
-        }
-
-        public Vector2 GetVelocity(float t) => duration <= 0f ? Vector2.Zero : (end - start) / duration;
-
-        public Vector2 GetAcceleration(float t) => Vector2.Zero;
-
-        public float StartTime => 0f;
-        public float EndTime => duration;
-        public float Duration => duration;
     }
 }

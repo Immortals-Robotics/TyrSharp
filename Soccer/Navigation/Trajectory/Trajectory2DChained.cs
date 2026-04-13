@@ -2,7 +2,7 @@
 
 namespace Tyr.Soccer.Navigation.Trajectory;
 
-public readonly struct Trajectory2DChained : ITrajectory<Vector2>
+public readonly struct Trajectory2DChained
 {
     public required Trajectory2D First { get; init; }
     public required Trajectory2D Second { get; init; }

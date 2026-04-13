@@ -8,7 +8,7 @@ public struct TrajectoryPieceBuffer
     private Trajectory1DConstantAcc _element0;
 }
 
-public readonly struct Trajectory1DPieced : ITrajectory<float>
+public readonly struct Trajectory1DPieced
 {
     internal const int MaxParts = 3;
     private const int InvalidIdx = -1;

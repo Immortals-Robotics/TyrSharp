@@ -2,7 +2,7 @@ using System.Numerics;
 
 namespace Tyr.Soccer.Navigation.Trajectory;
 
-public readonly struct Trajectory2D : ITrajectory<Vector2>
+public readonly struct Trajectory2D
 {
     public Trajectory1DPieced TrajectoryX { get; init; }
     public Trajectory1DPieced TrajectoryY { get; init; }

@@ -1,6 +1,6 @@
 namespace Tyr.Soccer.Navigation.Trajectory;
 
-public readonly struct Trajectory1DConstantAcc : ITrajectory<float>
+public readonly struct Trajectory1DConstantAcc
 {
     public float Acceleration { get; init; }
     public float StartVelocity { get; init; }

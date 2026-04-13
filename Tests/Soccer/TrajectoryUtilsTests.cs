@@ -21,17 +21,6 @@ public sealed class TrajectoryUtilsTests
         Assert.False(subscriber.Reader.TryRead(out _));
     }
 
-    [Fact]
-    public void DrawTrajectory_WithGenericTrajectory_FallsBackToLineSegments()
-    {
-        using var subscriber = DebugBus.Subscribe<Command>(Mode.All);
-
-        TrajectoryUtils.DrawTrajectory(new LinearTrajectory(), Color.Black);
-
-        Assert.True(subscriber.Reader.TryRead(out var first));
-        Assert.IsType<LineSegment>(first.Drawable);
-    }
-
     private static Trajectory2D CreateTrajectory2D()
     {
         var trajectoryX = Trajectory1DPieced.Create(new Trajectory1DConstantAcc
@@ -57,15 +46,5 @@ public sealed class TrajectoryUtilsTests
             TrajectoryX = trajectoryX,
             TrajectoryY = trajectoryY,
         };
-    }
-
-    private sealed class LinearTrajectory : ITrajectory<Vector2>
-    {
-        public Vector2 GetPosition(float t) => new(t, 2f * t);
-        public Vector2 GetVelocity(float t) => new(1f, 2f);
-        public Vector2 GetAcceleration(float t) => Vector2.Zero;
-        public float StartTime => 0f;
-        public float EndTime => 0.3f;
-        public float Duration => EndTime - StartTime;
     }
 }
