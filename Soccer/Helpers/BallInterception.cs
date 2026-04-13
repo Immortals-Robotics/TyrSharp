@@ -131,6 +131,8 @@ public static partial class BallInterception
         Angle fallbackAngle,
         VelocityProfile profile,
         Rectangle fieldBounds,
+        Rectangle ownPenaltyArea,
+        Rectangle oppPenaltyArea,
         float ballRadius,
         float centerToDribbler,
         out InterceptPlan plan,
@@ -154,12 +156,13 @@ public static partial class BallInterception
                 robotMotion,
                 fallbackAngle,
                 profile,
+                fieldBounds,
+                ownPenaltyArea,
+                oppPenaltyArea,
                 ballRadius,
                 centerToDribbler,
                 previousPlan);
 
-            // Sumatra approach: robot must be able to reach the point before or at the same time as the ball
-            // (slackTime >= 0)
             if (candidate.SlackTimeSeconds < 0)
             {
                 continue;
@@ -179,6 +182,9 @@ public static partial class BallInterception
             robotMotion,
             fallbackAngle,
             profile,
+            fieldBounds,
+            ownPenaltyArea,
+            oppPenaltyArea,
             ballRadius,
             centerToDribbler,
             previousPlan);
@@ -207,19 +213,28 @@ public static partial class BallInterception
         Vector2 robotMotion,
         Angle fallbackAngle,
         VelocityProfile profile,
+        Rectangle fieldBounds,
+        Rectangle ownPenaltyArea,
+        Rectangle oppPenaltyArea,
         float ballRadius,
         float centerToDribbler,
         InterceptPlan? previousPlan)
     {
         var state = trajectory.GetState(DeltaTime.FromSeconds(timeSeconds));
         var facingAngle = BallReceiving.CalculateFacingAngle(state.Velocity.Xy(), fallbackAngle);
-        var destination = BallReceiving.GetCenterDestination(state.Position, facingAngle, centerToDribbler, ballRadius);
+        var rawDestination = BallReceiving.GetCenterDestination(state.Position, facingAngle, centerToDribbler, ballRadius);
+        var destination = BallReceiving.ClampToLegalDestination(
+            rawDestination,
+            fieldBounds,
+            ownPenaltyArea,
+            oppPenaltyArea,
+            BallReceiving.PenaltyAreaMargin);
         var reachTime = TrajectoryBangBang.Make2D(robotPosition, robotMotion, destination, profile).Duration;
         var slackTime = timeSeconds - reachTime;
         
         // Penalize plans that don't have enough spare time (wait time at destination)
         var spareTimePenalty = MathF.Max(0f, SpareTimeBufferSeconds - slackTime);
-        var objective = MathF.Abs(slackTime) + spareTimePenalty - CalculateEarlyInterceptionBonus(reachTime);
+        var objective = MathF.Abs(slackTime) + spareTimePenalty - CalculateEarlyInterceptionBonus(timeSeconds);
 
         if (previousPlan.HasValue && Vector2.DistanceSquared(destination, previousPlan.Value.CenterDestination) < HysteresisDistanceMm * HysteresisDistanceMm)
         {

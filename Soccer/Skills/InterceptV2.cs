@@ -16,6 +16,7 @@ public sealed partial class InterceptV2 : ISkill
     private const float ReceiveDribblerForce = 1f;
 
     private readonly record struct ImminentImpact(Vector2 InterceptPoint, float BallArrivalTime);
+
     public readonly record struct ForcedReceiveExecution(
         Vector2 BallPosition,
         Vector2 InterceptPoint,
@@ -27,10 +28,10 @@ public sealed partial class InterceptV2 : ISkill
     private static float ReceiveDribblerSpeed { get; set; } = 2f;
 
     [ConfigEntry("Ball arrival time below which the bot forces blocking on the ball path [s]")]
-    private static float ImminentImpactTimeSeconds { get; set; } = 0.3f;
+    private static float ImminentImpactTimeSeconds { get; set; } = 0.5f;
 
     [ConfigEntry("Distance from robot kicker to ball path below which the bot forces blocking [mm]")]
-    private static float ImminentImpactDistanceMm { get; set; } = 150f;
+    private static float ImminentImpactDistanceMm { get; set; } = 250f;
 
     [ConfigEntry("Time until ball impact below which the dribbler is activated [s]")]
     private static float DribblerActivationTimeSeconds { get; set; } = 0.2f;
@@ -139,6 +140,8 @@ public sealed partial class InterceptV2 : ISkill
             previousTargetAngle,
             VelocityProfile.Mamooli,
             Context.Field.RectangleWithBoundary,
+            Context.Field.OwnPenaltyArea(),
+            Context.Field.OppPenaltyArea(),
             Context.Field.BallRadius,
             centerToDribbler,
             out var plan,

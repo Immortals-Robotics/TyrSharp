@@ -34,6 +34,8 @@ public sealed class InterceptBall : ISkill
             robot.TargetAngle,
             VelocityProfile.Mamooli,
             Context.Field.RectangleWithBoundary,
+            Context.Field.OwnPenaltyArea(),
+            Context.Field.OppPenaltyArea(),
             Context.Field.BallRadius,
             centerToDribbler,
             out var plan,

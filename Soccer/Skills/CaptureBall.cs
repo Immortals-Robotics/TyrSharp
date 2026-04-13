@@ -9,7 +9,6 @@ namespace Tyr.Soccer.Skills;
 
 /// <summary>
 /// A high-precision, low-latency skill for capturing a stationary or slow-moving ball.
-/// Mirrors Sumatra's ProtectiveGetBallSkill with "Soft Charge and Brake" logic.
 /// </summary>
 [Configurable]
 public sealed partial class CaptureBall : ISkill
@@ -55,7 +54,8 @@ public sealed partial class CaptureBall : ISkill
         float currentMargin = isRoughlyFocused ? CaptureMarginMm : ApproachMarginMm;
 
         var direction = Vector2.Normalize(toBall);
-        var destination = ballPosition - direction * (robot.CenterToDribbler + Context.Field.BallRadius + currentMargin);
+        var destination =
+            ballPosition - direction * (robot.CenterToDribbler + Context.Field.BallRadius + currentMargin);
 
         // Clamping to legal field bounds
         destination = BallReceiving.ClampToLegalDestination(

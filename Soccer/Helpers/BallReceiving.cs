@@ -163,7 +163,7 @@ public static partial class BallReceiving
 
         if (oppPenaltyArea.Inside(clamped, penaltyMargin))
         {
-            clamped = ownPenaltyArea.NearestOutside(clamped, penaltyMargin + LegalSeparationEpsilonMm);
+            clamped = oppPenaltyArea.NearestOutside(clamped, penaltyMargin + LegalSeparationEpsilonMm);
         }
 
         return ClampInside(clamped, fieldBounds);
