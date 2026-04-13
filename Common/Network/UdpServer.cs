@@ -14,6 +14,7 @@ public sealed partial class UdpServer : IDisposable
     private readonly Socket _socket;
     private readonly byte[] _buffer;
     private readonly ConcurrentDictionary<Address, IPEndPoint> _endpointCache = new();
+    private EndPoint? _lastReceiveEndpoint;
 
     public UdpServer()
     {
@@ -26,6 +27,18 @@ public sealed partial class UdpServer : IDisposable
         }
         
         _socket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, true);
+    }
+
+    public void Bind(Address address)
+    {
+        if (_socket.IsBound)
+            return;
+
+        var endpoint = GetEndPoint(address);
+        _socket.Bind(endpoint);
+        _lastReceiveEndpoint = new IPEndPoint(
+            endpoint.AddressFamily == AddressFamily.InterNetworkV6 ? IPAddress.IPv6Any : IPAddress.Any,
+            0);
     }
 
     public Span<byte> GetBuffer()
@@ -139,19 +152,49 @@ public sealed partial class UdpServer : IDisposable
 
     public async Task<T?> ReceiveAsync<T>(CancellationToken token = default) where T : class
     {
+        var data = await ReceiveRawAsync(token);
+        if (data.IsEmpty)
+            return null;
+
         try
         {
-            var result = await _socket.ReceiveFromAsync(_buffer, SocketFlags.None, new IPEndPoint(IPAddress.Any, 0), token);
-            if (result.ReceivedBytes == 0) return null;
-
-            using var ms = new MemoryStream(_buffer, 0, result.ReceivedBytes);
-            return Serializer.Deserialize<T>(ms);
+            return Serializer.Deserialize<T>(data.Span);
         }
         catch (OperationCanceledException) { return null; }
         catch (Exception ex)
         {
             Log.ZLogError(ex, $"UDP receive error");
             return null;
+        }
+    }
+
+    public async ValueTask<ReadOnlyMemory<byte>> ReceiveRawAsync(CancellationToken token = default)
+    {
+        if (!_socket.IsBound)
+        {
+            Log.ZLogWarning($"UDP receive requested before socket was bound");
+            return ReadOnlyMemory<byte>.Empty;
+        }
+
+        try
+        {
+            _lastReceiveEndpoint ??= new IPEndPoint(IPAddress.Any, 0);
+            var result = await _socket.ReceiveFromAsync(_buffer, SocketFlags.None, _lastReceiveEndpoint, token);
+            _lastReceiveEndpoint = result.RemoteEndPoint;
+            return _buffer.AsMemory(0, result.ReceivedBytes);
+        }
+        catch (SocketException ex) when (ex.SocketErrorCode is SocketError.Interrupted or SocketError.OperationAborted)
+        {
+            return ReadOnlyMemory<byte>.Empty;
+        }
+        catch (OperationCanceledException)
+        {
+            return ReadOnlyMemory<byte>.Empty;
+        }
+        catch (Exception ex)
+        {
+            Log.ZLogError(ex, $"UDP receive error");
+            return ReadOnlyMemory<byte>.Empty;
         }
     }
 

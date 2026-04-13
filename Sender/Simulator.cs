@@ -26,6 +26,7 @@ public sealed partial class Simulator : ISender
 
     public Simulator()
     {
+        _udp.Bind(new Address { Ip = "0.0.0.0", Port = 0 });
         _receiveTask = Task.Run(ReceiveLoop);
     }
 
@@ -98,11 +99,41 @@ public sealed partial class Simulator : ISender
                 continue;
             }
 
-            var response = await _udp.ReceiveAsync<RobotControlResponse>(_cts.Token);
+            var response = await ReceiveFeedbackAsync(_cts.Token);
             if (response != null)
             {
                 Hub.SimFeedback.Publish(response);
             }
+        }
+    }
+
+    private async Task<RobotControlResponse?> ReceiveFeedbackAsync(CancellationToken token)
+    {
+        var data = await _udp.ReceiveRawAsync(token);
+        if (data.IsEmpty)
+            return null;
+
+        try
+        {
+            return Serializer.Deserialize<RobotControlResponse>(data.Span);
+        }
+        catch (ProtoException)
+        {
+            // Some simulator builds wrap feedback in SyncResponse during startup/handshake.
+        }
+
+        try
+        {
+            return Serializer.Deserialize<SyncResponse>(data.Span).RobotControlResponse;
+        }
+        catch (ProtoException)
+        {
+            return null;
+        }
+        catch (Exception ex)
+        {
+            Log.ZLogError(ex, $"Failed to decode simulator feedback");
+            return null;
         }
     }
 
