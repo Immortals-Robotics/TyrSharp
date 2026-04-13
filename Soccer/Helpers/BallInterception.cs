@@ -228,7 +228,9 @@ public static partial class BallInterception
             fieldBounds,
             ownPenaltyArea,
             oppPenaltyArea,
-            BallReceiving.PenaltyAreaMargin);
+            BallReceiving.PenaltyAreaMargin,
+            state.Position,
+            state.Velocity.Xy());
         var reachTime = TrajectoryBangBang.Make2D(robotPosition, robotMotion, destination, profile).Duration;
         var slackTime = timeSeconds - reachTime;
         

@@ -2,6 +2,7 @@ using System.Numerics;
 using Tyr.Common;
 using Tyr.Common.Data.Ssl.Vision.Geometry;
 using Tyr.Common.Math;
+using Tyr.Common.Math.Shapes;
 using Tyr.Common.Vision.Data;
 using Tyr.Soccer.Helpers;
 using Tyr.Soccer.Robot;
@@ -61,6 +62,8 @@ public class BallInterceptionTests
             new Vector3(1800f, 0f, 0f));
         var trajectory = ServiceLocator.BallTrajectoryFactory.FromState(ball.State);
         var fieldBounds = FieldSize.DivisionA.RectangleWithBoundary;
+        var ownPenaltyArea = Rectangle.FromCornerAndSize(new Vector2(4200f, -1800f), 1800f, 3600f);
+        var oppPenaltyArea = Rectangle.FromCornerAndSize(new Vector2(-6000f, -1800f), 1800f, 3600f);
 
         var closeOk = BallInterception.TryFindPlan(
             ball,
@@ -70,6 +73,8 @@ public class BallInterceptionTests
             Angle.Zero,
             VelocityProfile.Mamooli,
             fieldBounds,
+            ownPenaltyArea,
+            oppPenaltyArea,
             FieldSize.DivisionA.BallRadius,
             75f,
             out var closePlan);
@@ -82,6 +87,8 @@ public class BallInterceptionTests
             Angle.Zero,
             VelocityProfile.Mamooli,
             fieldBounds,
+            ownPenaltyArea,
+            oppPenaltyArea,
             FieldSize.DivisionA.BallRadius,
             75f,
             out var farPlan);

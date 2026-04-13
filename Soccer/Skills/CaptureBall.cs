@@ -63,7 +63,9 @@ public sealed partial class CaptureBall : ISkill
             Context.Field.RectangleWithBoundary,
             Context.Field.OwnPenaltyArea(),
             Context.Field.OppPenaltyArea(),
-            BallReceiving.PenaltyAreaMargin);
+            BallReceiving.PenaltyAreaMargin,
+            ballPosition,
+            Context.Ball.State.Velocity.Xy());
 
         // 4. Low-Latency Execution
         robot.Navigate(destination, VelocityProfile.Mamooli, NavigationFlags.NoBallObstacle);

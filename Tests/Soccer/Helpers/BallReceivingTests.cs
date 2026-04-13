@@ -94,6 +94,48 @@ public class BallReceivingTests
     }
 
     [Fact]
+    public void ClampToLegalDestination_KeepsPointOnBallPath_WhenLeavingPenaltyArea()
+    {
+        var fieldBounds = Rectangle.FromCenterAndSize(Vector2.Zero, 13400f, 10400f);
+        var ownPenalty = Rectangle.FromCornerAndSize(new Vector2(4200f, -1800f), 1800f, 3600f);
+        var oppPenalty = Rectangle.FromCornerAndSize(new Vector2(-6000f, -1800f), 1800f, 3600f);
+
+        var clamped = BallReceiving.ClampToLegalDestination(
+            new Vector2(5300f, 0f),
+            fieldBounds,
+            ownPenalty,
+            oppPenalty,
+            110f,
+            new Vector2(3000f, 0f),
+            Vector2.Zero);
+
+        Assert.False(ownPenalty.Inside(clamped, 110f));
+        Assert.InRange(clamped.X, 6110.9f, 6111.1f);
+        Assert.InRange(clamped.Y, -0.001f, 0.001f);
+    }
+
+    [Fact]
+    public void ClampToLegalDestination_PrefersBallPathIntersection_OverNearestOutside()
+    {
+        var fieldBounds = Rectangle.FromCenterAndSize(Vector2.Zero, 13400f, 10400f);
+        var ownPenalty = Rectangle.FromCornerAndSize(new Vector2(4200f, -1800f), 1800f, 3600f);
+        var oppPenalty = Rectangle.FromCornerAndSize(new Vector2(-6000f, -1800f), 1800f, 3600f);
+
+        var clamped = BallReceiving.ClampToLegalDestination(
+            new Vector2(5900f, 1850f),
+            fieldBounds,
+            ownPenalty,
+            oppPenalty,
+            110f,
+            new Vector2(3000f, 1850f),
+            new Vector2(1000f, 0f));
+
+        Assert.False(ownPenalty.Inside(clamped, 110f));
+        Assert.InRange(clamped.X, 6110.9f, 6111.1f);
+        Assert.InRange(clamped.Y, 1849.999f, 1850.001f);
+    }
+
+    [Fact]
     public void IsBallMovingTowardsPoint_DetectsApproachingAndRecedingBall()
     {
         Assert.True(BallReceiving.IsBallMovingTowardsPoint(

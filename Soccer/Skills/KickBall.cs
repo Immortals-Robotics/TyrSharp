@@ -12,6 +12,7 @@ namespace Tyr.Soccer.Skills;
 public sealed partial class KickBall : ISkill
 {
     [ConfigEntry] private static DeltaTime PredictionTime { get; set; } = DeltaTime.FromMilliseconds(200);
+    [ConfigEntry] private static float MaxAngleError { get; set; } = 3;
 
     public Angle Angle { get; set; }
     public float Kick { get; set; }
@@ -26,7 +27,9 @@ public sealed partial class KickBall : ISkill
 
         var toTarget = Angle.ToUnitVec();
         var robotToBall = ball.Position - robot.Position;
-        var toBall = Utils.ApproximatelyZero(robotToBall.LengthSquared()) ? Vector2.Zero : Vector2.Normalize(robotToBall);
+        var toBall = Utils.ApproximatelyZero(robotToBall.LengthSquared())
+            ? Vector2.Zero
+            : Vector2.Normalize(robotToBall);
 
         var ballTargetDot = Vector2.Dot(toTarget, toBall);
         var rScaleFactor = 2f * MathF.Pow((1f - ballTargetDot) * 0.5f, 0.5f) - 1f;
@@ -42,7 +45,9 @@ public sealed partial class KickBall : ISkill
         var finalPos = behindBallPos + toTarget * forwardOffset;
 
         robot.DynamicBallObstacleRadius = radius;
-        var profile = Vector2.Distance(robot.Position, ball.Position) < 30f ? VelocityProfile.Kharaki : VelocityProfile.Mamooli;
+        var profile = Vector2.Distance(robot.Position, ball.Position) < 30f
+            ? VelocityProfile.Kharaki
+            : VelocityProfile.Mamooli;
         robot.Navigate(finalPos, profile, navigationFlags);
 
         if (IsGoalkeeper)
@@ -57,8 +62,18 @@ public sealed partial class KickBall : ISkill
                 : kickDirection.ToAngle();
         }
 
-        robot.Shoot = Kick;
-        robot.Chip = Chip;
+        BallControl.TryEnableDribblerWhenBallNearKicker(robot, ball.Position);
+
+        if (MathF.Abs((robot.Angle - Angle).DegNormalized) < MaxAngleError)
+        {
+            robot.Shoot = Kick;
+            robot.Chip = Chip;
+        }
+        else
+        {
+            robot.Shoot = 0;
+            robot.Chip = 0;
+        }
     }
 
     private static float SmoothStep01(float value)

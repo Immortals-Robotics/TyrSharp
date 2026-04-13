@@ -1,6 +1,7 @@
 using System.Numerics;
 using Tyr.Common.Extensions;
 using Tyr.Common.Math;
+using Tyr.Soccer.Helpers;
 using Tyr.Soccer.Robot;
 
 namespace Tyr.Soccer.Skills;
@@ -30,7 +31,7 @@ public sealed class TurnAndShoot : ISkill
             : ballPos;
 
         var toBallAngle = (effectiveBallPos - robot.Position).ToAngle();
-        var angleToTarget = (shootAngle - toBallAngle).DegNormalized;
+        var angleToTarget = (shootAngle - robot.Angle).DegNormalized;
         var angleError = MathF.Abs(angleToTarget);
 
         if (angleError < 8f)
@@ -48,6 +49,7 @@ public sealed class TurnAndShoot : ISkill
 
         robot.Navigate(target, VelocityProfile.Kharaki, NavigationFlags.NoExtraMargin | NavigationFlags.NoBreak);
         robot.TargetAngle = heading;
+        BallControl.TryEnableDribblerWhenBallNearKicker(robot, ballPos);
     }
 
     private static Angle CalculateSteeringHeading(Angle toBallAngle, float angleToTarget)

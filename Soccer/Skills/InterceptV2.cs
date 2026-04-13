@@ -28,10 +28,10 @@ public sealed partial class InterceptV2 : ISkill
     private static float ReceiveDribblerSpeed { get; set; } = 2f;
 
     [ConfigEntry("Ball arrival time below which the bot forces blocking on the ball path [s]")]
-    private static float ImminentImpactTimeSeconds { get; set; } = 0.5f;
+    private static float ImminentImpactTimeSeconds { get; set; } = 0.3f;
 
     [ConfigEntry("Distance from robot kicker to ball path below which the bot forces blocking [mm]")]
-    private static float ImminentImpactDistanceMm { get; set; } = 250f;
+    private static float ImminentImpactDistanceMm { get; set; } = 150f;
 
     [ConfigEntry("Time until ball impact below which the dribbler is activated [s]")]
     private static float DribblerActivationTimeSeconds { get; set; } = 0.2f;
@@ -81,7 +81,9 @@ public sealed partial class InterceptV2 : ISkill
             Context.Field.RectangleWithBoundary,
             Context.Field.OwnPenaltyArea(),
             Context.Field.OppPenaltyArea(),
-            BallReceiving.PenaltyAreaMargin);
+            BallReceiving.PenaltyAreaMargin,
+            ballPosition,
+            ballVelocity);
 
         robot.Navigate(destination, VelocityProfile.Mamooli, NavigationFlags.NoBallObstacle);
         robot.TargetAngle = facingAngle;
@@ -169,7 +171,9 @@ public sealed partial class InterceptV2 : ISkill
             Context.Field.RectangleWithBoundary,
             Context.Field.OwnPenaltyArea(),
             Context.Field.OppPenaltyArea(),
-            BallReceiving.PenaltyAreaMargin);
+            BallReceiving.PenaltyAreaMargin,
+            plan.BallState.Position,
+            plan.BallState.Velocity.Xy());
 
         if (!float.IsFinite(finalDestination.X) || !float.IsFinite(finalDestination.Y))
         {

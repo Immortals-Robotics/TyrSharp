@@ -53,7 +53,9 @@ public sealed class InterceptBall : ISkill
             Context.Field.RectangleWithBoundary,
             Context.Field.OwnPenaltyArea(),
             Context.Field.OppPenaltyArea(),
-            BallReceiving.PenaltyAreaMargin);
+            BallReceiving.PenaltyAreaMargin,
+            plan.BallState.Position,
+            plan.BallState.Velocity.Xy());
 
         robot.Navigate(destination, VelocityProfile.Mamooli, NavigationFlags.NoBallObstacle);
         robot.TargetAngle = plan.FacingAngle;

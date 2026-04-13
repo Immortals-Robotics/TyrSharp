@@ -152,19 +152,14 @@ public static partial class BallReceiving
         Rectangle fieldBounds,
         Rectangle ownPenaltyArea,
         Rectangle oppPenaltyArea,
-        float penaltyMargin)
+        float penaltyMargin,
+        Vector2? ballPosition = null,
+        Vector2? ballVelocity = null)
     {
         var clamped = ClampInside(destination, fieldBounds);
 
-        if (ownPenaltyArea.Inside(clamped, penaltyMargin))
-        {
-            clamped = ownPenaltyArea.NearestOutside(clamped, penaltyMargin + LegalSeparationEpsilonMm);
-        }
-
-        if (oppPenaltyArea.Inside(clamped, penaltyMargin))
-        {
-            clamped = oppPenaltyArea.NearestOutside(clamped, penaltyMargin + LegalSeparationEpsilonMm);
-        }
+        clamped = ClampOutsidePenaltyArea(clamped, ownPenaltyArea, penaltyMargin, ballPosition, ballVelocity);
+        clamped = ClampOutsidePenaltyArea(clamped, oppPenaltyArea, penaltyMargin, ballPosition, ballVelocity);
 
         return ClampInside(clamped, fieldBounds);
     }
@@ -201,7 +196,9 @@ public static partial class BallReceiving
             fieldBounds,
             ownPenaltyArea,
             oppPenaltyArea,
-            PenaltyAreaMarginMm);
+            PenaltyAreaMarginMm,
+            currentBallPosition,
+            currentBallVelocity);
 
         return new ReceiveTarget(projection.Point, destination, facingAngle, projection.UsedBackProjection);
     }
@@ -219,6 +216,99 @@ public static partial class BallReceiving
             Math.Clamp(point.Y, bounds.Min.Y, bounds.Max.Y));
     }
 
+    private static Vector2 ClampOutsidePenaltyArea(
+        Vector2 destination,
+        Rectangle penaltyArea,
+        float penaltyMargin,
+        Vector2? ballPosition,
+        Vector2? ballVelocity)
+    {
+        if (!penaltyArea.Inside(destination, penaltyMargin))
+        {
+            return destination;
+        }
+
+        if (ballPosition.HasValue &&
+            ballVelocity.HasValue &&
+            !Utils.ApproximatelyZero(ballVelocity.Value.LengthSquared()) &&
+            TryProjectOutsidePenaltyAreaOnBallPath(
+                destination,
+                penaltyArea,
+                penaltyMargin,
+                ballPosition.Value,
+                ballVelocity.Value,
+                out var projected))
+        {
+            return projected;
+        }
+
+        if (ballPosition.HasValue && penaltyArea.Inside(ballPosition.Value, penaltyMargin))
+        {
+            return penaltyArea.NearestOutside(ballPosition.Value, penaltyMargin + LegalSeparationEpsilonMm);
+        }
+
+        return penaltyArea.NearestOutside(destination, penaltyMargin + LegalSeparationEpsilonMm);
+    }
+
+    private static bool TryProjectOutsidePenaltyAreaOnBallPath(
+        Vector2 destination,
+        Rectangle penaltyArea,
+        float penaltyMargin,
+        Vector2 ballPosition,
+        Vector2 ballVelocity,
+        out Vector2 projected)
+    {
+        projected = default;
+
+        var pathLine = GetBallPathLine(destination, ballPosition, ballVelocity);
+        if (!pathLine.HasValue)
+        {
+            return false;
+        }
+
+        var expandedPenaltyArea = Expand(penaltyArea, penaltyMargin + LegalSeparationEpsilonMm);
+        var (intersection0, intersection1) = Geometry.Intersection(expandedPenaltyArea, pathLine.Value);
+
+        if (!intersection0.HasValue && !intersection1.HasValue)
+        {
+            return false;
+        }
+
+        projected = NearestTo(destination, intersection0, intersection1);
+        return true;
+    }
+
+    private static Line? GetBallPathLine(Vector2 destination, Vector2 ballPosition, Vector2 ballVelocity)
+    {
+        var toBall = ballPosition - destination;
+        if (toBall.LengthSquared() > 100f * 100f)
+        {
+            return Line.FromTwoPoints(destination, ballPosition);
+        }
+
+        if (!Utils.ApproximatelyZero(ballVelocity.LengthSquared()))
+        {
+            return Line.FromPointAndAngle(destination, ballVelocity.ToAngle());
+        }
+
+        if (!Utils.ApproximatelyZero(toBall.LengthSquared()))
+        {
+            return Line.FromTwoPoints(destination, ballPosition);
+        }
+
+        return null;
+    }
+
+    private static Vector2 NearestTo(Vector2 reference, Vector2? point0, Vector2? point1)
+    {
+        if (!point0.HasValue) return point1!.Value;
+        if (!point1.HasValue) return point0.Value;
+
+        return Vector2.DistanceSquared(reference, point0.Value) <= Vector2.DistanceSquared(reference, point1.Value)
+            ? point0.Value
+            : point1.Value;
+    }
+
     private static Rectangle Shrink(Rectangle bounds, float margin)
     {
         if (margin <= 0f)
@@ -229,5 +319,18 @@ public static partial class BallReceiving
         var halfWidth = MathF.Max(0f, bounds.Width * 0.5f - margin);
         var halfHeight = MathF.Max(0f, bounds.Height * 0.5f - margin);
         return Rectangle.FromCenterAndSize(bounds.Center, halfWidth * 2f, halfHeight * 2f);
+    }
+
+    private static Rectangle Expand(Rectangle bounds, float margin)
+    {
+        if (margin <= 0f)
+        {
+            return bounds;
+        }
+
+        return Rectangle.FromCenterAndSize(
+            bounds.Center,
+            bounds.Width + margin * 2f,
+            bounds.Height + margin * 2f);
     }
 }
