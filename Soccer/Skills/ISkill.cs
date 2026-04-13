@@ -1,8 +1,6 @@
-using SoccerRobot = Tyr.Soccer.Robot.Robot;
-
 namespace Tyr.Soccer.Skills;
 
 public interface ISkill
 {
-    public void Execute(SoccerRobot robot);
+    public void Execute(Robot.Robot robot);
 }

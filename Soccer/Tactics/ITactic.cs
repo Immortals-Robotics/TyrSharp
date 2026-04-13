@@ -4,6 +4,7 @@ namespace Tyr.Soccer.Tactics;
 
 public interface ITactic
 {
-    public void Reset();
-    public ISkill Tick(Robot.Robot robot);
+    Robot.Robot Robot { get; }
+    
+    public ISkill? Tick();
 }

@@ -24,7 +24,9 @@ public partial class Ai
     private readonly Dictionary<int, LinkedList<(Timestamp, Command)>> _commandHistories = [];
     private LinkedList<(Timestamp, Command)> CommandHistory(int id) => _commandHistories[id];
     private readonly ManualControlState _manualControl;
-    private readonly Tactics.Attacker _attacker = new();
+    
+    private Role.IRole? _currentRole;
+    private Tactics.ITactic? _currentTactic;
 
     internal Ai(ManualControlState manualControl)
     {
@@ -162,25 +164,36 @@ public partial class Ai
         {
             return;
         }
+        
+        // this resembles a play emitting a role
+        Role.IRole? role = null;
+        if (Context.Referee.Running())
+        {
+            role = new Role.Attacker();
+        }
+        
+        // then we create a tactic based on it for the robot.
+        if (_currentRole is null ? role is not null : !_currentRole.Equals(role))
+        {
+            Log.ZLogInformation($"Switching role to {role?.GetType().Name}");
+            _currentRole = role;
+            _currentTactic = _currentRole?.CreateTactic(Context.OwnRobots[0]);
+        }
 
         foreach (var robot in Context.OwnRobots)
         {
-            if (!robot.Seen) continue;
-
-            if (!Context.Referee.Running())
-            {
-                robot.Halt();
-                continue;
-            }
-
             if (robot.Id == 0)
             {
-                var skill = _attacker.Tick(robot);
-                skill.Execute(robot);
+                var skill = _currentTactic?.Tick();
+                if (skill != null)
+                    skill.Execute(robot);
+                else
+                    robot.Halt();
             }
             else
             {
-                robot.Navigate(Rand.Get(Context.Field.Rectangle), VelocityProfile.Mamooli);
+                robot.Halt();
+                //robot.Navigate(Rand.Get(Context.Field.Rectangle), VelocityProfile.Mamooli);
             }
         }
     }

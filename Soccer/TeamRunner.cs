@@ -14,7 +14,6 @@ namespace Tyr.Soccer;
 [Configurable]
 public sealed partial class TeamRunner : IDisposable
 {
-    [ConfigEntry] private static DeltaTime SleepTime { get; set; } = DeltaTime.FromMilliseconds(1);
     [ConfigEntry] private static ThreadPriority RunnerPriority { get; set; } = ThreadPriority.Highest;
 
     private readonly Subscriber<Referee.State> _refereeSubscriber;
@@ -85,7 +84,6 @@ public sealed partial class TeamRunner : IDisposable
     {
         if (!_visionSubscriber.Reader.TryRead(out var vision))
         {
-            Thread.Sleep(SleepTime.ToTimeSpan());
             return false;
         }
 
