@@ -1,3 +1,5 @@
+using System.Collections.Concurrent;
+using System.Linq.Expressions;
 using Tyr.Common.Config;
 using Tyr.Common.Dataflow;
 using Tyr.Common.Runner;
@@ -15,8 +17,7 @@ public sealed partial class DebugDbDumper : IDisposable
     [ConfigEntry] private static int ViewerPort { get; set; } = 9000;
     [ConfigEntry] private static ThreadPriority RunnerPriority { get; set; } = ThreadPriority.BelowNormal;
 
-    private readonly Subscriber<Debug.Frame> _frameSubscriber = Hub.Frames.Subscribe(Mode.All);
-    private readonly IReadOnlyList<IDebugEntrySubscription> _entrySubscriptions;
+    private readonly Subscriber<Debug.DebugDumpEntry> _dumpSubscriber = Debug.DebugBus.SubscribeDumpEntries(Mode.All);
 
     private readonly RunnerSync _runner;
     private readonly DebugDb _db;
@@ -41,10 +42,6 @@ public sealed partial class DebugDbDumper : IDisposable
         _viewer = new DebugDbViewer(_db, ViewerPort)
             .RegisterAllRegisteredTypes();
 
-        _entrySubscriptions = DebugTypeRegistry.GetRegisteredTypes()
-            .Select(DebugEntrySubscription.Create)
-            .ToArray();
-
         Log.ZLogInformation($"DebugDb session started: {_session.SessionDirectory}");
         _viewer.Start();
 
@@ -57,17 +54,33 @@ public sealed partial class DebugDbDumper : IDisposable
     {
         var dumped = false;
 
-        // Data must be written before the frame boundary that marks it as "completed".
-        // RunnerSync publishes draw/log/plot commands first, then the frame boundary.
-        // Processing frames first would make frames appear completed before their data
-        // is in the DB, causing the GUI to display an empty frame during that window.
-        foreach (var subscription in _entrySubscriptions)
-            dumped |= subscription.Drain(_db);
-
-        while (_frameSubscriber.Reader.TryRead(out var frame))
+        for (var entryIteration = 0; entryIteration < 1000; entryIteration++)
         {
-            _db.AppendFrame(frame);
-            _metadata.UpdateFrameRange(frame);
+            if (!_dumpSubscriber.Reader.TryRead(out var dumpEntry))
+                break;
+
+            if (dumpEntry.TryGetFrame(out var frame))
+            {
+                _db.AppendFrame(frame);
+                _metadata.UpdateFrameRange(frame);
+            }
+            else if (dumpEntry.TryGetKnownEntry(out Debug.Logging.Entry logEntry))
+            {
+                _db.Append(logEntry);
+            }
+            else if (dumpEntry.TryGetKnownEntry(out Debug.Drawing.Command drawCommand))
+            {
+                _db.Append(drawCommand);
+            }
+            else if (dumpEntry.TryGetKnownEntry(out Debug.Plotting.Command plotCommand))
+            {
+                _db.Append(plotCommand);
+            }
+            else if (dumpEntry.TryGetCustomEntry(out var entry, out var entryType))
+            {
+                DebugEntryAppender.Append(_db, entryType, entry);
+            }
+
             dumped = true;
         }
 
@@ -82,9 +95,7 @@ public sealed partial class DebugDbDumper : IDisposable
 
     public void Dispose()
     {
-        foreach (var subscription in _entrySubscriptions)
-            subscription.Dispose();
-        _frameSubscriber.Dispose();
+        _dumpSubscriber.Dispose();
 
         _runner.Stop();
 
@@ -95,40 +106,26 @@ public sealed partial class DebugDbDumper : IDisposable
         _metadata.Save(_session.MetadataPath);
     }
 
-    private interface IDebugEntrySubscription : IDisposable
+    private static class DebugEntryAppender
     {
-        bool Drain(DebugDb db);
-    }
+        private static readonly ConcurrentDictionary<Type, Action<DebugDb, object>> AppendActions = new();
 
-    private sealed class DebugEntrySubscription<T> : IDebugEntrySubscription where T : struct, Debug.IEntry
-    {
-        private readonly Subscriber<T> _subscriber = Debug.DebugBus.Subscribe<T>(Mode.All);
-
-        public bool Drain(DebugDb db)
+        public static void Append(DebugDb db, Type type, object entry)
         {
-            var dumped = false;
-
-            while (_subscriber.Reader.TryRead(out var entry))
-            {
-                db.Append(entry);
-                dumped = true;
-            }
-
-            return dumped;
+            var append = AppendActions.GetOrAdd(type, CreateAppendAction);
+            append(db, entry);
         }
 
-        public void Dispose()
+        private static Action<DebugDb, object> CreateAppendAction(Type type)
         {
-            _subscriber.Dispose();
-        }
-    }
+            var appendMethod = typeof(DebugDb).GetMethod(nameof(DebugDb.Append))!
+                .MakeGenericMethod(type);
 
-    private static class DebugEntrySubscription
-    {
-        public static IDebugEntrySubscription Create(Type type)
-        {
-            var subscriptionType = typeof(DebugEntrySubscription<>).MakeGenericType(type);
-            return (IDebugEntrySubscription)Activator.CreateInstance(subscriptionType)!;
+            var db = Expression.Parameter(typeof(DebugDb), "db");
+            var entry = Expression.Parameter(typeof(object), "entry");
+            var body = Expression.Call(db, appendMethod, Expression.Convert(entry, type));
+
+            return Expression.Lambda<Action<DebugDb, object>>(body, db, entry).Compile();
         }
     }
 }

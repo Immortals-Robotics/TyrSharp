@@ -41,6 +41,6 @@ public abstract class RunnerBase(int tickRateHz)
             ModuleName = ModuleContext.Current.Value,
             StartTimestamp = CurrentTickStartTimestamp,
         };
-        Hub.Frames.Publish(frame);
+        DebugBus.PublishFrame(frame);
     }
 }

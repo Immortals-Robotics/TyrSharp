@@ -227,6 +227,53 @@ public sealed class DebugDbTests
     }
 
     [Fact]
+    public void DebugBus_PublishesFramesAndEntriesThroughOrderedDumpTransport()
+    {
+        using var subscriber = DebugBus.SubscribeDumpEntries(Tyr.Common.Dataflow.Mode.All);
+
+        var firstEntry = new TestDebugEntry
+        {
+            Value = 1,
+            Label = "first",
+            Meta = Meta.GetOrCreate("Vision", layer: "TestLayer", file: "DebugDbTests.cs", member: nameof(DebugBus_PublishesFramesAndEntriesThroughOrderedDumpTransport), line: 1),
+            Timestamp = Timestamp.FromNanoseconds(10),
+            ShardKey = "robot-1",
+        };
+        var frame = new Frame
+        {
+            ModuleName = "Vision",
+            StartTimestamp = Timestamp.FromNanoseconds(20),
+        };
+        var secondEntry = new TestDebugEntry
+        {
+            Value = 2,
+            Label = "second",
+            Meta = Meta.GetOrCreate("Vision", layer: "TestLayer", file: "DebugDbTests.cs", member: nameof(DebugBus_PublishesFramesAndEntriesThroughOrderedDumpTransport), line: 1),
+            Timestamp = Timestamp.FromNanoseconds(30),
+            ShardKey = "robot-2",
+        };
+
+        DebugBus.Publish(firstEntry);
+        DebugBus.PublishFrame(frame);
+        DebugBus.Publish(secondEntry);
+
+        Assert.True(subscriber.Reader.TryRead(out var publishedFirst));
+        Assert.True(publishedFirst.TryGetEntry<TestDebugEntry>(out var firstTyped));
+        Assert.Equal(firstEntry.Value, firstTyped.Value);
+        Assert.Equal(firstEntry.Label, firstTyped.Label);
+
+        Assert.True(subscriber.Reader.TryRead(out var publishedFrame));
+        Assert.True(publishedFrame.TryGetFrame(out var typedFrame));
+        Assert.Equal(frame.ModuleName, typedFrame.ModuleName);
+        Assert.Equal(frame.StartTimestamp, typedFrame.StartTimestamp);
+
+        Assert.True(subscriber.Reader.TryRead(out var publishedSecond));
+        Assert.True(publishedSecond.TryGetEntry<TestDebugEntry>(out var secondTyped));
+        Assert.Equal(secondEntry.Value, secondTyped.Value);
+        Assert.Equal(secondEntry.Label, secondTyped.Label);
+    }
+
+    [Fact]
     public void RegisterKnownTypes_RoundTripsCustomEntryOutsideCommon()
     {
         var directory = CreateTempDirectory();
