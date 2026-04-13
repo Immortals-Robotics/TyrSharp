@@ -66,7 +66,7 @@ public sealed class DebugDb : IDebugDb
             MaxDatabases = 256,
             MapSize = 1 * 1024 * 1024, // 16 MB initial
         };
-        _env.Open(EnvironmentOpenFlags.NoSync | EnvironmentOpenFlags.NoMetaSync);
+        _env.Open(EnvironmentOpenFlags.NoSync | EnvironmentOpenFlags.NoMetaSync | EnvironmentOpenFlags.WriteMap | EnvironmentOpenFlags.MapAsync);
         _currentMapSize = _env.Info.MapSize;
 
         RunWrite(tx =>
