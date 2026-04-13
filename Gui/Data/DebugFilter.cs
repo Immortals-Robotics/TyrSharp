@@ -1,5 +1,6 @@
 ﻿using Cysharp.Text;
 using Hexa.NET.ImGui;
+using System.Diagnostics;
 using Tyr.Common.Config;
 using Tyr.Common.Debug;
 using Tyr.Common.Debug.Drawing;
@@ -17,12 +18,16 @@ public sealed partial class DebugFilter(Common.Debug.Db.DebugDb debugDb) : IDisp
     // Format: "module" or "module/file" or "module/layer/file" or "module/layer/file/member" or "module/layer/file/member/line"
     [ConfigEntry(StorageType.User, editable: false)]
     private static Dictionary<string, bool> FilterState { get; set; } = [];
+    private static readonly TimeSpan MetadataRefreshInterval = TimeSpan.FromSeconds(1);
 
     private readonly Dictionary<string, Dictionary<string, Dictionary<string, Dictionary<string, HashSet<MetaTreeItem>>>>> _metaTrees = [];
+    private readonly List<string> _modules = [];
+    private readonly Stopwatch _metadataRefresh = Stopwatch.StartNew();
     private Utf16ValueStringBuilder _stringBuilder = ZString.CreateStringBuilder();
     private ImGuiTextFilterPtr _filter = ImGui.ImGuiTextFilter();
 
     private bool _dirty;
+    private bool _forceMetadataRefresh;
     private bool _snapshotDirty = true;
     private Dictionary<string, bool>? _snapshotState;
 
@@ -128,9 +133,9 @@ public sealed partial class DebugFilter(Common.Debug.Db.DebugDb debugDb) : IDisp
 
             DrawSearchBar();
 
-            RegisterModules();
+            RefreshModules();
 
-            foreach (var moduleName in debugDb.QueryModules())
+            foreach (var moduleName in _modules)
             {
                 if (!_metaTrees.TryGetValue(moduleName, out var metaTree) || metaTree.Count == 0) continue;
 
@@ -169,6 +174,7 @@ public sealed partial class DebugFilter(Common.Debug.Db.DebugDb debugDb) : IDisp
         if (ImGui.Button($"{IconFonts.FontAwesome6.RotateLeft}##reset"))
         {
             FilterState.Clear();
+            _forceMetadataRefresh = true;
             _dirty = true;
         }
 
@@ -216,11 +222,19 @@ public sealed partial class DebugFilter(Common.Debug.Db.DebugDb debugDb) : IDisp
         return false;
     }
 
-    // Register all modules, files, and functions
-    private void RegisterModules()
+    // Refresh metadata periodically instead of re-querying the DB every frame.
+    private void RefreshModules()
     {
+        if (!_forceMetadataRefresh && _metaTrees.Count > 0 && _metadataRefresh.Elapsed < MetadataRefreshInterval)
+            return;
+
+        _forceMetadataRefresh = false;
+        _metadataRefresh.Restart();
+        _modules.Clear();
+
         foreach (var module in debugDb.QueryModules())
         {
+            _modules.Add(module);
             _dirty |= FilterState.TryAdd(module, true);
 
             RegisterMetaTree(module,
