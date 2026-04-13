@@ -9,6 +9,10 @@ namespace Tyr.Soccer.Skills;
 
 public sealed class InterceptBall : ISkill
 {
+    private const float ReceiveDribblerSpeed = 2f;
+    private const float ReceiveDribblerForce = 5f;
+    private const float DribblerActivationTimeSeconds = 0.2f;
+
     public Angle Angle { get; set; }
     public float WaitTimeSeconds { get; set; }
 
@@ -51,9 +55,11 @@ public sealed class InterceptBall : ISkill
 
         robot.Navigate(destination, VelocityProfile.Mamooli, NavigationFlags.NoBallObstacle);
         robot.TargetAngle = plan.FacingAngle;
-        
-        // Use 0.2s as default activation time for standard InterceptBall
-        robot.Dribbler = plan.TimeSeconds < 0.2f ? 2f : 0f;
+
+        var dribblerActive = plan.TimeSeconds < DribblerActivationTimeSeconds;
+        robot.SetDribbler(
+            dribblerActive ? ReceiveDribblerSpeed : 0f,
+            dribblerActive ? ReceiveDribblerForce : 0f);
 
         _lastPlan = plan;
     }

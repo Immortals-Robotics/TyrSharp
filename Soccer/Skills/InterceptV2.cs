@@ -13,6 +13,8 @@ namespace Tyr.Soccer.Skills;
 [Configurable]
 public sealed partial class InterceptV2 : ISkill
 {
+    private const float ReceiveDribblerForce = 1f;
+
     [ConfigEntry("Dribbler speed used while receiving a moving ball")]
     private static float ReceiveDribblerSpeed { get; set; } = 2f;
 
@@ -44,7 +46,8 @@ public sealed partial class InterceptV2 : ISkill
 
         // Forced Line Blocking (Safety Fallback)
         var ballPath = Line.FromPointAndAngle(ballPosition, ballVelocity.ToAngle());
-        var kickerPos = Tyr.Common.Math.Shapes.Robot.GetKickerCenterPos(robot.Position, robot.TargetAngle, centerToDribbler + Context.Field.BallRadius);
+        var kickerPos = Tyr.Common.Math.Shapes.Robot.GetKickerCenterPos(robot.Position, robot.TargetAngle,
+            centerToDribbler + Context.Field.BallRadius);
         var distToPath = ballPath.Distance(kickerPos);
         var ballSpeed = ballVelocity.Length();
         var ballArrivalDist = Vector2.Distance(ballPosition, ballPath.ClosestPoint(kickerPos));
@@ -54,8 +57,9 @@ public sealed partial class InterceptV2 : ISkill
         {
             var interceptPoint = ballPath.ClosestPoint(kickerPos);
             var facingAngle = (-ballVelocity).ToAngle();
-            var destination = BallReceiving.GetCenterDestination(interceptPoint, facingAngle, centerToDribbler, Context.Field.BallRadius);
-            
+            var destination = BallReceiving.GetCenterDestination(interceptPoint, facingAngle, centerToDribbler,
+                Context.Field.BallRadius);
+
             destination = BallReceiving.ClampToLegalDestination(
                 destination,
                 Context.Field.RectangleWithBoundary,
@@ -65,7 +69,10 @@ public sealed partial class InterceptV2 : ISkill
 
             robot.Navigate(destination, VelocityProfile.Mamooli, NavigationFlags.NoBallObstacle);
             robot.TargetAngle = facingAngle;
-            robot.Dribbler = ballArrivalTime < DribblerActivationTimeSeconds ? ReceiveDribblerSpeed : 0f;
+            var dribblerActive = ballArrivalTime < DribblerActivationTimeSeconds;
+            robot.SetDribbler(
+                dribblerActive ? ReceiveDribblerSpeed : 0f,
+                dribblerActive ? ReceiveDribblerForce : 0f);
 
             _hasTargetAngle = true;
             _lastTargetAngle = facingAngle;
@@ -94,13 +101,14 @@ public sealed partial class InterceptV2 : ISkill
             {
                 robot.Navigate(_lastDestination, VelocityProfile.Mamooli, NavigationFlags.NoBallObstacle);
                 robot.TargetAngle = _lastTargetAngle;
-                robot.Dribbler = 0f; // No impact imminent if plan lost
+                robot.SetDribbler(0f, 0f); // No impact imminent if plan lost
             }
             else
             {
                 robot.Halt();
                 Reset();
             }
+
             return;
         }
 
@@ -127,7 +135,10 @@ public sealed partial class InterceptV2 : ISkill
 
         robot.Navigate(finalDestination, VelocityProfile.Mamooli, NavigationFlags.NoBallObstacle);
         robot.TargetAngle = plan.FacingAngle;
-        robot.Dribbler = plan.TimeSeconds < DribblerActivationTimeSeconds ? ReceiveDribblerSpeed : 0f;
+        var shouldActivateDribbler = plan.TimeSeconds < DribblerActivationTimeSeconds;
+        robot.SetDribbler(
+            shouldActivateDribbler ? ReceiveDribblerSpeed : 0f,
+            shouldActivateDribbler ? ReceiveDribblerForce : 0f);
 
         _hasTargetAngle = true;
         _lastTargetAngle = plan.FacingAngle;
@@ -135,7 +146,8 @@ public sealed partial class InterceptV2 : ISkill
         _lastDestination = finalDestination;
         _lastPlan = plan;
 
-        DrawDebug(ballPosition, plan.BallState.Position, finalDestination, plan.FacingAngle, plan.TimeSeconds, "SOLVED");
+        DrawDebug(ballPosition, plan.BallState.Position, finalDestination, plan.FacingAngle, plan.TimeSeconds,
+            "SOLVED");
     }
 
     private void Reset()
