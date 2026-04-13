@@ -39,7 +39,7 @@ public sealed partial class InterceptV2 : ISkill
         var ballVelocity = Context.Ball.State.Velocity.Xy();
 
         var trajectory = ServiceLocator.BallTrajectoryFactory.FromState(Context.Ball.State);
-        var centerToDribbler = BallReceiving.ResolveCenterToDribbler(Context.RobotRadius);
+        var centerToDribbler = robot.CenterToDribbler;
         var previousTargetAngle = _hasTargetAngle
             ? _lastTargetAngle
             : robot.Position.AngleWith(ballPosition);

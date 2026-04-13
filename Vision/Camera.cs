@@ -35,9 +35,6 @@ public partial class Camera(uint id)
     [ConfigEntry("Maximum filtered ball height where robot collisions are considered")]
     private static float MaxHeightForCollision { get; set; } = 130f;
 
-    [ConfigEntry("Fallback distance from robot center to dribbler when no robot-specific geometry is available")]
-    private static float RobotCenterToDribbler { get; set; } = 75f;
-
     public uint Id { get; } = id;
 
     public uint FrameId { get; private set; }
@@ -253,7 +250,7 @@ public partial class Camera(uint id)
                 Orientation = robot.State.Angle,
                 Velocity = robot.State.Velocity,
                 Radius = RobotRadius,
-                CenterToDribbler = Math.Min(RobotCenterToDribbler, RobotRadius),
+                CenterToDribbler = Math.Min(Tyr.Common.Math.Shapes.Robot.DefaultCenterToDribbler, RobotRadius),
                 MaxCircleLoss = MaxBallBotHullLoss,
                 MaxFrontLoss = MaxBallBotFrontLoss
             });

@@ -13,13 +13,11 @@ public static partial class BallReceiving
 {
     private const float LegalSeparationEpsilonMm = 1f;
 
-    [ConfigEntry("Fallback center-to-dribbler geometry used by receive/intercept skills [mm]")]
-    private static float CenterToDribblerMm { get; set; } = 75f;
-
     [ConfigEntry("Maximum expected vision latency for receive-point back projection [s]")]
     private static float ExpectedVisionDeviationSeconds { get; set; } = 0.1f;
 
-    [ConfigEntry("If the preferred receive point is further than this from the current ball path, keep the preferred point [mm]")]
+    [ConfigEntry(
+        "If the preferred receive point is further than this from the current ball path, keep the preferred point [mm]")]
     private static float MaxProjectionDistanceMm { get; set; } = 1000f;
 
     [ConfigEntry("Margin to keep between a receive destination and a penalty area [mm]")]
@@ -31,12 +29,16 @@ public static partial class BallReceiving
     [ConfigEntry("Below this planar ball speed the current orientation is kept for receiving [mm/s]")]
     private static float FacingFallbackSpeedMmPerS { get; set; } = 50f;
 
-    public static float DefaultCenterToDribbler => CenterToDribblerMm;
     public static float OrientationLockDistance => OrientationLockDistanceMm;
     public static float PenaltyAreaMargin => PenaltyAreaMarginMm;
 
     public readonly record struct ReceiveProjection(Vector2 Point, bool UsedBackProjection);
-    public readonly record struct ReceiveTarget(Vector2 ReceivePoint, Vector2 Destination, Angle FacingAngle, bool UsedBackProjection);
+
+    public readonly record struct ReceiveTarget(
+        Vector2 ReceivePoint,
+        Vector2 Destination,
+        Angle FacingAngle,
+        bool UsedBackProjection);
 
     public static Angle CalculateFacingAngle(Vector2 ballVelocity, Angle fallbackAngle)
     {
@@ -61,18 +63,8 @@ public static partial class BallReceiving
         return trajectory.GetTravelDistance(DeltaTime.FromSeconds(ExpectedVisionDeviationSeconds));
     }
 
-    public static float ResolveCenterToDribbler(float robotRadius)
-    {
-        var robot = new Tyr.Common.Math.Shapes.Robot
-        {
-            Radius = robotRadius,
-            CenterToDribbler = CenterToDribblerMm
-        };
-
-        return robot.EffectiveCenterToDribbler;
-    }
-
-    public static Vector2 GetKickerReceivePoint(Vector2 robotPosition, Angle targetAngle, float centerToDribblerWithBall)
+    public static Vector2 GetKickerReceivePoint(Vector2 robotPosition, Angle targetAngle,
+        float centerToDribblerWithBall)
     {
         return Tyr.Common.Math.Shapes.Robot.GetKickerCenterPos(robotPosition, targetAngle, centerToDribblerWithBall);
     }
@@ -182,6 +174,7 @@ public static partial class BallReceiving
         Vector2 currentBallPosition,
         Vector2 currentBallVelocity,
         Vector2 preferredReceivePoint,
+        float centerToDribbler,
         Angle fallbackAngle,
         Rectangle fieldBounds,
         Rectangle ownPenaltyArea,
@@ -200,7 +193,7 @@ public static partial class BallReceiving
         var destination = GetCenterDestination(
             projection.Point,
             facingAngle,
-            CenterToDribblerMm,
+            centerToDribbler,
             ballRadius);
 
         destination = ClampToLegalDestination(
@@ -237,5 +230,4 @@ public static partial class BallReceiving
         var halfHeight = MathF.Max(0f, bounds.Height * 0.5f - margin);
         return Rectangle.FromCenterAndSize(bounds.Center, halfWidth * 2f, halfHeight * 2f);
     }
-
 }

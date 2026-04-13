@@ -55,10 +55,7 @@ public sealed partial class CaptureBall : ISkill
         float currentMargin = isRoughlyFocused ? CaptureMarginMm : ApproachMarginMm;
 
         var direction = Vector2.Normalize(toBall);
-        var centerToDribbler = robot.PhysicalStatus.CenterToDribbler;
-        if (centerToDribbler <= 0) centerToDribbler = BallReceiving.DefaultCenterToDribbler;
-
-        var destination = ballPosition - direction * (centerToDribbler + Context.Field.BallRadius + currentMargin);
+        var destination = ballPosition - direction * (robot.CenterToDribbler + Context.Field.BallRadius + currentMargin);
 
         // Clamping to legal field bounds
         destination = BallReceiving.ClampToLegalDestination(

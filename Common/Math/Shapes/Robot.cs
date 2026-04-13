@@ -1,10 +1,14 @@
 ﻿using System.Numerics;
+using Tyr.Common.Config;
 
 namespace Tyr.Common.Math.Shapes;
 
+[Configurable]
 public readonly record struct Robot
 {
-    private const float DefaultCenterToDribblerFactor = 75f / 90f;
+    [ConfigEntry("Default distance from robot center to dribbler [mm]")]
+    public static float DefaultCenterToDribbler { get; set; } = 75f;
+
     private const float DefaultKickerDepth = 150f;
     private const float BoundaryTolerance = 1e-3f;
 
@@ -18,7 +22,7 @@ public readonly record struct Robot
         System.Math.Clamp(
             CenterToDribbler > 0f
                 ? CenterToDribbler
-                : Radius * DefaultCenterToDribblerFactor,
+                : Radius * (DefaultCenterToDribbler / 90f),
             0f,
             Radius);
 

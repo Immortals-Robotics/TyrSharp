@@ -26,6 +26,11 @@ public partial class Robot
     public Vector2 Velocity => State.Velocity;
     public Angle Angle => State.Angle;
     public Angle AngularVelocity => State.AngularVelocity;
+    public float CenterToDribbler => new Tyr.Common.Math.Shapes.Robot
+    {
+        Radius = Context.RobotRadius,
+        CenterToDribbler = PhysicalStatus.CenterToDribbler
+    }.EffectiveCenterToDribbler;
 
     public float Shoot
     {
