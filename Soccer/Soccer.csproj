@@ -11,6 +11,7 @@
 
     <ItemGroup>
         <ProjectReference Include="..\Common\Common.csproj"/>
+        <ProjectReference Include="..\Sender\Sender.csproj"/>
         <ProjectReference Include="..\SourceGen\SourceGen.csproj" OutputItemType="Analyzer"/>
     </ItemGroup>
 

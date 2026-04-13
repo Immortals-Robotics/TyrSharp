@@ -1,16 +1,19 @@
 using Tyr.Common.Config;
 using Tyr.Common.Data;
 using Tyr.Common.Data.Ssl.Simulation;
+using Tyr.Common.Data.Robot;
+using Tyr.Common.Dataflow;
 using Tyr.Common.Math;
 using Tyr.Common.Network;
 using Tyr.Common.Sender.Data;
+using ProtoBuf;
 
 namespace Tyr.Sender;
 
 [Configurable]
 public sealed partial class Simulator : ISender
 {
-    [ConfigEntry] private static bool Enabled { get; set; } = false;
+    [ConfigEntry] public static bool Enabled { get; set; } = false;
 
     [ConfigEntry] private static Address BlueAddress { get; set; } = new() { Ip = "127.0.0.1", Port = 10301 };
     [ConfigEntry] private static Address YellowAddress { get; set; } = new() { Ip = "127.0.0.1", Port = 10302 };
@@ -18,6 +21,13 @@ public sealed partial class Simulator : ISender
     [ConfigEntry] private static Angle ChipAngle { get; set; } = Angle.FromDeg(45f);
 
     private readonly UdpServer _udp = new();
+    private readonly Task _receiveTask;
+    private readonly CancellationTokenSource _cts = new();
+
+    public Simulator()
+    {
+        _receiveTask = Task.Run(ReceiveLoop);
+    }
 
     public bool Send(CommandsWrapper commands)
     {
@@ -47,7 +57,7 @@ public sealed partial class Simulator : ISender
                 kickAngle = ChipAngle;
             }
 
-            var pbCommand = new RobotCommand()
+            var pbCommand = new Common.Data.Ssl.Simulation.RobotCommand()
             {
                 Id = (uint)command.VisionId,
                 MoveCommand = new RobotMoveCommand()
@@ -61,7 +71,7 @@ public sealed partial class Simulator : ISender
                 },
                 KickSpeed = kickSpeed,
                 KickAngle = kickAngle,
-                DribblerSpeed = command.Dribbler,
+                DribblerSpeed = command.DribblerSpeed,
             };
 
             pbControl.RobotCommands.Add(pbCommand);
@@ -78,8 +88,27 @@ public sealed partial class Simulator : ISender
         return true;
     }
 
+    private async Task ReceiveLoop()
+    {
+        while (!_cts.IsCancellationRequested)
+        {
+            if (!Enabled)
+            {
+                await Task.Delay(500, _cts.Token);
+                continue;
+            }
+
+            var response = await _udp.ReceiveAsync<RobotControlResponse>(_cts.Token);
+            if (response != null)
+            {
+                Hub.SimFeedback.Publish(response);
+            }
+        }
+    }
+
     public void Dispose()
     {
+        _cts.Cancel();
         _udp.Dispose();
     }
 }

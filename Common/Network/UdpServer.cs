@@ -137,6 +137,24 @@ public sealed partial class UdpServer : IDisposable
         }
     }
 
+    public async Task<T?> ReceiveAsync<T>(CancellationToken token = default) where T : class
+    {
+        try
+        {
+            var result = await _socket.ReceiveFromAsync(_buffer, SocketFlags.None, new IPEndPoint(IPAddress.Any, 0), token);
+            if (result.ReceivedBytes == 0) return null;
+
+            using var ms = new MemoryStream(_buffer, 0, result.ReceivedBytes);
+            return Serializer.Deserialize<T>(ms);
+        }
+        catch (OperationCanceledException) { return null; }
+        catch (Exception ex)
+        {
+            Log.ZLogError(ex, $"UDP receive error");
+            return null;
+        }
+    }
+
     public void Dispose()
     {
         _socket.Dispose();

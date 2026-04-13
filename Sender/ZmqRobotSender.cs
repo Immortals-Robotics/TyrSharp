@@ -85,8 +85,8 @@ public sealed partial class ZmqRobotSender : ISender
                 TargetAngle = (float)cmd.TargetAngle.Deg,
                 Shoot = GetShootPower(cmd),
                 Chip = GetChipPower(cmd),
-                DribblerSpeed = cmd.Dribbler,
-                DribblerForce = DefaultDribblerForce
+                DribblerSpeed = cmd.DribblerSpeed,
+                DribblerForce = cmd.DribblerForce > 0f ? cmd.DribblerForce : DefaultDribblerForce
             };
 
             if (sender.Send(RobotCommandTopic, robotCmd))

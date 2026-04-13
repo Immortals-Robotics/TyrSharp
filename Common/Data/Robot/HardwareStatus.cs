@@ -16,6 +16,7 @@ public class HardwareStatus
     public DiagStatus?             Diag             { get; private set; }
     public IrSensorStatus?         IrSensor         { get; private set; }
     public DribblerFeedbackStatus? DribblerFeedback { get; private set; }
+    public bool?                   SimBallContact   { get; set; }
 
     /// <summary>
     /// Applies one StatusUpdate, overwriting whichever sub-status it carries.

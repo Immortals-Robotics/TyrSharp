@@ -1,9 +1,10 @@
-﻿using System.Numerics;
+using System.Numerics;
 using Tyr.Common.Config;
 using Tyr.Common.Data.Robot;
 using Tyr.Common.Math;
 using Tyr.Common.Sender.Data;
 using Tyr.Common.Vision.Data;
+using Tyr.Sender;
 using Tyr.Soccer.Navigation.Trajectory;
 
 namespace Tyr.Soccer.Robot;
@@ -13,7 +14,9 @@ public partial class Robot
 {
     private float _shoot;
     private float _chip;
-    private float _dribbler;
+    private float _dribblerSpeed;
+    private float _dribblerForce;
+
     public FilteredRobot Filtered { get; set; }
     public RobotState State => Filtered.State;
 
@@ -36,11 +39,16 @@ public partial class Robot
         set => _chip = PhysicalStatus.HasChipKick ? value : 0f;
     }
 
-    // TODO: remove 16
-    public float Dribbler
+    public float DribblerSpeed
     {
-        get => _dribbler;
-        set => _dribbler = PhysicalStatus.HasDribbler ? 16 * value : 0f;
+        get => _dribblerSpeed;
+        set => _dribblerSpeed = PhysicalStatus.HasDribbler ? value : 0f;
+    }
+
+    public float DribblerForce
+    {
+        get => _dribblerForce;
+        set => _dribblerForce = PhysicalStatus.HasDribbler ? value : 0f;
     }
 
     public bool Halted { get; private set; }
@@ -55,11 +63,25 @@ public partial class Robot
 
     public HardwareStatus HardwareStatus { get; } = new();
 
+    public bool HasBallContact
+    {
+        get
+        {
+            // 1. Simulation feedback (grSim sensor)
+            if (HardwareStatus.SimBallContact.HasValue)
+                return HardwareStatus.SimBallContact.Value;
+
+            // 2. Real robot force sensor
+            return HardwareStatus.DribblerFeedback is { } dribbler && dribbler.ActualForceN > 0.05f;
+        }
+    }
+
     public void Reset()
     {
         _shoot = 0f;
         _chip = 0f;
-        _dribbler = 0f;
+        _dribblerSpeed = 0f;
+        _dribblerForce = 0f;
         Halted = false;
         Navigated = false;
         IgnoreRefereeBallObstacle = false;
@@ -74,7 +96,8 @@ public partial class Robot
 
         _shoot = 0.0f;
         _chip = 0.0f;
-        _dribbler = 0.0f;
+        _dribblerSpeed = 0.0f;
+        _dribblerForce = 0.0f;
 
         Halted = true;
     }
@@ -93,6 +116,13 @@ public partial class Robot
         TargetAngle = TargetAngle,
         Shoot = Shoot,
         Chip = Chip,
-        Dribbler = Dribbler,
+        DribblerSpeed = DribblerSpeed,
+        DribblerForce = DribblerForce,
     };
+
+    public void SetDribbler(float speed, float force)
+    {
+        DribblerSpeed = speed;
+        DribblerForce = force;
+    }
 }
