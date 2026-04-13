@@ -48,6 +48,8 @@ public sealed class DebugDb : IDebugDb
     private long _currentMapSize;
 
     private readonly Lock _internLock = new();
+    private readonly Lock _writeLock = new();
+    private LightningTransaction? _currentWriteTx;
 
     [ThreadStatic] private static System.Buffers.ArrayBufferWriter<byte>? _serializeBuffer;
 
@@ -138,31 +140,75 @@ public sealed class DebugDb : IDebugDb
 
     private TResult RunWrite<TResult>(Func<LightningTransaction, TResult> action)
     {
-        while (true)
+        if (_currentWriteTx != null)
+            return action(_currentWriteTx);
+
+        lock (_writeLock)
         {
-            _txLock.EnterReadLock();
-            try
+            while (true)
             {
-                using var tx = _env.BeginTransaction();
+                _txLock.EnterReadLock();
                 try
                 {
-                    var result = action(tx);
-                    CheckResult(tx.Commit());
-                    return result;
+                    using var tx = _env.BeginTransaction();
+                    try
+                    {
+                        var result = action(tx);
+                        CheckResult(tx.Commit());
+                        return result;
+                    }
+                    catch (MapFullException)
+                    {
+                    }
+                    catch (LightningException ex) when (ex.StatusCode == (int)MDBResultCode.MapFull)
+                    {
+                    }
                 }
-                catch (MapFullException)
+                finally
                 {
+                    _txLock.ExitReadLock();
                 }
-                catch (LightningException ex) when (ex.StatusCode == (int)MDBResultCode.MapFull)
-                {
-                }
-            }
-            finally
-            {
-                _txLock.ExitReadLock();
-            }
 
-            GrowMapSize();
+                GrowMapSize();
+            }
+        }
+    }
+
+    public void RunBatch(Action action)
+    {
+        lock (_writeLock)
+        {
+            while (true)
+            {
+                _txLock.EnterReadLock();
+                try
+                {
+                    using var tx = _env.BeginTransaction();
+                    _currentWriteTx = tx;
+                    try
+                    {
+                        action();
+                        CheckResult(tx.Commit());
+                        return;
+                    }
+                    catch (MapFullException)
+                    {
+                    }
+                    catch (LightningException ex) when (ex.StatusCode == (int)MDBResultCode.MapFull)
+                    {
+                    }
+                    finally
+                    {
+                        _currentWriteTx = null;
+                    }
+                }
+                finally
+                {
+                    _txLock.ExitReadLock();
+                }
+
+                GrowMapSize();
+            }
         }
     }
 
@@ -262,7 +308,7 @@ public sealed class DebugDb : IDebugDb
                     !TryGetShardKeyId(shardKey, out shardKeyId) ||
                     !_bucketIds.TryGetValue(new BucketDef(typeName, moduleId, sourceId, shardKeyId), out bucketId))
                 {
-                    while (true)
+                    RunWrite(tx =>
                     {
                         var addedStrings = new List<string>();
                         var addedSources = new List<Meta>();
@@ -271,51 +317,36 @@ public sealed class DebugDb : IDebugDb
                         int origSourceId = _nextSourceId;
                         int origBucketId = _nextBucketId;
 
-                        _txLock.EnterReadLock();
                         try
                         {
-                            using var tx = _env.BeginTransaction();
-                            try
-                            {
-                                if (!_stringIds.TryGetValue(module, out moduleId))
-                                    moduleId = InternString(tx, module, addedStrings);
+                            if (!_stringIds.TryGetValue(module, out moduleId))
+                                moduleId = InternString(tx, module, addedStrings);
 
-                                if (!_sourceIds.TryGetValue(meta, out sourceId))
-                                    sourceId = InternSource(tx, meta, addedStrings, addedSources);
+                            if (!_sourceIds.TryGetValue(meta, out sourceId))
+                                sourceId = InternSource(tx, meta, addedStrings, addedSources);
 
-                                if (shardKey != null && !_stringIds.TryGetValue(shardKey, out shardKeyId))
-                                    shardKeyId = InternString(tx, shardKey, addedStrings);
-                                else if (shardKey == null)
-                                    shardKeyId = -1;
+                            if (shardKey != null && !_stringIds.TryGetValue(shardKey, out shardKeyId))
+                                shardKeyId = InternString(tx, shardKey, addedStrings);
+                            else if (shardKey == null)
+                                shardKeyId = -1;
 
-                                var def = new BucketDef(typeName, moduleId, sourceId, shardKeyId);
-                                if (!_bucketIds.TryGetValue(def, out bucketId))
-                                    bucketId = InternBucket(tx, def, addedBuckets);
+                            var def = new BucketDef(typeName, moduleId, sourceId, shardKeyId);
+                            if (!_bucketIds.TryGetValue(def, out bucketId))
+                                bucketId = InternBucket(tx, def, addedBuckets);
 
-                                CheckResult(tx.Commit());
-                                break;
-                            }
-                            catch (MapFullException)
-                            {
-                            }
-                            catch (LightningException ex) when (ex.StatusCode == (int)MDBResultCode.MapFull)
-                            {
-                            }
+                            return 0;
                         }
-                        finally
+                        catch
                         {
-                            _txLock.ExitReadLock();
+                            foreach (var s in addedStrings) { _stringIds.TryRemove(s, out var id); _strings.TryRemove(id, out _); }
+                            foreach (var s in addedSources) { _sourceIds.TryRemove(s, out var id); _sources.TryRemove(id, out _); }
+                            foreach (var b in addedBuckets) { _bucketIds.TryRemove(b, out var id); _buckets.TryRemove(id, out _); }
+                            _nextStringId = origStringId;
+                            _nextSourceId = origSourceId;
+                            _nextBucketId = origBucketId;
+                            throw;
                         }
-
-                        foreach (var s in addedStrings) { _stringIds.TryRemove(s, out var id); _strings.TryRemove(id, out _); }
-                        foreach (var s in addedSources) { _sourceIds.TryRemove(s, out var id); _sources.TryRemove(id, out _); }
-                        foreach (var b in addedBuckets) { _bucketIds.TryRemove(b, out var id); _buckets.TryRemove(id, out _); }
-                        _nextStringId = origStringId;
-                        _nextSourceId = origSourceId;
-                        _nextBucketId = origBucketId;
-
-                        GrowMapSize();
-                    }
+                    });
                 }
             }
         }
@@ -331,31 +362,19 @@ public sealed class DebugDb : IDebugDb
         BinaryPrimitives.WriteInt32BigEndian(keySpan, bucketId);
         BinaryPrimitives.WriteInt64BigEndian(keySpan[4..], entry.Timestamp.Nanoseconds);
 
-        while (true)
+        if (_currentWriteTx != null)
         {
-            _txLock.EnterReadLock();
-            try
+            CheckResult(_currentWriteTx.Put(typeDb, keySpan, valueSpan));
+        }
+        else
+        {
+            byte[] keyArr = keySpan.ToArray();
+            byte[] valArr = valueSpan.ToArray();
+            RunWrite(tx =>
             {
-                using var tx = _env.BeginTransaction();
-                try
-                {
-                    CheckResult(tx.Put(typeDb, keySpan, valueSpan));
-                    CheckResult(tx.Commit());
-                    break;
-                }
-                catch (MapFullException)
-                {
-                }
-                catch (LightningException ex) when (ex.StatusCode == (int)MDBResultCode.MapFull)
-                {
-                }
-            }
-            finally
-            {
-                _txLock.ExitReadLock();
-            }
-
-            GrowMapSize();
+                CheckResult(tx.Put(typeDb, keyArr, valArr));
+                return 0;
+            });
         }
     }
 
@@ -765,38 +784,23 @@ public sealed class DebugDb : IDebugDb
         {
             if (!_stringIds.TryGetValue(frame.ModuleName, out moduleId))
             {
-                while (true)
+                RunWrite(tx =>
                 {
                     var addedStrings = new List<string>();
                     int origStringId = _nextStringId;
 
-                    _txLock.EnterReadLock();
                     try
                     {
-                        using var tx = _env.BeginTransaction();
-                        try
-                        {
-                            moduleId = InternString(tx, frame.ModuleName, addedStrings);
-                            CheckResult(tx.Commit());
-                            break;
-                        }
-                        catch (MapFullException)
-                        {
-                        }
-                        catch (LightningException ex) when (ex.StatusCode == (int)MDBResultCode.MapFull)
-                        {
-                        }
+                        moduleId = InternString(tx, frame.ModuleName, addedStrings);
+                        return 0;
                     }
-                    finally
+                    catch
                     {
-                        _txLock.ExitReadLock();
+                        foreach (var s in addedStrings) { _stringIds.TryRemove(s, out var id); _strings.TryRemove(id, out _); }
+                        _nextStringId = origStringId;
+                        throw;
                     }
-
-                    foreach (var s in addedStrings) { _stringIds.TryRemove(s, out var id); _strings.TryRemove(id, out _); }
-                    _nextStringId = origStringId;
-
-                    GrowMapSize();
-                }
+                });
             }
         }
 
@@ -805,31 +809,18 @@ public sealed class DebugDb : IDebugDb
         BinaryPrimitives.WriteInt32BigEndian(key[1..5], moduleId);
         BinaryPrimitives.WriteInt64BigEndian(key[5..13], frame.StartTimestamp.Nanoseconds);
 
-        while (true)
+        if (_currentWriteTx != null)
         {
-            _txLock.EnterReadLock();
-            try
+            CheckResult(_currentWriteTx.Put(_metaDb, key, ReadOnlySpan<byte>.Empty));
+        }
+        else
+        {
+            byte[] keyArr = key.ToArray();
+            RunWrite(tx =>
             {
-                using var tx = _env.BeginTransaction();
-                try
-                {
-                    CheckResult(tx.Put(_metaDb, key, ReadOnlySpan<byte>.Empty));
-                    CheckResult(tx.Commit());
-                    break;
-                }
-                catch (MapFullException)
-                {
-                }
-                catch (LightningException ex) when (ex.StatusCode == (int)MDBResultCode.MapFull)
-                {
-                }
-            }
-            finally
-            {
-                _txLock.ExitReadLock();
-            }
-
-            GrowMapSize();
+                CheckResult(tx.Put(_metaDb, keyArr, ReadOnlySpan<byte>.Empty));
+                return 0;
+            });
         }
 
         GetOrCreateFrameIndex(moduleId).Add(frame.StartTimestamp.Nanoseconds);

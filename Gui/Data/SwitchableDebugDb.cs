@@ -50,6 +50,8 @@ internal sealed class SwitchableDebugDb(IDebugDb source) : IDebugDb
     (Timestamp Start, Timestamp End)? IDebugDb.GetFrameAt(string module, Timestamp t)
         => _source.GetFrameAt(module, t);
 
+    void IDebugDb.RunBatch(Action action) => _source.RunBatch(action);
+
     void IDisposable.Dispose()
     {
     }

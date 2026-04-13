@@ -17,4 +17,6 @@ public interface IDebugDb : IDisposable
     (Timestamp Start, Timestamp End)? GetFrameRange();
     IEnumerable<Frame> QueryFrames(string module, Timestamp t0, Timestamp t1);
     (Timestamp Start, Timestamp End)? GetFrameAt(string module, Timestamp t);
+
+    void RunBatch(Action action);
 }

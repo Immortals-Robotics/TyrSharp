@@ -16,6 +16,7 @@ public sealed partial class DebugDbDumper : IDisposable
     [ConfigEntry] private static ThreadPriority RunnerPriority { get; set; } = ThreadPriority.BelowNormal;
 
     private readonly Subscriber<Debug.Frame> _frameSubscriber = Hub.Frames.Subscribe(Mode.All);
+    private readonly List<Debug.Frame> _frameBuffer = new();
     private readonly IReadOnlyList<IDebugEntrySubscription> _entrySubscriptions;
 
     private readonly RunnerSync _runner;
@@ -48,35 +49,55 @@ public sealed partial class DebugDbDumper : IDisposable
         Log.ZLogInformation($"DebugDb session started: {_session.SessionDirectory}");
         _viewer.Start();
 
-        _runner = new RunnerSync(Tick, priority: RunnerPriority);
+        _runner = new RunnerSync(Tick, tickRateHz: 100, priority: RunnerPriority);
         Configurable.OnUpdated += _ => _runner.SetPriority(RunnerPriority);
         _runner.Start();
     }
 
     private bool Tick()
     {
-        var dumped = false;
+        var hasData = false;
 
-        // Data must be written before the frame boundary that marks it as "completed".
-        // RunnerSync publishes draw/log/plot commands first, then the frame boundary.
-        // Processing frames first would make frames appear completed before their data
-        // is in the DB, causing the GUI to display an empty frame during that window.
         foreach (var subscription in _entrySubscriptions)
-            dumped |= subscription.Drain(_db);
+        {
+            subscription.Buffer();
+            if (subscription.HasData) hasData = true;
+        }
 
         while (_frameSubscriber.Reader.TryRead(out var frame))
         {
-            _db.AppendFrame(frame);
-            _metadata.UpdateFrameRange(frame);
-            dumped = true;
+            _frameBuffer.Add(frame);
+            hasData = true;
         }
 
-        if (!dumped)
+        if (!hasData)
         {
             Thread.Sleep(SleepTime.ToTimeSpan());
             return false;
         }
 
+        _db.RunBatch(() =>
+        {
+            // Data must be written before the frame boundary that marks it as "completed".
+            // RunnerSync publishes draw/log/plot commands first, then the frame boundary.
+            // Processing frames first would make frames appear completed before their data
+            // is in the DB, causing the GUI to display an empty frame during that window.
+            foreach (var subscription in _entrySubscriptions)
+                subscription.Flush(_db);
+
+            foreach (var frame in _frameBuffer)
+            {
+                _db.AppendFrame(frame);
+                _metadata.UpdateFrameRange(frame);
+            }
+        });
+
+        foreach (var subscription in _entrySubscriptions)
+            subscription.Clear();
+        _frameBuffer.Clear();
+        
+        Plot.Plot("dumper FPS", _runner.Timer.Fps);
+        
         return true;
     }
 
@@ -97,24 +118,34 @@ public sealed partial class DebugDbDumper : IDisposable
 
     private interface IDebugEntrySubscription : IDisposable
     {
-        bool Drain(DebugDb db);
+        void Buffer();
+        void Flush(IDebugDb db);
+        void Clear();
+        bool HasData { get; }
     }
 
     private sealed class DebugEntrySubscription<T> : IDebugEntrySubscription where T : struct, Debug.IEntry
     {
         private readonly Subscriber<T> _subscriber = Debug.DebugBus.Subscribe<T>(Mode.All);
+        private readonly List<T> _buffer = new();
 
-        public bool Drain(DebugDb db)
+        public bool HasData => _buffer.Count > 0;
+
+        public void Buffer()
         {
-            var dumped = false;
-
             while (_subscriber.Reader.TryRead(out var entry))
-            {
-                db.Append(entry);
-                dumped = true;
-            }
+                _buffer.Add(entry);
+        }
 
-            return dumped;
+        public void Flush(IDebugDb db)
+        {
+            foreach (var entry in _buffer)
+                db.Append(entry);
+        }
+
+        public void Clear()
+        {
+            _buffer.Clear();
         }
 
         public void Dispose()

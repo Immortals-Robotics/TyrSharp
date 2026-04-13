@@ -1,6 +1,7 @@
 using Tyr.Gui.Data;
 using Tyr.Gui.Views;
 using Tyr.Common.Time;
+using Timer = Tyr.Common.Time.Timer;
 
 namespace Tyr.Gui.Pipeline;
 
@@ -15,6 +16,8 @@ internal sealed class GuiFramePipeline : IDisposable
     private PrepareRequest? _pending;
     private PreparedFrame? _latest;
     private bool _disposed;
+    
+    private Timer _timer = new();
 
     public GuiFramePipeline(Action<PrepareRequest, PreparedFrame> prepare)
     {
@@ -27,6 +30,7 @@ internal sealed class GuiFramePipeline : IDisposable
             Name = "GuiFramePipeline"
         };
         _thread.Start();
+        _timer.Start();
     }
 
     public void Enqueue(PrepareRequest request)
@@ -118,6 +122,9 @@ internal sealed class GuiFramePipeline : IDisposable
 
                 _latest = frame;
             }
+            
+            _timer.Update();
+            Plot.Plot("gui fps", _timer.Fps);
         }
     }
 

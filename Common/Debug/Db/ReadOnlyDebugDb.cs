@@ -44,5 +44,7 @@ public sealed class ReadOnlyDebugDb(IDebugDb inner) : IDebugDb
     public (Timestamp Start, Timestamp End)? GetFrameAt(string module, Timestamp t)
         => inner.GetFrameAt(module, t);
 
+    public void RunBatch(Action action) => action();
+
     public void Dispose() => inner.Dispose();
 }
