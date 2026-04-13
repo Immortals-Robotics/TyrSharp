@@ -15,7 +15,7 @@ internal struct InternalRecord
     public int BlobLength;
 }
 
-public sealed class DebugDb : IDisposable
+public sealed class DebugDb : IDebugDb
 {
     private readonly string _directory;
     private readonly MappedStringPool _strings;

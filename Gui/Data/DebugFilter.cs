@@ -11,7 +11,7 @@ using Color = Tyr.Common.Debug.Drawing.Color;
 namespace Tyr.Gui.Data;
 
 [Configurable]
-public sealed partial class DebugFilter(Common.Debug.Db.DebugDb debugDb) : IDisposable
+public sealed partial class DebugFilter(Tyr.Common.Debug.Db.IDebugDb debugDb) : IDisposable
 {
     public static readonly string WindowTitle = $"{IconFonts.FontAwesome6.Filter} Debug Filter";
     // Dictionary to track the enabled state of each node in the tree
@@ -238,12 +238,12 @@ public sealed partial class DebugFilter(Common.Debug.Db.DebugDb debugDb) : IDisp
             _dirty |= FilterState.TryAdd(module, true);
 
             RegisterMetaTree(module,
-                debugDb.QuerySourceLocations<Common.Debug.Logging.Entry>(module),
+                debugDb.QuerySourceLocations<Tyr.Common.Debug.Logging.Entry>(module),
                 MetaTreeItem.ItemType.Log);
             foreach (var drawType in DebugTypeRegistry.GetRegisteredTypes().Where(static type => type.Namespace?.Contains(".Debug.Drawing", StringComparison.Ordinal) == true))
                 RegisterMetaTree(module, debugDb.QuerySourceLocations(module, drawType), MetaTreeItem.ItemType.Draw);
             RegisterMetaTree(module,
-                debugDb.QuerySourceLocations<Common.Debug.Plotting.Command>(module),
+                debugDb.QuerySourceLocations<Tyr.Common.Debug.Plotting.Command>(module),
                 MetaTreeItem.ItemType.Plot);
 
             if (!_metaTrees.TryGetValue(module, out var metaTree))
