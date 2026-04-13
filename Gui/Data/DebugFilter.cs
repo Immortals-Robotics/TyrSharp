@@ -18,9 +18,6 @@ public sealed partial class DebugFilter(Common.Debug.Db.DebugDb debugDb) : IDisp
     [ConfigEntry(StorageType.User, editable: false)]
     private static Dictionary<string, bool> FilterState { get; set; } = [];
 
-    private readonly Dictionary<string, bool>.AlternateLookup<StrSpan> _lookup =
-        FilterState.GetAlternateLookup<StrSpan>();
-
     private readonly Dictionary<string, Dictionary<string, Dictionary<string, Dictionary<string, HashSet<MetaTreeItem>>>>> _metaTrees = [];
     private Utf16ValueStringBuilder _stringBuilder = ZString.CreateStringBuilder();
     private ImGuiTextFilterPtr _filter = ImGui.ImGuiTextFilter();
@@ -68,33 +65,33 @@ public sealed partial class DebugFilter(Common.Debug.Db.DebugDb debugDb) : IDisp
     public bool IsEnabled(string module, string? layer = null,
         string? file = null, string? member = null, int? line = null)
     {
+        var lookup = FilterState.GetAlternateLookup<StrSpan>();
+
         _stringBuilder.Clear();
         AppendNormalizedPathPart(module);
-        if (!IsEnabledInternal(_stringBuilder.AsSpan())) return false;
+        if (!IsEnabledInternal(lookup, _stringBuilder.AsSpan())) return false;
 
         if (layer == null) return true;
         _stringBuilder.Append('/');
         AppendNormalizedPathPart(layer);
-        if (!IsEnabledInternal(_stringBuilder.AsSpan())) return false;
+        if (!IsEnabledInternal(lookup, _stringBuilder.AsSpan())) return false;
 
         if (file == null) return true;
         _stringBuilder.Append('/');
         AppendNormalizedPathPart(file);
-        if (!IsEnabledInternal(_stringBuilder.AsSpan())) return false;
+        if (!IsEnabledInternal(lookup, _stringBuilder.AsSpan())) return false;
 
         if (member == null) return true;
         _stringBuilder.Append('/');
         AppendNormalizedPathPart(member);
-        if (!IsEnabledInternal(_stringBuilder.AsSpan())) return false;
+        if (!IsEnabledInternal(lookup, _stringBuilder.AsSpan())) return false;
 
         if (line == null) return true;
         _stringBuilder.Append('/');
         _stringBuilder.Append(line.Value);
-        if (!IsEnabledInternal(_stringBuilder.AsSpan())) return false;
+        if (!IsEnabledInternal(lookup, _stringBuilder.AsSpan())) return false;
 
         return true;
-
-        bool IsEnabledInternal(StrSpan path) => !_lookup.TryGetValue(path, out var enabled) || enabled;
     }
 
     private void AppendNormalizedPathPart(string value)
@@ -241,16 +238,16 @@ public sealed partial class DebugFilter(Common.Debug.Db.DebugDb debugDb) : IDisp
             foreach (var (layer, files) in metaTree)
             {
                 var defaultValue = !Meta.IsDebugLayer(layer);
-                _dirty |= _lookup.TryAdd(MakePath(module, layer), defaultValue);
+                _dirty |= FilterState.TryAdd(MakePath(module, layer).ToString(), defaultValue);
                 foreach (var (file, functions) in files)
                 {
-                    _dirty |= _lookup.TryAdd(MakePath(module, layer, file), true);
+                    _dirty |= FilterState.TryAdd(MakePath(module, layer, file).ToString(), true);
                     foreach (var (member, items) in functions)
                     {
-                        _dirty |= _lookup.TryAdd(MakePath(module, layer, file, member), true);
+                        _dirty |= FilterState.TryAdd(MakePath(module, layer, file, member).ToString(), true);
                         foreach (var item in items)
                         {
-                            _dirty |= _lookup.TryAdd(MakePath(module, layer, file, member, item.Line), true);
+                            _dirty |= FilterState.TryAdd(MakePath(module, layer, file, member, item.Line).ToString(), true);
                         }
                     }
                 }
@@ -342,9 +339,10 @@ public sealed partial class DebugFilter(Common.Debug.Db.DebugDb debugDb) : IDisp
         Dictionary<string, Dictionary<string, HashSet<MetaTreeItem>>> files, bool parentEnabled, bool parentMatched)
     {
         var path = MakePath(module, layer);
+        var lookup = FilterState.GetAlternateLookup<StrSpan>();
 
         // Get current state
-        var isEnabled = parentEnabled && _lookup[path];
+        var isEnabled = parentEnabled && lookup[path];
 
         var emptyLayer = string.IsNullOrWhiteSpace(layer);
 
@@ -375,7 +373,7 @@ public sealed partial class DebugFilter(Common.Debug.Db.DebugDb debugDb) : IDisp
 
         if (parentEnabled)
         {
-            _lookup[path] = isEnabled;
+            FilterState[path.ToString()] = isEnabled;
         }
 
         // Draw child nodes if open
@@ -404,9 +402,10 @@ public sealed partial class DebugFilter(Common.Debug.Db.DebugDb debugDb) : IDisp
         Dictionary<string, HashSet<MetaTreeItem>> functions, bool parentEnabled, bool parentMatched)
     {
         var path = MakePath(module, layer, file);
+        var lookup = FilterState.GetAlternateLookup<StrSpan>();
 
         // Get current state
-        var isEnabled = parentEnabled && _lookup[path];
+        var isEnabled = parentEnabled && lookup[path];
 
         // Extract filename from the path for display
         var displayName = Path.GetFileName(file);
@@ -436,7 +435,7 @@ public sealed partial class DebugFilter(Common.Debug.Db.DebugDb debugDb) : IDisp
 
         if (parentEnabled)
         {
-            _lookup[path] = isEnabled;
+            FilterState[path.ToString()] = isEnabled;
         }
 
         // Draw child nodes if open
@@ -464,9 +463,10 @@ public sealed partial class DebugFilter(Common.Debug.Db.DebugDb debugDb) : IDisp
         HashSet<MetaTreeItem> items, bool parentEnabled, bool parentMatched)
     {
         var path = MakePath(module, layer, file, member);
+        var lookup = FilterState.GetAlternateLookup<StrSpan>();
 
         // Get current state
-        var isEnabled = parentEnabled && _lookup[path];
+        var isEnabled = parentEnabled && lookup[path];
 
         bool matches = parentMatched || !_filter.IsActive() || _filter.PassFilter(member);
         var flags = _filter.IsActive() ? ImGuiTreeNodeFlags.DefaultOpen : ImGuiTreeNodeFlags.None;
@@ -485,7 +485,7 @@ public sealed partial class DebugFilter(Common.Debug.Db.DebugDb debugDb) : IDisp
 
         if (parentEnabled)
         {
-            _lookup[path] = isEnabled;
+            FilterState[path.ToString()] = isEnabled;
         }
 
         // Draw child nodes if open
@@ -513,9 +513,10 @@ public sealed partial class DebugFilter(Common.Debug.Db.DebugDb debugDb) : IDisp
         bool parentEnabled)
     {
         var path = MakePath(module, layer, file, member, treeItem.Line);
+        var lookup = FilterState.GetAlternateLookup<StrSpan>();
 
         // Get current state
-        var isEnabled = parentEnabled && _lookup[path];
+        var isEnabled = parentEnabled && lookup[path];
 
         // Create leaf node with checkbox (no children)
         ImGui.PushID(treeItem.Line);
@@ -546,7 +547,7 @@ public sealed partial class DebugFilter(Common.Debug.Db.DebugDb debugDb) : IDisp
 
         if (parentEnabled)
         {
-            _lookup[path] = isEnabled;
+            FilterState[path.ToString()] = isEnabled;
         }
 
         ImGui.PopID();
@@ -556,4 +557,7 @@ public sealed partial class DebugFilter(Common.Debug.Db.DebugDb debugDb) : IDisp
     {
         _stringBuilder.Dispose();
     }
+
+    private static bool IsEnabledInternal(Dictionary<string, bool>.AlternateLookup<StrSpan> lookup, StrSpan path) =>
+        !lookup.TryGetValue(path, out var enabled) || enabled;
 }
