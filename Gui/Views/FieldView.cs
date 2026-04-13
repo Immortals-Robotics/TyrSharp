@@ -290,9 +290,18 @@ public sealed partial class FieldView : IDisposable
                 _renderer.Draw(module.Points, pushClipRect: false);
                 _renderer.Draw(module.Triangles, pushClipRect: false);
                 _renderer.Draw(module.Robots, pushClipRect: false);
-                _renderer.Draw(module.Texts, pushClipRect: false);
+                
+            }
+
+            foreach (var module in prepared.Modules)
+            {
                 _renderer.Draw(module.Trajectories, pushClipRect: false);
                 _renderer.Draw(module.ChainedTrajectories, pushClipRect: false);
+            }
+
+            foreach (var module in prepared.Modules)
+            {
+                _renderer.Draw(module.Texts, pushClipRect: false);
             }
 
             ImGui.PopClipRect();
