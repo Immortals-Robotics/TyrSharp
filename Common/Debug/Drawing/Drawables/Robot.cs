@@ -7,7 +7,7 @@ namespace Tyr.Common.Debug.Drawing.Drawables;
 
 [Configurable]
 [MemoryPackable]
-public partial record Robot : IDrawable
+public partial record struct Robot : IEntry
 {
     [ConfigEntry] public static float DefaultRadius { get; set; } = 90f;
 
@@ -17,10 +17,16 @@ public partial record Robot : IDrawable
     [ConfigEntry] public static float TextSize { get; set; } = 135f;
     [ConfigEntry] public static Color TextColor { get; set; } = Color.Zinc950;
 
+    [MemoryPackIgnore] public Time.Timestamp Timestamp { get; set; }
+    [MemoryPackIgnore] public Meta Meta { get; set; }
+    [MemoryPackIgnore] public string? ShardKey => null;
+
     public Vector2 Position { get; init; }
     public Angle? Orientation { get; init; }
     public uint? Id { get; init; }
     public float Radius { get; init; } = DefaultRadius;
+    public Color Color { get; set; }
+    public Options Options { get; set; }
 
     [MemoryPackConstructor]
     public Robot()

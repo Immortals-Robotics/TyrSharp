@@ -4,12 +4,18 @@ using MemoryPack;
 namespace Tyr.Common.Debug.Drawing.Drawables;
 
 [MemoryPackable]
-public partial record Path : IDrawable
+public partial record struct Path : IEntry
 {
+    [MemoryPackIgnore] public Time.Timestamp Timestamp { get; set; }
+    [MemoryPackIgnore] public Meta Meta { get; set; }
+    [MemoryPackIgnore] public string? ShardKey => null;
+
     public Vector2[] Points { get; init; }
+    public Color Color { get; set; }
+    public Options Options { get; set; }
 
     [MemoryPackConstructor]
-    private Path()
+    public Path()
     {
         Points = [];
     }

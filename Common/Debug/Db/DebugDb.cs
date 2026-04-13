@@ -241,6 +241,23 @@ public sealed class DebugDb : IDisposable
                 this);
     }
 
+    public IEnumerable<Meta> QuerySourceLocations(string module, Type type)
+    {
+        ArgumentNullException.ThrowIfNull(type);
+
+        if (!_moduleIdCache.TryGetValue(module, out var moduleId))
+            yield break;
+
+        if (!TryGetBucketSet(type, out var bucketSet))
+            yield break;
+
+        foreach (var sourceLocationId in bucketSet.GetSourceLocationIdsByModule(moduleId))
+            yield return _sourceLocationCache.GetOrAdd(
+                sourceLocationId,
+                static (id, db) => db._sources.Get(id, db._strings),
+                this);
+    }
+
     public Meta? TryGetShardMeta<T>(string module, string shardKey) where T : struct, IEntry
     {
         if (!_moduleIdCache.TryGetValue(module, out var moduleId))

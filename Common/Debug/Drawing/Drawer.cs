@@ -1,4 +1,4 @@
-﻿using System.Collections.Concurrent;
+using System.Collections.Concurrent;
 using System.Runtime.CompilerServices;
 using Cysharp.Text;
 using Tyr.Common.Data;
@@ -70,24 +70,25 @@ public sealed class Drawer(string module) : IDisposable
         return InternExpression(_stringBuilder.AsSpan());
     }
 
-    private void Draw(IDrawable drawable, Color color, Options options,
+    private void Draw<T>(T entry,
         string? member, string? file, int line,
-        string? expression, string? layer)
+        string? expression, string? layer) where T : struct, IEntry
     {
         var meta = Meta.GetOrCreate(module, layer, file, member, line, expression);
-        var command = new Command
-            { Drawable = drawable, Color = color, Options = options, Meta = meta, Timestamp = Timestamp.Now };
+        var published = entry;
+        published.Meta = meta;
+        published.Timestamp = Timestamp.Now;
 
-        DebugBus.Publish(command);
+        DebugBus.Publish(published);
     }
 
-    public void DrawDrawable(IDrawable drawable, Color color, Options options = default, string? layer = null,
+    public void DrawEntry<T>(T entry, string? layer = null,
         string? expression = null,
         [CallerMemberName] string? member = null,
         [CallerFilePath] string? file = null,
-        [CallerLineNumber] int line = 0)
+        [CallerLineNumber] int line = 0) where T : struct, IEntry
     {
-        Draw(drawable, color, options, member, file, line, expression, layer ?? _layer);
+        Draw(entry, member, file, line, expression, layer ?? _layer);
     }
 
     public void BeginLayer(string layer)
@@ -107,8 +108,8 @@ public sealed class Drawer(string module) : IDisposable
         [CallerFilePath] string? file = null,
         [CallerLineNumber] int line = 0)
     {
-        var point = new Point { Position = position };
-        Draw(point, color, options, member, file, line, positionExpression, layer ?? _layer);
+        var point = new Point { Position = position, Color = color, Options = options };
+        Draw(point, member, file, line, positionExpression, layer ?? _layer);
     }
 
     public void DrawLine(Vector2 point, Angle angle, Color color, Options options = default, string? layer = null,
@@ -120,12 +121,12 @@ public sealed class Drawer(string module) : IDisposable
         [CallerFilePath] string? file = null,
         [CallerLineNumber] int lineNumber = 0)
     {
-        var line = new Line { Point = point, Angle = angle };
+        var line = new Line { Point = point, Angle = angle, Color = color, Options = options };
 
         var expression = MakeExpression(
             nameof(point), pointExpression,
             nameof(angle), angleExpression);
-        Draw(line, color, options, member, file, lineNumber, expression, layer ?? _layer);
+        Draw(line, member, file, lineNumber, expression, layer ?? _layer);
     }
 
     public void DrawLine(Math.Shapes.Line line, Color color, Options options = default, string? layer = null,
@@ -135,8 +136,8 @@ public sealed class Drawer(string module) : IDisposable
         [CallerFilePath] string? file = null,
         [CallerLineNumber] int lineNumber = 0)
     {
-        var drawable = new Line(line);
-        Draw(drawable, color, options, member, file, lineNumber, expression, layer ?? _layer);
+        var drawable = new Line(line) { Color = color, Options = options };
+        Draw(drawable, member, file, lineNumber, expression, layer ?? _layer);
     }
 
     public void DrawLineSegment(Vector2 start, Vector2 end, Color color, Options options = default,
@@ -149,12 +150,12 @@ public sealed class Drawer(string module) : IDisposable
         [CallerFilePath] string? file = null,
         [CallerLineNumber] int line = 0)
     {
-        var segment = new LineSegment{ Start = start, End = end };
+        var segment = new LineSegment { Start = start, End = end, Color = color, Options = options };
 
         var expression = MakeExpression(
             nameof(start), startExpression,
             nameof(end), endExpression);
-        Draw(segment, color, options, member, file, line, expression, layer ?? _layer);
+        Draw(segment, member, file, line, expression, layer ?? _layer);
     }
 
     public void DrawLineSegment(Math.Shapes.LineSegment segment, Color color, Options options = default,
@@ -165,8 +166,8 @@ public sealed class Drawer(string module) : IDisposable
         [CallerFilePath] string? file = null,
         [CallerLineNumber] int line = 0)
     {
-        var drawable = new LineSegment(segment);
-        Draw(drawable, color, options, member, file, line, expression, layer ?? _layer);
+        var drawable = new LineSegment(segment) { Color = color, Options = options };
+        Draw(drawable, member, file, line, expression, layer ?? _layer);
     }
 
     public void DrawArrow(Vector2 start, Vector2 end, Color color, Options options = default, string? layer = null,
@@ -178,13 +179,13 @@ public sealed class Drawer(string module) : IDisposable
         [CallerFilePath] string? file = null,
         [CallerLineNumber] int line = 0)
     {
-        var arrow = new Arrow { Start = start, End = end };
+        var arrow = new Arrow { Start = start, End = end, Color = color, Options = options };
 
         var expression = MakeExpression(
             nameof(start), startExpression,
             nameof(end), endExpression);
 
-        Draw(arrow, color, options, member, file, line, expression, layer ?? _layer);
+        Draw(arrow, member, file, line, expression, layer ?? _layer);
     }
 
     public void DrawArrow(Math.Shapes.LineSegment segment, Color color, Options options = default, string? layer = null,
@@ -194,8 +195,8 @@ public sealed class Drawer(string module) : IDisposable
         [CallerFilePath] string? file = null,
         [CallerLineNumber] int line = 0)
     {
-        var drawable = new Arrow(segment);
-        Draw(drawable, color, options, member, file, line, expression, layer ?? _layer);
+        var drawable = new Arrow(segment) { Color = color, Options = options };
+        Draw(drawable, member, file, line, expression, layer ?? _layer);
     }
 
     public void DrawRectangle(Vector2 min, Vector2 max, Color color, Options options = default, string? layer = null,
@@ -207,13 +208,13 @@ public sealed class Drawer(string module) : IDisposable
         [CallerFilePath] string? file = null,
         [CallerLineNumber] int line = 0)
     {
-        var rect = new Rectangle { Min = min, Max = max };
+        var rect = new Rectangle { Min = min, Max = max, Color = color, Options = options };
 
         var expression = MakeExpression(
             nameof(min), minExpression,
             nameof(max), maxExpression);
 
-        Draw(rect, color, options, member, file, line, expression, layer ?? _layer);
+        Draw(rect, member, file, line, expression, layer ?? _layer);
     }
 
     public void DrawRectangle(Math.Shapes.Rectangle rectangle, Color color, Options options = default,
@@ -224,8 +225,8 @@ public sealed class Drawer(string module) : IDisposable
         [CallerFilePath] string? file = null,
         [CallerLineNumber] int line = 0)
     {
-        var drawable = new Rectangle(rectangle);
-        Draw(drawable, color, options, member, file, line, expression, layer ?? _layer);
+        var drawable = new Rectangle(rectangle) { Color = color, Options = options };
+        Draw(drawable, member, file, line, expression, layer ?? _layer);
     }
 
     public void DrawTriangle(Vector2 v1, Vector2 v2, Vector2 v3, Color color, Options options = default,
@@ -237,14 +238,14 @@ public sealed class Drawer(string module) : IDisposable
         [CallerFilePath] string? file = null,
         [CallerLineNumber] int line = 0)
     {
-        var triangle = new Triangle { A = v1, B = v2, C = v3 };
+        var triangle = new Triangle { A = v1, B = v2, C = v3, Color = color, Options = options };
 
         var expression = MakeExpression(
             nameof(v1), v1Expression,
             nameof(v2), v2Expression,
             nameof(v3), v3Expression);
 
-        Draw(triangle, color, options, member, file, line, expression, layer ?? _layer);
+        Draw(triangle, member, file, line, expression, layer ?? _layer);
     }
 
     public void DrawTriangle(Math.Shapes.Triangle triangle, Color color, Options options = default,
@@ -255,8 +256,8 @@ public sealed class Drawer(string module) : IDisposable
         [CallerFilePath] string? file = null,
         [CallerLineNumber] int line = 0)
     {
-        var drawable = new Triangle(triangle);
-        Draw(drawable, color, options, member, file, line, expression, layer ?? _layer);
+        var drawable = new Triangle(triangle) { Color = color, Options = options };
+        Draw(drawable, member, file, line, expression, layer ?? _layer);
     }
 
     public void DrawCircle(Vector2 center, float radius, Color color, Options options = default, string? layer = null,
@@ -268,13 +269,13 @@ public sealed class Drawer(string module) : IDisposable
         [CallerFilePath] string? file = null,
         [CallerLineNumber] int line = 0)
     {
-        var circle = new Circle { Center = center, Radius = radius };
+        var circle = new Circle { Center = center, Radius = radius, Color = color, Options = options };
 
         var expression = MakeExpression(
             nameof(center), centerExpression,
             nameof(radius), radiusExpression);
 
-        Draw(circle, color, options, member, file, line, expression, layer ?? _layer);
+        Draw(circle, member, file, line, expression, layer ?? _layer);
     }
 
     public void DrawCircle(Math.Shapes.Circle circle, Color color, Options options = default, string? layer = null,
@@ -284,8 +285,8 @@ public sealed class Drawer(string module) : IDisposable
         [CallerFilePath] string? file = null,
         [CallerLineNumber] int line = 0)
     {
-        var drawable = new Circle(circle);
-        Draw(drawable, color, options, member, file, line, expression, layer ?? _layer);
+        var drawable = new Circle(circle) { Color = color, Options = options };
+        Draw(drawable, member, file, line, expression, layer ?? _layer);
     }
 
     public void DrawArc(Vector2 center, float radius, Angle start, Angle end, bool closed,
@@ -304,7 +305,16 @@ public sealed class Drawer(string module) : IDisposable
         [CallerFilePath] string? file = null,
         [CallerLineNumber] int line = 0)
     {
-        var arc = new Arc { Center = center, Radius = radius, Start = start, End = end, Closed = closed };
+        var arc = new Arc
+        {
+            Center = center,
+            Radius = radius,
+            Start = start,
+            End = end,
+            Closed = closed,
+            Color = color,
+            Options = options,
+        };
 
         var expression = MakeExpression(
             nameof(center), centerExpression,
@@ -313,7 +323,7 @@ public sealed class Drawer(string module) : IDisposable
             nameof(end), endExpression,
             nameof(closed), closedExpression);
 
-        Draw(arc, color, options, member, file, line, expression, layer ?? _layer);
+        Draw(arc, member, file, line, expression, layer ?? _layer);
     }
 
     public void DrawRobot(Vector2 position, Angle? orientation, uint? id, Color color, float? radius = null,
@@ -327,14 +337,22 @@ public sealed class Drawer(string module) : IDisposable
         [CallerFilePath] string? file = null,
         [CallerLineNumber] int line = 0)
     {
-        var robot = new Robot { Position = position, Orientation = orientation, Id = id, Radius = radius ?? Robot.DefaultRadius };
+        var robot = new Robot
+        {
+            Position = position,
+            Orientation = orientation,
+            Id = id,
+            Radius = radius ?? Robot.DefaultRadius,
+            Color = color,
+            Options = options,
+        };
 
         var expression = MakeExpression(
             nameof(position), positionExpression,
             nameof(orientation), orientationExpression,
             nameof(id), idExpression);
 
-        Draw(robot, color, options, member, file, line, expression, layer ?? _layer);
+        Draw(robot, member, file, line, expression, layer ?? _layer);
     }
 
     public void DrawRobot(Vector2 position, Angle? orientation, Data.Ssl.RobotId? id, float? radius = null,
@@ -348,16 +366,23 @@ public sealed class Drawer(string module) : IDisposable
         [CallerFilePath] string? file = null,
         [CallerLineNumber] int line = 0)
     {
+        var color = (id?.Team).ToColor();
         var robot = new Robot
-            { Position = position, Orientation = orientation, Id = id?.Id, Radius = radius ?? Robot.DefaultRadius };
+        {
+            Position = position,
+            Orientation = orientation,
+            Id = id?.Id,
+            Radius = radius ?? Robot.DefaultRadius,
+            Color = color,
+            Options = options,
+        };
 
         var expression = MakeExpression(
             nameof(position), positionExpression,
             nameof(orientation), orientationExpression,
             nameof(id), idExpression);
 
-        var color = (id?.Team).ToColor();
-        Draw(robot, color, options, member, file, line, expression, layer ?? _layer);
+        Draw(robot, member, file, line, expression, layer ?? _layer);
     }
 
     public void DrawRobot(Math.Shapes.Robot robot, uint? id, Color color, Options options = default,
@@ -369,13 +394,13 @@ public sealed class Drawer(string module) : IDisposable
         [CallerFilePath] string? file = null,
         [CallerLineNumber] int line = 0)
     {
-        var drawable = new Robot(robot, id);
+        var drawable = new Robot(robot, id) { Color = color, Options = options };
 
         var expression = MakeExpression(
             nameof(robot), robotExpression,
             nameof(id), idExpression);
 
-        Draw(drawable, color, options, member, file, line, expression, layer ?? _layer);
+        Draw(drawable, member, file, line, expression, layer ?? _layer);
     }
 
     public void DrawRobot(Data.Ssl.Vision.Detection.Robot robot, Data.Ssl.RobotId id, Options options = default,
@@ -387,14 +412,14 @@ public sealed class Drawer(string module) : IDisposable
         [CallerFilePath] string? file = null,
         [CallerLineNumber] int line = 0)
     {
-        var drawable = new Robot(robot, id.Id);
         var color = id.Team.ToColor();
+        var drawable = new Robot(robot, id.Id) { Color = color, Options = options };
 
         var expression = MakeExpression(
             nameof(robot), robotExpression,
             nameof(id), idExpression);
 
-        Draw(drawable, color, options, member, file, line, expression, layer ?? _layer);
+        Draw(drawable, member, file, line, expression, layer ?? _layer);
     }
 
     public void DrawRobot(Data.Ssl.Vision.Tracker.Robot robot, Options options = default, string? layer = null,
@@ -404,9 +429,9 @@ public sealed class Drawer(string module) : IDisposable
         [CallerFilePath] string? file = null,
         [CallerLineNumber] int line = 0)
     {
-        var drawable = new Robot(robot);
         var color = robot.Id.Team.ToColor();
-        Draw(drawable, color, options, member, file, line, expression, layer ?? _layer);
+        var drawable = new Robot(robot) { Color = color, Options = options };
+        Draw(drawable, member, file, line, expression, layer ?? _layer);
     }
 
     public void DrawPath(IReadOnlyList<Vector2> points, Color color, Options options = default, string? layer = null,
@@ -416,8 +441,8 @@ public sealed class Drawer(string module) : IDisposable
         [CallerFilePath] string? file = null,
         [CallerLineNumber] int line = 0)
     {
-        var path = new Drawables.Path(points);
-        Draw(path, color, options, member, file, line, expression, layer ?? _layer);
+        var path = new Drawables.Path(points) { Color = color, Options = options };
+        Draw(path, member, file, line, expression, layer ?? _layer);
     }
 
     public void DrawText(string content, Vector2 position, float size, Color color,
@@ -432,14 +457,22 @@ public sealed class Drawer(string module) : IDisposable
         [CallerFilePath] string? file = null,
         [CallerLineNumber] int line = 0)
     {
-        var text = new Text { Content = content, Position = position, Size = size, Alignment = alignment };
+        var text = new Text
+        {
+            Content = content,
+            Position = position,
+            Size = size,
+            Alignment = alignment,
+            Color = color,
+            Options = options,
+        };
 
         var expression = MakeExpression(
             nameof(content), contentExpression,
             nameof(position), positionExpression,
             nameof(size), sizeExpression);
 
-        Draw(text, color, options, member, file, line, expression, layer ?? _layer);
+        Draw(text, member, file, line, expression, layer ?? _layer);
     }
 
     public void Dispose()

@@ -1,5 +1,6 @@
 using System.Collections.Concurrent;
 using System.Runtime.CompilerServices;
+using Tyr.Common.Debug.Drawing.Drawables;
 
 namespace Tyr.Common.Debug;
 
@@ -12,7 +13,17 @@ public static class DebugTypeRegistry
     internal static void Initialize()
     {
         Register<Logging.Entry>();
-        Register<Drawing.Command>();
+        Register<Circle>();
+        Register<Arc>();
+        Register<Arrow>();
+        Register<Line>();
+        Register<LineSegment>();
+        Register<Drawing.Drawables.Path>();
+        Register<Point>();
+        Register<Rectangle>();
+        Register<Robot>();
+        Register<Text>();
+        Register<Triangle>();
         Register<Plotting.Command>();
     }
 #pragma warning restore CA2255

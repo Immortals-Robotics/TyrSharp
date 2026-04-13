@@ -2,7 +2,6 @@ using System.Numerics;
 using Tyr.Common.Dataflow;
 using Tyr.Common.Debug;
 using Tyr.Common.Debug.Drawing;
-using Tyr.Common.Debug.Drawing.Drawables;
 using Tyr.Soccer.Navigation.Trajectory;
 
 namespace Tyr.Tests.Soccer;
@@ -12,12 +11,12 @@ public sealed class TrajectoryUtilsTests
     [Fact]
     public void DrawTrajectory_WithTrajectory2D_PublishesSingleTrajectoryDrawable()
     {
-        using var subscriber = DebugBus.Subscribe<Command>(Mode.All);
+        using var subscriber = DebugBus.Subscribe<Trajectory2DDrawable>(Mode.All);
 
         TrajectoryUtils.DrawTrajectory(CreateTrajectory2D(), Color.Black);
 
         Assert.True(subscriber.Reader.TryRead(out var command));
-        Assert.IsType<Trajectory2DDrawable>(command.Drawable);
+        Assert.Equal(Color.Black, command.Color);
         Assert.False(subscriber.Reader.TryRead(out _));
     }
 

@@ -2,6 +2,7 @@
 using Hexa.NET.ImGui;
 using Tyr.Common.Config;
 using Tyr.Common.Debug;
+using Tyr.Common.Debug.Drawing;
 using Tyr.Gui.Backend;
 using StrSpan = System.ReadOnlySpan<char>;
 using Color = Tyr.Common.Debug.Drawing.Color;
@@ -228,9 +229,8 @@ public sealed partial class DebugFilter(Common.Debug.Db.DebugDb debugDb) : IDisp
             RegisterMetaTree(module,
                 debugDb.QuerySourceLocations<Common.Debug.Logging.Entry>(module),
                 MetaTreeItem.ItemType.Log);
-            RegisterMetaTree(module,
-                debugDb.QuerySourceLocations<Common.Debug.Drawing.Command>(module),
-                MetaTreeItem.ItemType.Draw);
+            foreach (var drawType in DebugTypeRegistry.GetRegisteredTypes().Where(static type => type.Namespace?.Contains(".Debug.Drawing", StringComparison.Ordinal) == true))
+                RegisterMetaTree(module, debugDb.QuerySourceLocations(module, drawType), MetaTreeItem.ItemType.Draw);
             RegisterMetaTree(module,
                 debugDb.QuerySourceLocations<Common.Debug.Plotting.Command>(module),
                 MetaTreeItem.ItemType.Plot);

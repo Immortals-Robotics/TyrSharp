@@ -5,8 +5,12 @@ using Tyr.Common.Math;
 namespace Tyr.Common.Debug.Drawing.Drawables;
 
 [MemoryPackable]
-public partial record Arc : IDrawable
+public partial record struct Arc : IEntry
 {
+    [MemoryPackIgnore] public Time.Timestamp Timestamp { get; set; }
+    [MemoryPackIgnore] public Meta Meta { get; set; }
+    [MemoryPackIgnore] public string? ShardKey => null;
+
     public Vector2 Center { get; init; }
     public float Radius { get; init; }
     
@@ -14,6 +18,8 @@ public partial record Arc : IDrawable
     public Angle End { get; init; }
     
     public bool Closed { get; init; }
+    public Color Color { get; set; }
+    public Options Options { get; set; }
 
     [MemoryPackConstructor]
     public Arc()

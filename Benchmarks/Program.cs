@@ -6,7 +6,7 @@ using Tyr.Common.Debug.Db;
 using Tyr.Common.Debug.Logging;
 using Tyr.Common.Debug.Plotting;
 using Tyr.Common.Time;
-using DrawCommand = Tyr.Common.Debug.Drawing.Command;
+using DrawCommand = Tyr.Common.Debug.Drawing.Drawables.Point;
 using LoggingEntry = Tyr.Common.Debug.Logging.Entry;
 using PlotCommand = Tyr.Common.Debug.Plotting.Command;
 
@@ -669,10 +669,7 @@ internal sealed class BenchmarkScenario
 
         return new DrawCommand
         {
-            Drawable = new Tyr.Common.Debug.Drawing.Drawables.Point
-            {
-                Position = new Vector2(frameIndex % 200, drawIndex % 100),
-            },
+            Position = new Vector2(frameIndex % 200, drawIndex % 100),
             Color = default,
             Options = default,
             Meta = Meta.GetOrCreate(

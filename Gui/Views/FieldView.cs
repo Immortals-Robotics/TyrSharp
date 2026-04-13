@@ -6,11 +6,14 @@ using Tyr.Common.Data;
 using Tyr.Common.Data.Ssl.Vision.Geometry;
 using Tyr.Common.Dataflow;
 using Tyr.Common.Debug.Db;
+using Tyr.Common.Debug.Drawing;
+using Tyr.Common.Debug.Drawing.Drawables;
 using Tyr.Common.Math;
 using Tyr.Gui.Backend;
 using Tyr.Gui.Data;
 using Tyr.Gui.Rendering;
 using Tyr.Gui.Simulator;
+using Tyr.Soccer.Navigation.Trajectory;
 using Tyr.Soccer;
 using Debug = Tyr.Common.Debug;
 
@@ -46,8 +49,7 @@ public sealed partial class FieldView : IDisposable
     private readonly Subscriber<FieldSize> _fieldSizeSubscriber = Hub.FieldSize.Subscribe(Mode.Latest);
     private FieldSize? _fieldSize = FieldSize.Default;
     private bool _fitCameraPending = true;
-
-    private readonly List<Debug.Drawing.Command> _fieldDraws = [];
+    private readonly PreparedModule _fieldDraws = new();
 
     public required SimulatorChannel SimulatorChannel { get; init; }
     private Vector2 _contextMenuWorldPos;
@@ -55,7 +57,52 @@ public sealed partial class FieldView : IDisposable
     internal sealed class PreparedModule
     {
         public string ModuleName = string.Empty;
-        public List<Debug.Drawing.Command> Commands { get; } = [];
+        public List<Circle> Circles { get; } = [];
+        public List<Arc> Arcs { get; } = [];
+        public List<Arrow> Arrows { get; } = [];
+        public List<Line> Lines { get; } = [];
+        public List<LineSegment> LineSegments { get; } = [];
+        public List<Debug.Drawing.Drawables.Path> Paths { get; } = [];
+        public List<Point> Points { get; } = [];
+        public List<Rectangle> Rectangles { get; } = [];
+        public List<Robot> Robots { get; } = [];
+        public List<Text> Texts { get; } = [];
+        public List<Triangle> Triangles { get; } = [];
+        public List<Trajectory2DDrawable> Trajectories { get; } = [];
+        public List<Trajectory2DChainedDrawable> ChainedTrajectories { get; } = [];
+
+        public bool IsEmpty =>
+            Circles.Count == 0 &&
+            Arcs.Count == 0 &&
+            Arrows.Count == 0 &&
+            Lines.Count == 0 &&
+            LineSegments.Count == 0 &&
+            Paths.Count == 0 &&
+            Points.Count == 0 &&
+            Rectangles.Count == 0 &&
+            Robots.Count == 0 &&
+            Texts.Count == 0 &&
+            Triangles.Count == 0 &&
+            Trajectories.Count == 0 &&
+            ChainedTrajectories.Count == 0;
+
+        public void Reset()
+        {
+            ModuleName = string.Empty;
+            Circles.Clear();
+            Arcs.Clear();
+            Arrows.Clear();
+            Lines.Clear();
+            LineSegments.Clear();
+            Paths.Clear();
+            Points.Clear();
+            Rectangles.Clear();
+            Robots.Clear();
+            Texts.Clear();
+            Triangles.Clear();
+            Trajectories.Clear();
+            ChainedTrajectories.Clear();
+        }
     }
 
     internal sealed class PreparedData
@@ -68,8 +115,7 @@ public sealed partial class FieldView : IDisposable
         {
             foreach (var module in Modules)
             {
-                module.ModuleName = string.Empty;
-                module.Commands.Clear();
+                module.Reset();
                 _modulePool.Push(module);
             }
 
@@ -82,6 +128,15 @@ public sealed partial class FieldView : IDisposable
             module.ModuleName = moduleName;
             Modules.Add(module);
             return module;
+        }
+
+        public void RemoveLastModule()
+        {
+            var index = Modules.Count - 1;
+            var module = Modules[index];
+            Modules.RemoveAt(index);
+            module.Reset();
+            _modulePool.Push(module);
         }
     }
 
@@ -108,18 +163,61 @@ public sealed partial class FieldView : IDisposable
             if (!frame.HasValue)
                 continue;
 
-            PreparedModule? preparedModule = null;
-            foreach (var draw in _debugDb.Query<Debug.Drawing.Command>(
-                         module,
-                         frame.Value.Start,
-                         frame.Value.End))
-            {
-                if (!filterSnapshot.IsEnabled(draw.Meta))
-                    continue;
+            var preparedModule = prepared.AddModule(module);
+            foreach (var rectangle in _debugDb.Query<Rectangle>(module, frame.Value.Start, frame.Value.End))
+                if (filterSnapshot.IsEnabled(rectangle.Meta))
+                    preparedModule.Rectangles.Add(rectangle);
 
-                preparedModule ??= prepared.AddModule(module);
-                preparedModule.Commands.Add(draw);
-            }
+            foreach (var circle in _debugDb.Query<Circle>(module, frame.Value.Start, frame.Value.End))
+                if (filterSnapshot.IsEnabled(circle.Meta))
+                    preparedModule.Circles.Add(circle);
+
+            foreach (var arc in _debugDb.Query<Arc>(module, frame.Value.Start, frame.Value.End))
+                if (filterSnapshot.IsEnabled(arc.Meta))
+                    preparedModule.Arcs.Add(arc);
+
+            foreach (var arrow in _debugDb.Query<Arrow>(module, frame.Value.Start, frame.Value.End))
+                if (filterSnapshot.IsEnabled(arrow.Meta))
+                    preparedModule.Arrows.Add(arrow);
+
+            foreach (var line in _debugDb.Query<Line>(module, frame.Value.Start, frame.Value.End))
+                if (filterSnapshot.IsEnabled(line.Meta))
+                    preparedModule.Lines.Add(line);
+
+            foreach (var lineSegment in _debugDb.Query<LineSegment>(module, frame.Value.Start, frame.Value.End))
+                if (filterSnapshot.IsEnabled(lineSegment.Meta))
+                    preparedModule.LineSegments.Add(lineSegment);
+
+            foreach (var path in _debugDb.Query<Debug.Drawing.Drawables.Path>(module, frame.Value.Start, frame.Value.End))
+                if (filterSnapshot.IsEnabled(path.Meta))
+                    preparedModule.Paths.Add(path);
+
+            foreach (var point in _debugDb.Query<Point>(module, frame.Value.Start, frame.Value.End))
+                if (filterSnapshot.IsEnabled(point.Meta))
+                    preparedModule.Points.Add(point);
+
+            foreach (var robot in _debugDb.Query<Robot>(module, frame.Value.Start, frame.Value.End))
+                if (filterSnapshot.IsEnabled(robot.Meta))
+                    preparedModule.Robots.Add(robot);
+
+            foreach (var text in _debugDb.Query<Text>(module, frame.Value.Start, frame.Value.End))
+                if (filterSnapshot.IsEnabled(text.Meta))
+                    preparedModule.Texts.Add(text);
+
+            foreach (var triangle in _debugDb.Query<Triangle>(module, frame.Value.Start, frame.Value.End))
+                if (filterSnapshot.IsEnabled(triangle.Meta))
+                    preparedModule.Triangles.Add(triangle);
+
+            foreach (var trajectory in _debugDb.Query<Trajectory2DDrawable>(module, frame.Value.Start, frame.Value.End))
+                if (filterSnapshot.IsEnabled(trajectory.Meta))
+                    preparedModule.Trajectories.Add(trajectory);
+
+            foreach (var trajectory in _debugDb.Query<Trajectory2DChainedDrawable>(module, frame.Value.Start, frame.Value.End))
+                if (filterSnapshot.IsEnabled(trajectory.Meta))
+                    preparedModule.ChainedTrajectories.Add(trajectory);
+
+            if (preparedModule.IsEmpty)
+                prepared.RemoveLastModule();
         }
     }
 
@@ -182,7 +280,19 @@ public sealed partial class FieldView : IDisposable
 
             foreach (var module in prepared.Modules)
             {
-                _renderer.Draw(module.Commands, null, pushClipRect: false);
+                _renderer.Draw(module.Rectangles, pushClipRect: false);
+                _renderer.Draw(module.Circles, pushClipRect: false);
+                _renderer.Draw(module.Arcs, pushClipRect: false);
+                _renderer.Draw(module.Arrows, pushClipRect: false);
+                _renderer.Draw(module.Lines, pushClipRect: false);
+                _renderer.Draw(module.LineSegments, pushClipRect: false);
+                _renderer.Draw(module.Paths, pushClipRect: false);
+                _renderer.Draw(module.Points, pushClipRect: false);
+                _renderer.Draw(module.Triangles, pushClipRect: false);
+                _renderer.Draw(module.Robots, pushClipRect: false);
+                _renderer.Draw(module.Texts, pushClipRect: false);
+                _renderer.Draw(module.Trajectories, pushClipRect: false);
+                _renderer.Draw(module.ChainedTrajectories, pushClipRect: false);
             }
 
             ImGui.PopClipRect();
@@ -225,15 +335,6 @@ public sealed partial class FieldView : IDisposable
         ImGui.End();
     }
 
-    private void DrawInternal(Debug.Drawing.IDrawable drawable,
-        Debug.Drawing.Color color, Debug.Drawing.Options options)
-    {
-        _fieldDraws.Add(new Debug.Drawing.Command
-        {
-            Drawable = drawable, Color = color, Options = options, Meta = Debug.Meta.Empty, Timestamp = Timestamp.Zero
-        });
-    }
-
     private void DrawField()
     {
         if (_fieldSizeSubscriber.Reader.TryRead(out var fieldSize))
@@ -248,29 +349,31 @@ public sealed partial class FieldView : IDisposable
 
         var currentField = _fieldSize.Value;
 
-        _fieldDraws.Clear();
+        _fieldDraws.Reset();
 
-        DrawInternal(new Debug.Drawing.Drawables.Rectangle(currentField.RectangleWithBoundary),
-            BoundaryColor, Debug.Drawing.Options.Filled);
+        _fieldDraws.Rectangles.Add(new Rectangle(currentField.RectangleWithBoundary)
+            { Color = BoundaryColor, Options = Options.Filled });
 
-        DrawInternal(new Debug.Drawing.Drawables.Rectangle(currentField.Rectangle),
-            FieldColor, Debug.Drawing.Options.Filled);
+        _fieldDraws.Rectangles.Add(new Rectangle(currentField.Rectangle)
+            { Color = FieldColor, Options = Options.Filled });
 
         DrawBoundaryWalls(currentField);
 
         foreach (var line in EnumerateFieldLines(currentField))
         {
-            DrawInternal(new Debug.Drawing.Drawables.LineSegment(line.LineSegment),
-                LineColor, Debug.Drawing.Options.Outline(line.Thickness));
+            _fieldDraws.LineSegments.Add(new LineSegment(line.LineSegment)
+                { Color = LineColor, Options = Options.Outline(line.Thickness) });
         }
 
         foreach (var arc in EnumerateFieldArcs(currentField))
         {
-            DrawInternal(new Debug.Drawing.Drawables.Arc(arc),
-                LineColor, Debug.Drawing.Options.Outline(arc.Thickness));
+            _fieldDraws.Arcs.Add(new Arc(arc)
+                { Color = LineColor, Options = Options.Outline(arc.Thickness) });
         }
 
-        _renderer.Draw(_fieldDraws, null);
+        _renderer.Draw(_fieldDraws.Rectangles);
+        _renderer.Draw(_fieldDraws.Arcs);
+        _renderer.Draw(_fieldDraws.LineSegments);
     }
 
     private void TryFitCameraToField()
@@ -346,10 +449,12 @@ public sealed partial class FieldView : IDisposable
 
     private void DrawWallSegment(Vector2 start, Vector2 end, float thickness)
     {
-        DrawInternal(new Debug.Drawing.Drawables.LineSegment(new Common.Math.Shapes.LineSegment
-            { Start = start, End = end }),
-            WallColor,
-            Debug.Drawing.Options.Outline(thickness));
+        _fieldDraws.LineSegments.Add(new LineSegment(new Common.Math.Shapes.LineSegment
+            { Start = start, End = end })
+            {
+                Color = WallColor,
+                Options = Options.Outline(thickness),
+            });
     }
 
     private static IEnumerable<FieldLineSegment> EnumerateFieldLines(FieldSize fieldSize)

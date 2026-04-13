@@ -2,6 +2,7 @@ using System.Collections.Concurrent;
 using System.Linq.Expressions;
 using Tyr.Common.Config;
 using Tyr.Common.Dataflow;
+using Tyr.Common.Debug.Drawing.Drawables;
 using Tyr.Common.Runner;
 using Tyr.Common.Time;
 using Debug = Tyr.Common.Debug;
@@ -68,9 +69,49 @@ public sealed partial class DebugDbDumper : IDisposable
             {
                 _db.Append(logEntry);
             }
-            else if (dumpEntry.TryGetKnownEntry(out Debug.Drawing.Command drawCommand))
+            else if (dumpEntry.TryGetEntry<Circle>(out var circle))
             {
-                _db.Append(drawCommand);
+                _db.Append(circle);
+            }
+            else if (dumpEntry.TryGetEntry<Arc>(out var arc))
+            {
+                _db.Append(arc);
+            }
+            else if (dumpEntry.TryGetEntry<Arrow>(out var arrow))
+            {
+                _db.Append(arrow);
+            }
+            else if (dumpEntry.TryGetEntry<Line>(out var line))
+            {
+                _db.Append(line);
+            }
+            else if (dumpEntry.TryGetEntry<LineSegment>(out var lineSegment))
+            {
+                _db.Append(lineSegment);
+            }
+            else if (dumpEntry.TryGetEntry<Drawing.Drawables.Path>(out var path))
+            {
+                _db.Append(path);
+            }
+            else if (dumpEntry.TryGetEntry<Point>(out var point))
+            {
+                _db.Append(point);
+            }
+            else if (dumpEntry.TryGetEntry<Rectangle>(out var rectangle))
+            {
+                _db.Append(rectangle);
+            }
+            else if (dumpEntry.TryGetEntry<Robot>(out var robot))
+            {
+                _db.Append(robot);
+            }
+            else if (dumpEntry.TryGetEntry<Text>(out var text))
+            {
+                _db.Append(text);
+            }
+            else if (dumpEntry.TryGetEntry<Triangle>(out var triangle))
+            {
+                _db.Append(triangle);
             }
             else if (dumpEntry.TryGetKnownEntry(out Debug.Plotting.Command plotCommand))
             {

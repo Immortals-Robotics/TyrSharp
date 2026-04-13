@@ -8,11 +8,11 @@ public static partial class TrajectoryUtils
 {
     public static void DrawTrajectory(Trajectory2D trajectory, Color color)
     {
-        Draw.DrawDrawable(new Trajectory2DDrawable { Trajectory = trajectory }, color);
+        Draw.DrawEntry(new Trajectory2DDrawable { Trajectory = trajectory, Color = color });
     }
 
     public static void DrawTrajectory(Trajectory2DChained trajectory, Color color)
     {
-        Draw.DrawDrawable(new Trajectory2DChainedDrawable { Trajectory = trajectory }, color);
+        Draw.DrawEntry(new Trajectory2DChainedDrawable { Trajectory = trajectory, Color = color });
     }
 }

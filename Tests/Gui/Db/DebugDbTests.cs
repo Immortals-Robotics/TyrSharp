@@ -5,7 +5,7 @@ using Tyr.Common.Debug;
 using Tyr.Common.Debug.Db;
 using Tyr.Common.Debug.Plotting;
 using Tyr.Common.Time;
-using DrawingCommand = Tyr.Common.Debug.Drawing.Command;
+using DrawingCommand = Tyr.Common.Debug.Drawing.Drawables.Point;
 using Entry = Tyr.Common.Debug.Logging.Entry;
 using PlotCommand = Tyr.Common.Debug.Plotting.Command;
 
@@ -186,7 +186,7 @@ public sealed class DebugDbTests
                 .OrderBy(name => name)
                 .ToArray();
 
-            Assert.Contains("Tyr.Common.Debug.Drawing.Command", typeDirectories);
+            Assert.Contains("Tyr.Common.Debug.Drawing.Drawables.Point", typeDirectories);
             Assert.Contains("Tyr.Common.Debug.Plotting.Command", typeDirectories);
         }
         finally
