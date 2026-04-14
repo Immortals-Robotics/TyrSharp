@@ -62,7 +62,7 @@ public class BroadcastChannelTests
     }
 
     [Fact]
-    public async Task Unsubscribe_removes_channel_and_stops_delivery()
+    public async Task Unsubscribe_stops_future_non_racy_delivery()
     {
         var channel = new BroadcastChannel<int>();
         var subscriber = channel.Subscribe(Mode.All);
@@ -73,13 +73,11 @@ public class BroadcastChannelTests
         var received = await reader.ReadAsync();
         Assert.Equal(42, received);
 
-        // Unsubscribe and publish again
-        subscriber.Dispose(); // calls Unsubscribe internally
+        // Unsubscribe and publish again after dispose has completed. In the non-racy case,
+        // later publishes must not be delivered.
+        subscriber.Dispose();
 
-        // There should be no more items
         channel.Publish(99);
-
-        // Add a short delay to account for async delivery
         await Task.Delay(10);
 
         Assert.False(reader.TryRead(out _));

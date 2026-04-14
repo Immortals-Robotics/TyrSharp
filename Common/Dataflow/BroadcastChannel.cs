@@ -4,8 +4,7 @@ namespace Tyr.Common.Dataflow;
 
 public class BroadcastChannel<T>
 {
-    private readonly List<Channel<T>> _subscribers = [];
-    private readonly ReaderWriterLockSlim _lock = new(LockRecursionPolicy.NoRecursion);
+    private Channel<T>[] _subscribers = [];
 
     public Subscriber<T> Subscribe(Mode mode)
     {
@@ -22,14 +21,17 @@ public class BroadcastChannel<T>
             _ => throw new ArgumentOutOfRangeException(nameof(mode), mode, null)
         };
 
-        _lock.EnterWriteLock();
-        try
+        while (true)
         {
-            _subscribers.Add(channel);
-        }
-        finally
-        {
-            _lock.ExitWriteLock();
+            var current = Volatile.Read(ref _subscribers);
+            var next = new Channel<T>[current.Length + 1];
+            Array.Copy(current, next, current.Length);
+            next[^1] = channel;
+
+            if (Interlocked.CompareExchange(ref _subscribers, next, current) == current)
+            {
+                break;
+            }
         }
 
         return new Subscriber<T>
@@ -42,31 +44,35 @@ public class BroadcastChannel<T>
 
     public void Unsubscribe(Subscriber<T> subscriber)
     {
-        _lock.EnterWriteLock();
-        try
+        while (true)
         {
-            _subscribers.Remove(subscriber.Channel);
-        }
-        finally
-        {
-            _lock.ExitWriteLock();
+            var current = Volatile.Read(ref _subscribers);
+            var index = Array.IndexOf(current, subscriber.Channel);
+            if (index < 0)
+            {
+                return;
+            }
+
+            var next = new Channel<T>[current.Length - 1];
+            Array.Copy(current, 0, next, 0, index);
+            Array.Copy(current, index + 1, next, index, current.Length - index - 1);
+
+            // Best effort only: one or more concurrent publishers may have already captured
+            // the old snapshot and can still deliver after this unsubscribe succeeds.
+            if (Interlocked.CompareExchange(ref _subscribers, next, current) == current)
+            {
+                return;
+            }
         }
     }
 
     public void Publish(T item)
     {
-        _lock.EnterReadLock();
-        try
+        var subscribers = Volatile.Read(ref _subscribers);
+        foreach (var subscriber in subscribers)
         {
-            foreach (var subscriber in _subscribers)
-            {
-                var result = subscriber.Writer.TryWrite(item);
-                if (!result) Log.ZLogError($"Failed to publish item to channel");
-            }
-        }
-        finally
-        {
-            _lock.ExitReadLock();
+            var result = subscriber.Writer.TryWrite(item);
+            if (!result) Log.ZLogError($"Failed to publish item to channel");
         }
     }
 }
