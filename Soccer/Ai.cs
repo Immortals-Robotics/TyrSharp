@@ -24,7 +24,11 @@ public partial class Ai
     private readonly ManualControlState _manualControl;
 
     private Dictionary<int, Role.IRole?> _roleMapping = [];
+    private Dictionary<int, Role.IRole?> _nextRoleMapping = [];
     private Dictionary<int, ITactic?> _tacticMapping = [];
+
+    private readonly List<Role.IRole> _activeRoles = [];
+    private static readonly Role.Attacker _attackerRole = new();
 
     internal Ai(ManualControlState manualControl)
     {
@@ -166,24 +170,39 @@ public partial class Ai
         }
 
         // this resembles a play emitting a role
-        var roles = new List<Role.IRole>();
+        // Bolt: reuse pre-allocated list to prevent `new List<IRole>()` alloc/frame
+        _activeRoles.Clear();
         if (Context.Referee.Running())
         {
-            roles.Add(new Role.Attacker());
+            _activeRoles.Add(_attackerRole);
         }
 
-        // then the role assigner maps the roles to robots
-        var newRoleMapping = new Dictionary<int, Role.IRole?>();
-        foreach (var role in roles.OrderByDescending(r => r.Importance))
+        // Sort roles by importance descending (allocation-free sort)
+        _activeRoles.Sort(static (r1, r2) => r2.Importance.CompareTo(r1.Importance));
+
+        // Bolt: eliminate LINQ Where/OrderBy/FirstOrDefault allocation chains
+        _nextRoleMapping.Clear();
+        foreach (var role in _activeRoles)
         {
-            var best = Context.OwnRobots
-                .Where(r => r.Seen && !newRoleMapping.ContainsKey(r.Id))
-                .OrderBy(role.CostFor)
-                .FirstOrDefault();
+            Robot.Robot? best = null;
+            var bestCost = float.MaxValue;
+
+            foreach (var r in Context.OwnRobots)
+            {
+                if (r.Seen && !_nextRoleMapping.ContainsKey(r.Id))
+                {
+                    var cost = role.CostFor(r);
+                    if (cost < bestCost)
+                    {
+                        bestCost = cost;
+                        best = r;
+                    }
+                }
+            }
 
             if (best != null)
             {
-                newRoleMapping[best.Id] = role;
+                _nextRoleMapping[best.Id] = role;
             }
         }
 
@@ -191,7 +210,7 @@ public partial class Ai
         foreach (var robot in Context.OwnRobots)
         {
             var currentRole = _roleMapping.GetValueOrDefault(robot.Id);
-            var newRole = newRoleMapping.GetValueOrDefault(robot.Id);
+            var newRole = _nextRoleMapping.GetValueOrDefault(robot.Id);
 
             if (!currentRole?.Equals(newRole) ?? newRole is not null)
             {
@@ -201,7 +220,8 @@ public partial class Ai
             }
         }
 
-        _roleMapping = newRoleMapping;
+        // Bolt: swap dictionaries to prevent `new Dictionary` allocation next frame
+        (_roleMapping, _nextRoleMapping) = (_nextRoleMapping, _roleMapping);
 
         // and execute tactics for each robot
         foreach (var robot in Context.OwnRobots)
