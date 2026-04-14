@@ -1,11 +1,11 @@
-﻿using System.Threading.Channels;
+using System.Threading.Channels;
 
 namespace Tyr.Common.Dataflow;
 
 public class BroadcastChannel<T>
 {
     private readonly List<Channel<T>> _subscribers = [];
-    private readonly Lock _lock = new();
+    private readonly ReaderWriterLockSlim _lock = new(LockRecursionPolicy.NoRecursion);
 
     public Subscriber<T> Subscribe(Mode mode)
     {
@@ -13,18 +13,23 @@ public class BroadcastChannel<T>
         {
             Mode.All => Channel.CreateUnbounded<T>(new UnboundedChannelOptions()
             {
-                SingleWriter = true, SingleReader = true,
+                SingleWriter = false, SingleReader = true,
             }),
             Mode.Latest => Channel.CreateBounded<T>(new BoundedChannelOptions(1)
             {
-                SingleWriter = true, SingleReader = true, FullMode = BoundedChannelFullMode.DropOldest,
+                SingleWriter = false, SingleReader = true, FullMode = BoundedChannelFullMode.DropOldest,
             }),
             _ => throw new ArgumentOutOfRangeException(nameof(mode), mode, null)
         };
 
-        lock (_lock)
+        _lock.EnterWriteLock();
+        try
         {
             _subscribers.Add(channel);
+        }
+        finally
+        {
+            _lock.ExitWriteLock();
         }
 
         return new Subscriber<T>
@@ -37,21 +42,31 @@ public class BroadcastChannel<T>
 
     public void Unsubscribe(Subscriber<T> subscriber)
     {
-        lock (_lock)
+        _lock.EnterWriteLock();
+        try
         {
             _subscribers.Remove(subscriber.Channel);
+        }
+        finally
+        {
+            _lock.ExitWriteLock();
         }
     }
 
     public void Publish(T item)
     {
-        lock (_lock)
+        _lock.EnterReadLock();
+        try
         {
             foreach (var subscriber in _subscribers)
             {
                 var result = subscriber.Writer.TryWrite(item);
                 if (!result) Log.ZLogError($"Failed to publish item to channel");
             }
+        }
+        finally
+        {
+            _lock.ExitReadLock();
         }
     }
 }
