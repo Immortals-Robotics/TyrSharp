@@ -57,8 +57,8 @@ public sealed class RobotDiscovery : IDisposable
             lock (_lock)
             {
                 var now = Timestamp.Now;
-                if (!_activeRobots.TryGetValue(robotId, out var existing) || 
-                    existing.Ip != endpoint.Ip || 
+                if (!_activeRobots.TryGetValue(robotId, out var existing) ||
+                    existing.Ip != endpoint.Ip ||
                     !existing.IsOnline)
                 {
                     anyChanged = true;
@@ -87,8 +87,14 @@ public sealed class RobotDiscovery : IDisposable
                 {
                     _activeRobots[kvp.Key] = kvp.Value with { IsOnline = false };
                     anyChanged = true;
+                    toRemove.Add(kvp.Key);
                     Log.ZLogWarning($"Robot {kvp.Key} ({kvp.Value.Ip}) timed out");
                 }
+            }
+
+            foreach (var id in toRemove)
+            {
+                _activeRobots.Remove(id);
             }
         }
 
@@ -110,6 +116,7 @@ public sealed class RobotDiscovery : IDisposable
         {
             list = _activeRobots.Values.OrderBy(r => r.Id).ToList();
         }
+
         Hub.DiscoveredRobots.Publish(list);
     }
 
