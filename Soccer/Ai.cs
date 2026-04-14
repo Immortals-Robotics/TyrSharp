@@ -1,9 +1,11 @@
-﻿using Tyr.Common.Config;
+﻿using System.Numerics;
+using Tyr.Common.Config;
 using Tyr.Common.Data;
 using Tyr.Common.Data.Ssl;
 using Tyr.Common.Data.Ssl.Vision.Geometry;
 using Tyr.Common.Dataflow;
 using Tyr.Common.Debug.Drawing;
+using Tyr.Common.Debug.Drawing.Drawables;
 using Tyr.Common.Sender.Data;
 using Tyr.Common.Time;
 using Tyr.Soccer.Plays;
@@ -206,6 +208,20 @@ public partial class Ai
                 skill.Execute(robot);
             else
                 robot.Halt();
+
+            if (tactic != null)
+            {
+                Draw.DrawText($"{tactic.GetType().Name}",
+                    robot.Filtered.State.Position + new Vector2(0, 100f), 100f, Color.Neutral400,
+                    TextAlignment.BottomCenter);
+            }
+
+            if (skill != null)
+            {
+                Draw.DrawText($"{skill.GetType().Name}",
+                    robot.Filtered.State.Position + new Vector2(0, 200f), 100f, Color.Neutral400,
+                    TextAlignment.BottomCenter);
+            }
         }
     }
 }
