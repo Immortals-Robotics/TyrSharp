@@ -189,11 +189,17 @@ public partial class Ai
             var currentRole = _roleMapping.GetValueOrDefault(robot.Id);
             var newRole = newRoleMapping.GetValueOrDefault(robot.Id);
 
-            if (!currentRole?.Equals(newRole) ?? newRole is not null)
+            if (newRole is null)
+            {
+                _tacticMapping.Remove(robot.Id);
+                continue;
+            }
+
+            if (currentRole == null || !currentRole.Equals(newRole))
             {
                 Log.ZLogInformation(
                     $"Switching robot {robot.Id}'s role fro {currentRole?.GetType().Name} to {newRole?.GetType().Name}");
-                _tacticMapping[robot.Id] = newRole?.CreateTactic(Context.OwnRobots[0]);
+                _tacticMapping[robot.Id] = newRole?.CreateTactic(robot);
             }
         }
 
@@ -212,14 +218,14 @@ public partial class Ai
             if (tactic != null)
             {
                 Draw.DrawText($"{tactic.GetType().Name}",
-                    robot.Filtered.State.Position + new Vector2(0, 100f), 100f, Color.Neutral400,
+                    robot.Position + new Vector2(0, 100f), 100f, Color.Neutral400,
                     TextAlignment.BottomCenter);
             }
 
             if (skill != null)
             {
                 Draw.DrawText($"{skill.GetType().Name}",
-                    robot.Filtered.State.Position + new Vector2(0, 200f), 100f, Color.Neutral400,
+                    robot.Position + new Vector2(0, 200f), 100f, Color.Neutral400,
                     TextAlignment.BottomCenter);
             }
         }
