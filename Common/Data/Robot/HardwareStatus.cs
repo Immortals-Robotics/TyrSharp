@@ -31,6 +31,7 @@ public class HardwareStatus
         if (update.Diag             is { } diag)     Diag             = diag;
         if (update.IrSensor         is { } ir)       IrSensor         = ir;
         if (update.DribblerFeedback is { } dribbler) DribblerFeedback = dribbler;
+        LastUpdate = Timestamp.Now;
 
         if (update.Info is { } info)
         {
@@ -43,3 +44,21 @@ public class HardwareStatus
         return false;
     }
 }
+    public void Invalidate()
+    {
+        Imu = null;
+        Motors = null;
+        Power = null;
+        Mikona = null;
+        Info = null;
+        Diag = null;
+        IrSensor = null;
+        DribblerFeedback = null;
+        SimBallContact = null;
+        LastUpdate = Timestamp.Zero;
+    }
+
+    public bool IsValid()
+    {
+        return Info != null;
+    }

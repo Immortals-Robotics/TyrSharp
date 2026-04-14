@@ -16,6 +16,9 @@ public sealed partial class TeamRunner : IDisposable
 {
     [ConfigEntry] private static ThreadPriority RunnerPriority { get; set; } = ThreadPriority.Highest;
 
+    [ConfigEntry("If a new hardware status is received in ms hardware status is invalidated")]
+    private static DeltaTime HardwareStatusValidTime { get; set; } = DeltaTime.FromMilliseconds(1000);
+
     private readonly Subscriber<Referee.State> _refereeSubscriber;
     private readonly Subscriber<Vision.FilteredFrame> _visionSubscriber;
     private readonly Subscriber<FieldSize> _fieldSizeSubscriber;
@@ -95,8 +98,15 @@ public sealed partial class TeamRunner : IDisposable
             ApplySimFeedback(simFeedback);
 
 
-        foreach (var robot in Context.OwnRobots.Where(r => r.HardwareStatus.Info != null))
+        foreach (var robot in Context.OwnRobots.Where(r => r.HardwareStatus.IsValid()))
         {
+            var now = Timestamp.Now;
+            if (now - robot.HardwareStatus.LastUpdate > HardwareStatusValidTime)
+            {
+                robot.HardwareStatus.Invalidate();
+                continue;
+            }
+
             var status = robot.HardwareStatus;
 
             Plot.Plot($"Robot {status.Info?.RobotId} battery", status.Power?.V24Voltage ?? 0f);
@@ -140,7 +150,6 @@ public sealed partial class TeamRunner : IDisposable
     private void ApplyRobotStatus(Common.Data.Robot.StatusUpdate update)
     {
         if (update.RobotId < 0 || update.RobotId >= Context.OwnRobots.Count) return;
-
         Context.OwnRobots[update.RobotId].HardwareStatus.Apply(update);
     }
 
