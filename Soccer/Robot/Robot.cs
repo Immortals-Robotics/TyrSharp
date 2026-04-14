@@ -11,6 +11,9 @@ namespace Tyr.Soccer.Robot;
 [Configurable]
 public partial class Robot
 {
+    [ConfigEntry("Minimum Dribbler force to accept ball contact")]
+    private static float DribblerDetectForce { get; set; } = 1.0f;
+
     private float _shoot;
     private float _chip;
     private float _dribblerSpeed;
@@ -25,6 +28,7 @@ public partial class Robot
     public Vector2 Velocity => State.Velocity;
     public Angle Angle => State.Angle;
     public Angle AngularVelocity => State.AngularVelocity;
+
     public float CenterToDribbler => new Tyr.Common.Math.Shapes.Robot
     {
         Radius = Context.RobotRadius,
@@ -76,7 +80,8 @@ public partial class Robot
                 return HardwareStatus.SimBallContact.Value;
 
             // 2. Real robot force sensor
-            return HardwareStatus.DribblerFeedback is { } dribbler && dribbler.ActualForceN > 0.05f;
+            return HardwareStatus.DribblerFeedback?.ActualForceN >= DribblerDetectForce &&
+                   HardwareStatus.IrSensor?.Blocked == true;
         }
     }
 
