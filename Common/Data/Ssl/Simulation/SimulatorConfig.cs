@@ -3,7 +3,7 @@ using ProtoBuf;
 namespace Tyr.Common.Data.Ssl.Simulation;
 
 [ProtoContract]
-public struct Config
+public struct SimulatorConfig
 {
     [ProtoMember(1)] public Vision.Geometry.Data? Geometry { get; set; }
 

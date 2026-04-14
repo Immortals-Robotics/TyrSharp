@@ -18,4 +18,6 @@ public struct RobotSpecs
     [ProtoMember(10)] public RobotLimits? Limits { get; set; }
 
     [ProtoMember(13)] public RobotWheelAngles? WheelAngles { get; set; }
+
+    [ProtoMember(14)] public List<Any>? Custom { get; set; }
 }

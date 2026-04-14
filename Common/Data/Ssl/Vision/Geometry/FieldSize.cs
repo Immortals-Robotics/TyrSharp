@@ -1,6 +1,6 @@
 using Tyr.Common.Config;
-using Tyr.Common.Data.Ssl;
 using ProtoBuf;
+using Tyr.Common.Data.Ssl.Gc;
 using Tyr.Common.Math.Shapes;
 
 namespace Tyr.Common.Data.Ssl.Vision.Geometry;

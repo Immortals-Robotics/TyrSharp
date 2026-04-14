@@ -7,4 +7,5 @@ public readonly struct RobotFeedback
 {
     [ProtoMember(1, IsRequired = true)] public uint Id { get; init; }
     [ProtoMember(2)] public bool? DribblerBallContact { get; init; }
+    [ProtoMember(3)] public Any? Custom { get; init; }
 }

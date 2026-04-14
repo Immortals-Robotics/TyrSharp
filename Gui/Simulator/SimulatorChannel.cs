@@ -67,22 +67,22 @@ public sealed partial class SimulatorChannel : IDisposable
     // ── public API ────────────────────────────────────────────────────────────
 
     public void TeleportBall(TeleportBall ball) =>
-        Send(new Command { Control = new Control { TeleportBall = ball } });
+        Send(new SimulatorCommand { Control = new SimulatorControl { TeleportBall = ball } });
 
     public void TeleportRobots(params ReadOnlySpan<TeleportRobot> robots) =>
-        Send(new Command { Control = new Control { TeleportRobot = [.. robots] } });
+        Send(new SimulatorCommand { Control = new SimulatorControl { TeleportRobot = [.. robots] } });
 
     public void TeleportBallAndRobots(TeleportBall ball, params ReadOnlySpan<TeleportRobot> robots) =>
-        Send(new Command { Control = new Control { TeleportBall = ball, TeleportRobot = [.. robots] } });
+        Send(new SimulatorCommand { Control = new SimulatorControl { TeleportBall = ball, TeleportRobot = [.. robots] } });
 
     public void SetSimulationSpeed(float speed) =>
-        Send(new Command { Control = new Control { SimulationSpeed = speed } });
+        Send(new SimulatorCommand { Control = new SimulatorControl { SimulationSpeed = speed } });
 
     /// <summary>Sends a SimulatorConfig for geometry and/or vision port. RealismConfig intentionally excluded.</summary>
     public void SendConfig(GeometryData? geometry = null, uint? visionPort = null) =>
-        Send(new Command
+        Send(new SimulatorCommand
         {
-            Config = new Config
+            Config = new SimulatorConfig
             {
                 Geometry   = geometry,
                 VisionPort = visionPort,
@@ -100,7 +100,7 @@ public sealed partial class SimulatorChannel : IDisposable
             for (uint id = 0; id < robotCount; id++)
                 specs.Add(BuildRobotSpecs(team, id));
 
-        Send(new Command { Config = new Config { RobotSpecs = specs } });
+        Send(new SimulatorCommand { Config = new SimulatorConfig { RobotSpecs = specs } });
     }
 
     // ── convenience overloads ─────────────────────────────────────────────────
@@ -130,14 +130,14 @@ public sealed partial class SimulatorChannel : IDisposable
 
     // ── internals ─────────────────────────────────────────────────────────────
 
-    private void Send(Command command)
+    private void Send(SimulatorCommand simulatorCommand)
     {
         try
         {
             var endpoint = new Address { Ip = Host, Port = ControlPort };
             lock (_sendLock)
             {
-                _socket.Send(command, endpoint);
+                _socket.Send(simulatorCommand, endpoint);
             }
         }
         catch (Exception ex)
@@ -192,10 +192,10 @@ public sealed partial class SimulatorChannel : IDisposable
         if (data.IsEmpty)
             return false;
 
-        Response response;
+        SimulatorResponse simulatorResponse;
         try
         {
-            response = Serializer.Deserialize<Response>(data);
+            simulatorResponse = Serializer.Deserialize<SimulatorResponse>(data);
         }
         catch (Exception ex)
         {
@@ -203,9 +203,9 @@ public sealed partial class SimulatorChannel : IDisposable
             return false;
         }
 
-        if (response.Errors is { Count: > 0 })
+        if (simulatorResponse.Errors is { Count: > 0 })
         {
-            foreach (var err in response.Errors)
+            foreach (var err in simulatorResponse.Errors)
                 Log.ZLogWarning($"[grSim] {err.Code}: {err.Message}");
         }
 

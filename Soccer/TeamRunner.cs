@@ -146,9 +146,9 @@ public sealed partial class TeamRunner : IDisposable
 
     private void ApplySimFeedback(Common.Data.Ssl.Simulation.RobotControlResponse response)
     {
-        if (response.Feedback == null) return;
+        if (response.Feedbacks == null) return;
 
-        foreach (var feedback in response.Feedback)
+        foreach (var feedback in response.Feedbacks)
         {
             if (feedback.Id >= Context.OwnRobots.Count) continue;
 

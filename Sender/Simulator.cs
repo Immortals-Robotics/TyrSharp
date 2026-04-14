@@ -1,26 +1,26 @@
 using Tyr.Common.Config;
 using Tyr.Common.Data;
 using Tyr.Common.Data.Ssl.Simulation;
-using Tyr.Common.Data.Robot;
 using Tyr.Common.Dataflow;
 using Tyr.Common.Math;
 using Tyr.Common.Network;
 using Tyr.Common.Sender.Data;
 using Tyr.Common.Runner;
-using ProtoBuf;
+
+using DeltaTime = Tyr.Common.Time.DeltaTime;
 
 namespace Tyr.Sender;
 
 [Configurable]
 public sealed partial class Simulator : ISender
 {
-    [ConfigEntry] public static bool Enabled { get; set; } = false;
+    [ConfigEntry] private static bool Enabled { get; set; } = false;
 
     [ConfigEntry] private static Address BlueAddress { get; set; } = new() { Ip = "127.0.0.1", Port = 10301 };
     [ConfigEntry] private static Address YellowAddress { get; set; } = new() { Ip = "127.0.0.1", Port = 10302 };
 
     [ConfigEntry] private static Angle ChipAngle { get; set; } = Angle.FromDeg(45f);
-    [ConfigEntry] private static Tyr.Common.Time.DeltaTime FeedbackPollTimeout { get; set; } = Tyr.Common.Time.DeltaTime.FromMilliseconds(10);
+    [ConfigEntry] private static DeltaTime FeedbackPollTimeout { get; set; } = DeltaTime.FromMilliseconds(10);
 
     private readonly UdpSocket _udp = new();
     private readonly RunnerSync _runner;
@@ -60,7 +60,7 @@ public sealed partial class Simulator : ISender
                 kickAngle = ChipAngle;
             }
 
-            var pbCommand = new Common.Data.Ssl.Simulation.RobotCommand()
+            var pbCommand = new RobotCommand()
             {
                 Id = (uint)command.VisionId,
                 MoveCommand = new RobotMoveCommand()
@@ -102,38 +102,13 @@ public sealed partial class Simulator : ISender
         if (!_udp.Poll(FeedbackPollTimeout))
             return false;
 
-        var data = _udp.ReceiveRaw();
-        if (data.IsEmpty)
+        var data = _udp.Receive<RobotControlResponse>();
+        // TODO: for whatever reason grsim sometimes sends a SimulationSyncResponse back
+        if (data is null)
             return false;
 
-        try
-        {
-            Hub.SimFeedback.Publish(Serializer.Deserialize<RobotControlResponse>(data));
-            return true;
-        }
-        catch (ProtoException)
-        {
-            // Some simulator builds wrap feedback in SyncResponse during startup/handshake.
-        }
-
-        try
-        {
-            var response = Serializer.Deserialize<SyncResponse>(data).RobotControlResponse;
-            if (response == null)
-                return false;
-
-            Hub.SimFeedback.Publish(response);
-            return true;
-        }
-        catch (ProtoException)
-        {
-            return false;
-        }
-        catch (Exception ex)
-        {
-            Log.ZLogError(ex, $"Failed to decode simulator feedback");
-            return false;
-        }
+        Hub.SimFeedback.Publish(data);
+        return true;
     }
 
     public void Dispose()
