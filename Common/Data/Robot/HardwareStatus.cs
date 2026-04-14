@@ -17,6 +17,8 @@ public class HardwareStatus
     public IrSensorStatus?         IrSensor         { get; private set; }
     public DribblerFeedbackStatus? DribblerFeedback { get; private set; }
     public bool?                   SimBallContact   { get; set; }
+    public Timestamp               LastUpdate       { get; private set; }
+
 
     /// <summary>
     /// Applies one StatusUpdate, overwriting whichever sub-status it carries.
@@ -43,7 +45,7 @@ public class HardwareStatus
 
         return false;
     }
-}
+    
     public void Invalidate()
     {
         Imu = null;
@@ -62,3 +64,5 @@ public class HardwareStatus
     {
         return Info != null;
     }
+}
+    
