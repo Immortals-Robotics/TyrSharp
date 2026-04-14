@@ -4,7 +4,6 @@ using Tyr.Common.Data.Robot;
 using Tyr.Common.Math;
 using Tyr.Common.Sender.Data;
 using Tyr.Common.Vision.Data;
-using Tyr.Sender;
 using Tyr.Soccer.Navigation.Trajectory;
 
 namespace Tyr.Soccer.Robot;

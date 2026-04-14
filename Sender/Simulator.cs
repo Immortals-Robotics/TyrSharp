@@ -6,6 +6,7 @@ using Tyr.Common.Dataflow;
 using Tyr.Common.Math;
 using Tyr.Common.Network;
 using Tyr.Common.Sender.Data;
+using Tyr.Common.Runner;
 using ProtoBuf;
 
 namespace Tyr.Sender;
@@ -19,15 +20,16 @@ public sealed partial class Simulator : ISender
     [ConfigEntry] private static Address YellowAddress { get; set; } = new() { Ip = "127.0.0.1", Port = 10302 };
 
     [ConfigEntry] private static Angle ChipAngle { get; set; } = Angle.FromDeg(45f);
+    [ConfigEntry] private static Tyr.Common.Time.DeltaTime FeedbackPollTimeout { get; set; } = Tyr.Common.Time.DeltaTime.FromMilliseconds(10);
 
-    private readonly UdpServer _udp = new();
-    private readonly Task _receiveTask;
-    private readonly CancellationTokenSource _cts = new();
+    private readonly UdpSocket _udp = new();
+    private readonly RunnerSync _runner;
 
     public Simulator()
     {
         _udp.Bind(new Address { Ip = "0.0.0.0", Port = 0 });
-        _receiveTask = Task.Run(ReceiveLoop);
+        _runner = new RunnerSync(TickFeedback, 0, nameof(Simulator));
+        _runner.Start();
     }
 
     public bool Send(CommandsWrapper commands)
@@ -89,33 +91,25 @@ public sealed partial class Simulator : ISender
         return true;
     }
 
-    private async Task ReceiveLoop()
+    private bool TickFeedback()
     {
-        while (!_cts.IsCancellationRequested)
+        if (!Enabled)
         {
-            if (!Enabled)
-            {
-                await Task.Delay(500, _cts.Token);
-                continue;
-            }
-
-            var response = await ReceiveFeedbackAsync(_cts.Token);
-            if (response != null)
-            {
-                Hub.SimFeedback.Publish(response);
-            }
+            Thread.Sleep(500);
+            return false;
         }
-    }
 
-    private async Task<RobotControlResponse?> ReceiveFeedbackAsync(CancellationToken token)
-    {
-        var data = await _udp.ReceiveRawAsync(token);
+        if (!_udp.Poll(FeedbackPollTimeout))
+            return false;
+
+        var data = _udp.ReceiveRaw();
         if (data.IsEmpty)
-            return null;
+            return false;
 
         try
         {
-            return Serializer.Deserialize<RobotControlResponse>(data.Span);
+            Hub.SimFeedback.Publish(Serializer.Deserialize<RobotControlResponse>(data));
+            return true;
         }
         catch (ProtoException)
         {
@@ -124,22 +118,27 @@ public sealed partial class Simulator : ISender
 
         try
         {
-            return Serializer.Deserialize<SyncResponse>(data.Span).RobotControlResponse;
+            var response = Serializer.Deserialize<SyncResponse>(data).RobotControlResponse;
+            if (response == null)
+                return false;
+
+            Hub.SimFeedback.Publish(response);
+            return true;
         }
         catch (ProtoException)
         {
-            return null;
+            return false;
         }
         catch (Exception ex)
         {
             Log.ZLogError(ex, $"Failed to decode simulator feedback");
-            return null;
+            return false;
         }
     }
 
     public void Dispose()
     {
-        _cts.Cancel();
+        _runner.Stop();
         _udp.Dispose();
     }
 }

@@ -17,7 +17,7 @@ public sealed class UdpReceiver<T> : IDisposable where T : class
 {
     private readonly Action<T> _onData;
 
-    public UdpClient Client { get; private set; }
+    public UdpSocket Socket { get; private set; }
     public RunnerSync Runner { get; }
     
     private volatile Address? _newAddress;
@@ -31,7 +31,7 @@ public sealed class UdpReceiver<T> : IDisposable where T : class
         _onData = onData;
         _currentAddress = address;
         Log.ZLogDebug($"Initializing UdpReceiver<{typeof(T).Name}> for {address}");
-        Client = new UdpClient(address);
+        Socket = CreateSocket(address);
         _lastReceivedTime = Timestamp.Now;
         _hasReceivedFirstPacket = false;
 
@@ -47,11 +47,18 @@ public sealed class UdpReceiver<T> : IDisposable where T : class
 
     private void ResetClient()
     {
-        Log.ZLogTrace($"Resetting UdpClient for {typeof(T).Name} on {_currentAddress}");
-        Client.Dispose();
-        Client = new UdpClient(_currentAddress);
+        Log.ZLogTrace($"Resetting UdpSocket for {typeof(T).Name} on {_currentAddress}");
+        Socket.Dispose();
+        Socket = CreateSocket(_currentAddress);
         _lastReceivedTime = Timestamp.Now;
         // Keep _hasReceivedFirstPacket as is; if we were already receiving, we want the watchdog to stay active
+    }
+
+    private static UdpSocket CreateSocket(Address address)
+    {
+        var socket = new UdpSocket();
+        socket.Bind(address);
+        return socket;
     }
 
     private bool Tick()
@@ -67,7 +74,7 @@ public sealed class UdpReceiver<T> : IDisposable where T : class
                 return false;
             }
 
-            if (!Client.PollData(UdpReceiverConfigs.PollTimeout))
+            if (!Socket.Poll(UdpReceiverConfigs.PollTimeout))
             {
                 // Only trigger watchdog if we have received at least one packet from this source
                 if (_hasReceivedFirstPacket)
@@ -91,27 +98,27 @@ public sealed class UdpReceiver<T> : IDisposable where T : class
                 return false;
             }
 
-            var packet = Client.Receive<T>();
+            var packet = Socket.Receive<T>();
             if (packet == null)
             {
-                Log.ZLogError($"Received null {typeof(T).Name} from {Client.GetLastReceiveEndpoint()}");
+                Log.ZLogError($"Received null {typeof(T).Name} from {Socket.GetLastReceiveEndpoint()}");
                 return false;
             }
 
             if (!_hasReceivedFirstPacket)
             {
-                Log.ZLogInformation($"UDP Stream started for {typeof(T).Name}. First packet received from {Client.GetLastReceiveEndpoint()}");
+                Log.ZLogInformation($"UDP Stream started for {typeof(T).Name}. First packet received from {Socket.GetLastReceiveEndpoint()}");
                 _hasReceivedFirstPacket = true;
             }
 
             if (_isRecovering)
             {
-                Log.ZLogInformation($"UDP Watchdog recovered for {typeof(T).Name}. Data is flowing again from {Client.GetLastReceiveEndpoint()}");
+                Log.ZLogInformation($"UDP Watchdog recovered for {typeof(T).Name}. Data is flowing again from {Socket.GetLastReceiveEndpoint()}");
                 _isRecovering = false;
             }
 
             _lastReceivedTime = Timestamp.Now;
-            Log.ZLogTrace($"Received {typeof(T).Name} from {Client.GetLastReceiveEndpoint()}");
+            Log.ZLogTrace($"Received {typeof(T).Name} from {Socket.GetLastReceiveEndpoint()}");
             _onData(packet);
 
             return true;
@@ -128,6 +135,6 @@ public sealed class UdpReceiver<T> : IDisposable where T : class
     public void Dispose()
     {
         Runner.Stop();
-        Client.Dispose();
+        Socket.Dispose();
     }
 }

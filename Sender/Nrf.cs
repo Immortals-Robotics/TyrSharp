@@ -39,7 +39,7 @@ public sealed partial class Nrf : ISender // TODO: this is untested, test at the
     [ConfigEntry("NRF Demo/Heartbeat packet length")]
     private static byte DemoCommandLength { get; set; } = 10;
 
-    private readonly UdpServer _udp = new();
+    private readonly UdpSocket _udp = new();
     private Span<byte> Buffer => _udp.GetBuffer();
     private int _buffIdx;
 

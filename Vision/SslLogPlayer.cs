@@ -32,7 +32,7 @@ public sealed partial class SslLogPlayer : IDisposable
     private string _loadedPath = "";
     private int _lastIndex = -1;
     private long _lastTickTimestamp;
-    private readonly UdpServer _udpServer = new();
+    private readonly UdpSocket _udpServer = new();
 
     public SslLogPlayer()
     {

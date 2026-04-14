@@ -20,7 +20,7 @@ public sealed class RobotDiscovery : IDisposable
 {
     private const uint BeaconMagic = 0x5242434E; // "RBCN"
 
-    private readonly UdpClient _udpClient;
+    private readonly UdpSocket _udpSocket;
     private readonly RunnerSync _runner;
     private readonly Dictionary<int, DiscoveredRobot> _activeRobots = new();
     private readonly object _lock = new();
@@ -28,7 +28,8 @@ public sealed class RobotDiscovery : IDisposable
     public RobotDiscovery()
     {
         var address = new Address { Ip = "0.0.0.0", Port = RobotDiscoveryConfigs.Port };
-        _udpClient = new UdpClient(address);
+        _udpSocket = new UdpSocket();
+        _udpSocket.Bind(address);
         _runner = new RunnerSync(Tick, 0, "Discovery");
         _runner.Start();
         
@@ -40,9 +41,9 @@ public sealed class RobotDiscovery : IDisposable
         var anyChanged = false;
 
         // 1. Receive any pending beacons
-        while (_udpClient.PollData(DeltaTime.Zero))
+        while (_udpSocket.Poll(DeltaTime.Zero))
         {
-            var data = _udpClient.ReceiveRaw();
+            var data = _udpSocket.ReceiveRaw();
             if (data.Length < 5) continue;
 
             // Magic is sent in network byte order (Big Endian)
@@ -50,7 +51,7 @@ public sealed class RobotDiscovery : IDisposable
             if (magic != BeaconMagic) continue;
 
             var robotId = data[4];
-            var endpoint = _udpClient.GetLastReceiveEndpoint();
+            var endpoint = _udpSocket.GetLastReceiveEndpoint();
             if (endpoint == null) continue;
 
             lock (_lock)
@@ -115,6 +116,6 @@ public sealed class RobotDiscovery : IDisposable
     public void Dispose()
     {
         _runner.Stop();
-        _udpClient.Dispose();
+        _udpSocket.Dispose();
     }
 }
