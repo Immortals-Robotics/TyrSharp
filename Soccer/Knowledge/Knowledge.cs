@@ -10,6 +10,8 @@ public partial class Knowledge
         OwnRobotsCount = Context.OwnRobots.Count(robot => robot.Seen);
         OpponentRobotsCount = Context.OppRobots.Count;
 
+        UpdateDefense();
+
         foreach (var zone in Context.Knowledge.Zones)
         {
             zone.UpdateScore(false);
