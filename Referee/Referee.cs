@@ -1,5 +1,6 @@
 ﻿using System.Numerics;
 using Tyr.Common.Config;
+using Tyr.Common.Data;
 using Tyr.Common.Referee.Data;
 using Gc = Tyr.Common.Data.Ssl.Gc;
 using Tyr.Common.Vision.Data;
@@ -43,7 +44,7 @@ public partial class Referee
         }
 
         var color = State.Gc.Command.ToColor();
-        if (color != State.Color)
+        if (color != TeamColor.Unknown && color != State.Color)
         {
             State = State with { Color = color };
         }
@@ -103,10 +104,10 @@ public partial class Referee
                 State = State with { GameState = GameState.Running };
                 break;
 
-            case Gc.Command.NormalStart when State.Restart:
+            case Gc.Command.NormalStart when State.GameState is GameState.Kickoff or GameState.Penalty:
                 State = State with { Ready = true };
                 break;
-            
+
             case Gc.Command.NormalStart:
                 Log.ZLogWarning($"Received NormalStart when not in restart");
                 break;

@@ -150,4 +150,117 @@ public class RefereeTests
 
         Assert.Equal(GameState.Penalty, referee.State.GameState);
     }
+
+    [Fact]
+    public void Referee_PreservesColor_WhenTransitioningToRunning()
+    {
+        var referee = new Tyr.Referee.Referee();
+
+        // 1. Set to Kickoff Blue
+        referee.Process(FrameAt(Vector3.Zero), new Gc.Referee 
+        { 
+            Command = Gc.Command.PrepareKickoffBlue, 
+            CommandCounter = 1 
+        });
+        Assert.Equal(TeamColor.Blue, referee.State.Color);
+
+        // 2. Normal Start with 10s timeout
+        referee.Process(null, new Gc.Referee 
+        { 
+            Command = Gc.Command.NormalStart, 
+            CommandCounter = 2,
+            CurrentActionTimeRemainingMicroseconds = 10_000_000
+        });
+        Assert.Equal(TeamColor.Blue, referee.State.Color);
+
+        // 3. Move ball to trigger Running state
+        for (int i = 0; i < 5; i++)
+        {
+            referee.Process(FrameAt(new Vector3(100, 0, 0)), null);
+        }
+
+        Assert.Equal(GameState.Running, referee.State.GameState);
+        Assert.Equal(TeamColor.Blue, referee.State.Color); // Verify color is preserved
+    }
+
+    [Fact]
+    public void Referee_FreeKickTransitionsToRunning_OnBallMovement()
+    {
+        var referee = new Tyr.Referee.Referee();
+
+        // Start with Stop
+        referee.Process(FrameAt(Vector3.Zero), new Gc.Referee { Command = Gc.Command.Stop, CommandCounter = 1 });
+
+        // Transition to FreeKick with 10s timeout
+        referee.Process(FrameAt(Vector3.Zero), new Gc.Referee 
+        { 
+            Command = Gc.Command.DirectFreeBlue, 
+            CommandCounter = 2,
+            CurrentActionTimeRemainingMicroseconds = 10_000_000
+        });
+        
+        Assert.Equal(GameState.FreeKick, referee.State.GameState);
+        Assert.True(referee.State.Ready);
+
+        // Move ball slightly (below threshold)
+        for (int i = 0; i < 10; i++)
+        {
+            referee.Process(FrameAt(new Vector3(10, 0, 0)), null);
+            Assert.Equal(GameState.FreeKick, referee.State.GameState);
+        }
+
+        // Move ball significantly
+        for (int i = 0; i < 5; i++)
+        {
+            referee.Process(FrameAt(new Vector3(100, 0, 0)), null);
+        }
+
+        Assert.Equal(GameState.Running, referee.State.GameState);
+    }
+
+    [Fact]
+    public void Referee_PenaltyTransitionsToRunning_OnBallMovement_AfterNormalStart()
+    {
+        var referee = new Tyr.Referee.Referee();
+
+        // Prepare Penalty
+        referee.Process(FrameAt(Vector3.Zero), new Gc.Referee { Command = Gc.Command.PreparePenaltyBlue, CommandCounter = 1 });
+        Assert.Equal(GameState.Penalty, referee.State.GameState);
+        Assert.False(referee.State.Ready);
+
+        // Normal Start with 10s timeout
+        referee.Process(null, new Gc.Referee 
+        { 
+            Command = Gc.Command.NormalStart, 
+            CommandCounter = 2,
+            CurrentActionTimeRemainingMicroseconds = 10_000_000
+        });
+        Assert.True(referee.State.Ready);
+        Assert.Equal(GameState.Penalty, referee.State.GameState);
+
+        // Move ball
+        for (int i = 0; i < 5; i++)
+        {
+            referee.Process(FrameAt(new Vector3(100, 0, 0)), null);
+        }
+
+        Assert.Equal(GameState.Running, referee.State.GameState);
+    }
+
+    [Fact]
+    public void Referee_TransitionsToRunning_WhenActionTimeExpires()
+    {
+        var referee = new Tyr.Referee.Referee();
+
+        // Start Kickoff
+        referee.Process(FrameAt(Vector3.Zero), new Gc.Referee { Command = Gc.Command.PrepareKickoffBlue, CommandCounter = 1 });
+        referee.Process(null, new Gc.Referee { Command = Gc.Command.NormalStart, CommandCounter = 2, CurrentActionTimeRemainingMicroseconds = 10000000 });
+        
+        Assert.Equal(GameState.Kickoff, referee.State.GameState);
+
+        // Time expires
+        referee.Process(null, new Gc.Referee { Command = Gc.Command.NormalStart, CommandCounter = 2, CurrentActionTimeRemainingMicroseconds = 0 });
+
+        Assert.Equal(GameState.Running, referee.State.GameState);
+    }
 }
