@@ -1,15 +1,13 @@
 ﻿using System.Numerics;
-using Tyr.Common;
 using Tyr.Common.Config;
 using Tyr.Common.Data;
 using Tyr.Common.Data.Ssl;
 using Tyr.Common.Data.Ssl.Vision.Geometry;
 using Tyr.Common.Dataflow;
 using Tyr.Common.Debug.Drawing;
-using Tyr.Common.Math;
 using Tyr.Common.Sender.Data;
 using Tyr.Common.Time;
-using Tyr.Soccer.Robot;
+using Tyr.Soccer.Tactics;
 using Command = Tyr.Common.Sender.Data.Command;
 using Vision = Tyr.Common.Vision.Data;
 using Referee = Tyr.Common.Referee.Data;
@@ -22,11 +20,11 @@ public partial class Ai
     [ConfigEntry] internal static DeltaTime VisionPredictionTime { get; set; } = DeltaTime.FromMilliseconds(120);
 
     private readonly Dictionary<int, LinkedList<(Timestamp, Command)>> _commandHistories = [];
-    private LinkedList<(Timestamp, Command)> CommandHistory(int id) => _commandHistories[id];
+
     private readonly ManualControlState _manualControl;
-    
-    private Role.IRole? _currentRole;
-    private Tactics.ITactic? _currentTactic;
+
+    private Dictionary<int, Role.IRole?> _roleMapping = [];
+    private Dictionary<int, ITactic?> _tacticMapping = [];
 
     internal Ai(ManualControlState manualControl)
     {
@@ -70,17 +68,19 @@ public partial class Ai
             if (filtered.Id.Team == Context.Color)
             {
                 var id = (int)filtered.Id.Id!.Value;
-                var predicted = filtered.Extrapolate(now, CommandHistory(id));
+                var predicted = filtered.Extrapolate(now, _commandHistories[id]);
                 Context.OwnRobots[id].Filtered = predicted;
 
-                Draw.DrawRobot(predicted.State.Position, predicted.State.Angle, filtered.Id, options: Options.Outline());
+                Draw.DrawRobot(predicted.State.Position, predicted.State.Angle, filtered.Id,
+                    options: Options.Outline());
             }
             else
             {
                 var predicted = filtered.Extrapolate(now);
                 Context.OppRobots.Add(predicted);
 
-                Draw.DrawRobot(predicted.State.Position, predicted.State.Angle, filtered.Id, options: Options.Outline());
+                Draw.DrawRobot(predicted.State.Position, predicted.State.Angle, filtered.Id,
+                    options: Options.Outline());
             }
         }
 
@@ -137,7 +137,7 @@ public partial class Ai
             var command = robot.CurrentCommand;
             commands.Commands.Add(command);
 
-            CommandHistory(robot.Id).AddLast((Context.Time, command));
+            _commandHistories[robot.Id].AddLast((Context.Time, command));
         }
 
         Hub.Commands.Publish(commands);
@@ -164,37 +164,54 @@ public partial class Ai
         {
             return;
         }
-        
+
         // this resembles a play emitting a role
-        Role.IRole? role = null;
+        var roles = new List<Role.IRole>();
         if (Context.Referee.Running())
         {
-            role = new Role.Attacker();
-        }
-        
-        // then we create a tactic based on it for the robot.
-        if (_currentRole is null ? role is not null : !_currentRole.Equals(role))
-        {
-            Log.ZLogInformation($"Switching role to {role?.GetType().Name}");
-            _currentRole = role;
-            _currentTactic = _currentRole?.CreateTactic(Context.OwnRobots[0]);
+            roles.Add(new Role.Attacker());
         }
 
+        // then the role assigner maps the roles to robots
+        var newRoleMapping = new Dictionary<int, Role.IRole?>();
+        foreach (var role in roles.OrderByDescending(r => r.Importance))
+        {
+            var best = Context.OwnRobots
+                .Where(r => r.Seen && !newRoleMapping.ContainsKey(r.Id))
+                .OrderBy(role.CostFor)
+                .FirstOrDefault();
+
+            if (best != null)
+            {
+                newRoleMapping[best.Id] = role;
+            }
+        }
+
+        // we then re-create tactics for robots who have changed role
         foreach (var robot in Context.OwnRobots)
         {
-            if (robot.Id == 0)
+            var currentRole = _roleMapping.GetValueOrDefault(robot.Id);
+            var newRole = newRoleMapping.GetValueOrDefault(robot.Id);
+
+            if (!currentRole?.Equals(newRole) ?? newRole is not null)
             {
-                var skill = _currentTactic?.Tick();
-                if (skill != null)
-                    skill.Execute(robot);
-                else
-                    robot.Halt();
+                Log.ZLogInformation(
+                    $"Switching robot {robot.Id}'s role fro {currentRole?.GetType().Name} to {newRole?.GetType().Name}");
+                _tacticMapping[robot.Id] = newRole?.CreateTactic(Context.OwnRobots[0]);
             }
+        }
+
+        _roleMapping = newRoleMapping;
+
+        // and execute tactics for each robot
+        foreach (var robot in Context.OwnRobots)
+        {
+            var tactic = _tacticMapping.GetValueOrDefault(robot.Id);
+            var skill = tactic?.Tick();
+            if (skill != null)
+                skill.Execute(robot);
             else
-            {
                 robot.Halt();
-                //robot.Navigate(Rand.Get(Context.Field.Rectangle), VelocityProfile.Mamooli);
-            }
         }
     }
 }

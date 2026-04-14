@@ -6,12 +6,12 @@ public class Fsm<TState>(TState? initialState)
     where TState : Enum
 {
     record Transition(TState? From, TState? To, Func<bool> Condition);
-    
+
     private readonly Dictionary<TState, IState<TState>> _states = [];
     private readonly List<Transition> _transitions = [];
 
     private bool _initialized;
-    
+
     private IState<TState>? _current;
 
     public void AddTransition(TState? from, TState? to, Func<bool> condition)
@@ -29,11 +29,11 @@ public class Fsm<TState>(TState? initialState)
         }
 
         var transitionsCount = 0;
-        var transitioned = false;
+        bool transitioned;
         do
         {
             transitioned = false;
-            
+
             foreach (var transition in _transitions)
             {
                 var fromStateMatch =
@@ -51,7 +51,7 @@ public class Fsm<TState>(TState? initialState)
 
         return _current?.Tick();
     }
-    
+
     private void TransitionTo(TState? state)
     {
         if (state != null)

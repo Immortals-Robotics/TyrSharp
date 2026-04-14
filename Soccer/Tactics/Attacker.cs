@@ -96,13 +96,13 @@ public partial class Attacker : ITactic
         return _fsm.Tick();
     }
 
-    private Vector2 GetBallToGoal()
+    private static Vector2 GetBallToGoal()
     {
         var oppGoal = Context.Field.OppGoal();
         return Vector2.Normalize(oppGoal - Context.Ball.State.Position);
     }
 
-    private bool IsBallTowardsMe(Robot.Robot robot)
+    private static bool IsBallTowardsMe(Robot.Robot robot)
     {
         var toBall = Context.Ball.State.Position - robot.Position;
         if (Context.Ball.State.Velocity.LengthSquared() < 0.001f) return false;
@@ -111,7 +111,7 @@ public partial class Attacker : ITactic
         return angleDiff < 90.0f;
     }
 
-    private float GetBallLineDistance(Robot.Robot robot)
+    private static float GetBallLineDistance(Robot.Robot robot)
     {
         if (Context.Ball.State.Velocity.LengthSquared() < 0.001f)
             return Vector2.Distance(Context.Ball.State.Position, robot.Position);
@@ -120,7 +120,7 @@ public partial class Attacker : ITactic
         return ballLine.Distance(robot.Position);
     }
 
-    private bool IsRollingKickFeasible(Robot.Robot robot)
+    private static bool IsRollingKickFeasible(Robot.Robot robot)
     {
         var ballToGoal = GetBallToGoal();
         if (Context.Ball.State.Velocity.LengthSquared() < 0.001f) return false;
@@ -138,7 +138,7 @@ public partial class Attacker : ITactic
         {
         }
 
-        public ISkill? Tick() => new Halt();
+        public ISkill? Tick() => null;
 
         public void Exit()
         {
@@ -196,18 +196,12 @@ public partial class Attacker : ITactic
         {
         }
 
-        public ISkill Tick()
+        public ISkill Tick() => new TurnAndShoot
         {
-            var oppGoal = Context.Field.OppGoal();
-            var ballToGoal = Vector2.Normalize(oppGoal - Context.Ball.State.Position);
-
-            return new TurnAndShoot
-            {
-                Angle = ballToGoal.ToAngle(),
-                Kick = KickSpeed,
-                Chip = ChipSpeed
-            };
-        }
+            Angle = GetBallToGoal().ToAngle(),
+            Kick = KickSpeed,
+            Chip = ChipSpeed
+        };
 
         public void Exit()
         {
@@ -224,9 +218,7 @@ public partial class Attacker : ITactic
 
         public ISkill Tick()
         {
-            var oppGoal = Context.Field.OppGoal();
-            var ballToGoal =  Vector2.Normalize(oppGoal - Context.Ball.State.Position);
-
+            var ballToGoal = GetBallToGoal();
             var angleCorrect = MathF.Abs(robot.Angle.ToUnitVec().AngleDiff(ballToGoal).DegNormalized) < 5.0f;
             var kick = angleCorrect ? KickSpeed : 1.0f;
             var chip = angleCorrect ? ChipSpeed : 0.0f;
