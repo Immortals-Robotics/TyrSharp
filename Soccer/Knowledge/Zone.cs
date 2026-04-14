@@ -14,8 +14,8 @@ public partial class Zone
     [ConfigEntry] public static int ZoneCountY { get; set; } = 4;
 
     public Rectangle Rect { get; init; }
-    private Vector2 BestPos { get; set; }
-    public double Score { get; set; }
+    public Vector2 BestPos { get; private set; }
+    public double Score { get; private set; }
 
     public void UpdateScore(bool isDefending)
     {

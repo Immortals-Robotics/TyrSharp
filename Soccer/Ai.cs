@@ -1,5 +1,4 @@
-﻿using System.Numerics;
-using Tyr.Common.Config;
+﻿using Tyr.Common.Config;
 using Tyr.Common.Data;
 using Tyr.Common.Data.Ssl;
 using Tyr.Common.Data.Ssl.Vision.Geometry;
@@ -7,6 +6,7 @@ using Tyr.Common.Dataflow;
 using Tyr.Common.Debug.Drawing;
 using Tyr.Common.Sender.Data;
 using Tyr.Common.Time;
+using Tyr.Soccer.Plays;
 using Tyr.Soccer.Tactics;
 using Command = Tyr.Common.Sender.Data.Command;
 using Vision = Tyr.Common.Vision.Data;
@@ -23,8 +23,10 @@ public partial class Ai
 
     private readonly ManualControlState _manualControl;
 
+    private readonly PlayBook _playBook = new();
+
     private Dictionary<int, Role.IRole?> _roleMapping = [];
-    private Dictionary<int, ITactic?> _tacticMapping = [];
+    private readonly Dictionary<int, ITactic?> _tacticMapping = [];
 
     internal Ai(ManualControlState manualControl)
     {
@@ -153,24 +155,16 @@ public partial class Ai
             robot.Reset();
         }
 
-
-        foreach (var zone in Context.Knowledge.Zones)
-        {
-            zone.UpdateScore(false);
-            zone.DrawZone();
-        }
-
         if (_manualControl.TryExecute())
         {
             return;
         }
 
-        // this resembles a play emitting a role
-        var roles = new List<Role.IRole>();
-        if (Context.Referee.Running())
-        {
-            roles.Add(new Role.Attacker());
-        }
+        Context.Knowledge.Update();
+
+        // plays emit roles
+        var play = _playBook.FindApplicable();
+        var roles = play?.Tick() ?? [];
 
         // then the role assigner maps the roles to robots
         var newRoleMapping = new Dictionary<int, Role.IRole?>();

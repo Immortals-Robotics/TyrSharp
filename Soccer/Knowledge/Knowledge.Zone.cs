@@ -1,13 +1,11 @@
 using System.Numerics;
-using Tyr.Common.Debug.Drawing;
 using Tyr.Common.Math.Shapes;
 
 namespace Tyr.Soccer.Knowledge;
 
 public partial class Knowledge
 {
-    public List<Zone> Zones { get; } = new();
-    public List<Zone> SortedZones { get; } = new();
+    public List<Zone> Zones { get; } = [];
 
     public void InitZones()
     {
