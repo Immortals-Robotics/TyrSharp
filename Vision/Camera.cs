@@ -66,6 +66,12 @@ public partial class Camera(uint id)
     public void OnFrame(Detection.Frame frame, FilteredFrame lastFilteredFrame)
     {
         // frame id
+        if (FrameId != 0 && frame.FrameNumber == FrameId)
+        {
+            Log.ZLogWarning($"Camera {Id} received duplicate frame id {frame.FrameNumber}");
+            return;
+        }
+        
         var expectedFrameId = FrameId == 0 ? frame.FrameNumber : FrameId + 1;
         if (frame.FrameNumber != expectedFrameId)
         {
