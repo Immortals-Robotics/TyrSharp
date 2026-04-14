@@ -1,11 +1,12 @@
-using System.Net;
-using System.Net.Sockets;
 using ProtoBuf;
 using Tyr.Common.Config;
 using Tyr.Common.Data;
 using Tyr.Common.Data.Ssl;
 using Tyr.Common.Data.Ssl.Simulation;
 using Tyr.Common.Math;
+using Tyr.Common.Network;
+using Tyr.Common.Runner;
+using Tyr.Common.Time;
 using GeometryData = Tyr.Common.Data.Ssl.Vision.Geometry.Data;
 
 namespace Tyr.Gui.Simulator;
@@ -22,6 +23,9 @@ public sealed partial class SimulatorChannel : IDisposable
 
     [ConfigEntry("UDP port for the grSim simulator control channel")]
     private static int ControlPort { get; set; } = 10300;
+
+    [ConfigEntry("Polling interval for simulator feedback")]
+    private static DeltaTime FeedbackPollTimeout { get; set; } = DeltaTime.FromMilliseconds(10);
 
     // ── Robot geometry (SI units: meters, kg) ─────────────────────────────────
     [ConfigEntry("Robot body radius (m)")]              private static float? RobotRadius          { get; set; }
@@ -48,18 +52,16 @@ public sealed partial class SimulatorChannel : IDisposable
     /// <summary>Set by SimulatorView each frame to reflect whether grSim is currently running.</summary>
     public bool SimulatorRunning { get; set; }
 
-    private readonly Socket _socket;
-    private readonly byte[] _sendBuf = new byte[65536];
-    private readonly byte[] _recvBuf = new byte[65536];
+    private readonly UdpSocket _socket;
     private readonly Lock _sendLock = new();
-    private readonly CancellationTokenSource _cts = new();
-    private readonly Task _receiveTask;
+    private readonly RunnerSync _runner;
 
     public SimulatorChannel()
     {
-        _socket = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
-        _socket.Bind(new IPEndPoint(IPAddress.Any, 0));
-        _receiveTask = Task.Run(ReceiveLoopAsync);
+        _socket = new UdpSocket();
+        _socket.Bind(new Address { Ip = "0.0.0.0", Port = 0 });
+        _runner = new RunnerSync(TickReceive, 0, nameof(SimulatorChannel));
+        _runner.Start();
     }
 
     // ── public API ────────────────────────────────────────────────────────────
@@ -132,12 +134,10 @@ public sealed partial class SimulatorChannel : IDisposable
     {
         try
         {
-            var endpoint = new IPEndPoint(IPAddress.Parse(Host), ControlPort);
+            var endpoint = new Address { Ip = Host, Port = ControlPort };
             lock (_sendLock)
             {
-                using var ms = new MemoryStream(_sendBuf);
-                Serializer.Serialize(ms, command);
-                _socket.SendTo(_sendBuf, 0, (int)ms.Position, SocketFlags.None, endpoint);
+                _socket.Send(command, endpoint);
             }
         }
         catch (Exception ex)
@@ -183,38 +183,38 @@ public sealed partial class SimulatorChannel : IDisposable
         };
     }
 
-    private async Task ReceiveLoopAsync()
+    private bool TickReceive()
     {
-        EndPoint from = new IPEndPoint(IPAddress.Any, 0);
-        while (!_cts.IsCancellationRequested)
+        if (!_socket.Poll(FeedbackPollTimeout))
+            return false;
+
+        var data = _socket.ReceiveRaw();
+        if (data.IsEmpty)
+            return false;
+
+        Response response;
+        try
         {
-            try
-            {
-                var result = await _socket
-                    .ReceiveFromAsync(new ArraySegment<byte>(_recvBuf), SocketFlags.None, from)
-                    .WaitAsync(_cts.Token);
-
-                var response = Serializer.Deserialize<Response>(
-                    new ReadOnlySpan<byte>(_recvBuf, 0, result.ReceivedBytes));
-
-                if (response.Errors is { Count: > 0 })
-                    foreach (var err in response.Errors)
-                        Log.ZLogWarning($"[grSim] {err.Code}: {err.Message}");
-            }
-            catch (OperationCanceledException) { break; }
-            catch (SocketException ex) when (ex.SocketErrorCode is SocketError.Interrupted or SocketError.OperationAborted) { break; }
-            catch (Exception ex)
-            {
-                Log.ZLogError(ex, $"SimulatorChannel receive error");
-            }
+            response = Serializer.Deserialize<Response>(data);
         }
+        catch (Exception ex)
+        {
+            Log.ZLogError(ex, $"SimulatorChannel receive error");
+            return false;
+        }
+
+        if (response.Errors is { Count: > 0 })
+        {
+            foreach (var err in response.Errors)
+                Log.ZLogWarning($"[grSim] {err.Code}: {err.Message}");
+        }
+
+        return true;
     }
 
     public void Dispose()
     {
-        _cts.Cancel();
+        _runner.Stop();
         _socket.Dispose();
-        _receiveTask.Wait(TimeSpan.FromSeconds(1));
-        _cts.Dispose();
     }
 }
