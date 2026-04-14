@@ -4,7 +4,7 @@ using Tyr.Common.Data;
 using Tyr.Common.Debug.Drawing;
 using Tyr.Common.Extensions;
 using Tyr.Common.Math;
-using Tyr.Soccer.Helpers;
+using Tyr.Soccer.Knowledge;
 using Tyr.Soccer.Robot;
 using Tyr.Soccer.Skills;
 
@@ -469,7 +469,7 @@ internal sealed class ManualControlState(TeamColor team)
     {
         if (_shotTargetMode == ManualShotTargetMode.OpenAngle)
         {
-            return OpenAngle.CalculateOpenAngleToGoal(Context.Ball.State.Position, robot).Center;
+            return Context.Knowledge.OpenAngle.CalculateOpenAngleToGoal(Context.Ball.State.Position, robot).Center;
         }
 
         return Context.Ball.State.Position.AngleWith(_targetPoint);

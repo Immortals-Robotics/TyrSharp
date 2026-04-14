@@ -4,6 +4,7 @@ using Tyr.Common.Extensions;
 using Tyr.Common.Math;
 using Tyr.Common.Time;
 using Tyr.Soccer.Helpers;
+using Tyr.Soccer.Knowledge;
 using Tyr.Soccer.Robot;
 
 namespace Tyr.Soccer.Skills;
@@ -23,7 +24,7 @@ public sealed partial class KickBall : ISkill
     {
         var maxForwardOffset = IsGoalkeeper ? 200f : 300f;
         var navigationFlags = GetNavigationFlags(robot);
-        var ball = BallPrediction.PredictBall(PredictionTime);
+        var ball = Context.Knowledge.BallPrediction.PredictBall(PredictionTime);
 
         var toTarget = Angle.ToUnitVec();
         var robotToBall = ball.Position - robot.Position;

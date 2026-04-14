@@ -7,10 +7,10 @@ using Tyr.Common.Vision.Data;
 using Tyr.Soccer.Navigation.Trajectory;
 using Tyr.Soccer.Robot;
 
-namespace Tyr.Soccer.Helpers;
+namespace Tyr.Soccer.Knowledge;
 
 [Configurable]
-public static partial class BallInterception
+public partial class BallInterception
 {
     [ConfigEntry("Lower planar ball-speed threshold for interception [mm/s]")]
     private static float MinBallSpeedLowerMmPerS { get; set; } = 100f;
@@ -48,7 +48,7 @@ public static partial class BallInterception
     [ConfigEntry("Distance within which the previous plan's hysteresis bonus applies [mm]")]
     private static float HysteresisDistanceMm { get; set; } = 150f;
 
-    private static bool _ballMoving;
+    private bool _ballMoving;
 
     public readonly record struct InterceptWindow(float StartTimeSeconds, float EndTimeSeconds);
 
@@ -63,7 +63,7 @@ public static partial class BallInterception
         public float AbsSlackTimeSeconds => MathF.Abs(SlackTimeSeconds);
     }
 
-    public static bool TryGetInterceptWindow(
+    public bool TryGetInterceptWindow(
         FilteredBall ball,
         IBallTrajectory trajectory,
         Rectangle fieldBounds,
@@ -123,7 +123,7 @@ public static partial class BallInterception
         return true;
     }
 
-    public static bool TryFindPlan(
+    public bool TryFindPlan(
         FilteredBall ball,
         IBallTrajectory trajectory,
         Vector2 robotPosition,
@@ -206,7 +206,7 @@ public static partial class BallInterception
         return true;
     }
 
-    private static InterceptPlan Evaluate(
+    private InterceptPlan Evaluate(
         IBallTrajectory trajectory,
         float timeSeconds,
         Vector2 robotPosition,
@@ -221,14 +221,14 @@ public static partial class BallInterception
         InterceptPlan? previousPlan)
     {
         var state = trajectory.GetState(DeltaTime.FromSeconds(timeSeconds));
-        var facingAngle = BallReceiving.CalculateFacingAngle(state.Velocity.Xy(), fallbackAngle);
-        var rawDestination = BallReceiving.GetCenterDestination(state.Position, facingAngle, centerToDribbler, ballRadius);
-        var destination = BallReceiving.ClampToLegalDestination(
+        var facingAngle = Context.Knowledge.BallReceiving.CalculateFacingAngle(state.Velocity.Xy(), fallbackAngle);
+        var rawDestination = Context.Knowledge.BallReceiving.GetCenterDestination(state.Position, facingAngle, centerToDribbler, ballRadius);
+        var destination = Context.Knowledge.BallReceiving.ClampToLegalDestination(
             rawDestination,
             fieldBounds,
             ownPenaltyArea,
             oppPenaltyArea,
-            BallReceiving.PenaltyAreaMargin,
+            Context.Knowledge.BallReceiving.PenaltyAreaMargin,
             state.Position,
             state.Velocity.Xy());
         var reachTime = TrajectoryBangBang.Make2D(robotPosition, robotMotion, destination, profile).Duration;
@@ -252,12 +252,12 @@ public static partial class BallInterception
             facingAngle);
     }
 
-    private static bool IsStateUsable(BallState state, Rectangle fieldBounds)
+    private bool IsStateUsable(BallState state, Rectangle fieldBounds)
     {
         return fieldBounds.Inside(state.Position);
     }
 
-    private static void UpdateBallMoving(float ballSpeedSquared)
+    private void UpdateBallMoving(float ballSpeedSquared)
     {
         var lowerSquared = MinBallSpeedLowerMmPerS * MinBallSpeedLowerMmPerS;
         var upperSquared = MinBallSpeedUpperMmPerS * MinBallSpeedUpperMmPerS;
@@ -272,7 +272,7 @@ public static partial class BallInterception
         }
     }
 
-    private static float CalculateEarlyInterceptionBonus(float reachTimeSeconds)
+    private float CalculateEarlyInterceptionBonus(float reachTimeSeconds)
     {
         if (reachTimeSeconds >= EarlyInterceptionWindowSeconds || EarlyInterceptionWindowSeconds <= 0f)
         {

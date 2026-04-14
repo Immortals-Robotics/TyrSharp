@@ -4,16 +4,18 @@ using Tyr.Common.Data;
 using Tyr.Common.Math;
 using Tyr.Soccer.Robot;
 
-namespace Tyr.Soccer.Helpers;
+namespace Tyr.Soccer.Knowledge;
 
-internal readonly record struct OpenAngle(Angle Center, Angle Magnitude)
+public readonly record struct OpenAngleResult(Angle Center, Angle Magnitude);
+
+public class OpenAngle
 {
     private const int MaxObstacleArcs = 64;
     private const int OpenAngleSamples = 100;
 
-    private static readonly AngleMedianFilter[] CenterFilters = CreateCenterFilters();
+    private readonly AngleMedianFilter[] _centerFilters = CreateCenterFilters();
 
-    public static OpenAngle CalculateOpenAngleToGoal(Vector2 pos, Robot.Robot robot)
+    public OpenAngleResult CalculateOpenAngleToGoal(Vector2 pos, Robot.Robot robot)
     {
         var midGoal = Context.Field.OppGoal();
         var topGoal = Context.Field.OppGoalPostTop();
@@ -51,7 +53,7 @@ internal readonly record struct OpenAngle(Angle Center, Angle Magnitude)
 
             if (AddObstacleArc(pos, own.Position, goalStart, goalEnd, wraps, blockedStarts, blockedEnds, ref obstacleCount))
             {
-                return FilterCenter(robot.Id, new OpenAngle(Angle.FromRad(midGoalAngle), Angle.Zero));
+                return FilterCenter(robot.Id, new OpenAngleResult(Angle.FromRad(midGoalAngle), Angle.Zero));
             }
         }
 
@@ -59,13 +61,13 @@ internal readonly record struct OpenAngle(Angle Center, Angle Magnitude)
         {
             if (AddObstacleArc(pos, Context.OppRobots[i].State.Position, goalStart, goalEnd, wraps, blockedStarts, blockedEnds, ref obstacleCount))
             {
-                return FilterCenter(robot.Id, new OpenAngle(Angle.FromRad(midGoalAngle), Angle.Zero));
+                return FilterCenter(robot.Id, new OpenAngleResult(Angle.FromRad(midGoalAngle), Angle.Zero));
             }
         }
 
         if (obstacleCount == 0)
         {
-            return FilterCenter(robot.Id, new OpenAngle(Angle.FromRad(midGoalAngle), Angle.FromRad(MathF.Abs(goalEnd - goalStart))));
+            return FilterCenter(robot.Id, new OpenAngleResult(Angle.FromRad(midGoalAngle), Angle.FromRad(MathF.Abs(goalEnd - goalStart))));
         }
 
         var step = (goalEnd - goalStart) / OpenAngleSamples;
@@ -130,14 +132,14 @@ internal readonly record struct OpenAngle(Angle Center, Angle Magnitude)
 
         if (maxFree == 0)
         {
-            return FilterCenter(robot.Id, new OpenAngle(Angle.FromRad(midGoalAngle), Angle.Zero));
+            return FilterCenter(robot.Id, new OpenAngleResult(Angle.FromRad(midGoalAngle), Angle.Zero));
         }
 
         var bestAngle = Angle.FromRad(goalStart + bestSample * step).RadNormalized;
-        return FilterCenter(robot.Id, new OpenAngle(Angle.FromRad(bestAngle), Angle.FromRad(maxFree * step)));
+        return FilterCenter(robot.Id, new OpenAngleResult(Angle.FromRad(bestAngle), Angle.FromRad(maxFree * step)));
     }
 
-    private static bool AddObstacleArc(
+    private bool AddObstacleArc(
         Vector2 origin,
         Vector2 obstacle,
         float goalStart,
@@ -205,14 +207,14 @@ internal readonly record struct OpenAngle(Angle Center, Angle Magnitude)
         return false;
     }
 
-    private static OpenAngle FilterCenter(int robotId, OpenAngle openAngle)
+    private OpenAngleResult FilterCenter(int robotId, OpenAngleResult openAngle)
     {
-        if ((uint)robotId >= (uint)CenterFilters.Length)
+        if ((uint)robotId >= (uint)_centerFilters.Length)
         {
             return openAngle;
         }
 
-        var filter = CenterFilters[robotId];
+        var filter = _centerFilters[robotId];
         filter.Add(openAngle.Center);
         return openAngle with { Center = filter.Current };
     }

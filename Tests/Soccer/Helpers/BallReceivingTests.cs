@@ -3,13 +3,15 @@ using Tyr.Common;
 using Tyr.Common.Math;
 using Tyr.Common.Math.Shapes;
 using Tyr.Common.Vision.Data;
-using Tyr.Soccer.Helpers;
+using Tyr.Soccer.Knowledge;
 using Tyr.Vision.Trajectory;
 
 namespace Tyr.Tests.Soccer.Helpers;
 
 public class BallReceivingTests
 {
+    private readonly BallReceiving _ballReceiving = new();
+
     public BallReceivingTests()
     {
         ServiceLocator.BallTrajectoryFactory = new BallTrajectoryFactory();
@@ -26,7 +28,7 @@ public class BallReceivingTests
             SpinRadians = Vector2.Zero
         });
 
-        var projection = BallReceiving.ProjectReceivePoint(
+        var projection = _ballReceiving.ProjectReceivePoint(
             trajectory,
             Vector2.Zero,
             new Vector2(1000f, 0f),
@@ -50,7 +52,7 @@ public class BallReceivingTests
         });
 
         var preferredReceivePoint = new Vector2(150f, 0f);
-        var projection = BallReceiving.ProjectReceivePoint(
+        var projection = _ballReceiving.ProjectReceivePoint(
             trajectory,
             Vector2.Zero,
             new Vector2(1000f, 0f),
@@ -65,7 +67,7 @@ public class BallReceivingTests
     [Fact]
     public void GetCenterDestination_UsesDribblerAndBallGeometry()
     {
-        var destination = BallReceiving.GetCenterDestination(
+        var destination = _ballReceiving.GetCenterDestination(
             Vector2.Zero,
             Angle.Zero,
             75f,
@@ -82,7 +84,7 @@ public class BallReceivingTests
         var ownPenalty = Rectangle.FromCornerAndSize(new Vector2(4200f, -1800f), 1800f, 3600f);
         var oppPenalty = Rectangle.FromCornerAndSize(new Vector2(-6000f, -1800f), 1800f, 3600f);
 
-        var clamped = BallReceiving.ClampToLegalDestination(
+        var clamped = _ballReceiving.ClampToLegalDestination(
             new Vector2(5300f, 0f),
             fieldBounds,
             ownPenalty,
@@ -100,7 +102,7 @@ public class BallReceivingTests
         var ownPenalty = Rectangle.FromCornerAndSize(new Vector2(4200f, -1800f), 1800f, 3600f);
         var oppPenalty = Rectangle.FromCornerAndSize(new Vector2(-6000f, -1800f), 1800f, 3600f);
 
-        var clamped = BallReceiving.ClampToLegalDestination(
+        var clamped = _ballReceiving.ClampToLegalDestination(
             new Vector2(5300f, 0f),
             fieldBounds,
             ownPenalty,
@@ -121,7 +123,7 @@ public class BallReceivingTests
         var ownPenalty = Rectangle.FromCornerAndSize(new Vector2(4200f, -1800f), 1800f, 3600f);
         var oppPenalty = Rectangle.FromCornerAndSize(new Vector2(-6000f, -1800f), 1800f, 3600f);
 
-        var clamped = BallReceiving.ClampToLegalDestination(
+        var clamped = _ballReceiving.ClampToLegalDestination(
             new Vector2(5900f, 1850f),
             fieldBounds,
             ownPenalty,
@@ -138,12 +140,12 @@ public class BallReceivingTests
     [Fact]
     public void IsBallMovingTowardsPoint_DetectsApproachingAndRecedingBall()
     {
-        Assert.True(BallReceiving.IsBallMovingTowardsPoint(
+        Assert.True(_ballReceiving.IsBallMovingTowardsPoint(
             Vector2.Zero,
             new Vector2(1000f, 0f),
             new Vector2(200f, 0f)));
 
-        Assert.False(BallReceiving.IsBallMovingTowardsPoint(
+        Assert.False(_ballReceiving.IsBallMovingTowardsPoint(
             Vector2.Zero,
             new Vector2(-1000f, 0f),
             new Vector2(200f, 0f)));

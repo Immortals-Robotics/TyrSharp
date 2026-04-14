@@ -2,6 +2,7 @@ using System.Numerics;
 using Tyr.Common.Extensions;
 using Tyr.Common.Math;
 using Tyr.Soccer.Helpers;
+using Tyr.Soccer.Knowledge;
 using Tyr.Soccer.Robot;
 
 namespace Tyr.Soccer.Skills;

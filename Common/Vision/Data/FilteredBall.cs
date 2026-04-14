@@ -25,7 +25,7 @@ public readonly record struct FilteredBall
             Timestamp = timestamp,
             LastVisibleTimestamp =
                 LastVisibleTimestamp +
-                dt, // TODO: why + dt? + Mhmmd: shouldn't it be Timestamp? and we never used it in the place that we Extrapolate
+                dt,
             State = ServiceLocator.BallTrajectoryFactory.GetStateAt(State, dt)
         };
     }

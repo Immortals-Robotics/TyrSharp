@@ -4,18 +4,18 @@ using Tyr.Common.Time;
 using Tyr.Common.Vision.Data;
 using Tyr.Soccer.Robot;
 
-namespace Tyr.Soccer.Helpers;
+namespace Tyr.Soccer.Knowledge;
 
-internal static class BallPrediction
+public class BallPrediction
 {
     private const float MaxReachTimeSeconds = 5f;
 
-    public static BallState PredictBall(DeltaTime timeAhead)
+    public BallState PredictBall(DeltaTime timeAhead)
     {
         return Context.Ball.Extrapolate(Context.Ball.Timestamp + timeAhead).State;
     }
 
-    public static float CalculateBallRobotReachTime(Robot.Robot robot, Angle angle, VelocityProfile profile, float waitTimeSeconds)
+    public float CalculateBallRobotReachTime(Robot.Robot robot, Angle angle, VelocityProfile profile, float waitTimeSeconds)
     {
         for (var t = 0f; t < MaxReachTimeSeconds; t += 0.1f)
         {

@@ -2,7 +2,7 @@ using Tyr.Common;
 using Tyr.Common.Extensions;
 using Tyr.Common.Math;
 using Tyr.Common.Time;
-using Tyr.Soccer.Helpers;
+using Tyr.Soccer.Knowledge;
 using Tyr.Soccer.Robot;
 
 namespace Tyr.Soccer.Skills;
@@ -26,7 +26,7 @@ public sealed class InterceptBall : ISkill
         var trajectory = ServiceLocator.BallTrajectoryFactory.FromState(Context.Ball.State);
         var centerToDribbler = robot.CenterToDribbler;
 
-        var hasPlan = BallInterception.TryFindPlan(
+        var hasPlan = Context.Knowledge.BallInterception.TryFindPlan(
             Context.Ball,
             trajectory,
             robot.Position,
@@ -48,12 +48,12 @@ public sealed class InterceptBall : ISkill
             return;
         }
 
-        var destination = BallReceiving.ClampToLegalDestination(
+        var destination = Context.Knowledge.BallReceiving.ClampToLegalDestination(
             plan.CenterDestination,
             Context.Field.RectangleWithBoundary,
             Context.Field.OwnPenaltyArea(),
             Context.Field.OppPenaltyArea(),
-            BallReceiving.PenaltyAreaMargin,
+            Context.Knowledge.BallReceiving.PenaltyAreaMargin,
             plan.BallState.Position,
             plan.BallState.Velocity.Xy());
 

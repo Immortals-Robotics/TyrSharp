@@ -4,7 +4,7 @@ using Tyr.Common.Data.Ssl.Vision.Geometry;
 using Tyr.Common.Math;
 using Tyr.Common.Math.Shapes;
 using Tyr.Common.Vision.Data;
-using Tyr.Soccer.Helpers;
+using Tyr.Soccer.Knowledge;
 using Tyr.Soccer.Robot;
 using Tyr.Vision.Trajectory;
 
@@ -12,6 +12,8 @@ namespace Tyr.Tests.Soccer.Helpers;
 
 public class BallInterceptionTests
 {
+    private readonly BallInterception _ballInterception = new();
+
     public BallInterceptionTests()
     {
         ServiceLocator.BallTrajectoryFactory = new BallTrajectoryFactory();
@@ -25,7 +27,7 @@ public class BallInterceptionTests
             new Vector3(1500f, 0f, 800f));
         var trajectory = ServiceLocator.BallTrajectoryFactory.FromState(ball.State);
 
-        var ok = BallInterception.TryGetInterceptWindow(
+        var ok = _ballInterception.TryGetInterceptWindow(
             ball,
             trajectory,
             FieldSize.DivisionA.RectangleWithBoundary,
@@ -44,7 +46,7 @@ public class BallInterceptionTests
             new Vector3(1200f, 0f, 0f));
         var trajectory = ServiceLocator.BallTrajectoryFactory.FromState(ball.State);
 
-        var ok = BallInterception.TryGetInterceptWindow(
+        var ok = _ballInterception.TryGetInterceptWindow(
             ball,
             trajectory,
             FieldSize.DivisionA.RectangleWithBoundary,
@@ -65,7 +67,7 @@ public class BallInterceptionTests
         var ownPenaltyArea = Rectangle.FromCornerAndSize(new Vector2(4200f, -1800f), 1800f, 3600f);
         var oppPenaltyArea = Rectangle.FromCornerAndSize(new Vector2(-6000f, -1800f), 1800f, 3600f);
 
-        var closeOk = BallInterception.TryFindPlan(
+        var closeOk = _ballInterception.TryFindPlan(
             ball,
             trajectory,
             new Vector2(800f, 400f),
@@ -79,7 +81,7 @@ public class BallInterceptionTests
             75f,
             out var closePlan);
 
-        var farOk = BallInterception.TryFindPlan(
+        var farOk = _ballInterception.TryFindPlan(
             ball,
             trajectory,
             new Vector2(800f, 1800f),

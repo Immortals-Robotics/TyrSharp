@@ -2,7 +2,7 @@ using System.Numerics;
 using Tyr.Common.Config;
 using Tyr.Common.Extensions;
 using Tyr.Common.Math;
-using Tyr.Soccer.Helpers;
+using Tyr.Soccer.Knowledge;
 using Tyr.Soccer.Robot;
 
 namespace Tyr.Soccer.Skills;
@@ -58,12 +58,12 @@ public sealed partial class CaptureBall : ISkill
             ballPosition - direction * (robot.CenterToDribbler + Context.Field.BallRadius + currentMargin);
 
         // Clamping to legal field bounds
-        destination = BallReceiving.ClampToLegalDestination(
+        destination = Context.Knowledge.BallReceiving.ClampToLegalDestination(
             destination,
             Context.Field.RectangleWithBoundary,
             Context.Field.OwnPenaltyArea(),
             Context.Field.OppPenaltyArea(),
-            BallReceiving.PenaltyAreaMargin,
+            Context.Knowledge.BallReceiving.PenaltyAreaMargin,
             ballPosition,
             Context.Ball.State.Velocity.Xy());
 

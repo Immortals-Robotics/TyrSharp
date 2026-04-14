@@ -6,10 +6,10 @@ using Tyr.Common.Math.Shapes;
 using Tyr.Common.Time;
 using Tyr.Common.Vision.Data;
 
-namespace Tyr.Soccer.Helpers;
+namespace Tyr.Soccer.Knowledge;
 
 [Configurable]
-public static partial class BallReceiving
+public partial class BallReceiving
 {
     private const float LegalSeparationEpsilonMm = 1f;
 
@@ -29,8 +29,8 @@ public static partial class BallReceiving
     [ConfigEntry("Below this planar ball speed the current orientation is kept for receiving [mm/s]")]
     private static float FacingFallbackSpeedMmPerS { get; set; } = 50f;
 
-    public static float OrientationLockDistance => OrientationLockDistanceMm;
-    public static float PenaltyAreaMargin => PenaltyAreaMarginMm;
+    public float OrientationLockDistance => OrientationLockDistanceMm;
+    public float PenaltyAreaMargin => PenaltyAreaMarginMm;
 
     public readonly record struct ReceiveProjection(Vector2 Point, bool UsedBackProjection);
 
@@ -40,14 +40,14 @@ public static partial class BallReceiving
         Angle FacingAngle,
         bool UsedBackProjection);
 
-    public static Angle CalculateFacingAngle(Vector2 ballVelocity, Angle fallbackAngle)
+    public Angle CalculateFacingAngle(Vector2 ballVelocity, Angle fallbackAngle)
     {
         return ballVelocity.LengthSquared() < FacingFallbackSpeedMmPerS * FacingFallbackSpeedMmPerS
             ? fallbackAngle
             : (-ballVelocity).ToAngle();
     }
 
-    public static bool IsBallMovingTowardsPoint(Vector2 ballPosition, Vector2 ballVelocity, Vector2 point)
+    public bool IsBallMovingTowardsPoint(Vector2 ballPosition, Vector2 ballVelocity, Vector2 point)
     {
         if (Utils.ApproximatelyZero(ballVelocity.LengthSquared()))
         {
@@ -58,23 +58,23 @@ public static partial class BallReceiving
         return Vector2.Dot(ballVelocity, toPoint) > 0f;
     }
 
-    public static float CalculateBackProjectionDistance(IBallTrajectory trajectory)
+    public float CalculateBackProjectionDistance(IBallTrajectory trajectory)
     {
         return trajectory.GetTravelDistance(DeltaTime.FromSeconds(ExpectedVisionDeviationSeconds));
     }
 
-    public static Vector2 GetKickerReceivePoint(Vector2 robotPosition, Angle targetAngle,
+    public Vector2 GetKickerReceivePoint(Vector2 robotPosition, Angle targetAngle,
         float centerToDribblerWithBall)
     {
         return Tyr.Common.Math.Shapes.Robot.GetKickerCenterPos(robotPosition, targetAngle, centerToDribblerWithBall);
     }
 
-    public static bool IsProjectionReachable(IBallTrajectory trajectory, Vector2 point)
+    public bool IsProjectionReachable(IBallTrajectory trajectory, Vector2 point)
     {
         return Vector2.Distance(trajectory.ClosestRollingPoint(point), point) <= MaxProjectionDistanceMm;
     }
 
-    public static ReceiveProjection ProjectReceivePoint(
+    public ReceiveProjection ProjectReceivePoint(
         IBallTrajectory trajectory,
         Vector2 ballPosition,
         Vector2 ballVelocity,
@@ -114,7 +114,7 @@ public static partial class BallReceiving
             : projection;
     }
 
-    public static Vector2 ClampReceivePoint(
+    public Vector2 ClampReceivePoint(
         Vector2 receivePoint,
         Rectangle fieldBounds,
         Rectangle ownPenaltyArea,
@@ -137,7 +137,7 @@ public static partial class BallReceiving
         return ClampInside(clamped, effectiveFieldBounds);
     }
 
-    public static Vector2 GetCenterDestination(
+    public Vector2 GetCenterDestination(
         Vector2 kickerReceivePoint,
         Angle facingAngle,
         float centerToDribbler,
@@ -147,7 +147,7 @@ public static partial class BallReceiving
         return kickerReceivePoint - facingAngle.ToUnitVec() * offset;
     }
 
-    public static Vector2 ClampToLegalDestination(
+    public Vector2 ClampToLegalDestination(
         Vector2 destination,
         Rectangle fieldBounds,
         Rectangle ownPenaltyArea,
@@ -164,7 +164,7 @@ public static partial class BallReceiving
         return ClampInside(clamped, fieldBounds);
     }
 
-    public static ReceiveTarget ResolveReceiveTarget(
+    public ReceiveTarget ResolveReceiveTarget(
         IBallTrajectory trajectory,
         Vector2 currentBallPosition,
         Vector2 currentBallVelocity,
@@ -203,20 +203,20 @@ public static partial class BallReceiving
         return new ReceiveTarget(projection.Point, destination, facingAngle, projection.UsedBackProjection);
     }
 
-    public static bool ShouldLockFacing(Vector2 ballPosition, Vector2 receivePoint)
+    public bool ShouldLockFacing(Vector2 ballPosition, Vector2 receivePoint)
     {
         return Vector2.DistanceSquared(ballPosition, receivePoint) <=
                OrientationLockDistanceMm * OrientationLockDistanceMm;
     }
 
-    private static Vector2 ClampInside(Vector2 point, Rectangle bounds)
+    private Vector2 ClampInside(Vector2 point, Rectangle bounds)
     {
         return new Vector2(
             Math.Clamp(point.X, bounds.Min.X, bounds.Max.X),
             Math.Clamp(point.Y, bounds.Min.Y, bounds.Max.Y));
     }
 
-    private static Vector2 ClampOutsidePenaltyArea(
+    private Vector2 ClampOutsidePenaltyArea(
         Vector2 destination,
         Rectangle penaltyArea,
         float penaltyMargin,
@@ -250,7 +250,7 @@ public static partial class BallReceiving
         return penaltyArea.NearestOutside(destination, penaltyMargin + LegalSeparationEpsilonMm);
     }
 
-    private static bool TryProjectOutsidePenaltyAreaOnBallPath(
+    private bool TryProjectOutsidePenaltyAreaOnBallPath(
         Vector2 destination,
         Rectangle penaltyArea,
         float penaltyMargin,
@@ -278,7 +278,7 @@ public static partial class BallReceiving
         return true;
     }
 
-    private static Line? GetBallPathLine(Vector2 destination, Vector2 ballPosition, Vector2 ballVelocity)
+    private Line? GetBallPathLine(Vector2 destination, Vector2 ballPosition, Vector2 ballVelocity)
     {
         var toBall = ballPosition - destination;
         if (toBall.LengthSquared() > 100f * 100f)
@@ -299,7 +299,7 @@ public static partial class BallReceiving
         return null;
     }
 
-    private static Vector2 NearestTo(Vector2 reference, Vector2? point0, Vector2? point1)
+    private Vector2 NearestTo(Vector2 reference, Vector2? point0, Vector2? point1)
     {
         if (!point0.HasValue) return point1!.Value;
         if (!point1.HasValue) return point0.Value;
@@ -309,7 +309,7 @@ public static partial class BallReceiving
             : point1.Value;
     }
 
-    private static Rectangle Shrink(Rectangle bounds, float margin)
+    private Rectangle Shrink(Rectangle bounds, float margin)
     {
         if (margin <= 0f)
         {
@@ -321,7 +321,7 @@ public static partial class BallReceiving
         return Rectangle.FromCenterAndSize(bounds.Center, halfWidth * 2f, halfHeight * 2f);
     }
 
-    private static Rectangle Expand(Rectangle bounds, float margin)
+    private Rectangle Expand(Rectangle bounds, float margin)
     {
         if (margin <= 0f)
         {

@@ -5,7 +5,7 @@ using Tyr.Common.Debug.Drawing;
 using Tyr.Common.Extensions;
 using Tyr.Common.Math;
 using Tyr.Common.Math.Shapes;
-using Tyr.Soccer.Helpers;
+using Tyr.Soccer.Knowledge;
 using Tyr.Soccer.Robot;
 
 namespace Tyr.Soccer.Skills;
@@ -41,7 +41,7 @@ public sealed partial class InterceptV2 : ISkill
 
     public static bool IsBallApproachingRobot(Robot.Robot robot)
     {
-        return BallReceiving.IsBallMovingTowardsPoint(
+        return Context.Knowledge.BallReceiving.IsBallMovingTowardsPoint(
             Context.Ball.State.Position,
             Context.Ball.State.Velocity.Xy(),
             robot.Position);
@@ -70,18 +70,18 @@ public sealed partial class InterceptV2 : ISkill
         var interceptPoint = imminentImpact.InterceptPoint;
         var ballArrivalTime = imminentImpact.BallArrivalTime;
         var facingAngle = (-ballVelocity).ToAngle();
-        var destination = BallReceiving.GetCenterDestination(
+        var destination = Context.Knowledge.BallReceiving.GetCenterDestination(
             interceptPoint,
             facingAngle,
             centerToDribbler,
             Context.Field.BallRadius);
 
-        destination = BallReceiving.ClampToLegalDestination(
+        destination = Context.Knowledge.BallReceiving.ClampToLegalDestination(
             destination,
             Context.Field.RectangleWithBoundary,
             Context.Field.OwnPenaltyArea(),
             Context.Field.OppPenaltyArea(),
-            BallReceiving.PenaltyAreaMargin,
+            Context.Knowledge.BallReceiving.PenaltyAreaMargin,
             ballPosition,
             ballVelocity);
 
@@ -134,7 +134,7 @@ public sealed partial class InterceptV2 : ISkill
             return;
         }
 
-        var hasPlan = BallInterception.TryFindPlan(
+        var hasPlan = Context.Knowledge.BallInterception.TryFindPlan(
             Context.Ball,
             trajectory,
             robot.Position,
@@ -166,12 +166,12 @@ public sealed partial class InterceptV2 : ISkill
             return;
         }
 
-        var finalDestination = BallReceiving.ClampToLegalDestination(
+        var finalDestination = Context.Knowledge.BallReceiving.ClampToLegalDestination(
             plan.CenterDestination,
             Context.Field.RectangleWithBoundary,
             Context.Field.OwnPenaltyArea(),
             Context.Field.OppPenaltyArea(),
-            BallReceiving.PenaltyAreaMargin,
+            Context.Knowledge.BallReceiving.PenaltyAreaMargin,
             plan.BallState.Position,
             plan.BallState.Velocity.Xy());
 
@@ -230,7 +230,7 @@ public sealed partial class InterceptV2 : ISkill
         Vector2 ballPosition,
         Vector2 ballVelocity)
     {
-        return BallReceiving.IsBallMovingTowardsPoint(ballPosition, ballVelocity, robot.Position)
+        return Context.Knowledge.BallReceiving.IsBallMovingTowardsPoint(ballPosition, ballVelocity, robot.Position)
             ? NavigationFlags.NoBallObstacle
             : NavigationFlags.BallObstacle;
     }

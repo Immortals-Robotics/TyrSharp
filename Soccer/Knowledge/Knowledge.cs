@@ -2,6 +2,11 @@ namespace Tyr.Soccer.Knowledge;
 
 public partial class Knowledge
 {
+    public BallInterception BallInterception { get; } = new();
+    public BallPrediction BallPrediction { get; } = new();
+    public BallReceiving BallReceiving { get; } = new();
+    public OpenAngle OpenAngle { get; } = new();
+
     public int OwnRobotsCount { get; private set; }
     public int OpponentRobotsCount { get; private set; }
 

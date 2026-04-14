@@ -3,7 +3,7 @@ using Tyr.Common.Config;
 using Tyr.Common.Extensions;
 using Tyr.Common.Math;
 using Tyr.Common.Math.Shapes;
-using Tyr.Soccer.Helpers;
+using Tyr.Soccer.Knowledge;
 using Tyr.Soccer.Robot;
 
 namespace Tyr.Soccer.Skills;
@@ -51,7 +51,7 @@ public sealed partial class OneTouch : ISkill
     {
         var v0 = Context.Ball.State.Velocity.Xy();
         var targetLine = Context.Field.OppGoalLine();
-        var openAngle = OpenAngle.CalculateOpenAngleToGoal(oneTouchPosition, robot);
+        var openAngle = Context.Knowledge.OpenAngle.CalculateOpenAngleToGoal(oneTouchPosition, robot);
         var ballLine = Line.FromPointAndAngle(oneTouchPosition, openAngle.Center);
         var goal = Geometry.Intersection(ballLine, targetLine) ?? new Vector2(Context.Field.OppGoal().X, 0f);
 
