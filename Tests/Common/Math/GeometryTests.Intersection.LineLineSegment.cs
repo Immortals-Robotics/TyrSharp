@@ -110,4 +110,28 @@ public partial class GeometryTests
         Assert.NotNull(intersection);
         Assert.Equal(new Vector2(1f, 2f), intersection.Value, Utils.ApproximatelyEqual);
     }
+
+    [Fact]
+    public void Intersection_FloatingPointEndpointHit_ReturnsIntersectionPoint()
+    {
+        var line = Line.FromTwoPoints(new Vector2(-1f, -1f), new Vector2(-0.9f, -0.5f));
+        var segment = new LineSegment { Start = Vector2.Zero, End = new Vector2(0f, 4f) };
+
+        var intersection = Geometry.Intersection(line, segment);
+
+        Assert.NotNull(intersection);
+        Assert.Equal(new Vector2(0f, 4f), intersection.Value, Utils.ApproximatelyEqual);
+    }
+
+    [Fact]
+    public void Intersection_DegenerateSegmentOnLine_ReturnsSegmentPoint()
+    {
+        var line = Line.FromTwoPoints(new Vector2(2f, -1f), new Vector2(2f, 5f));
+        var segment = new LineSegment { Start = new Vector2(2f, 3f), End = new Vector2(2f, 3f) };
+
+        var intersection = Geometry.Intersection(line, segment);
+
+        Assert.NotNull(intersection);
+        Assert.Equal(new Vector2(2f, 3f), intersection.Value, Utils.ApproximatelyEqual);
+    }
 }

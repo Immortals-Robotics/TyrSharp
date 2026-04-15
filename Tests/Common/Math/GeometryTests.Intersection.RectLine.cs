@@ -176,4 +176,36 @@ public partial class GeometryTests
              Utils.ApproximatelyEqual(point2.Value, new Vector2(-2, 0)))
         );
     }
+
+    [Fact]
+    public void Intersection_FloatingPointBoundaryHit_ReturnsTwoPoints()
+    {
+        var rect = new Rectangle(new Vector2(0f, 0f), new Vector2(4f, 4f));
+        var line = Line.FromTwoPoints(new Vector2(-1f, -1f), new Vector2(-0.6f, -0.4f));
+
+        var (point1, point2) = Geometry.Intersection(rect, line);
+
+        Assert.NotNull(point1);
+        Assert.NotNull(point2);
+
+        Assert.True(
+            (Utils.ApproximatelyEqual(point1.Value, new Vector2(0f, 0.5f)) &&
+             Utils.ApproximatelyEqual(point2.Value, new Vector2(7f / 3f, 4f))) ||
+            (Utils.ApproximatelyEqual(point1.Value, new Vector2(7f / 3f, 4f)) &&
+             Utils.ApproximatelyEqual(point2.Value, new Vector2(0f, 0.5f)))
+        );
+    }
+
+    [Fact]
+    public void Intersection_FloatingPointCornerTouch_ReturnsSinglePoint()
+    {
+        var rect = new Rectangle(new Vector2(0f, 0f), new Vector2(4f, 4f));
+        var line = Line.FromTwoPoints(new Vector2(-1f, -1f), new Vector2(-0.9f, -0.5f));
+
+        var (point1, point2) = Geometry.Intersection(rect, line);
+
+        Assert.NotNull(point1);
+        Assert.Null(point2);
+        Assert.Equal(new Vector2(0f, 4f), point1.Value, Utils.ApproximatelyEqual);
+    }
 }

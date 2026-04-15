@@ -59,21 +59,33 @@ public static class Geometry
 
     public static Vector2? Intersection(Line line, LineSegment segment)
     {
-        var segmentLine = Line.FromTwoPoints(segment.Start, segment.End);
-        var point = Intersection(line, segmentLine);
-        if (point == null)
+        var startValue = line.A * segment.Start.Y + line.B * segment.Start.X + line.C;
+        var endValue = line.A * segment.End.Y + line.B * segment.End.X + line.C;
+
+        var startOnLine = Utils.ApproximatelyZero(startValue);
+        var endOnLine = Utils.ApproximatelyZero(endValue);
+
+        if (startOnLine && endOnLine)
+            return Utils.ApproximatelyEqual(segment.Start, segment.End) ? segment.Start : null;
+
+        if (startOnLine)
+            return segment.Start;
+
+        if (endOnLine)
+            return segment.End;
+
+        if (startValue * endValue > 0f)
             return null;
 
-        var p = point.Value;
-        var minX = MathF.Min(segment.Start.X, segment.End.X);
-        var maxX = MathF.Max(segment.Start.X, segment.End.X);
-        var minY = MathF.Min(segment.Start.Y, segment.End.Y);
-        var maxY = MathF.Max(segment.Start.Y, segment.End.Y);
+        var denominator = startValue - endValue;
+        if (Utils.ApproximatelyZero(denominator))
+            return null;
 
-        var withinX = p.X >= minX && p.X <= maxX;
-        var withinY = p.Y >= minY && p.Y <= maxY;
+        var t = startValue / denominator;
+        if (t < -0.001f || t > 1.001f)
+            return null;
 
-        return (withinX && withinY) ? p : null;
+        return Vector2.Lerp(segment.Start, segment.End, System.Math.Clamp(t, 0f, 1f));
     }
 
     public static (Vector2?, Vector2?) Intersection(Line line, Circle circle)
@@ -118,28 +130,32 @@ public static class Geometry
     public static (Vector2?, Vector2?) Intersection(Rectangle rectangle, Line line)
     {
         var (e1, e2, e3, e4) = rectangle.Edges();
+        Vector2? result1 = null;
+        Vector2? result2 = null;
 
-        // at most two of these are valid
-        var p1 = Intersection(line, e1);
-        var p2 = Intersection(line, e2);
-        var p3 = Intersection(line, e3);
-        var p4 = Intersection(line, e4);
+        foreach (var point in new Vector2?[]
+                 {
+                     Intersection(line, e1),
+                     Intersection(line, e2),
+                     Intersection(line, e3),
+                     Intersection(line, e4)
+                 })
+        {
+            if (!point.HasValue)
+                continue;
 
-        // Try each point in order until we find the first valid one
-        var result1 = p1 ?? (p2 ?? (p3 ?? p4));
+            if (!result1.HasValue)
+            {
+                result1 = point;
+                continue;
+            }
 
-        if (!result1.HasValue) return (null, null);
-
-        // Try to find a second, distinct intersection point
-        bool ValidSecondPoint(Vector2? point) =>
-            point.HasValue && !Utils.ApproximatelyEqual(result1.Value, point.Value);
-
-        var result2 =
-            ValidSecondPoint(p1) ? p1 :
-            ValidSecondPoint(p2) ? p2 :
-            ValidSecondPoint(p3) ? p3 :
-            ValidSecondPoint(p4) ? p4 :
-            null;
+            if (!Utils.ApproximatelyEqual(result1.Value, point.Value))
+            {
+                result2 = point;
+                break;
+            }
+        }
 
         return (result1, result2);
     }

@@ -61,6 +61,8 @@ public partial class Robot
 
     public bool Halted { get; private set; }
 
+    // Never use this {Death}{Death}
+    // TODO: Remove and handle it in higher level
     public Role.IRole? Role { get; set; }
 
     public Vector2 TargetPosition { get; private set; }
