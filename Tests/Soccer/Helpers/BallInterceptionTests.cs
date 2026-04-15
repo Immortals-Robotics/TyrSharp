@@ -1,22 +1,34 @@
 using System.Numerics;
 using Tyr.Common;
+using Tyr.Common.Data;
 using Tyr.Common.Data.Ssl.Vision.Geometry;
 using Tyr.Common.Math;
 using Tyr.Common.Math.Shapes;
+using Tyr.Common.Referee.Data;
+using Tyr.Common.Time;
 using Tyr.Common.Vision.Data;
+using Tyr.Soccer;
 using Tyr.Soccer.Knowledge;
 using Tyr.Soccer.Robot;
 using Tyr.Vision.Trajectory;
+using SslReferee = Tyr.Common.Data.Ssl.Gc.Referee;
+using TyrTimer = Tyr.Common.Time.Timer;
 
 namespace Tyr.Tests.Soccer.Helpers;
 
-public class BallInterceptionTests
+public class BallInterceptionTests : IDisposable
 {
     private readonly BallInterception _ballInterception = new();
+    private readonly SoccerContextScope _context = new();
 
     public BallInterceptionTests()
     {
         ServiceLocator.BallTrajectoryFactory = new BallTrajectoryFactory();
+    }
+
+    public void Dispose()
+    {
+        _context.Dispose();
     }
 
     [Fact]
@@ -114,5 +126,45 @@ public class BallInterceptionTests
                 SpinRadians = Vector2.Zero
             }
         };
+    }
+
+    private sealed class SoccerContextScope : IDisposable
+    {
+        private readonly ContextData? _previous;
+
+        public SoccerContextScope()
+        {
+            _previous = Context.Data.Value;
+            Context.Data.Value = new ContextData
+            {
+                Color = TeamColor.Blue,
+                VisionTime = Timestamp.Zero - Ai.VisionPredictionTime,
+                Ball = new FilteredBall
+                {
+                    Timestamp = Timestamp.Zero,
+                    LastVisibleTimestamp = Timestamp.Zero,
+                    State = new BallState
+                    {
+                        Position3D = Vector3.Zero,
+                        Velocity = Vector3.Zero,
+                    },
+                },
+                OppRobots = [],
+                OwnRobots = [],
+                Referee = new State
+                {
+                    Color = TeamColor.Blue,
+                    Gc = new SslReferee { BlueTeamOnPositiveHalf = true },
+                },
+                Field = FieldSize.DivisionA,
+                Timer = new TyrTimer(),
+                Knowledge = new Knowledge(),
+            };
+        }
+
+        public void Dispose()
+        {
+            Context.Data.Value = _previous!;
+        }
     }
 }
