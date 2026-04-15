@@ -189,6 +189,8 @@ public partial class Ai
             var currentRole = _roleMapping.GetValueOrDefault(robot.Id);
             var newRole = newRoleMapping.GetValueOrDefault(robot.Id);
 
+            robot.Role = newRole;
+
             if (newRole is null)
             {
                 _tacticMapping.Remove(robot.Id);
