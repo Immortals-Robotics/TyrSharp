@@ -4,6 +4,8 @@ using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Threading;
 using MemoryPack;
+using Microsoft.Extensions.Logging;
+using Tyr.Common.Debug.Logging;
 
 namespace Tyr.Common.Debug.Db;
 
@@ -29,6 +31,9 @@ public sealed class DebugDb : IDebugDb
     private readonly ConcurrentDictionary<int, Meta> _sourceLocationCache = new();
     private readonly ConcurrentDictionary<int, ModuleFrameIndex> _frameIndices = new();
     private readonly Lock _internLock = new();
+    private readonly List<Entry> _journal = [];
+    private readonly Lock _journalLock = new();
+    private const LogLevel JournalMinLevel = LogLevel.Information;
 
     [ThreadStatic] private static ArrayBufferWriter<byte>? _serializeBuffer;
 
@@ -134,6 +139,12 @@ public sealed class DebugDb : IDebugDb
         {
             Timestamp = entry.Timestamp.Nanoseconds,
         }, buffer.WrittenSpan);
+
+        if (entry is Entry logEntry && logEntry.Level >= JournalMinLevel)
+        {
+            lock (_journalLock)
+                _journal.Add(logEntry);
+        }
     }
 
     public IEnumerable<T> Query<T>(string module, Timestamp t0, Timestamp t1, string? shardKey = null, int? maxCount = null) where T : struct, IEntry
@@ -584,6 +595,31 @@ public sealed class DebugDb : IDebugDb
     public Meta GetSourceLocation(int id)
     {
         return _sources.Get(id, _strings);
+    }
+
+    public void BuildJournal()
+    {
+        var range = GetFrameRange();
+        if (range is null) return;
+
+        var entries = QueryAll<Entry>(range.Value.Start, range.Value.End)
+            .Where(e => e.Level >= JournalMinLevel)
+            .OrderBy(e => e.Timestamp);
+
+        lock (_journalLock)
+        {
+            _journal.Clear();
+            _journal.AddRange(entries);
+        }
+    }
+
+    public void FillJournal(List<Entry> destination)
+    {
+        lock (_journalLock)
+        {
+            destination.Clear();
+            destination.AddRange(_journal);
+        }
     }
 
     public void AppendFrame(Frame frame)

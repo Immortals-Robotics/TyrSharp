@@ -17,6 +17,7 @@ public sealed partial class LogView(IDebugDb debugDb) : IDisposable
 {
     public static readonly string WindowTitle = $"{IconFonts.FontAwesome6.Terminal} Logs";
     [ConfigEntry(StorageType.User)] private static LogLevel LogLevel { get; set; } = LogLevel.Debug;
+    [ConfigEntry(StorageType.User)] private static bool JournalMode { get; set; } = false;
 
     private Utf8ValueStringBuilder _stringBuilder = ZString.CreateUtf8StringBuilder();
 
@@ -28,17 +29,26 @@ public sealed partial class LogView(IDebugDb debugDb) : IDisposable
     internal sealed class PreparedData
     {
         public List<Entry> Entries { get; } = [];
+        public List<Entry> JournalEntries { get; } = [];
 
         public void Reset()
         {
             Entries.Clear();
+            JournalEntries.Clear();
         }
     }
 
     internal void Prepare(PlaybackTime time, DebugFilterSnapshot filterSnapshot, PreparedData prepared)
     {
         prepared.Reset();
+        if (JournalMode)
+            PrepareJournal(time, filterSnapshot, prepared);
+        else
+            PreparePerFrame(time, filterSnapshot, prepared);
+    }
 
+    private void PreparePerFrame(PlaybackTime time, DebugFilterSnapshot filterSnapshot, PreparedData prepared)
+    {
         foreach (var module in debugDb.QueryModules())
         {
             if (!filterSnapshot.IsEnabled(module))
@@ -58,6 +68,31 @@ public sealed partial class LogView(IDebugDb debugDb) : IDisposable
 
                 prepared.Entries.Add(log);
             }
+        }
+    }
+
+    private readonly List<Entry> _journalBuffer = [];
+
+    private void PrepareJournal(PlaybackTime time, DebugFilterSnapshot filterSnapshot, PreparedData prepared)
+    {
+        debugDb.FillJournal(_journalBuffer);
+        var cutoffNs = time.Time.Nanoseconds;
+
+        // Binary search: find exclusive upper bound (first entry with Timestamp > cutoff)
+        int lo = 0, hi = _journalBuffer.Count;
+        while (lo < hi)
+        {
+            var mid = lo + (hi - lo) / 2;
+            if (_journalBuffer[mid].Timestamp.Nanoseconds <= cutoffNs) lo = mid + 1;
+            else hi = mid;
+        }
+
+        for (int i = 0; i < lo; i++)
+        {
+            var log = _journalBuffer[i];
+            if (log.Level < LogLevel) continue;
+            if (!filterSnapshot.IsEnabled(log.Meta)) continue;
+            prepared.JournalEntries.Add(log);
         }
     }
 
@@ -94,11 +129,13 @@ public sealed partial class LogView(IDebugDb debugDb) : IDisposable
 
                 ImGui.TableHeadersRow();
 
+                var sourceEntries = JournalMode ? prepared.JournalEntries : prepared.Entries;
+
                 var sortSpecs = ImGui.TableGetSortSpecs();
-                if (!sortSpecs.IsNull && sortSpecs.SpecsCount > 0 && prepared.Entries.Count > 1)
+                if (!sortSpecs.IsNull && sortSpecs.SpecsCount > 0 && sourceEntries.Count > 1)
                 {
                     var spec = sortSpecs.Specs[0];
-                    prepared.Entries.Sort((a, b) =>
+                    sourceEntries.Sort((a, b) =>
                     {
                         int result = spec.ColumnIndex switch
                         {
@@ -121,7 +158,7 @@ public sealed partial class LogView(IDebugDb debugDb) : IDisposable
                 DrawSearchAndFilterControls();
 
                 _filteredEntries.Clear();
-                foreach (var log in prepared.Entries)
+                foreach (var log in sourceEntries)
                 {
                     _filterTested += 1;
                     if (!_filter.PassFilter(log.Message) &&
@@ -251,6 +288,22 @@ public sealed partial class LogView(IDebugDb debugDb) : IDisposable
         {
             ImGui.TextDisabled($"{IconFonts.FontAwesome6.MagnifyingGlass}");
         }
+
+        ImGui.SameLine(0f, 10f);
+        ImGui.TextDisabled("|");
+
+        // journal mode toggle
+        ImGui.SameLine(0f, 10f);
+        var journalActive = JournalMode;
+        if (journalActive) ImGui.PushStyleColor(ImGuiCol.Button, Color.Sky700);
+        if (ImGui.Button($"{IconFonts.FontAwesome6.BookOpen} Journal##journal"))
+        {
+            JournalMode = !JournalMode;
+            Configurable.MarkChanged(StorageType.User);
+        }
+        if (journalActive) ImGui.PopStyleColor();
+        if (ImGui.IsItemHovered(ImGuiHoveredFlags.ForTooltip))
+            ImGui.SetTooltip("Journal mode: show all Information+ logs from session start to current time");
 
         ImGui.SameLine(0f, 10f);
         ImGui.TextDisabled("|");
