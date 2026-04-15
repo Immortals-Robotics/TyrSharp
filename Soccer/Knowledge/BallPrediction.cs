@@ -15,7 +15,8 @@ public class BallPrediction
         return Context.Ball.Extrapolate(Context.Ball.Timestamp + timeAhead).State;
     }
 
-    public float CalculateBallRobotReachTime(Robot.Robot robot, Angle angle, VelocityProfile profile, float waitTimeSeconds)
+    public float CalculateBallRobotReachTime(Robot.Robot robot, Angle angle, VelocityProfile profile,
+        float waitTimeSeconds)
     {
         for (var t = 0f; t < MaxReachTimeSeconds; t += 0.1f)
         {

@@ -56,6 +56,11 @@ public partial class Knowledge
         }
 
         BallPredictedPosition = BallPrediction.PredictBall(DefPredictionTime).Position;
+        BallPredictedPosition = BallPredictedPosition with
+        {
+            X = Math.Clamp(BallPredictedPosition.X, -Context.Field.Width + Context.Field.BallRadius, Context.Field.Width - Context.Field.BallRadius)
+        };
+        
         BallInExtendedPenaltyArea = Context.Field.ExtendedOwnPenaltyArea(PenaltyAreaExtensionSize).Inside(BallPredictedPosition);
 
         BallToOwnGoalLine = Line.FromTwoPoints(BallPredictedPosition, Context.Field.OwnGoal());

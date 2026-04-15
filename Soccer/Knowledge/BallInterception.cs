@@ -38,7 +38,7 @@ public partial class BallInterception
     private static float SpareTimeBufferSeconds { get; set; } = 0.3f;
 
     [ConfigEntry("Minimum spare time that GK has before ball arrives [s]")]
-    private static float GoalieSpareTimeBufferSeconds { get; set; } = 0.3f;
+    private static float GoalieSpareTimeBufferSeconds { get; set; } = 1f;
 
     [ConfigEntry("Objective bonus bias toward earlier interceptions [s]")]
     private static float EarlyInterceptionBonus { get; set; } = 2.0f;
@@ -155,7 +155,9 @@ public partial class BallInterception
         {
             var state = trajectory.GetState(DeltaTime.FromSeconds(t));
             var facingAngle = Context.Knowledge.BallReceiving.CalculateFacingAngle(state.Velocity.Xy(), fallbackAngle);
-            var rawDestination = Context.Knowledge.BallReceiving.GetCenterDestination(state.Position, facingAngle, centerToDribbler, ballRadius);
+            var rawDestination =
+                Context.Knowledge.BallReceiving.GetCenterDestination(state.Position, facingAngle, centerToDribbler,
+                    ballRadius);
             var destination = Context.Knowledge.BallReceiving.ClampToLegalDestination(
                 rawDestination,
                 fieldBounds,
@@ -245,7 +247,7 @@ public partial class BallInterception
                 continue;
             }
 
-            if (best == null || candidate.Objective < best.Value.Objective)
+            if (best == null || candidate.Objective > best.Value.Objective)
             {
                 best = candidate;
             }
@@ -281,11 +283,25 @@ public partial class BallInterception
         var slackTime = timeSeconds - reachTime;
 
         var spareTimePenalty = MathF.Max(0f, spareTime - slackTime);
+        if (isGoalie)
+        {
+            // Goalie objective is reverse
+            spareTimePenalty *= -1;
+        }
+
         var objective = MathF.Abs(slackTime) + spareTimePenalty - CalculateEarlyInterceptionBonus(timeSeconds);
 
-        if (previousPlan.HasValue && Vector2.DistanceSquared(destination, previousPlan.Value.CenterDestination) < HysteresisDistanceMm * HysteresisDistanceMm)
+        if (previousPlan.HasValue && Vector2.DistanceSquared(destination, previousPlan.Value.CenterDestination) <
+            HysteresisDistanceMm * HysteresisDistanceMm)
         {
-            objective -= HysteresisBonusSeconds;
+            if (isGoalie)
+            {
+                objective += HysteresisBonusSeconds;
+            }
+            else
+            {
+                objective -= HysteresisBonusSeconds;
+            }
         }
 
         return new InterceptPlan(

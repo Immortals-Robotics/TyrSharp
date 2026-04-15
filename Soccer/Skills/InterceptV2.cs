@@ -117,7 +117,7 @@ public sealed partial class InterceptV2 : ISkill
             ? _lastTargetAngle
             : robot.Position.AngleWith(ballPosition);
 
-        // Forced Line Blocking (Safety Fallback)
+        // Forced Line Blocking (Safety Fallback) 
         if (TryExecuteForcedReceive(robot, out var forcedReceive))
         {
             _hasTargetAngle = true;
