@@ -11,6 +11,8 @@ public class Stop : IPlay
         var roles = new List<Role.IRole>();
 
         roles.Add(new Role.Goalie());
+        roles.Add(new Role.Def(1));
+        roles.Add(new Role.Def(2));
         roles.Add(new Role.StopWall());
 
         var sortedZones = new Queue<Zone>();
@@ -20,9 +22,9 @@ public class Stop : IPlay
             sortedZones.Enqueue(zone);
         }
 
-        //TODO: This should exclude Goalie, attacker, defenders dynamically at some point 
+        // Subtract 4 (Goalie, Def1, Def2, StopWall)
         for (var i = 0;
-             i < Context.Knowledge.OwnRobotsCount - 2 &&
+             i < Context.Knowledge.OwnRobotsCount - 4 &&
              sortedZones.Count > 0;
              i++)
         {

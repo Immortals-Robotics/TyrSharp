@@ -33,6 +33,8 @@ public partial class Knowledge
     public Vector2? BallGoalLineIntersection { get; private set; }
     public Line BallToOwnGoalLine { get; private set; }
     public float BallToOwnGoalDistanceX { get; private set; }
+    public float BallToOwnGoalDistance { get; private set; }
+    public Angle BallOwnGoalAngle { get; private set; }
     public float BallOwnGoalAngleRaw { get; private set; }
 
     public Dictionary<int, int> MarkMap { get; } = [];
@@ -58,7 +60,9 @@ public partial class Knowledge
 
         BallToOwnGoalLine = Line.FromTwoPoints(BallPredictedPosition, Context.Field.OwnGoal());
         BallToOwnGoalDistanceX = MathF.Abs(BallPredictedPosition.X - Context.Field.OwnGoal().X);
-        BallOwnGoalAngleRaw = MathF.Abs(((Context.Field.OwnGoal() - BallPredictedPosition).ToAngle() - Angle.FromDeg(Context.SideSign == -1 ? 180f : 0f)).DegNormalized);
+        BallToOwnGoalDistance = Vector2.Distance(BallPredictedPosition, Context.Field.OwnGoal());
+        BallOwnGoalAngle = (Context.Field.OwnGoal() - BallPredictedPosition).ToAngle() - Angle.FromDeg(Context.SideSign == -1 ? 180f : 0f);
+        BallOwnGoalAngleRaw = MathF.Abs(BallOwnGoalAngle.DegNormalized);
 
         GoalieShouldDive = BallIsGoaling && BallOwnGoalReachTime < GoalieDiveMaximumTimeToReach && GoalieDiveAllowed;
         var maxBallSpeedForClear = GoalieMaxBallSpeedForClear;
