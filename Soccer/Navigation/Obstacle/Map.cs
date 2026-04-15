@@ -1,5 +1,6 @@
 using System.Numerics;
 using Tyr.Common.Config;
+using Tyr.Common.Debug;
 using Tyr.Common.Debug.Drawing;
 using Tyr.Common.Math.Shapes;
 using Tyr.Soccer.Navigation.Trajectory;
@@ -12,6 +13,8 @@ public partial class Map
     [ConfigEntry] private static float GridCellSize { get; set; } = 400f;
     [ConfigEntry] private static float MaxTrajectorySegmentLength { get; set; } = 125f;
     [ConfigEntry] private static float MinTrajectoryStepTime { get; set; } = 0.01f;
+
+    private static readonly string Layer = Meta.DebugLayer("Obstacles");
 
     private readonly List<ObstacleEntry> _obstacles = [];
     private readonly List<int> _candidateBuffer = [];
@@ -36,7 +39,14 @@ public partial class Map
     {
         _obstacles.Add(ObstacleEntry.From(circle, physicality));
         _indexDirty = true;
-        Draw.DrawCircle(circle, Color.Rose700.WithAlpha(0.5f));
+
+        Draw.DrawCircle(circle,
+            physicality == Physicality.Physical
+                ? Color.Rose700.WithAlpha(0.5f)
+                : Color.Violet500.WithAlpha(0.5f),
+            Options.Filled, Layer);
+
+        Draw.DrawCircle(circle, Color.Black, Options.Outline(), Layer);
     }
 
     public void AddCircle(Vector2 center, float radius, Physicality physicality)
@@ -48,7 +58,14 @@ public partial class Map
     {
         _obstacles.Add(ObstacleEntry.From(rect, physicality));
         _indexDirty = true;
-        Draw.DrawRectangle(rect, Color.Rose700.WithAlpha(0.5f));
+
+        Draw.DrawRectangle(rect,
+            physicality == Physicality.Physical
+                ? Color.Rose700.WithAlpha(0.5f)
+                : Color.Violet500.WithAlpha(0.5f),
+            Options.Filled, Layer);
+
+        Draw.DrawRectangle(rect, Color.Black, Options.Outline(), Layer);
     }
 
     public bool Inside(Vector2 point, float margin = 0.0f, Physicality physicality = Physicality.All)
@@ -521,7 +538,8 @@ public partial class Map
 
         private static bool SegmentCollidesRectangle(LineSegment segment, Rectangle rect, float margin)
         {
-            var expanded = Rectangle.FromCornerAndSize(rect.Min - new Vector2(margin), rect.Size + new Vector2(2f * margin));
+            var expanded =
+                Rectangle.FromCornerAndSize(rect.Min - new Vector2(margin), rect.Size + new Vector2(2f * margin));
             if (expanded.Inside(segment.Start) || expanded.Inside(segment.End))
                 return true;
 
