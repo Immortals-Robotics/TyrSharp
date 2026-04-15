@@ -21,6 +21,7 @@ public partial class Goalie : ITactic
     [ConfigEntry] private static float TightStartAngle { get; set; } = 25.0f;
     [ConfigEntry] private static float GoalieBoxNotch { get; set; } = 600.0f;
     [ConfigEntry] private static float GoalieDiveInterceptionOffset { get; set; } = 200.0f;
+    [ConfigEntry] private static float GoalieChip { get; set; } = 150.0f;
     [ConfigEntry] private static DeltaTime DiveHysteresisTime { get; set; } = DeltaTime.FromMilliseconds(100);
     [ConfigEntry] private static DeltaTime ClearHysteresisTime { get; set; } = DeltaTime.FromMilliseconds(300);
     public Robot.Robot Robot { get; private set; }
@@ -211,7 +212,8 @@ public partial class Goalie : ITactic
             {
                 Target = target,
                 VelocityProfile = profile,
-                NavigationFlags = GetNavigationFlags()
+                NavigationFlags = GetNavigationFlags(),
+                Chip = GoalieChip
             };
         }
 
@@ -233,7 +235,7 @@ public partial class Goalie : ITactic
             {
                 Angle = kickAngle,
                 Kick = 0f,
-                Chip = 150f,
+                Chip = GoalieChip,
                 IsGoalkeeper = true,
             };
         }
