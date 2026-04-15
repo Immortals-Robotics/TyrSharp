@@ -1,6 +1,7 @@
 using System.Numerics;
 using Tyr.Common.Config;
 using Tyr.Common.Math;
+using Tyr.Common.Time;
 using Tyr.Soccer.Robot;
 using Tyr.Soccer.Skills;
 using Tyr.Soccer.Tactics.Fsm;
@@ -12,9 +13,9 @@ public partial class CircleBall : ITactic
 {
     [ConfigEntry] private static float VeryFarBallDis { get; set; } = 600.0f;
     [ConfigEntry] private static float FarBallDis { get; set; } = 160.0f;
-    [ConfigEntry] private static int FarToNearHys { get; set; } = 5;
+    [ConfigEntry] private static DeltaTime FarToNearHys { get; set; } = DeltaTime.FromMilliseconds(50);
     [ConfigEntry] private static float NearAngleTol { get; set; } = 4.0f;
-    [ConfigEntry] private static int NearToKickHys { get; set; } = 3;
+    [ConfigEntry] private static DeltaTime NearToKickHys { get; set; } = DeltaTime.FromMilliseconds(30);
     [ConfigEntry] private static float ShmitCoeff { get; set; } = 1.2f;
     [ConfigEntry] private static float DefaultNearBallDis { get; set; } = 140.0f;
 
@@ -34,7 +35,6 @@ public partial class CircleBall : ITactic
     }
 
     private readonly Fsm<State> _fsm;
-    private readonly int[] _hysBank = new int[4];
 
     public CircleBall(Robot.Robot robot)
     {
@@ -52,19 +52,9 @@ public partial class CircleBall : ITactic
         _fsm.AddTransition(State.Far, State.VeryFar, () =>
             Vector2.Distance(Robot.Position, Context.Ball.State.Position) > VeryFarBallDis * ShmitCoeff);
 
-        _fsm.AddTransition(State.Far, State.Near, () =>
-        {
-            if (Vector2.Distance(Robot.Position, Context.Ball.State.Position) < FarBallDis)
-            {
-                _hysBank[0]++;
-            }
-            else
-            {
-                _hysBank[0] = 0;
-            }
-
-            return _hysBank[0] > FarToNearHys;
-        });
+        _fsm.AddTransition(State.Far, State.Near,
+            () => Vector2.Distance(Robot.Position, Context.Ball.State.Position) < FarBallDis,
+            FarToNearHys);
 
         _fsm.AddTransition(State.Near, State.Far, () =>
             Vector2.Distance(Robot.Position, Context.Ball.State.Position) > FarBallDis * ShmitCoeff);
@@ -75,17 +65,8 @@ public partial class CircleBall : ITactic
             var newToRobot = toRobot - TargetAngle;
             var deltaAngle = Angle.FromDeg(Math.Min(Math.Abs(newToRobot.DegNormalized), 30.0f));
 
-            if (Math.Abs(deltaAngle.Deg) < NearAngleTol)
-            {
-                _hysBank[1]++;
-            }
-            else
-            {
-                _hysBank[1] = 0;
-            }
-
-            return _hysBank[1] > NearToKickHys && (ShootPower > 0 || ChipPower > 0);
-        });
+            return Math.Abs(deltaAngle.Deg) < NearAngleTol && (ShootPower > 0 || ChipPower > 0);
+        }, NearToKickHys);
 
         _fsm.AddTransition(State.Kick, State.Far, () =>
             Vector2.Distance(Robot.Position, Context.Ball.State.Position) >
@@ -130,7 +111,10 @@ public partial class CircleBall : ITactic
     private sealed class FarState(CircleBall tactic) : IState<State>
     {
         public State Type => State.Far;
-        public void Enter() => tactic._hysBank[0] = 0;
+
+        public void Enter()
+        {
+        }
 
         public void Exit()
         {
@@ -154,7 +138,10 @@ public partial class CircleBall : ITactic
     private sealed class NearState(CircleBall tactic) : IState<State>
     {
         public State Type => State.Near;
-        public void Enter() => tactic._hysBank[1] = 0;
+
+        public void Enter()
+        {
+        }
 
         public void Exit()
         {

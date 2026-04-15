@@ -2,7 +2,7 @@
 
 namespace Tyr.Soccer.Tactics.Fsm;
 
-public interface IState<out TState> where TState : Enum
+public interface IState<out TState> where TState : struct, Enum
 {
     TState Type { get; }
     
