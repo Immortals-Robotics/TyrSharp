@@ -23,7 +23,7 @@ public partial class Def : ITactic
     [ConfigEntry] private static DeltaTime DiveHysteresisTime { get; set; } = DeltaTime.FromMilliseconds(100);
 
     public Robot.Robot Robot { get; }
-    public int DefId { get; }
+    private int DefId { get; }
 
     public enum State
     {
@@ -128,8 +128,11 @@ public partial class Def : ITactic
 
     private ISkill TickDive()
     {
-        var def1Pos = CalculateStaticPos(1);
-        var def2Pos = CalculateStaticPos(2);
+        var def1 = Context.OwnRobots.FirstOrDefault(r => r.Role is Role.Def d && d.DefId == 1);
+        var def2 = Context.OwnRobots.FirstOrDefault(r => r.Role is Role.Def d && d.DefId == 2);
+
+        var def1Pos = def1?.Position ?? CalculateStaticPos(1);
+        var def2Pos = def2?.Position ?? CalculateStaticPos(2);
 
         var ballLine = Line.FromPointAndAngle(Context.Ball.State.Position, Context.Ball.State.Velocity.Xy().ToAngle());
         var oneTouch1 = ballLine.ClosestPoint(def1Pos);
@@ -157,6 +160,8 @@ public partial class Def : ITactic
             {
                 target = oneTouch1;
                 chip = 150f;
+                Draw.DrawPoint(oneTouch1, Color.Yellow, options: Options.Outline());
+                Draw.DrawCircle(Robot.Position, Context.Field.RobotRadius * 2.0f, Color.Red, options: Options.Outline());
             }
             else
             {
@@ -171,6 +176,8 @@ public partial class Def : ITactic
             {
                 target = oneTouch2;
                 chip = 150f;
+                Draw.DrawPoint(oneTouch2, Color.Yellow, options: Options.Outline());
+                Draw.DrawCircle(Robot.Position, Context.Field.RobotRadius * 2.0f, Color.Red, options: Options.Outline());
             }
             else
             {
