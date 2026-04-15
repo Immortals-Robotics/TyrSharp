@@ -53,8 +53,9 @@ internal sealed class SwitchableDebugDb(IDebugDb source) : IDebugDb
     (Timestamp Start, Timestamp End)? IDebugDb.GetFrameAt(string module, Timestamp t)
         => _source.GetFrameAt(module, t);
 
-    void IDebugDb.FillJournal(List<Tyr.Common.Debug.Logging.Entry> destination)
+    void IDebugDb.FillJournal(List<Tyr.Common.Debug.Db.JournalGroup> destination)
         => _source.FillJournal(destination);
+    void IDebugDb.RebuildJournal(bool group) => _source.RebuildJournal(group);
 
     void IDisposable.Dispose()
     {

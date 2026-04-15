@@ -68,10 +68,10 @@ public partial class Camera(uint id)
         // frame id
         if (FrameId != 0 && frame.FrameNumber == FrameId)
         {
-            Log.ZLogWarning($"Camera {Id} received duplicate frame id {frame.FrameNumber}");
+            Log.ZLogWarning($"Camera {Id} received duplicate frame id");
             return;
         }
-        
+
         var expectedFrameId = FrameId == 0 ? frame.FrameNumber : FrameId + 1;
         if (frame.FrameNumber != expectedFrameId)
         {
@@ -187,7 +187,7 @@ public partial class Camera(uint id)
                 }
 
                 tracker = filteredRobot != null
-                    ? new RobotTracker(this, robot, filteredRobot.Value, color) // on a different camera already 
+                    ? new RobotTracker(this, robot, filteredRobot.Value, color) // on a different camera already
                     : new RobotTracker(this, robot, color); // completely new robot on the field
 
 

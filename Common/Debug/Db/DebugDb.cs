@@ -31,9 +31,11 @@ public sealed class DebugDb : IDebugDb
     private readonly ConcurrentDictionary<int, Meta> _sourceLocationCache = new();
     private readonly ConcurrentDictionary<int, ModuleFrameIndex> _frameIndices = new();
     private readonly Lock _internLock = new();
-    private readonly List<Entry> _journal = [];
+    private readonly List<JournalGroup> _journal = [];
+    private readonly Dictionary<(Meta Meta, string Message, LogLevel Level), int> _journalIndex = new();
     private readonly Lock _journalLock = new();
     private const LogLevel JournalMinLevel = LogLevel.Information;
+    private bool _groupJournalEntries = true;
 
     [ThreadStatic] private static ArrayBufferWriter<byte>? _serializeBuffer;
 
@@ -143,8 +145,25 @@ public sealed class DebugDb : IDebugDb
         if (entry is Entry logEntry && logEntry.Level >= JournalMinLevel)
         {
             lock (_journalLock)
-                _journal.Add(logEntry);
+                AddToJournal(logEntry);
         }
+    }
+
+    // Must be called under _journalLock.
+    private void AddToJournal(Entry entry)
+    {
+        if (_groupJournalEntries)
+        {
+            var key = (entry.Meta, entry.Message, entry.Level);
+            if (_journalIndex.TryGetValue(key, out var idx))
+            {
+                var g = _journal[idx];
+                _journal[idx] = g with { Count = g.Count + 1, LastTime = entry.Timestamp };
+                return;
+            }
+            _journalIndex[key] = _journal.Count;
+        }
+        _journal.Add(new JournalGroup(entry, 1, entry.Timestamp));
     }
 
     public IEnumerable<T> Query<T>(string module, Timestamp t0, Timestamp t1, string? shardKey = null, int? maxCount = null) where T : struct, IEntry
@@ -597,7 +616,7 @@ public sealed class DebugDb : IDebugDb
         return _sources.Get(id, _strings);
     }
 
-    public void BuildJournal()
+    public void BuildJournal(bool group = true)
     {
         var range = GetFrameRange();
         if (range is null) return;
@@ -608,12 +627,17 @@ public sealed class DebugDb : IDebugDb
 
         lock (_journalLock)
         {
+            _groupJournalEntries = group;
             _journal.Clear();
-            _journal.AddRange(entries);
+            _journalIndex.Clear();
+            foreach (var e in entries)
+                AddToJournal(e);
         }
     }
 
-    public void FillJournal(List<Entry> destination)
+    public void RebuildJournal(bool group) => BuildJournal(group);
+
+    public void FillJournal(List<JournalGroup> destination)
     {
         lock (_journalLock)
         {
