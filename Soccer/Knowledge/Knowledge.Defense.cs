@@ -16,6 +16,7 @@ public partial class Knowledge
     [ConfigEntry] public static DeltaTime DefPredictionTime { get; set; } = DeltaTime.FromMilliseconds(150);
     [ConfigEntry] public static float GoalieDiveMaximumTimeToReach { get; set; } = 3.0f;
     [ConfigEntry] public static float GoalieMaxBallSpeedForClear { get; set; } = 1000;
+    [ConfigEntry] public static float PenaltyAreaExtensionSize { get; set; } = 200.0f;
 
     private Common.Data.Ssl.Gc.Command? _lastRefCommand;
     private Common.Time.Timestamp _oppRestartTimestamp;
@@ -30,6 +31,9 @@ public partial class Knowledge
     public Vector2 BallPredictedPosition { get; private set; }
     public bool BallInExtendedPenaltyArea { get; private set; }
     public Vector2? BallGoalLineIntersection { get; private set; }
+    public Line BallToOwnGoalLine { get; private set; }
+    public float BallToOwnGoalDistanceX { get; private set; }
+    public float BallOwnGoalAngleRaw { get; private set; }
 
     public Dictionary<int, int> MarkMap { get; } = [];
 
@@ -50,7 +54,11 @@ public partial class Knowledge
         }
 
         BallPredictedPosition = BallPrediction.PredictBall(DefPredictionTime).Position;
-        BallInExtendedPenaltyArea = Context.Field.ExtendedOwnPenaltyArea().Inside(BallPredictedPosition);
+        BallInExtendedPenaltyArea = Context.Field.ExtendedOwnPenaltyArea(PenaltyAreaExtensionSize).Inside(BallPredictedPosition);
+
+        BallToOwnGoalLine = Line.FromTwoPoints(BallPredictedPosition, Context.Field.OwnGoal());
+        BallToOwnGoalDistanceX = MathF.Abs(BallPredictedPosition.X - Context.Field.OwnGoal().X);
+        BallOwnGoalAngleRaw = MathF.Abs(((Context.Field.OwnGoal() - BallPredictedPosition).ToAngle() - Angle.FromDeg(Context.SideSign == -1 ? 180f : 0f)).DegNormalized);
 
         GoalieShouldDive = BallIsGoaling && BallOwnGoalReachTime < GoalieDiveMaximumTimeToReach && GoalieDiveAllowed;
         var maxBallSpeedForClear = GoalieMaxBallSpeedForClear;

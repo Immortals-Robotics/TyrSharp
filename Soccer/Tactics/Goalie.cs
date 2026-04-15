@@ -18,6 +18,7 @@ namespace Tyr.Soccer.Tactics;
 public partial class Goalie : ITactic
 {
     [ConfigEntry] private static float TightStartAngle { get; set; } = 25.0f;
+    [ConfigEntry] private static float GoalieBoxNotch { get; set; } = 600.0f;
     [ConfigEntry] private static DeltaTime DiveHysteresisTime { get; set; } = DeltaTime.FromMilliseconds(100);
     [ConfigEntry] private static DeltaTime ClearHysteresisTime { get; set; } = DeltaTime.FromMilliseconds(300);
     public Robot.Robot Robot { get; private set; }
@@ -98,26 +99,18 @@ public partial class Goalie : ITactic
 
         public ISkill Tick()
         {
-            const float AreaNotch = 600.0f;
             float penaltyAreaHalfWidth = Context.Field.PenaltyAreaWidth / 2.0f;
 
-            var goalLine = Line.FromTwoPoints(Context.Field.OwnGoal() - new Vector2(0, 1000f),
-                                              Context.Field.OwnGoal() + new Vector2(0, 1000f));
-            float ballPositionEffect = goalLine.Distance(Context.Knowledge.BallPredictedPosition);
+            float ballPositionEffect = Context.Knowledge.BallToOwnGoalDistanceX;
             float startAngEffect = TightStartAngle;
 
-            var ballAngleRaw = MathF.Abs(((Context.Field.OwnGoal() - Context.Knowledge.BallPredictedPosition).ToAngle() - Angle.FromDeg(Context.SideSign == -1 ? 180f : 0f)).DegNormalized);
-            var ballAngle = Math.Clamp(ballAngleRaw - (90f - startAngEffect), 0f, startAngEffect);
+            var ballAngle = Math.Clamp(Context.Knowledge.BallOwnGoalAngleRaw - (90f - startAngEffect), 0f, startAngEffect);
 
-            var gkMaxDist = penaltyAreaHalfWidth - AreaNotch;
+            var gkMaxDist = penaltyAreaHalfWidth - GoalieBoxNotch;
             var ballAngEffect = gkMaxDist - ((gkMaxDist - (Context.Field.GoalWidth / 2f - Context.RobotRadius)) / startAngEffect) * ballAngle;
 
-            float gkTargetW = -Context.SideSign * MathF.Min(Context.Field.PenaltyAreaDepth - AreaNotch, ballPositionEffect);
-            float gkTargetH = Context.Field.PenaltyAreaWidth - 2 * AreaNotch;
-            var gkTargetAreaStart = new Vector2(Context.Field.OwnGoal().X, -(penaltyAreaHalfWidth - AreaNotch));
-
-            var gkTargetRect = Rectangle.FromCornerAndSize(gkTargetAreaStart, gkTargetW, gkTargetH);
-            var ballGoalLine = Line.FromTwoPoints(Context.Knowledge.BallPredictedPosition, Context.Field.OwnGoal());
+            var gkTargetRect = Context.Field.ExtendedOwnPenaltyArea(-GoalieBoxNotch);
+            var ballGoalLine = Context.Knowledge.BallToOwnGoalLine;
 
             var (i0, i1) = Geometry.Intersection(gkTargetRect, ballGoalLine);
             var gkFinalPos = Context.Field.OwnGoal();
@@ -151,7 +144,7 @@ public partial class Goalie : ITactic
                 }
             }
 
-            float safeX = Context.Field.OwnGoal().X - (Context.SideSign * (Context.RobotRadius + 20f));
+            float safeX = Context.Field.OwnGoalSafeX();
             if (MathF.Abs(gkFinalPos.X * Context.SideSign) >= MathF.Abs(safeX * Context.SideSign))
             {
                 gkFinalPos.X = safeX;
