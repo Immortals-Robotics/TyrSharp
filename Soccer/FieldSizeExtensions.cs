@@ -26,6 +26,15 @@ public static class FieldSizeExtensions
         return new LineSegment() { Start = field.OwnGoalPostBottom(), End = field.OwnGoalPostTop() };
     }
 
+    public static LineSegment OwnGoalLineExtended(this FieldSize field, float extensionSize)
+    {
+        return new LineSegment()
+        {
+            Start = field.OwnGoalPostBottom() - new Vector2(0, extensionSize),
+            End = field.OwnGoalPostTop() + new Vector2(0, extensionSize)
+        };
+    }
+
     public static Vector2 OppGoal(this FieldSize field)
     {
         return new Vector2(-Context.SideSign * field.Width, 0);
@@ -65,7 +74,8 @@ public static class FieldSizeExtensions
     public static Rectangle ExtendedOwnPenaltyArea(this FieldSize field, float extensionSize, float goalLineOffset = 0f)
     {
         float penaltyAreaHalfWidth = field.PenaltyAreaWidth / 2.0f;
-        var start = new Vector2(field.OwnGoal().X - Context.SideSign * goalLineOffset, -(penaltyAreaHalfWidth + extensionSize));
+        var start = new Vector2(field.OwnGoal().X - Context.SideSign * goalLineOffset,
+            -(penaltyAreaHalfWidth + extensionSize));
         float w = -Context.SideSign * (field.PenaltyAreaDepth + extensionSize - goalLineOffset);
         float h = field.PenaltyAreaWidth + 2 * extensionSize;
         return Rectangle.FromCornerAndSize(start, w, h);

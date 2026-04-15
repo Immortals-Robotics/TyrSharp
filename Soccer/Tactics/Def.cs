@@ -82,6 +82,25 @@ public partial class Def : ITactic
 
         var virtualDefenseArea = Context.Field.ExtendedOwnPenaltyArea(areaExtensionSize);
 
+        if (virtualDefenseArea.Inside(predictedBall))
+        {
+            var biggerArea = Context.Field.ExtendedOwnPenaltyArea(areaExtensionSize + Context.Field.RobotRadius);
+            var (v1, v2) = Geometry.Intersection(biggerArea, Context.Knowledge.BallToOwnGoalLine);
+            var ownGoal = Context.Field.OwnGoal();
+            if (v1.HasValue)
+            {
+                predictedBall = v1.Value;
+            }
+
+            if (v2.HasValue)
+            {
+                if (Vector2.Distance(v2.Value, ownGoal) > Vector2.Distance(predictedBall, ownGoal))
+                {
+                    predictedBall = v2.Value;
+                }
+            }
+        }
+
         var ballAngle = Context.Knowledge.BallOwnGoalAngle;
         var ballAngleClamped = Math.Clamp(Context.Knowledge.BallOwnGoalAngleRaw - (90f - TightStartAngle), 0f,
             TightStartAngle);
@@ -106,7 +125,6 @@ public partial class Def : ITactic
             }
         }
 
-        Draw.DrawLine(targetLine, Color.Yellow, options: Options.Outline());
         var (i1, i2) = Geometry.Intersection(virtualDefenseArea, targetLine);
         var finalPos =
             (Vector2.Normalize(predictedBall - Context.Field.OwnGoal()) *
@@ -168,8 +186,7 @@ public partial class Def : ITactic
             {
                 target = oneTouch1;
                 chip = 150f;
-                Draw.DrawPoint(oneTouch1, Color.Yellow, options: Options.Outline());
-                Draw.DrawCircle(Robot.Position, Context.Field.RobotRadius * 2.0f, Color.Red,
+                Draw.DrawCircle(oneTouch1, Context.Field.RobotRadius * 2.0f, Color.Red,
                     options: Options.Outline());
             }
             else
@@ -178,6 +195,8 @@ public partial class Def : ITactic
                 var nearestToTangent = tangent.ClosestPoint(Robot.Position);
                 target = oneTouch1 + Vector2.Normalize(nearestToTangent - oneTouch1) *
                     (Context.Field.RobotRadius * 2.0f);
+                Draw.DrawCircle(target, Context.Field.RobotRadius * 2.0f, Color.Yellow,
+                    options: Options.Outline());
             }
         }
         else
@@ -186,8 +205,7 @@ public partial class Def : ITactic
             {
                 target = oneTouch2;
                 chip = 150f;
-                Draw.DrawPoint(oneTouch2, Color.Yellow, options: Options.Outline());
-                Draw.DrawCircle(Robot.Position, Context.Field.RobotRadius * 2.0f, Color.Red,
+                Draw.DrawCircle(oneTouch2, Context.Field.RobotRadius * 2.0f, Color.Red,
                     options: Options.Outline());
             }
             else
@@ -196,11 +214,10 @@ public partial class Def : ITactic
                 var nearestToTangent = tangent.ClosestPoint(Robot.Position);
                 target = oneTouch2 + Vector2.Normalize(nearestToTangent - oneTouch2) *
                     (Context.Field.RobotRadius * 2.0f);
+                Draw.DrawCircle(target, Context.Field.RobotRadius * 2.0f, Color.Yellow,
+                    options: Options.Outline());
             }
         }
-
-        Draw.DrawCircle(oneTouch1, 50f, Color.Yellow, options: Options.Outline());
-        Draw.DrawCircle(oneTouch2, 50f, Color.Yellow, options: Options.Outline());
 
         return new DiveSkill
         {
