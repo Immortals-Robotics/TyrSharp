@@ -18,7 +18,7 @@ public class DiveSkill : ISkill
         robot.Face(Context.Ball.State.Position);
         robot.Navigate(Target, VelocityProfile, NavigationFlags);
         
-        if (Kick > 0) robot.Kick = Kick;
+        if (Kick > 0) robot.Shoot = Kick;
         if (Chip > 0) robot.Chip = Chip;
     }
 }
