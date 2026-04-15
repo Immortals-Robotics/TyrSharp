@@ -218,20 +218,6 @@ public partial class Goalie : ITactic
         public void Exit() { }
     }
 
-    private class DiveSkill : ISkill
-    {
-        public required Vector2 Target { get; init; }
-        public required VelocityProfile VelocityProfile { get; init; }
-        public NavigationFlags NavigationFlags { get; init; }
-
-        public void Execute(Robot.Robot robot)
-        {
-            robot.Face(Context.Ball.State.Position);
-            robot.Navigate(Target, VelocityProfile, NavigationFlags);
-            robot.Chip = 150f;
-        }
-    }
-
     private sealed class ClearState : IState<State>
     {
         public State Type => State.Clear;
