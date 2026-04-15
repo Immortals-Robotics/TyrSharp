@@ -10,6 +10,7 @@ public class Stop : IPlay
     {
         var roles = new List<Role.IRole>();
 
+        roles.Add(new Role.Goalie());
         roles.Add(new Role.StopWall());
 
         var sortedZones = new Queue<Zone>();
@@ -20,7 +21,7 @@ public class Stop : IPlay
         }
 
         for (var i = 0;
-             i < Context.Knowledge.OwnRobotsCount - 1 &&
+             i < Context.Knowledge.OwnRobotsCount - 2 &&
              sortedZones.Count > 0;
              i++)
         {
