@@ -11,7 +11,7 @@ public class Supporter(Robot.Robot robot) : ITactic
 
     public ISkill Tick() => new GoToPoint()
     {
-        Target = Zone.BestPos,
+        Target = Zone.BestPosOffence,
         LookAt = Context.Ball.State.Position
     };
 }

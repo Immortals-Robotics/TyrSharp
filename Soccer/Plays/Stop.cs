@@ -17,7 +17,7 @@ public class Stop : IPlay
 
         var sortedZones = new Queue<Zone>();
         sortedZones.Clear();
-        foreach (var zone in Context.Knowledge.Zones.OrderByDescending(z => z.Score))
+        foreach (var zone in Context.Knowledge.Zones.OrderByDescending(z => z.ScoreOffense))
         {
             sortedZones.Enqueue(zone);
         }

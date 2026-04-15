@@ -14,28 +14,36 @@ public partial class Zone
     [ConfigEntry] public static int ZoneCountY { get; set; } = 4;
 
     public Rectangle Rect { get; init; }
-    public Vector2 BestPos { get; private set; }
-    public double Score { get; private set; }
 
-    public void UpdateScore(bool isDefending)
+    public Vector2 BestPosDefence { get; private set; }
+    public Vector2 BestPosOffence { get; private set; }
+
+    public double ScoreDefense { get; private set; }
+    public double ScoreOffense { get; private set; }
+
+
+    public void UpdateScore()
     {
-        BestPos = Rect.Center;
-        Score = -1f;
+        BestPosDefence = Rect.Center;
+        BestPosOffence = Rect.Center;
+
+        ScoreDefense = -1f;
+        ScoreOffense = -1f;
 
         if (Context.Field.OwnPenaltyArea().Inside(Rect.Center) || Context.Field.OppPenaltyArea().Inside(Rect.Center))
         {
             return;
         }
 
-        if (Rect.Inside(Context.Ball.State.Position))
+        if (Context.Referee.GameState == GameState.Kickoff && Rect.Center.X < 0f)
         {
-            Score = 0f;
             return;
         }
 
-
-        if (Context.Referee.GameState == GameState.Kickoff && Rect.Center.X < 0f)
+        if (Rect.Inside(Context.Ball.State.Position))
         {
+            ScoreDefense = 0f;
+            ScoreOffense = 0f;
             return;
         }
 
@@ -47,165 +55,169 @@ public partial class Zone
 
         if (ourRobotsInside > 2)
         {
-            Score = 0;
+            ScoreDefense = 0;
+            ScoreOffense = 0;
             return;
         }
 
-        if (isDefending)
-            ScoreDefense();
-        else
-            ScoreOffense();
+
+        ScoreDefense = CalculateScoreDefense(BestPosDefence);
+        ScoreOffense = CalculateScoreOffense(BestPosOffence);
     }
 
     public void DrawZone()
     {
-        var zoneColor = GetZoneScoreColor(Score);
+        var zoneColor = ScoreOffense > ScoreDefense
+            ? GetZoneScoreColor(ScoreOffense, OffensePalette)
+            : GetZoneScoreColor(ScoreDefense, DefensePalette);
         Draw.DrawRectangle(Rect, zoneColor, Options.Filled);
     }
 
-    void ScoreDefense()
+    private static float CalculateScoreDefense(Vector2 point)
     {
-        var oppDisToGoal = Vector2.Distance(BestPos, Context.Field.OwnGoal());
+        var oppDisToGoal = Vector2.Distance(point, Context.Field.OwnGoal());
 
-        var post1Angle = BestPos.AngleWith(Context.Field.OwnGoalPostBottom());
-        var post2Angle = BestPos.AngleWith(Context.Field.OwnGoalPostTop());
+        var post1Angle = point.AngleWith(Context.Field.OwnGoalPostBottom());
+        var post2Angle = point.AngleWith(Context.Field.OwnGoalPostTop());
 
         var oppOpenAngleToGoal = Math.Abs((post2Angle - post1Angle).Deg);
 
-        var oppToBall = Vector2.Normalize(Context.Ball.State.Position - BestPos);
-        var oppToGoal = Vector2.Normalize(Context.Field.OwnGoal() - BestPos);
+        var oppToBall = Vector2.Normalize(Context.Ball.State.Position - point);
+        var oppToGoal = Vector2.Normalize(Context.Field.OwnGoal() - point);
 
         var oneTouchDot = Vector2.Dot(oppToBall, oppToGoal);
 
-        var scoreGoalDis = 0.0d;
-        if (oppDisToGoal < 3000)
-            scoreGoalDis = 1.0d;
+        float scoreGoalDis;
+        if (oppDisToGoal < 3000f)
+            scoreGoalDis = 1f;
         else
-            scoreGoalDis = 1.0d - Math.Pow(Math.Max(0.0d, (oppDisToGoal - 3000.0d) / 3000.0d), 0.5d);
+            scoreGoalDis = 1f - MathF.Pow(Math.Max(0f, (oppDisToGoal - 3000f) / 3000f), 0.5f);
 
-        var ballToOppDis = Vector2.Distance(Context.Ball.State.Position, BestPos);
+        var ballToOppDis = Vector2.Distance(Context.Ball.State.Position, point);
 
-        if (ballToOppDis < 400)
+        if (ballToOppDis < 400f)
         {
-            Score = -1.0d;
-            return;
+            return -1f;
         }
 
         var scoreBallDis = ballToOppDis switch
         {
-            < 2000 => Math.Pow(ballToOppDis / 2000.0d, 2.0d),
-            < 6000 => 1.0d,
-            _ => 1.0d - (ballToOppDis - 6000.0d) / 6000.0d
+            < 2000 => MathF.Pow(ballToOppDis / 2000f, 2f),
+            < 6000 => 1f,
+            _ => 1f - (ballToOppDis - 6000f) / 6000f
         };
 
-        var scoreOpenAngle = oppOpenAngleToGoal / 15.0d;
+        var scoreOpenAngle = oppOpenAngleToGoal / 15f;
 
-        var scoreOneTouchAngle = 0.0d;
+        float scoreOneTouchAngle;
 
-        if (oneTouchDot >= 0.0d)
-            scoreOneTouchAngle = 4 * oneTouchDot - 4 * Math.Pow(oneTouchDot, 2.0d);
+        if (oneTouchDot >= 0f)
+            scoreOneTouchAngle = 4f * oneTouchDot - 4f * MathF.Pow(oneTouchDot, 2f);
         else
-            scoreOneTouchAngle = 0.0d;
+            scoreOneTouchAngle = 0f;
 
-        scoreGoalDis = Math.Clamp(scoreGoalDis, 0.0d, 1.0d);
-        scoreBallDis = Math.Clamp(scoreBallDis, 0.0d, 1.0d);
-        scoreOpenAngle = Math.Clamp(scoreOpenAngle, 0.0d, 1.0d);
-        scoreOneTouchAngle = Math.Clamp(scoreOneTouchAngle, 0.0d, 1.0d);
+        scoreGoalDis = Math.Clamp(scoreGoalDis, 0f, 1f);
+        scoreBallDis = Math.Clamp(scoreBallDis, 0f, 1f);
+        scoreOpenAngle = Math.Clamp(scoreOpenAngle, 0f, 1f);
+        scoreOneTouchAngle = Math.Clamp(scoreOneTouchAngle, 0f, 1f);
 
         var finalScoreOneTouch =
             scoreOneTouchAngle * Math.Min(scoreBallDis * scoreGoalDis, scoreOpenAngle);
         var finalScoreTurnShoot = Math.Min(scoreBallDis * scoreGoalDis, scoreOpenAngle);
 
-        Score = Math.Max(finalScoreOneTouch, finalScoreTurnShoot);
+        return Math.Max(finalScoreOneTouch, finalScoreTurnShoot);
     }
 
-    void ScoreOffense()
+    private static float CalculateScoreOffense(Vector2 point)
     {
-        var posBallLine = Line.FromTwoPoints(Context.Ball.State.Position, BestPos);
+        var posBallLine = Line.FromTwoPoints(Context.Ball.State.Position, point);
         var goalLine = Line.FromSegment(Context.Field.OppGoalLine());
         var goalIntersection = Geometry.Intersection(posBallLine, goalLine);
 
-        var dot = Vector2.Dot(Vector2.Normalize(BestPos - Context.Ball.State.Position),
+        var dot = Vector2.Dot(Vector2.Normalize(point - Context.Ball.State.Position),
             Vector2.Normalize(Context.Field.OppGoal() - Context.Ball.State.Position));
 
         if (dot > 0 && goalIntersection.HasValue && Math.Abs(goalIntersection.Value.Y) < Context.Field.GoalWidth / 2.0f)
         {
-            Score = 0;
-            return;
+            return 0f;
         }
 
-        var oppDisToGoal = Vector2.Distance(BestPos, Context.Field.OppGoal());
+        var oppDisToGoal = Vector2.Distance(point, Context.Field.OppGoal());
 
-        var post1Angle = BestPos.AngleWith(Context.Field.OppGoalPostBottom());
-        var post2Angle = BestPos.AngleWith(Context.Field.OppGoalPostTop());
+        var post1Angle = point.AngleWith(Context.Field.OppGoalPostBottom());
+        var post2Angle = point.AngleWith(Context.Field.OppGoalPostTop());
 
         var oppOpenAngleToGoal = Math.Abs((post2Angle - post1Angle).Deg);
 
-        var oppToBall = Vector2.Normalize(Context.Ball.State.Position - BestPos);
-        var oppToGoal = Vector2.Normalize(Context.Field.OppGoal() - BestPos);
+        var oppToBall = Vector2.Normalize(Context.Ball.State.Position - point);
+        var oppToGoal = Vector2.Normalize(Context.Field.OppGoal() - point);
 
         var oneTouchDot = Vector2.Dot(oppToBall, oppToGoal);
 
-        var scoreGoalDis = 0.0d;
+        float scoreGoalDis;
         if (oppDisToGoal < 3000)
-            scoreGoalDis = 1.0d;
+            scoreGoalDis = 1f;
         else
-            scoreGoalDis = 1.0d - Math.Pow(Math.Max(0.0d, (oppDisToGoal - 3000.0d) / 3000.0d), 0.5d);
+            scoreGoalDis = 1f - MathF.Pow(Math.Max(0f, (oppDisToGoal - 3000f) / 3000f), 0f);
 
-        var ballToOppDis = Vector2.Distance(Context.Ball.State.Position, BestPos);
+        var ballToOppDis = Vector2.Distance(Context.Ball.State.Position, point);
 
         var scoreBallDis = ballToOppDis switch
         {
-            < 2000 => Math.Pow(ballToOppDis / 2000.0d, 2.0d),
-            < 6000 => 1.0d,
-            _ => 1.0d - (ballToOppDis - 6000.0d) / 6000.0d
+            < 2000f => MathF.Pow(ballToOppDis / 2000f, 2f),
+            < 6000f => 1f,
+            _ => 1f - (ballToOppDis - 6000f) / 6000f
         };
 
-        var scoreOpenAngle = oppOpenAngleToGoal / 15.0d;
+        var scoreOpenAngle = oppOpenAngleToGoal / 15f;
 
-        var scoreOneTouchAngle = 0.0d;
+        float scoreOneTouchAngle;
 
-        if (oneTouchDot >= 0.0d)
-            scoreOneTouchAngle = 4 * oneTouchDot - 4 * Math.Pow(oneTouchDot, 2.0d);
+        if (oneTouchDot >= 0f)
+            scoreOneTouchAngle = 4f * oneTouchDot - 4f * MathF.Pow(oneTouchDot, 2f);
         else
-            scoreOneTouchAngle = 0.0d;
+            scoreOneTouchAngle = 0f;
 
-        scoreGoalDis = Math.Clamp(scoreGoalDis, 0.0d, 1.0d);
-        scoreBallDis = Math.Clamp(scoreBallDis, 0.0d, 1.0d);
-        scoreOpenAngle = Math.Clamp(scoreOpenAngle, 0.0d, 1.0d);
-        scoreOneTouchAngle = Math.Clamp(scoreOneTouchAngle, 0.0d, 1.0d);
+        scoreGoalDis = Math.Clamp(scoreGoalDis, 0f, 1f);
+        scoreBallDis = Math.Clamp(scoreBallDis, 0f, 1f);
+        scoreOpenAngle = Math.Clamp(scoreOpenAngle, 0f, 1f);
+        scoreOneTouchAngle = Math.Clamp(scoreOneTouchAngle, 0f, 1f);
 
         var passAngleOk = Vector2.Dot(
-            Vector2.Normalize(BestPos - Context.Ball.State.Position),
-            Vector2.Normalize(Context.Field.OwnGoal() - Context.Ball.State.Position)) < 0.85d;
-        var ownGoalAngleScore = passAngleOk ? 1.0d : 0.0d;
+            Vector2.Normalize(point - Context.Ball.State.Position),
+            Vector2.Normalize(Context.Field.OwnGoal() - Context.Ball.State.Position)) < 0.85f;
+        var ownGoalAngleScore = passAngleOk ? 1f : 0f;
 
         var finalScoreOneTouch = ownGoalAngleScore * scoreOneTouchAngle *
                                  Math.Min(scoreBallDis * scoreGoalDis, scoreOpenAngle);
         var finalScoreTurnShoot = Math.Min(scoreBallDis * scoreGoalDis, scoreOpenAngle);
 
 
-        Score = Math.Max(finalScoreOneTouch, finalScoreTurnShoot);
+        return Math.Max(finalScoreOneTouch, finalScoreTurnShoot);
     }
 
-    private static readonly Color[] ZoneScorePalette =
+    private static readonly Color[] DefensePalette =
     [
         Color.Blue500,
         Color.Cyan500,
-        Color.Lime500,
+        Color.Teal500,
+    ];
+
+    private static readonly Color[] OffensePalette =
+    [
         Color.Yellow500,
         Color.Orange500,
         Color.Red500,
     ];
 
-    private static Color GetZoneScoreColor(double score)
+    private static Color GetZoneScoreColor(double score, Color[] palette)
     {
         var clampedScore = Math.Clamp(score, 0f, 1f);
-        var scaledScore = clampedScore * (ZoneScorePalette.Length - 1);
+        var scaledScore = clampedScore * (palette.Length - 1);
         var lowerIndex = (int)Math.Floor(scaledScore);
-        var upperIndex = Math.Min(lowerIndex + 1, ZoneScorePalette.Length - 1);
+        var upperIndex = Math.Min(lowerIndex + 1, palette.Length - 1);
         var blend = (float)(scaledScore - lowerIndex);
-        var baseColor = BlendColor(ZoneScorePalette[lowerIndex], ZoneScorePalette[upperIndex], blend);
+        var baseColor = BlendColor(palette[lowerIndex], palette[upperIndex], blend);
 
         return baseColor.WithAlpha((float)(0.5 * clampedScore));
     }

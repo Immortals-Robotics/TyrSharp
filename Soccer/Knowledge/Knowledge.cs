@@ -21,7 +21,7 @@ public partial class Knowledge
 
         foreach (var zone in Context.Knowledge.Zones)
         {
-            zone.UpdateScore(false);
+            zone.UpdateScore();
             zone.DrawZone();
         }
     }
