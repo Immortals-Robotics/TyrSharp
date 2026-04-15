@@ -296,18 +296,10 @@ public sealed class PlaybackSessionManager : IDisposable
     private void BackgroundLoop()
     {
         var ct = _cts.Token;
-        int refreshCounter = 0;
         while (!ct.IsCancellationRequested)
         {
             try
             {
-                // Discovery every 30s
-                if (++refreshCounter >= 30)
-                {
-                    RefreshSessions();
-                    refreshCounter = 0;
-                }
-
                 if (Tyr.Gui.Views.SessionsView.AutoCompact)
                 {
                     List<PlaybackSessionInfo> toCompact;
