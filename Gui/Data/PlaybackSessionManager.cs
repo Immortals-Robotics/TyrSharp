@@ -2,6 +2,7 @@ using System.IO.Compression;
 using System.Diagnostics;
 using Tyr.Common.Debug.Db;
 using Tyr.Common.Time;
+using Tyr.Gui.Views;
 
 namespace Tyr.Gui.Data;
 
@@ -116,7 +117,7 @@ public sealed class PlaybackSessionManager : IDisposable
 
         var db = new DebugDb(databaseDirectory)
             .RegisterKnownTypes();
-        db.BuildJournal();
+        db.BuildJournal(LogView.GroupJournalEntries);
 
         var readOnlyDb = new ReadOnlyDebugDb(db);
         _playbackDb.SetSource(readOnlyDb);

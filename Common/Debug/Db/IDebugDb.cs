@@ -16,7 +16,8 @@ public interface IDebugDb : IDisposable
     Meta? TryGetShardMeta<T>(string module, string shardKey) where T : struct, IEntry;
     Meta GetSourceLocation(int id);
 
-    void FillJournal(List<Entry> destination);
+    void FillJournal(List<JournalGroup> destination);
+    void RebuildJournal(bool group);
 
     void AppendFrame(Frame frame);
     (Timestamp Start, Timestamp End)? GetFrameRange();

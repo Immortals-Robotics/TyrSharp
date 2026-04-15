@@ -37,7 +37,8 @@ public sealed class ReadOnlyDebugDb(IDebugDb inner) : IDebugDb
 
     public Meta GetSourceLocation(int id) => inner.GetSourceLocation(id);
 
-    public void FillJournal(List<Entry> destination) => inner.FillJournal(destination);
+    public void FillJournal(List<JournalGroup> destination) => inner.FillJournal(destination);
+    public void RebuildJournal(bool group) => inner.RebuildJournal(group);
 
     public void AppendFrame(Frame frame)
         => throw new InvalidOperationException("Cannot append frames to a read-only debug database.");
