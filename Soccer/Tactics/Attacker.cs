@@ -93,6 +93,7 @@ public partial class Attacker : ITactic
 
     public ISkill? Tick()
     {
+        _fsm.DrawDebug(Robot);
         return _fsm.Tick();
     }
 

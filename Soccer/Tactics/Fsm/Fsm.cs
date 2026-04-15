@@ -1,4 +1,7 @@
-﻿using Tyr.Soccer.Skills;
+﻿using System.Numerics;
+using Tyr.Common.Debug.Drawing;
+using Tyr.Common.Debug.Drawing.Drawables;
+using Tyr.Soccer.Skills;
 
 namespace Tyr.Soccer.Tactics.Fsm;
 
@@ -12,7 +15,7 @@ public class Fsm<TState>(TState? initialState)
 
     private bool _initialized;
 
-    private IState<TState>? _current;
+    public IState<TState>? Current { get; private set; }
 
     public void AddTransition(TState? from, TState? to, Func<bool> condition)
         => _transitions.Add(new Transition(from, to, condition));
@@ -38,7 +41,7 @@ public class Fsm<TState>(TState? initialState)
             {
                 var fromStateMatch =
                     transition.From == null ||
-                    (_current != null && EqualityComparer<TState>.Default.Equals(transition.From, _current.Type));
+                    (Current != null && EqualityComparer<TState>.Default.Equals(transition.From, Current.Type));
 
                 if (fromStateMatch && transition.Condition())
                 {
@@ -47,9 +50,15 @@ public class Fsm<TState>(TState? initialState)
                     break;
                 }
             }
-        } while(transitioned && ++transitionsCount < 10);
+        } while (transitioned && ++transitionsCount < 10);
 
-        return _current?.Tick();
+        return Current?.Tick();
+    }
+
+    public void DrawDebug(Robot.Robot robot)
+    {
+        Draw.DrawText($"State: {Current?.Type.ToString() ?? "None"}",
+            robot.Position + new Vector2(0, 300f), 100f, Color.Neutral400, TextAlignment.BottomCenter);
     }
 
     private void TransitionTo(TState? state)
@@ -59,8 +68,8 @@ public class Fsm<TState>(TState? initialState)
             Assert.Contains(_states, state, $"State {state} not found in FSM.");
         }
 
-        _current?.Exit();
-        _current = state != null ? _states[state] : null;
-        _current?.Enter();
+        Current?.Exit();
+        Current = state != null ? _states[state] : null;
+        Current?.Enter();
     }
 }
