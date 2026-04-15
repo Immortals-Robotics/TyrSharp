@@ -56,13 +56,13 @@ public partial class Def : ITactic
     private NavigationFlags GetNavigationFlags()
     {
         var flags = NavigationFlags.None;
-        if (Context.Referee.OurBallPlacement())
+        if (Context.Referee.OurBallPlacement() | Context.Referee.TheirBallPlacement())
             flags |= NavigationFlags.BallPlacementLine;
 
         // If ball is further from our goal than the robot, don't avoid it
         var ballDist = Context.Knowledge.BallToOwnGoalDistance;
         var robotDist = Vector2.Distance(Robot.Position, Context.Field.OwnGoal());
-        if (ballDist > robotDist)
+        if (ballDist > robotDist && Context.Referee.Running())
         {
             flags |= NavigationFlags.NoBallObstacle;
         }
@@ -73,8 +73,9 @@ public partial class Def : ITactic
     internal static Vector2 CalculateStaticPos(int defId)
     {
         var predictedBall = Context.Knowledge.BallPredictedPosition;
-
-        float areaExtensionSize = Vector2.Distance(predictedBall, Context.Field.OwnGoal()) * BallDistanceCoef - Context.Field.PenaltyAreaDepth;
+        Draw.DrawCircle(predictedBall, 100, Color.Red, options: Options.Outline());
+        float areaExtensionSize = Vector2.Distance(predictedBall, Context.Field.OwnGoal()) * BallDistanceCoef -
+                                  Context.Field.PenaltyAreaDepth;
         areaExtensionSize = Math.Clamp(areaExtensionSize, Context.Field.RobotRadius, MaxExtensionArea);
 
         float penaltyAreaHalfWidth = Context.Field.PenaltyAreaWidth / 2.0f;
@@ -82,7 +83,8 @@ public partial class Def : ITactic
         var virtualDefenseArea = Context.Field.ExtendedOwnPenaltyArea(areaExtensionSize);
 
         var ballAngle = Context.Knowledge.BallOwnGoalAngle;
-        var ballAngleClamped = Math.Clamp(Context.Knowledge.BallOwnGoalAngleRaw - (90f - TightStartAngle), 0f, TightStartAngle);
+        var ballAngleClamped = Math.Clamp(Context.Knowledge.BallOwnGoalAngleRaw - (90f - TightStartAngle), 0f,
+            TightStartAngle);
         var ballSign = Math.Sign(ballAngle.DegNormalized);
 
         var goalOffset = new Vector2(0, Context.Field.GoalWidth / 2.0f);
@@ -92,17 +94,23 @@ public partial class Def : ITactic
 
         if (ballAngleClamped > 0.0f)
         {
-            var limitBall = Context.Field.OwnGoal() - Angle.FromDeg((90.0f - TightStartAngle) * ballSign).ToUnitVec() * Vector2.Distance(predictedBall, Context.Field.OwnGoal()) * Context.SideSign;
+            var limitBall = Context.Field.OwnGoal() - Angle.FromDeg((90.0f - TightStartAngle) * ballSign).ToUnitVec() *
+                Vector2.Distance(predictedBall, Context.Field.OwnGoal()) * Context.SideSign;
 
-            bool shouldAdjust = defId == 1 ? (ballAngleClamped * ballSign * Context.SideSign >= 0.0f) : (ballAngleClamped * ballSign * Context.SideSign < 0.0f);
+            bool shouldAdjust = defId == 1
+                ? (ballAngleClamped * ballSign * Context.SideSign >= 0.0f)
+                : (ballAngleClamped * ballSign * Context.SideSign < 0.0f);
             if (shouldAdjust)
             {
                 targetLine = Line.FromTwoPoints(limitBall, Context.Field.OwnGoal() + goalOffset);
             }
         }
 
+        Draw.DrawLine(targetLine, Color.Yellow, options: Options.Outline());
         var (i1, i2) = Geometry.Intersection(virtualDefenseArea, targetLine);
-        var finalPos = (Vector2.Normalize(predictedBall - Context.Field.OwnGoal()) * (penaltyAreaHalfWidth + Context.Field.RobotRadius + 20.0f)) + Context.Field.OwnGoal();
+        var finalPos =
+            (Vector2.Normalize(predictedBall - Context.Field.OwnGoal()) *
+             (penaltyAreaHalfWidth + Context.Field.RobotRadius + 20.0f)) + Context.Field.OwnGoal();
 
         if (i1.HasValue)
         {
@@ -148,7 +156,7 @@ public partial class Def : ITactic
         if (_shirjeSelectHys > 0)
         {
             diveDefNum = 1;
-            _shirjeSelectHys--; 
+            _shirjeSelectHys--;
         }
 
         Vector2 target;
@@ -161,13 +169,15 @@ public partial class Def : ITactic
                 target = oneTouch1;
                 chip = 150f;
                 Draw.DrawPoint(oneTouch1, Color.Yellow, options: Options.Outline());
-                Draw.DrawCircle(Robot.Position, Context.Field.RobotRadius * 2.0f, Color.Red, options: Options.Outline());
+                Draw.DrawCircle(Robot.Position, Context.Field.RobotRadius * 2.0f, Color.Red,
+                    options: Options.Outline());
             }
             else
             {
                 var tangent = ballLine.TangentLine(oneTouch1);
                 var nearestToTangent = tangent.ClosestPoint(Robot.Position);
-                target = oneTouch1 + Vector2.Normalize(nearestToTangent - oneTouch1) * (Context.Field.RobotRadius * 2.0f);
+                target = oneTouch1 + Vector2.Normalize(nearestToTangent - oneTouch1) *
+                    (Context.Field.RobotRadius * 2.0f);
             }
         }
         else
@@ -177,13 +187,15 @@ public partial class Def : ITactic
                 target = oneTouch2;
                 chip = 150f;
                 Draw.DrawPoint(oneTouch2, Color.Yellow, options: Options.Outline());
-                Draw.DrawCircle(Robot.Position, Context.Field.RobotRadius * 2.0f, Color.Red, options: Options.Outline());
+                Draw.DrawCircle(Robot.Position, Context.Field.RobotRadius * 2.0f, Color.Red,
+                    options: Options.Outline());
             }
             else
             {
                 var tangent = ballLine.TangentLine(oneTouch2);
                 var nearestToTangent = tangent.ClosestPoint(Robot.Position);
-                target = oneTouch2 + Vector2.Normalize(nearestToTangent - oneTouch2) * (Context.Field.RobotRadius * 2.0f);
+                target = oneTouch2 + Vector2.Normalize(nearestToTangent - oneTouch2) *
+                    (Context.Field.RobotRadius * 2.0f);
             }
         }
 
@@ -203,8 +215,14 @@ public partial class Def : ITactic
     private sealed class DefState(Def tactic) : IState<State>
     {
         public State Type => State.Def;
-        public void Enter() { }
-        public void Exit() { }
+
+        public void Enter()
+        {
+        }
+
+        public void Exit()
+        {
+        }
 
         public ISkill Tick()
         {
@@ -213,7 +231,7 @@ public partial class Def : ITactic
             return new GoToPoint
             {
                 Target = pos,
-                LookAt = Context.Ball.State.Position,
+                LookAt = Context.Knowledge.BallPredictedPosition,
                 VelocityProfile = VelocityProfile.Mamooli,
                 NavigationFlags = tactic.GetNavigationFlags()
             };
@@ -223,8 +241,14 @@ public partial class Def : ITactic
     private sealed class DiveState(Def tactic) : IState<State>
     {
         public State Type => State.Dive;
-        public void Enter() { }
-        public void Exit() { }
+
+        public void Enter()
+        {
+        }
+
+        public void Exit()
+        {
+        }
 
         public ISkill Tick() => tactic.TickDive();
     }

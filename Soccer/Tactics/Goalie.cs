@@ -46,51 +46,37 @@ public partial class Goalie : ITactic
         _fsm.AddState(new ClearState());
 
         // Normal -> Dive
-        _fsm.AddTransition(State.Normal, State.Dive, () =>
-        {
-            return Context.Knowledge.GoalieShouldDive;
-        });
+        _fsm.AddTransition(State.Normal, State.Dive, () => Context.Knowledge.GoalieShouldDive);
 
         // Normal -> Clear
-        _fsm.AddTransition(State.Normal, State.Clear, () =>
-        {
-            return Context.Knowledge.GoalieShouldClear;
-        });
+        _fsm.AddTransition(State.Normal, State.Clear, () => Context.Knowledge.GoalieShouldClear);
 
         // Dive -> Normal
-        _fsm.AddTransition(State.Dive, State.Normal, () =>
-        {
-            return !Context.Knowledge.GoalieShouldDive;
-        }, DiveHysteresisTime);
+        _fsm.AddTransition(State.Dive, State.Normal, () => !Context.Knowledge.GoalieShouldDive, DiveHysteresisTime);
 
         // Clear -> Normal
-        _fsm.AddTransition(State.Clear, State.Normal, () =>
-        {
-            return !Context.Knowledge.GoalieShouldClear;
-        }, ClearHysteresisTime);
+        _fsm.AddTransition(State.Clear, State.Normal, () => !Context.Knowledge.GoalieShouldClear, ClearHysteresisTime);
     }
 
     public ISkill? Tick()
     {
-        if (Context.Knowledge.BallIsGoaling)
-        {
-            Draw.DrawCircle(Robot.Position, 100f, Color.Red, options: Options.Outline());
-        }
-        else
-        {
-            Draw.DrawCircle(Robot.Position, 100f, Color.Yellow, options: Options.Outline());
-        }
+        Draw.DrawCircle(Robot.Position, 100f, Context.Knowledge.BallIsGoaling ? Color.Red : Color.Yellow,
+            options: Options.Outline());
 
         return _fsm.Tick();
     }
 
     public static NavigationFlags GetNavigationFlags()
     {
-        var flags = NavigationFlags.NoOwnPenaltyArea | NavigationFlags.NoBallObstacle;
+        var flags = NavigationFlags.NoOwnPenaltyArea;
+        if (Context.Knowledge.GoalieDiveAllowed)
+            flags |= NavigationFlags.NoBallObstacle;
         if (Context.Referee.Running() || Context.Referee.TheirPenaltyKick())
             flags |= NavigationFlags.NoExtraMargin;
-        if (Context.Referee.OurBallPlacement())
+        if (Context.Referee.OurBallPlacement() || Context.Referee.TheirBallPlacement())
             flags |= NavigationFlags.BallPlacementLine;
+
+
         return flags;
     }
 
@@ -98,19 +84,24 @@ public partial class Goalie : ITactic
     {
         public State Type => State.Normal;
 
-        public void Enter() { }
+        public void Enter()
+        {
+        }
 
         public ISkill Tick()
         {
-            float penaltyAreaHalfWidth = Context.Field.PenaltyAreaWidth / 2.0f;
+            var penaltyAreaHalfWidth = Context.Field.PenaltyAreaWidth / 2.0f;
 
-            float ballPositionEffect = Context.Knowledge.BallToOwnGoalDistanceX;
-            float startAngEffect = TightStartAngle;
+            var ballPositionEffect = Context.Knowledge.BallToOwnGoalDistanceX;
+            var startAngEffect = TightStartAngle;
 
-            var ballAngle = Math.Clamp(Context.Knowledge.BallOwnGoalAngleRaw - (90f - startAngEffect), 0f, startAngEffect);
+            var ballAngle = Math.Clamp(Context.Knowledge.BallOwnGoalAngleRaw - (90f - startAngEffect), 0f,
+                startAngEffect);
 
             var gkMaxDist = penaltyAreaHalfWidth - GoalieBoxNotch;
-            var ballAngEffect = gkMaxDist - ((gkMaxDist - (Context.Field.GoalWidth / 2f - Context.RobotRadius)) / startAngEffect) * ballAngle;
+            var ballAngEffect = gkMaxDist -
+                                ((gkMaxDist - (Context.Field.GoalWidth / 2f - Context.RobotRadius)) / startAngEffect) *
+                                ballAngle;
 
             var gkTargetRect = Context.Field.ExtendedOwnPenaltyArea(-GoalieBoxNotch);
             var ballGoalLine = Context.Knowledge.BallToOwnGoalLine;
@@ -120,21 +111,24 @@ public partial class Goalie : ITactic
 
             if (i0.HasValue)
             {
-                if (Vector2.Distance(i0.Value, Context.Knowledge.BallPredictedPosition) < Vector2.Distance(gkFinalPos, Context.Knowledge.BallPredictedPosition))
+                if (Vector2.Distance(i0.Value, Context.Knowledge.BallPredictedPosition) <
+                    Vector2.Distance(gkFinalPos, Context.Knowledge.BallPredictedPosition))
                 {
                     gkFinalPos = i0.Value;
                 }
             }
+
             if (i1.HasValue)
             {
-                if (Vector2.Distance(i1.Value, Context.Knowledge.BallPredictedPosition) < Vector2.Distance(gkFinalPos, Context.Knowledge.BallPredictedPosition))
+                if (Vector2.Distance(i1.Value, Context.Knowledge.BallPredictedPosition) <
+                    Vector2.Distance(gkFinalPos, Context.Knowledge.BallPredictedPosition))
                 {
                     gkFinalPos = i1.Value;
                 }
             }
 
             const float Slope = 0.0001538461538f;
-            float speedEffect = Slope * Context.Ball.State.Velocity.Xy().Length();
+            var speedEffect = Slope * Context.Ball.State.Velocity.Xy().Length();
             speedEffect = Math.Clamp(speedEffect, 0f, 0.9f);
 
             gkFinalPos -= (gkFinalPos - Context.Field.OwnGoal()) * speedEffect;
@@ -147,7 +141,7 @@ public partial class Goalie : ITactic
                 }
             }
 
-            float safeX = Context.Field.OwnGoalSafeX();
+            var safeX = Context.Field.OwnGoalSafeX();
             if (MathF.Abs(gkFinalPos.X * Context.SideSign) >= MathF.Abs(safeX * Context.SideSign))
             {
                 gkFinalPos.X = safeX;
@@ -169,7 +163,9 @@ public partial class Goalie : ITactic
             };
         }
 
-        public void Exit() { }
+        public void Exit()
+        {
+        }
     }
 
     private sealed class DiveState(Goalie tactic) : IState<State>
@@ -177,12 +173,15 @@ public partial class Goalie : ITactic
         public State Type => State.Dive;
         private BallInterception.InterceptPlan? _previousPlan;
 
-        public void Enter() { _previousPlan = null; }
+        public void Enter()
+        {
+            _previousPlan = null;
+        }
 
         public ISkill Tick()
         {
             var profile = VelocityProfile.Kharaki with { Acceleration = VelocityProfile.Kharaki.Acceleration * 3f };
-            var allowedArea = Context.Field.ExtendedOwnPenaltyArea(0, GoalieDiveInterceptionOffset);
+            var allowedArea = Context.Field.OwnPenaltyArea();
 
             var trajectory = ServiceLocator.BallTrajectoryFactory.FromState(Context.Ball.State);
             var hasPlan = Context.Knowledge.BallInterception.TryFindGoaliePlan(
@@ -203,7 +202,8 @@ public partial class Goalie : ITactic
             }
             else
             {
-                var ballLine = Line.FromPointAndAngle(Context.Ball.State.Position, Context.Ball.State.Velocity.Xy().ToAngle());
+                var ballLine = Line.FromPointAndAngle(Context.Ball.State.Position,
+                    Context.Ball.State.Velocity.Xy().ToAngle());
                 var ballLineClosest = ballLine.ClosestPoint(tactic.Robot.Position);
                 target = Context.Knowledge.BallGoalLineIntersection ?? ballLineClosest;
             }
@@ -217,14 +217,18 @@ public partial class Goalie : ITactic
             };
         }
 
-        public void Exit() { }
+        public void Exit()
+        {
+        }
     }
 
     private sealed class ClearState : IState<State>
     {
         public State Type => State.Clear;
 
-        public void Enter() { }
+        public void Enter()
+        {
+        }
 
         public ISkill Tick()
         {
@@ -240,6 +244,8 @@ public partial class Goalie : ITactic
             };
         }
 
-        public void Exit() { }
+        public void Exit()
+        {
+        }
     }
 }
