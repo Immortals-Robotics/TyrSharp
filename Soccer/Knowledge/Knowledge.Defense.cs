@@ -1,17 +1,68 @@
+using System.Collections.Generic;
 using System.Numerics;
+using Tyr.Common.Config;
+using Tyr.Common.Data;
+using Tyr.Common.Debug.Drawing;
+using Tyr.Common.Extensions;
 using Tyr.Common.Math;
+using Tyr.Common.Math.Shapes;
+using Tyr.Common.Time;
 
 namespace Tyr.Soccer.Knowledge;
 
+[Configurable]
 public partial class Knowledge
 {
-    public bool IsDefending { get; private set; }
+    [ConfigEntry] public static DeltaTime DefPredictionTime { get; set; } = DeltaTime.FromMilliseconds(150);
+    [ConfigEntry] public static float GoalieDiveMaximumTimeToReach { get; set; } = 3.0f;
+    [ConfigEntry] public static float GoalieMaxBallSpeedForClear { get; set; } = 1000;
+
     private Common.Data.Ssl.Gc.Command? _lastRefCommand;
     private Common.Time.Timestamp _oppRestartTimestamp;
+
+    public bool GoalieDiveAllowed { get; private set; }
+    public bool BallIsGoaling { get; private set; }
+    public float BallOwnGoalReachTime { get; private set; }
+    public bool IsDefending { get; private set; }
+    public bool GoalieShouldDive { get; private set; }
+    public bool GoalieShouldClear { get; private set; }
+
+    public Vector2 BallPredictedPosition { get; private set; }
+    public bool BallInExtendedPenaltyArea { get; private set; }
+    public Vector2? BallGoalLineIntersection { get; private set; }
 
     public Dictionary<int, int> MarkMap { get; } = [];
 
     private void UpdateDefense()
+    {
+        var ballVel = Context.Ball.State.Velocity.Xy().Length();
+
+        UpdateIsDefending();
+        BallIsGoaling = UpdateBallIsGoaling();
+
+        if (ballVel > float.Epsilon)
+        {
+            BallOwnGoalReachTime = Vector2.Distance(Context.Ball.State.Position, Context.Field.OwnGoal()) / ballVel;
+        }
+        else
+        {
+            BallOwnGoalReachTime = float.MaxValue;
+        }
+
+        BallPredictedPosition = BallPrediction.PredictBall(DefPredictionTime).Position;
+        BallInExtendedPenaltyArea = Context.Field.ExtendedOwnPenaltyArea().Inside(BallPredictedPosition);
+
+        GoalieShouldDive = BallIsGoaling && BallOwnGoalReachTime < GoalieDiveMaximumTimeToReach && GoalieDiveAllowed;
+        var maxBallSpeedForClear = GoalieMaxBallSpeedForClear;
+        if (BallIsGoaling)
+        {
+            maxBallSpeedForClear = 50.0f;
+        }
+
+        GoalieShouldClear = BallInExtendedPenaltyArea && Context.Ball.State.Velocity.Xy().Length() < maxBallSpeedForClear && GoalieDiveAllowed && !BallIsGoaling;
+    }
+
+    private void UpdateIsDefending()
     {
         var ballX = Context.Ball.State.Position.X;
         var sideSign = Context.SideSign;
@@ -49,7 +100,7 @@ public partial class Knowledge
         var oppIndex = Context.OppRobots.FindIndex(r => r.Id.Id == oppId);
         if (oppIndex == -1)
             return -1;
-        
+
         var opp = Context.OppRobots[oppIndex];
         if (opp.Quality <= 0)
             return -1;
@@ -140,5 +191,33 @@ public partial class Knowledge
         const float kWeightReach = 1.0f;
 
         return kWeightStay * costStay + kWeightReach * costReach;
+    }
+
+    private bool UpdateBallIsGoaling()
+    {
+        BallGoalLineIntersection = null;
+
+        if (Context.Ball.State.Velocity.Xy().Length() < 300.0f)
+            return false;
+
+        var movingToOurGoal = (Context.SideSign == -1 && Context.Ball.State.Velocity.X < 0) ||
+                              (Context.SideSign == 1 && Context.Ball.State.Velocity.X > 0);
+
+        if (!movingToOurGoal)
+            return false;
+
+        var ballTrajectory = Line.FromTwoPoints(Context.Ball.State.Position,
+            Context.Ball.State.Position + Context.Ball.State.Velocity.Xy());
+        var goalLine = Context.Field.OwnGoalLine();
+
+        var intersection = Geometry.Intersection(ballTrajectory, goalLine);
+
+        if (!intersection.HasValue) return false;
+
+        BallGoalLineIntersection = intersection.Value;
+
+        var toIntersection = intersection.Value - Context.Ball.State.Position;
+        var dot = Vector2.Dot(toIntersection, Context.Ball.State.Velocity.Xy());
+        return dot > 0;
     }
 }

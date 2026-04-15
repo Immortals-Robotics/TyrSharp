@@ -20,6 +20,7 @@ public class Stop : IPlay
             sortedZones.Enqueue(zone);
         }
 
+        //TODO: This should exclude Goalie, attacker, defenders dynamically at some point 
         for (var i = 0;
              i < Context.Knowledge.OwnRobotsCount - 2 &&
              sortedZones.Count > 0;

@@ -7,29 +7,6 @@ namespace Tyr.Soccer.Knowledge;
 
 public partial class Knowledge
 {
-    public bool BallIsGoaling()
-    {
-        if (Context.Ball.State.Velocity.Length() < 300.0f)
-            return false;
-
-        var movingToOurGoal = (Context.SideSign == -1 && Context.Ball.State.Velocity.X < 0) ||
-                              (Context.SideSign == 1 && Context.Ball.State.Velocity.X > 0);
-
-        if (!movingToOurGoal)
-            return false;
-
-        var ballTrajectory = Line.FromTwoPoints(Context.Ball.State.Position,
-            Context.Ball.State.Position + Context.Ball.State.Velocity.Xy());
-        var goalLine = Context.Field.OwnGoalLine();
-
-        var intersection = Geometry.Intersection(ballTrajectory, goalLine);
-
-        if (!intersection.HasValue) return false;
-        var toIntersection = intersection.Value - Context.Ball.State.Position;
-        var dot = Vector2.Dot(toIntersection, Context.Ball.State.Velocity.Xy());
-        return dot > 0;
-    }
-
     public FilteredRobot? FindNearestOpp(Vector2 pos, int? mask = null, bool acceptNearBall = true)
     {
         var minDis = float.MaxValue;
