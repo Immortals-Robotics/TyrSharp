@@ -1,5 +1,6 @@
 using System;
 using System.Numerics;
+using Tyr.Common;
 using Tyr.Common.Config;
 using Tyr.Common.Data;
 using Tyr.Common.Debug.Drawing;
@@ -19,6 +20,7 @@ public partial class Goalie : ITactic
 {
     [ConfigEntry] private static float TightStartAngle { get; set; } = 25.0f;
     [ConfigEntry] private static float GoalieBoxNotch { get; set; } = 600.0f;
+    [ConfigEntry] private static float GoalieDiveInterceptionOffset { get; set; } = 200.0f;
     [ConfigEntry] private static DeltaTime DiveHysteresisTime { get; set; } = DeltaTime.FromMilliseconds(100);
     [ConfigEntry] private static DeltaTime ClearHysteresisTime { get; set; } = DeltaTime.FromMilliseconds(300);
     public Robot.Robot Robot { get; private set; }
@@ -38,7 +40,7 @@ public partial class Goalie : ITactic
 
         _fsm = new Fsm<State>(State.Normal);
 
-        _fsm.AddState(new NormalState());
+        _fsm.AddState(new BlockState());
         _fsm.AddState(new DiveState(this));
         _fsm.AddState(new ClearState());
 
@@ -91,7 +93,7 @@ public partial class Goalie : ITactic
         return flags;
     }
 
-    private sealed class NormalState() : IState<State>
+    private sealed class BlockState() : IState<State>
     {
         public State Type => State.Normal;
 
@@ -172,57 +174,37 @@ public partial class Goalie : ITactic
     private sealed class DiveState(Goalie tactic) : IState<State>
     {
         public State Type => State.Dive;
+        private BallInterception.InterceptPlan? _previousPlan;
 
-        public void Enter() { }
+        public void Enter() { _previousPlan = null; }
 
         public ISkill Tick()
         {
             var profile = VelocityProfile.Kharaki with { Acceleration = VelocityProfile.Kharaki.Acceleration * 3f };
+            var allowedArea = Context.Field.ExtendedOwnPenaltyArea(0, GoalieDiveInterceptionOffset);
 
-            float interceptT = -1.0f;
-            float maxWaitT = float.MinValue;
-            var goalieCircle = new Circle { Center = Context.Field.OwnGoal(), Radius = Context.Field.PenaltyAreaDepth - 200.0f };
+            var trajectory = ServiceLocator.BallTrajectoryFactory.FromState(Context.Ball.State);
+            var hasPlan = Context.Knowledge.BallInterception.TryFindGoaliePlan(
+                Context.Ball,
+                trajectory,
+                tactic.Robot.Position,
+                tactic.Robot.CurrentMotion,
+                profile,
+                allowedArea,
+                out var plan,
+                _previousPlan);
 
-            for (float t = 0.0f; t < 5.0f; t += 0.1f)
+            Vector2 target;
+            if (hasPlan)
             {
-                var point = Context.Knowledge.BallPrediction.PredictBall(DeltaTime.FromSeconds(t)).Position;
-                if (!goalieCircle.Inside(point) || !Context.Field.RectangleWithBoundary.Inside(point))
-                {
-                    continue;
-                }
-
-                if (MathF.Abs(point.X) > Context.Field.Width)
-                {
-                    break;
-                }
-
-                float robotReachT = tactic.Robot.CalculateReachTime(point, profile);
-                float waitT = t - robotReachT;
-
-                if (waitT > maxWaitT)
-                {
-                    maxWaitT = waitT;
-                    interceptT = t;
-                }
-
-                if (waitT > 1.5f)
-                {
-                    break;
-                }
+                _previousPlan = plan;
+                target = plan.CenterDestination;
             }
-
-            var target = Context.Knowledge.BallPrediction.PredictBall(DeltaTime.FromSeconds(MathF.Max(0f, interceptT))).Position;
-            var ballLine = Line.FromPointAndAngle(Context.Ball.State.Position, Context.Ball.State.Velocity.Xy().ToAngle());
-            var ballLineClosest = ballLine.ClosestPoint(tactic.Robot.Position);
-            float distToClosest = Vector2.Distance(ballLineClosest, tactic.Robot.Position);
-
-            if (interceptT < 0.0f || maxWaitT < 1.0f)
+            else
             {
+                var ballLine = Line.FromPointAndAngle(Context.Ball.State.Position, Context.Ball.State.Velocity.Xy().ToAngle());
+                var ballLineClosest = ballLine.ClosestPoint(tactic.Robot.Position);
                 target = Context.Knowledge.BallGoalLineIntersection ?? ballLineClosest;
-            }
-            else if (distToClosest < Context.RobotRadius * 0.5f)
-            {
-                target = ballLineClosest;
             }
 
             return new DiveSkill

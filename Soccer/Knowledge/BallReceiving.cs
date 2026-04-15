@@ -164,6 +164,34 @@ public partial class BallReceiving
         return ClampInside(clamped, fieldBounds);
     }
 
+    public Vector2 ClampInsideArea(
+        Vector2 destination,
+        Rectangle area,
+        float margin,
+        Vector2? ballPosition = null,
+        Vector2? ballVelocity = null)
+    {
+        if (area.Inside(destination, -margin))
+        {
+            return destination;
+        }
+
+        if (ballPosition.HasValue &&
+            ballVelocity.HasValue &&
+            !Utils.ApproximatelyZero(ballVelocity.Value.LengthSquared()) &&
+            TryProjectOnBallPath(
+                destination,
+                Shrink(area, margin + LegalSeparationEpsilonMm),
+                ballPosition.Value,
+                ballVelocity.Value,
+                out var projected))
+        {
+            return projected;
+        }
+
+        return area.NearestInside(destination, margin);
+    }
+
     public ReceiveTarget ResolveReceiveTarget(
         IBallTrajectory trajectory,
         Vector2 currentBallPosition,
@@ -231,10 +259,9 @@ public partial class BallReceiving
         if (ballPosition.HasValue &&
             ballVelocity.HasValue &&
             !Utils.ApproximatelyZero(ballVelocity.Value.LengthSquared()) &&
-            TryProjectOutsidePenaltyAreaOnBallPath(
+            TryProjectOnBallPath(
                 destination,
-                penaltyArea,
-                penaltyMargin,
+                Expand(penaltyArea, penaltyMargin + LegalSeparationEpsilonMm),
                 ballPosition.Value,
                 ballVelocity.Value,
                 out var projected))
@@ -250,31 +277,29 @@ public partial class BallReceiving
         return penaltyArea.NearestOutside(destination, penaltyMargin + LegalSeparationEpsilonMm);
     }
 
-    private bool TryProjectOutsidePenaltyAreaOnBallPath(
-        Vector2 destination,
-        Rectangle penaltyArea,
-        float penaltyMargin,
+    private bool TryProjectOnBallPath(
+        Vector2 reference,
+        Rectangle targetArea,
         Vector2 ballPosition,
         Vector2 ballVelocity,
         out Vector2 projected)
     {
         projected = default;
 
-        var pathLine = GetBallPathLine(destination, ballPosition, ballVelocity);
+        var pathLine = GetBallPathLine(reference, ballPosition, ballVelocity);
         if (!pathLine.HasValue)
         {
             return false;
         }
 
-        var expandedPenaltyArea = Expand(penaltyArea, penaltyMargin + LegalSeparationEpsilonMm);
-        var (intersection0, intersection1) = Geometry.Intersection(expandedPenaltyArea, pathLine.Value);
+        var (intersection0, intersection1) = Geometry.Intersection(targetArea, pathLine.Value);
 
         if (!intersection0.HasValue && !intersection1.HasValue)
         {
             return false;
         }
 
-        projected = NearestTo(destination, intersection0, intersection1);
+        projected = NearestTo(reference, intersection0, intersection1);
         return true;
     }
 

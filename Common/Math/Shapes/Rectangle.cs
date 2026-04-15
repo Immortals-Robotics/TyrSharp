@@ -41,6 +41,13 @@ public readonly record struct Rectangle : IObstacleShape
 
     public bool Inside(Vector2 point, float margin = 0f) => Distance(point) <= margin;
 
+    public Vector2 NearestInside(Vector2 point, float margin = 0f)
+    {
+        return new Vector2(
+            System.Math.Clamp(point.X, Min.X + margin, Max.X - margin),
+            System.Math.Clamp(point.Y, Min.Y + margin, Max.Y - margin));
+    }
+
     public Vector2 NearestOutside(Vector2 point, float margin = 0)
     {
         var dxMin = MathF.Abs(point.X - Min.X);

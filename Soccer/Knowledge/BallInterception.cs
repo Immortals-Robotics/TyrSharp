@@ -1,3 +1,4 @@
+using System;
 using System.Numerics;
 using Tyr.Common.Config;
 using Tyr.Common.Math;
@@ -31,10 +32,13 @@ public partial class BallInterception
     private static float MaxReceiveHeightMm { get; set; } = 120f;
 
     [ConfigEntry("Maximum acceptable absolute slack time between robot and ball [s]")]
-    private static float MaxSlackTimeSeconds { get; set; } = 0.35f;
+    private static float MaxSlackTimeSeconds { get; set; } = 0.45f;
 
-    [ConfigEntry("Minimum spare time buffer to delay movement [s]")]
+    [ConfigEntry("Minimum spare time that robot has before ball arrives [s]")]
     private static float SpareTimeBufferSeconds { get; set; } = 0.3f;
+
+    [ConfigEntry("Minimum spare time that GK has before ball arrives [s]")]
+    private static float GoalieSpareTimeBufferSeconds { get; set; } = 0.3f;
 
     [ConfigEntry("Objective bonus bias toward earlier interceptions [s]")]
     private static float EarlyInterceptionBonus { get; set; } = 2.0f;
@@ -140,7 +144,7 @@ public partial class BallInterception
     {
         plan = default;
 
-        if (!TryGetInterceptWindow(ball, trajectory, fieldBounds, out var window))
+        if (!TryGetInterceptWindow(ball, trajectory, Context.Field.RectangleWithBoundary, out var window))
         {
             return false;
         }
@@ -149,19 +153,28 @@ public partial class BallInterception
 
         for (var t = window.StartTimeSeconds; t <= window.EndTimeSeconds; t += SearchStepSeconds)
         {
-            var candidate = Evaluate(
-                trajectory,
-                t,
-                robotPosition,
-                robotMotion,
-                fallbackAngle,
-                profile,
+            var state = trajectory.GetState(DeltaTime.FromSeconds(t));
+            var facingAngle = Context.Knowledge.BallReceiving.CalculateFacingAngle(state.Velocity.Xy(), fallbackAngle);
+            var rawDestination = Context.Knowledge.BallReceiving.GetCenterDestination(state.Position, facingAngle, centerToDribbler, ballRadius);
+            var destination = Context.Knowledge.BallReceiving.ClampToLegalDestination(
+                rawDestination,
                 fieldBounds,
                 ownPenaltyArea,
                 oppPenaltyArea,
-                ballRadius,
-                centerToDribbler,
-                previousPlan);
+                Context.Knowledge.BallReceiving.PenaltyAreaMargin,
+                state.Position,
+                state.Velocity.Xy());
+
+            var candidate = Evaluate(
+                state,
+                t,
+                robotPosition,
+                robotMotion,
+                profile,
+                destination,
+                facingAngle,
+                previousPlan,
+                false);
 
             if (candidate.SlackTimeSeconds < 0)
             {
@@ -174,29 +187,6 @@ public partial class BallInterception
             }
         }
 
-        // Final check for the end of the window in case the loop stepped over it
-        var finalCandidate = Evaluate(
-            trajectory,
-            window.EndTimeSeconds,
-            robotPosition,
-            robotMotion,
-            fallbackAngle,
-            profile,
-            fieldBounds,
-            ownPenaltyArea,
-            oppPenaltyArea,
-            ballRadius,
-            centerToDribbler,
-            previousPlan);
-
-        if (finalCandidate.SlackTimeSeconds >= 0)
-        {
-            if (best == null || finalCandidate.Objective < best.Value.Objective)
-            {
-                best = finalCandidate;
-            }
-        }
-
         if (best == null || best.Value.AbsSlackTimeSeconds > MaxSlackTimeSeconds)
         {
             return false;
@@ -206,36 +196,91 @@ public partial class BallInterception
         return true;
     }
 
-    private InterceptPlan Evaluate(
+    public bool TryFindGoaliePlan(
+        FilteredBall ball,
         IBallTrajectory trajectory,
+        Vector2 robotPosition,
+        Vector2 robotMotion,
+        VelocityProfile profile,
+        Rectangle allowedArea,
+        out InterceptPlan plan,
+        InterceptPlan? previousPlan = null)
+    {
+        plan = default;
+
+        if (!TryGetInterceptWindow(ball, trajectory, Context.Field.RectangleWithBoundary, out var window))
+        {
+            return false;
+        }
+
+        InterceptPlan? best = null;
+
+        for (var t = window.StartTimeSeconds; t <= window.EndTimeSeconds; t += SearchStepSeconds)
+        {
+            var state = trajectory.GetState(DeltaTime.FromSeconds(t));
+            var destination = Context.Knowledge.BallReceiving.ClampInsideArea(
+                state.Position,
+                allowedArea,
+                0f,
+                state.Position,
+                state.Velocity.Xy());
+
+            var toBall = state.Position - destination;
+            var facingAngle = toBall.LengthSquared() > 100f * 100f
+                ? toBall.ToAngle()
+                : (-state.Velocity.Xy()).ToAngle();
+
+            var candidate = Evaluate(
+                state,
+                t,
+                robotPosition,
+                robotMotion,
+                profile,
+                destination,
+                facingAngle,
+                previousPlan, true);
+
+            if (candidate.SlackTimeSeconds < 0)
+            {
+                continue;
+            }
+
+            if (best == null || candidate.Objective < best.Value.Objective)
+            {
+                best = candidate;
+            }
+        }
+
+        if (best == null)
+        {
+            return false;
+        }
+
+        plan = best.Value;
+        return true;
+    }
+
+    private InterceptPlan Evaluate(
+        BallState state,
         float timeSeconds,
         Vector2 robotPosition,
         Vector2 robotMotion,
-        Angle fallbackAngle,
         VelocityProfile profile,
-        Rectangle fieldBounds,
-        Rectangle ownPenaltyArea,
-        Rectangle oppPenaltyArea,
-        float ballRadius,
-        float centerToDribbler,
-        InterceptPlan? previousPlan)
+        Vector2 destination,
+        Angle facingAngle,
+        InterceptPlan? previousPlan,
+        bool isGoalie)
     {
-        var state = trajectory.GetState(DeltaTime.FromSeconds(timeSeconds));
-        var facingAngle = Context.Knowledge.BallReceiving.CalculateFacingAngle(state.Velocity.Xy(), fallbackAngle);
-        var rawDestination = Context.Knowledge.BallReceiving.GetCenterDestination(state.Position, facingAngle, centerToDribbler, ballRadius);
-        var destination = Context.Knowledge.BallReceiving.ClampToLegalDestination(
-            rawDestination,
-            fieldBounds,
-            ownPenaltyArea,
-            oppPenaltyArea,
-            Context.Knowledge.BallReceiving.PenaltyAreaMargin,
-            state.Position,
-            state.Velocity.Xy());
+        var spareTime = SpareTimeBufferSeconds;
+        if (isGoalie)
+        {
+            spareTime = GoalieSpareTimeBufferSeconds;
+        }
+
         var reachTime = TrajectoryBangBang.Make2D(robotPosition, robotMotion, destination, profile).Duration;
         var slackTime = timeSeconds - reachTime;
-        
-        // Penalize plans that don't have enough spare time (wait time at destination)
-        var spareTimePenalty = MathF.Max(0f, SpareTimeBufferSeconds - slackTime);
+
+        var spareTimePenalty = MathF.Max(0f, spareTime - slackTime);
         var objective = MathF.Abs(slackTime) + spareTimePenalty - CalculateEarlyInterceptionBonus(timeSeconds);
 
         if (previousPlan.HasValue && Vector2.DistanceSquared(destination, previousPlan.Value.CenterDestination) < HysteresisDistanceMm * HysteresisDistanceMm)
