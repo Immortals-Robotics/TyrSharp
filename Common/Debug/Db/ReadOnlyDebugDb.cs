@@ -1,4 +1,5 @@
 using Tyr.Common.Debug;
+using Tyr.Common.Debug.Logging;
 using Tyr.Common.Time;
 
 namespace Tyr.Common.Debug.Db;
@@ -35,6 +36,8 @@ public sealed class ReadOnlyDebugDb(IDebugDb inner) : IDebugDb
         => inner.TryGetShardMeta<T>(module, shardKey);
 
     public Meta GetSourceLocation(int id) => inner.GetSourceLocation(id);
+
+    public void FillJournal(List<Entry> destination) => inner.FillJournal(destination);
 
     public void AppendFrame(Frame frame)
         => throw new InvalidOperationException("Cannot append frames to a read-only debug database.");

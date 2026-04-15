@@ -1,3 +1,5 @@
+using Tyr.Common.Debug.Logging;
+
 namespace Tyr.Common.Debug.Db;
 
 public interface IDebugDb : IDisposable
@@ -13,6 +15,8 @@ public interface IDebugDb : IDisposable
     IEnumerable<Meta> QuerySourceLocations(string module, Type type);
     Meta? TryGetShardMeta<T>(string module, string shardKey) where T : struct, IEntry;
     Meta GetSourceLocation(int id);
+
+    void FillJournal(List<Entry> destination);
 
     void AppendFrame(Frame frame);
     (Timestamp Start, Timestamp End)? GetFrameRange();

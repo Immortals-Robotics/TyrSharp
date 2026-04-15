@@ -116,6 +116,7 @@ public sealed class PlaybackSessionManager : IDisposable
 
         var db = new DebugDb(databaseDirectory)
             .RegisterKnownTypes();
+        db.BuildJournal();
 
         var readOnlyDb = new ReadOnlyDebugDb(db);
         _playbackDb.SetSource(readOnlyDb);
