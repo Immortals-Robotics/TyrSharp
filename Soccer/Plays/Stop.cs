@@ -6,14 +6,15 @@ public class Stop : IPlay
 {
     public static bool IsApplicable() => Context.Referee.Stop();
 
-    public IReadOnlyList<Role.IRole> Tick()
+    public Formation Tick()
     {
-        var roles = new List<Role.IRole>();
+        var requiredRoles = new List<Role.IRole>();
+        var desiredRoles = new List<Role.IRole>();
 
-        roles.Add(new Role.Goalie());
-        roles.Add(new Role.Defender(1));
-        roles.Add(new Role.Defender(2));
-        roles.Add(new Role.StopWall());
+        requiredRoles.Add(new Role.Goalie());
+        requiredRoles.Add(new Role.Defender(1));
+        requiredRoles.Add(new Role.Defender(2));
+        requiredRoles.Add(new Role.StopWall());
 
         var sortedZones = new Queue<Zone>();
         sortedZones.Clear();
@@ -22,15 +23,17 @@ public class Stop : IPlay
             sortedZones.Enqueue(zone);
         }
 
-        // Subtract 4 (Goalie, Def1, Def2, StopWall)
-        for (var i = 0;
-             i < Context.Knowledge.OwnRobotsCount - 4 &&
-             sortedZones.Count > 0;
-             i++)
+        // Subtract required roles from our available robots
+        var supportersToAdd = Math.Min(Context.Knowledge.OwnRobotsCount - requiredRoles.Count, sortedZones.Count);
+        for (var i = 0; i < supportersToAdd; i++)
         {
-            roles.Add(new Role.Supporter() { Zone = sortedZones.Dequeue() });
+            desiredRoles.Add(new Role.Supporter() { Zone = sortedZones.Dequeue() });
         }
 
-        return roles;
+        return new Formation
+        {
+            RequiredRoles = requiredRoles,
+            DesiredRoles = desiredRoles
+        };
     }
 }

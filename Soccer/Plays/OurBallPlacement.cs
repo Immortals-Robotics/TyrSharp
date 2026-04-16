@@ -4,7 +4,7 @@ namespace Tyr.Soccer.Plays;
 
 public class OurBallPlacement : IPlay
 {
-    private readonly IRole[] _roles =
+    private readonly IRole[] _requiredRoles =
     [
         new BallPlacer(1),
         new BallPlacer(2),
@@ -15,5 +15,8 @@ public class OurBallPlacement : IPlay
 
     public static bool IsApplicable() => Context.Referee.OurBallPlacement();
 
-    public IReadOnlyList<IRole> Tick() => _roles;
+    public Formation Tick() => new()
+    {
+        RequiredRoles = _requiredRoles
+    };
 }

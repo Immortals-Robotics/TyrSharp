@@ -6,6 +6,7 @@ using Tyr.Common.Dataflow;
 using Tyr.Common.Extensions;
 using Tyr.Common.Runner;
 using Tyr.Common.Time;
+using Tyr.Soccer.RoleAssignment;
 using Vision = Tyr.Common.Vision.Data;
 using Referee = Tyr.Common.Referee.Data;
 
@@ -76,6 +77,7 @@ public sealed partial class TeamRunner : IDisposable
             Field = _field,
             Timer = _runner.Timer,
             Knowledge = _knowledge,
+            RoleAssignment = RoleAssignmentResult.Empty,
         };
 
         _ai.Init();

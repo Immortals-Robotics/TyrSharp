@@ -8,6 +8,7 @@ using Tyr.Common.Time;
 using Tyr.Common.Vision.Data;
 using Tyr.Soccer;
 using Tyr.Soccer.Knowledge;
+using Tyr.Soccer.RoleAssignment;
 using Tyr.Soccer.Tactics;
 using Tyr.Vision.Trajectory;
 using SslReferee = Tyr.Common.Data.Ssl.Gc.Referee;
@@ -69,6 +70,7 @@ public sealed class DefenderTests : IDisposable
                 Field = FieldSize.DivisionA,
                 Timer = new TyrTimer(),
                 Knowledge = new Knowledge(),
+                RoleAssignment = RoleAssignmentResult.Empty,
             };
         }
 

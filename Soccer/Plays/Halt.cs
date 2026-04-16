@@ -4,5 +4,5 @@ public class Halt : IPlay
 {
     public static bool IsApplicable() => Context.Referee.Halt();
 
-    public IReadOnlyList<Role.IRole> Tick() => [];
+    public Formation Tick() => Formation.Empty;
 }

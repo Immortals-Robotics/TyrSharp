@@ -6,15 +6,18 @@ public class OurKickoff : IPlay
 {
     public static bool IsApplicable() => Context.Referee.OurKickoff();
 
-    public IReadOnlyList<IRole> Tick()
+    public Formation Tick()
     {
-        return
-        [
-            new CircleBall()
-            {
-                TargetPosition = Context.Field.OppGoal(),
-                CanKick = Context.Referee.CanKickBall(),
-            },
-        ];
+        return new Formation
+        {
+            RequiredRoles =
+            [
+                new CircleBall()
+                {
+                    TargetPosition = Context.Field.OppGoal(),
+                    CanKick = Context.Referee.CanKickBall(),
+                },
+            ]
+        };
     }
 }

@@ -122,7 +122,7 @@ public partial class BallPlacement : ITactic
         return _fsm.Tick();
     }
 
-    private static Robot.Robot? GetPlacer(int id) => Context.OwnRobots.FirstOrDefault(r => r.Role is Role.BallPlacer p && p.PlacerId == id);
+    private static Robot.Robot? GetPlacer(int id) => Context.FindAssignedRobot<Role.BallPlacer>(p => p.PlacerId == id);
 
     private static bool IsPlaceBallLost()
     {

@@ -11,6 +11,7 @@ using Tyr.Soccer;
 using Tyr.Soccer.Knowledge;
 using Tyr.Soccer.Navigation.Obstacle;
 using Tyr.Soccer.Navigation.Trajectory;
+using Tyr.Soccer.RoleAssignment;
 using Tyr.Soccer.Robot;
 using SslReferee = Tyr.Common.Data.Ssl.Gc.Referee;
 using TyrTimer = Tyr.Common.Time.Timer;
@@ -205,6 +206,7 @@ internal static class MapBenchmarkScenarios
             Field = FieldSize.DivisionA,
             Timer = new TyrTimer(),
             Knowledge = new Knowledge(),
+            RoleAssignment = RoleAssignmentResult.Empty,
         };
     }
 }

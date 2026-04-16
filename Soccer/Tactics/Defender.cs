@@ -154,8 +154,8 @@ public partial class Defender : ITactic
 
     private ISkill TickDive()
     {
-        var def1 = Context.OwnRobots.FirstOrDefault(r => r.Role is Role.Defender d && d.DefId == 1);
-        var def2 = Context.OwnRobots.FirstOrDefault(r => r.Role is Role.Defender d && d.DefId == 2);
+        var def1 = Context.FindAssignedRobot<Role.Defender>(d => d.DefId == 1);
+        var def2 = Context.FindAssignedRobot<Role.Defender>(d => d.DefId == 2);
 
         var def1Pos = def1?.Position ?? CalculateStaticPos(1);
         var def2Pos = def2?.Position ?? CalculateStaticPos(2);

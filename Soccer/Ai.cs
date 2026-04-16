@@ -9,6 +9,7 @@ using Tyr.Common.Debug.Drawing.Drawables;
 using Tyr.Common.Sender.Data;
 using Tyr.Common.Time;
 using Tyr.Soccer.Plays;
+using Tyr.Soccer.RoleAssignment;
 using Tyr.Soccer.Tactics;
 using Command = Tyr.Common.Sender.Data.Command;
 using Vision = Tyr.Common.Vision.Data;
@@ -20,6 +21,7 @@ namespace Tyr.Soccer;
 public partial class Ai
 {
     [ConfigEntry] internal static DeltaTime VisionPredictionTime { get; set; } = DeltaTime.FromMilliseconds(120);
+    [ConfigEntry] internal static DeltaTime RequiredRoleUnfilledPenalty { get; set; } = DeltaTime.FromSeconds(30);
 
     private readonly Dictionary<int, LinkedList<(Timestamp, Command)>> _commandHistories = [];
 
@@ -27,7 +29,6 @@ public partial class Ai
 
     private readonly PlayBook _playBook = new();
 
-    private Dictionary<int, Role.IRole?> _roleMapping = [];
     private readonly Dictionary<int, ITactic?> _tacticMapping = [];
 
     internal Ai(ManualControlState manualControl)
@@ -164,30 +165,30 @@ public partial class Ai
 
         // plays emit roles
         var play = _playBook.FindApplicable();
-        var roles = play?.Tick() ?? [];
+        var formation = play?.Tick() ?? Formation.Empty;
 
         // then the role assigner maps the roles to robots
-        var newRoleMapping = new Dictionary<int, Role.IRole?>();
-        foreach (var role in roles.OrderByDescending(r => r.Importance))
-        {
-            var best = Context.OwnRobots
-                .Where(r => r.Seen && !newRoleMapping.ContainsKey(r.Id))
-                .OrderBy(role.CostFor)
-                .FirstOrDefault();
+        var assignmentSolver = new RoleAssignmentSolver(RequiredRoleUnfilledPenalty.Seconds);
+        var previousAssignment = Context.RoleAssignment;
+        var assignmentResult = assignmentSolver.Solve(formation, previousAssignment.RoleMapping);
+        var newRoleMapping = assignmentResult.RoleMapping;
 
-            if (best != null)
-            {
-                newRoleMapping[best.Id] = role;
-            }
+        Log.ZLogDebug($"Role assignment total cost: {assignmentResult.TotalCost:F3}");
+        foreach (var unfilledRole in assignmentResult.UnfilledRoles.Where(r => r.IsRequired))
+        {
+            Log.ZLogWarning($"Required role left unfilled: {unfilledRole.Role}");
         }
+
+        Context.Data.Value = Context.Data.Value! with
+        {
+            RoleAssignment = assignmentResult
+        };
 
         // we then re-create tactics for robots who have changed role
         foreach (var robot in Context.OwnRobots)
         {
-            var currentRole = _roleMapping.GetValueOrDefault(robot.Id);
+            var currentRole = previousAssignment.RoleMapping.GetValueOrDefault(robot.Id);
             var newRole = newRoleMapping.GetValueOrDefault(robot.Id);
-
-            robot.Role = newRole;
 
             if (newRole is null)
             {
@@ -202,8 +203,6 @@ public partial class Ai
                 _tacticMapping[robot.Id] = newRole?.CreateTactic(robot);
             }
         }
-
-        _roleMapping = newRoleMapping;
 
         // and execute tactics for each robot
         foreach (var robot in Context.OwnRobots)

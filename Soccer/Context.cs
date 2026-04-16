@@ -1,5 +1,6 @@
-﻿using Tyr.Common.Data;
+using Tyr.Common.Data;
 using Tyr.Common.Data.Ssl.Vision.Geometry;
+using Tyr.Soccer.RoleAssignment;
 using Vision = Tyr.Common.Vision.Data;
 using Referee = Tyr.Common.Referee.Data;
 using Timer = Tyr.Common.Time.Timer;
@@ -21,6 +22,7 @@ internal sealed record ContextData
     internal required Timer Timer { get; init; }
 
     internal required Knowledge.Knowledge Knowledge { get; init; }
+    internal required RoleAssignmentResult RoleAssignment { get; init; }
 }
 
 internal static class Context
@@ -41,10 +43,28 @@ internal static class Context
 
     internal static Referee.State Referee => Data.Value!.Referee;
     internal static FieldSize Field => Data.Value!.Field;
+    internal static RoleAssignmentResult RoleAssignment => Data.Value!.RoleAssignment;
 
     internal static float RobotRadius => Field.RobotRadius;
 
     internal static Timer Timer => Data.Value!.Timer;
 
     internal static Knowledge.Knowledge Knowledge => Data.Value!.Knowledge;
+
+    internal static Role.IRole? GetAssignedRole(Robot.Robot robot)
+        => RoleAssignment.RoleMapping.GetValueOrDefault(robot.Id);
+
+    internal static Robot.Robot? FindAssignedRobot<TRole>(Func<TRole, bool> predicate)
+        where TRole : class, Role.IRole
+    {
+        foreach (var assignment in RoleAssignment.FilledRoles)
+        {
+            if (assignment.Role is TRole role && predicate(role))
+            {
+                return assignment.Robot;
+            }
+        }
+
+        return null;
+    }
 }

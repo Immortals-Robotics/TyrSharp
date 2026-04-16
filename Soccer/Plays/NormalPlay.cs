@@ -4,8 +4,17 @@ public class NormalPlay : IPlay
 {
     public static bool IsApplicable() => Context.Referee.Running();
 
-    public IReadOnlyList<Role.IRole> Tick()
+    public Formation Tick()
     {
-        return [new Role.Goalie(), new Role.Defender(1), new Role.Defender(2), new Role.Attacker()];
+        return new Formation
+        {
+            RequiredRoles =
+            [
+                new Role.Goalie(),
+                new Role.Defender(1),
+                new Role.Defender(2),
+                new Role.Attacker()
+            ]
+        };
     }
 }

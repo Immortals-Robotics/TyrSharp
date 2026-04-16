@@ -6,6 +6,7 @@ using Tyr.Common.Time;
 using Tyr.Common.Vision.Data;
 using Tyr.Soccer;
 using Tyr.Soccer.Knowledge;
+using Tyr.Soccer.RoleAssignment;
 using Tyr.Soccer.Tactics.Fsm;
 using SslReferee = Tyr.Common.Data.Ssl.Gc.Referee;
 using TyrTimer = Tyr.Common.Time.Timer;
@@ -194,6 +195,7 @@ public sealed class FsmTimedTransitionTests
                 Field = FieldSize.DivisionA,
                 Timer = new TyrTimer(),
                 Knowledge = new Knowledge(),
+                RoleAssignment = RoleAssignmentResult.Empty,
             };
         }
 

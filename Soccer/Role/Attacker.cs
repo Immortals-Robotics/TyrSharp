@@ -12,7 +12,6 @@ public record Attacker : IRole
     }
 
     public float Importance => 1f;
-
     public DeltaTime CostFor(Robot.Robot robot)
     {
         var trajectory = TrajectoryBangBang.Make2D(robot.Position, robot.Velocity,

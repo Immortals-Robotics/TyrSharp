@@ -7,12 +7,13 @@ public class ThrowInChipShoot : IPlay
 {
     public static bool IsApplicable() => Context.Referee.OurFreeKick();
 
-    public IReadOnlyList<IRole> Tick()
+    public Formation Tick()
     {
-        var roles = new List<IRole>();
-        roles.Add(new Goalie());
-        roles.Add(new Defender(1));
-        roles.Add(new Defender(2));
+        var requiredRoles = new List<IRole>();
+        var desiredRoles = new List<IRole>();
+        requiredRoles.Add(new Goalie());
+        requiredRoles.Add(new Defender(1));
+        requiredRoles.Add(new Defender(2));
 
         var elapsed = Context.Referee.Elapsed(Context.Time);
         var ballPos = Context.Ball.State.Position;
@@ -29,7 +30,7 @@ public class ThrowInChipShoot : IPlay
         {
             chipperTarget = Context.Field.OppGoal();
         }
-        roles.Add(new CircleBall 
+        requiredRoles.Add(new CircleBall 
         { 
             TargetPosition = chipperTarget, 
             CanKick = Context.Referee.CanKickBall(), 
@@ -39,19 +40,23 @@ public class ThrowInChipShoot : IPlay
 
         // Receiver
         var randomParam = (float)((Context.Referee.Timestamp.Nanoseconds % 1000000) / 1000000f);
-        roles.Add(new ThrowInReceiver(randomParam));
+        requiredRoles.Add(new ThrowInReceiver(randomParam));
 
         // Supporters
         var zones = Context.Knowledge.Zones.OrderByDescending(z => z.ScoreOffense).ToList();
         int zoneIdx = 0;
-        while (roles.Count < Context.OwnRobots.Count)
+        while (requiredRoles.Count + desiredRoles.Count < Context.OwnRobots.Count)
         {
             if (zoneIdx < zones.Count)
-                roles.Add(new Supporter { Zone = zones[zoneIdx++] });
+                desiredRoles.Add(new Supporter { Zone = zones[zoneIdx++] });
             else
                 break;
         }
 
-        return roles;
+        return new Formation
+        {
+            RequiredRoles = requiredRoles,
+            DesiredRoles = desiredRoles
+        };
     }
 }
