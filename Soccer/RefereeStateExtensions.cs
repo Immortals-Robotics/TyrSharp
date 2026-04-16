@@ -1,4 +1,5 @@
-﻿using Tyr.Common.Data;
+﻿using System.Numerics;
+using Tyr.Common.Data;
 using Tyr.Common.Data.Ssl.Gc;
 using Tyr.Common.Referee.Data;
 using Tyr.Common.Time;
@@ -52,4 +53,6 @@ public static class RefereeStateExtensions
     public static TeamSide OurSide(this State state) => Context.Color == TeamColor.Blue
         ? state.Gc.BlueTeamSide
         : state.Gc.YellowTeamSide;
+
+    public static Vector2 DesignatedPosition(this State state) => state.Gc.DesignatedPosition;
 }

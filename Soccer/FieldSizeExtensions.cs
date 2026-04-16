@@ -98,6 +98,15 @@ public static class FieldSizeExtensions
         return Rectangle.FromCornerAndSize(new Vector2(0, -h), -Context.SideSign * field.Width, 2 * h);
     }
 
+    public static Rectangle FieldAccessArea(this FieldSize field)
+    {
+        return new Rectangle(
+            new Vector2(-field.Width - field.BoundaryWidthGoalLine + field.RobotRadius,
+                -field.Height - field.BoundaryWidth + field.RobotRadius),
+            new Vector2(field.Width + field.BoundaryWidthGoalLine - field.RobotRadius,
+                field.Height + field.BoundaryWidth - field.RobotRadius));
+    }
+
     public static bool IsOut(this FieldSize field, Vector2 point, float margin = 0.0f)
     {
         return MathF.Abs(point.X) > field.Width + margin || MathF.Abs(point.Y) > field.Height + margin;

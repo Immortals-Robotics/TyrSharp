@@ -34,6 +34,20 @@ public partial class Knowledge
         return result;
     }
 
+    public bool BallInGoal()
+    {
+        var ballPos = Context.Ball.State.Position;
+        var ourGoalArea = new Rectangle(
+            new Vector2(-Context.Field.Width - Context.Field.BoundaryWidthGoalLine, Context.Field.GoalWidth / 2.0f),
+            new Vector2(-Context.Field.Width, -Context.Field.GoalWidth / 2.0f));
+
+        var oppGoalArea = new Rectangle(
+            new Vector2(Context.Field.Width, Context.Field.GoalWidth / 2.0f),
+            new Vector2(Context.Field.Width + Context.Field.BoundaryWidthGoalLine, -Context.Field.GoalWidth / 2.0f));
+
+        return ourGoalArea.Inside(ballPos) || oppGoalArea.Inside(ballPos);
+    }
+
     public bool ShootBlocked(Vector2 initPos, Vector2 targetPos, float maxDistance, float radius)
     {
         var shootLine = new LineSegment { Start = targetPos, End = initPos };
