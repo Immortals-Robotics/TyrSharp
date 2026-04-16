@@ -20,7 +20,7 @@ public class OurPenaltyShootout : IPlay
         int waiterCount = Context.OwnRobots.Count - 2; // Minus Goalie and Kicker
         for (int i = 1; i <= waiterCount; i++)
         {
-            roles.Add(new PenaltyWaiter(i));
+            roles.Add(new PenaltyWaiter(i, true));
         }
 
         return roles;

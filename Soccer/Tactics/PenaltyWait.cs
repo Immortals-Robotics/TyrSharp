@@ -5,14 +5,14 @@ using Tyr.Soccer.Skills;
 
 namespace Tyr.Soccer.Tactics;
 
-public class PenaltyWait(Robot.Robot robot, int index) : ITactic
+public class PenaltyWait(Robot.Robot robot, int index, bool isOurPenalty) : ITactic
 {
     public Robot.Robot Robot { get; } = robot;
     public int Index { get; } = index;
 
     public ISkill Tick()
     {
-        var targetPos = CalculateStaticPos(Index);
+        var targetPos = CalculateStaticPos(Index, isOurPenalty);
         Robot.Face(Context.Field.OppGoal());
         return new GoToPoint
         {
@@ -22,11 +22,13 @@ public class PenaltyWait(Robot.Robot robot, int index) : ITactic
         };
     }
 
-    public static Vector2 CalculateStaticPos(int index)
+    public static Vector2 CalculateStaticPos(int index, bool isOurPenalty)
     {
         // Position robots in our half, spaced out along Y
-        float x = Context.SideSign * 4000;
-        float y = (index - 1) * 1000 - 1000;
+        // If it's our penalty, we can be closer to the center (x=4000)
+        // If it's their penalty, we should stay further back (x=5000)
+        float x = Context.SideSign * (isOurPenalty ? 4000 : 5000);
+        float y = (index - 1) * 800 - 2000;
         return new Vector2(x, y);
     }
 }
