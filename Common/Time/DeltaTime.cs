@@ -17,6 +17,7 @@ public readonly record struct DeltaTime : IComparable<DeltaTime>
     private DeltaTime(long nanoseconds) => Nanoseconds = nanoseconds;
 
     public static readonly DeltaTime Zero = new(0);
+    public static readonly DeltaTime MaxValue = new(long.MaxValue);
 
     public static DeltaTime FromSeconds(double seconds) => new((long)(seconds * 1e9));
     public static DeltaTime FromMilliseconds(double ms) => new((long)(ms * 1e6));

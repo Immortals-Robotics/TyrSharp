@@ -1,33 +1,41 @@
 using System.Numerics;
-using Tyr.Soccer.Tactics;
+using Tyr.Common.Time;
+using Tyr.Soccer.Navigation.Trajectory;
+using Tyr.Soccer.Robot;
 
 namespace Tyr.Soccer.Role;
 
 public record BallPlacer(int PlacerId) : IRole
 {
-    public ITactic CreateTactic(Robot.Robot robot)
+    public Tactics.ITactic CreateTactic(Robot.Robot robot)
     {
         return new Tactics.BallPlacement(robot, PlacerId);
     }
 
     public float Importance => 100f;
 
-    public float CostFor(Robot.Robot robot)
+    public DeltaTime CostFor(Robot.Robot robot)
     {
         var ball = Context.Ball.State.Position;
         var target = Context.Referee.DesignatedPosition();
         var toTarget = target - ball;
 
+        Vector2 targetPos;
         if (toTarget.Length() < 10.0f)
         {
-            return Vector2.Distance(robot.Position, ball);
+            targetPos = ball;
+        }
+        else
+        {
+            var dir = Vector2.Normalize(toTarget);
+            var distance = Context.Field.RobotRadius * 2.0f;
+
+            // Placer 1 is closer to target, Placer 2 is further back
+            targetPos = PlacerId == 1 ? ball + dir * distance : ball - dir * distance;
         }
 
-        var dir = Vector2.Normalize(toTarget);
-        var distance = Context.Field.RobotRadius * 2.0f;
-
-        // Placer 1 is closer to target, Placer 2 is further back
-        var targetPos = PlacerId == 1 ? ball + dir * distance : ball - dir * distance;
-        return Vector2.Distance(robot.Position, targetPos);
+        var trajectory = TrajectoryBangBang.Make2D(robot.Position, robot.Velocity,
+            targetPos, VelocityProfile.Mamooli);
+        return DeltaTime.FromSeconds(trajectory.Duration);
     }
 }

@@ -1,5 +1,7 @@
-using System.Numerics;
+using Tyr.Common.Time;
 using Tyr.Soccer.Knowledge;
+using Tyr.Soccer.Navigation.Trajectory;
+using Tyr.Soccer.Robot;
 
 namespace Tyr.Soccer.Role;
 
@@ -14,5 +16,10 @@ public record Supporter : IRole
 
     public float Importance => 0.5f;
 
-    public float CostFor(Robot.Robot robot) => Vector2.Distance(robot.Position, Zone.Rect.Center);
+    public DeltaTime CostFor(Robot.Robot robot)
+    {
+        var trajectory = TrajectoryBangBang.Make2D(robot.Position, robot.Velocity,
+            Zone.Rect.Center, VelocityProfile.Mamooli);
+        return DeltaTime.FromSeconds(trajectory.Duration);
+    }
 }

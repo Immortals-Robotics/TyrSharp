@@ -15,7 +15,7 @@ using Tyr.Soccer.Tactics.Fsm;
 namespace Tyr.Soccer.Tactics;
 
 [Configurable]
-public partial class Def : ITactic
+public partial class Defender : ITactic
 {
     [ConfigEntry] private static float TightStartAngle { get; set; } = 40.0f;
     [ConfigEntry] private static float MaxExtensionArea { get; set; } = 1100.0f;
@@ -34,7 +34,7 @@ public partial class Def : ITactic
     private readonly Fsm<State> _fsm;
     private static int _shirjeSelectHys = 0;
 
-    public Def(Robot.Robot robot, int defId)
+    public Defender(Robot.Robot robot, int defId)
     {
         Robot = robot;
         DefId = defId;
@@ -154,8 +154,8 @@ public partial class Def : ITactic
 
     private ISkill TickDive()
     {
-        var def1 = Context.OwnRobots.FirstOrDefault(r => r.Role is Role.Def d && d.DefId == 1);
-        var def2 = Context.OwnRobots.FirstOrDefault(r => r.Role is Role.Def d && d.DefId == 2);
+        var def1 = Context.OwnRobots.FirstOrDefault(r => r.Role is Role.Defender d && d.DefId == 1);
+        var def2 = Context.OwnRobots.FirstOrDefault(r => r.Role is Role.Defender d && d.DefId == 2);
 
         var def1Pos = def1?.Position ?? CalculateStaticPos(1);
         var def2Pos = def2?.Position ?? CalculateStaticPos(2);
@@ -229,7 +229,7 @@ public partial class Def : ITactic
     }
 
 
-    private sealed class DefState(Def tactic) : IState<State>
+    private sealed class DefState(Defender tactic) : IState<State>
     {
         public State Type => State.Def;
 
@@ -255,7 +255,7 @@ public partial class Def : ITactic
         }
     }
 
-    private sealed class DiveState(Def tactic) : IState<State>
+    private sealed class DiveState(Defender tactic) : IState<State>
     {
         public State Type => State.Dive;
 

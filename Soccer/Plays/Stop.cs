@@ -11,8 +11,8 @@ public class Stop : IPlay
         var roles = new List<Role.IRole>();
 
         roles.Add(new Role.Goalie());
-        roles.Add(new Role.Def(1));
-        roles.Add(new Role.Def(2));
+        roles.Add(new Role.Defender(1));
+        roles.Add(new Role.Defender(2));
         roles.Add(new Role.StopWall());
 
         var sortedZones = new Queue<Zone>();

@@ -9,8 +9,8 @@ public class OurBallPlacement : IPlay
         new BallPlacer(1),
         new BallPlacer(2),
         new Goalie(),
-        new Def(1),
-        new Def(2),
+        new Defender(1),
+        new Defender(2),
     ];
 
     public static bool IsApplicable() => Context.Referee.OurBallPlacement();

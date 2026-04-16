@@ -1,4 +1,6 @@
-﻿using System.Numerics;
+﻿using Tyr.Common.Time;
+using Tyr.Soccer.Navigation.Trajectory;
+using Tyr.Soccer.Robot;
 
 namespace Tyr.Soccer.Role;
 
@@ -11,8 +13,10 @@ public record StopWall : IRole
 
     public float Importance => 0.8f;
 
-    public float CostFor(Robot.Robot robot)
+    public DeltaTime CostFor(Robot.Robot robot)
     {
-        return Vector2.Distance(robot.Position, Tactics.StopWall.GetTargetPosition());
+        var trajectory = TrajectoryBangBang.Make2D(robot.Position, robot.Velocity,
+            Tactics.StopWall.GetTargetPosition(), VelocityProfile.Mamooli);
+        return DeltaTime.FromSeconds(trajectory.Duration);
     }
 }

@@ -6,6 +6,6 @@ public class NormalPlay : IPlay
 
     public IReadOnlyList<Role.IRole> Tick()
     {
-        return [new Role.Goalie(), new Role.Def(1), new Role.Def(2), new Role.Attacker()];
+        return [new Role.Goalie(), new Role.Defender(1), new Role.Defender(2), new Role.Attacker()];
     }
 }

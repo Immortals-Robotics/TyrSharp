@@ -1,5 +1,8 @@
 using System.Numerics;
 using Tyr.Common.Math;
+using Tyr.Common.Time;
+using Tyr.Soccer.Navigation.Trajectory;
+using Tyr.Soccer.Robot;
 
 namespace Tyr.Soccer.Role;
 
@@ -19,8 +22,10 @@ public record CircleBall : IRole
         };
     }
 
-    public float CostFor(Robot.Robot robot)
+    public DeltaTime CostFor(Robot.Robot robot)
     {
-        return Vector2.Distance(robot.Position, Context.Ball.State.Position);
+        var trajectory = TrajectoryBangBang.Make2D(robot.Position, robot.Velocity,
+            Context.Ball.State.Position, VelocityProfile.Mamooli);
+        return DeltaTime.FromSeconds(trajectory.Duration);
     }
 }

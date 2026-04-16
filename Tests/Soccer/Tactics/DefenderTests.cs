@@ -15,11 +15,11 @@ using TyrTimer = Tyr.Common.Time.Timer;
 
 namespace Tyr.Tests.Soccer.Tactics;
 
-public sealed class DefTests : IDisposable
+public sealed class DefenderTests : IDisposable
 {
     private readonly SoccerContextScope _context = new();
 
-    public DefTests()
+    public DefenderTests()
     {
         ServiceLocator.BallTrajectoryFactory = new BallTrajectoryFactory();
     }
@@ -88,7 +88,7 @@ public sealed class DefTests : IDisposable
             };
 
             Context.Knowledge.Update();
-            return Def.CalculateStaticPos(defId);
+            return Defender.CalculateStaticPos(defId);
         }
 
         public void Dispose()

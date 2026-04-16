@@ -1,4 +1,4 @@
-using System.Numerics;
+using Tyr.Common.Time;
 
 namespace Tyr.Soccer.Role;
 
@@ -11,13 +11,10 @@ public record Goalie : IRole
 
     public float Importance => 100f;
 
-    public float CostFor(Robot.Robot robot)
+    public DeltaTime CostFor(Robot.Robot robot)
     {
-        if (robot.Id == (int)Context.Referee.OurInfo().Goalkeeper)
-        {
-            return -100000f;
-        }
-        
-        return float.MaxValue;
+        return robot.Id == (int)Context.Referee.OurInfo().Goalkeeper
+            ? DeltaTime.Zero
+            : DeltaTime.MaxValue;
     }
 }
