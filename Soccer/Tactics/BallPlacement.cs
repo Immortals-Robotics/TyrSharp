@@ -254,7 +254,7 @@ public partial class BallPlacement : ITactic
             {
                 Target = target,
                 VelocityProfile = VelocityProfile.Aroom with { Speed = 800f },
-                NavigationFlags = NavigationFlags.BallSmallObstacle
+                NavigationFlags = NavigationFlags.NoObstacles
             };
         }
     }
