@@ -52,8 +52,6 @@ public partial class Ai
 
             _commandHistories[i] = [];
         }
-
-        Context.Knowledge.InitZones();
     }
 
     public void UpdateContext(Vision.FilteredFrame vision, Referee.State referee, FieldSize field)

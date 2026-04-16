@@ -7,10 +7,12 @@ public partial class Knowledge
 {
     public List<Zone> Zones { get; } = [];
 
-    public void InitZones()
+    private void UpdateZones()
     {
         Zones.Clear();
+
         if (Zone.ZoneCountX == 0 || Zone.ZoneCountY == 0) return;
+
         var zoneWidth = Context.Field.Width * 2 / Zone.ZoneCountX;
         var zoneHeight = Context.Field.Height * 2 / Zone.ZoneCountY;
 
@@ -21,10 +23,15 @@ public partial class Knowledge
                 var fieldMin = new Vector2(-Context.Field.Width, -Context.Field.Height);
                 var zoneMin = fieldMin + new Vector2(i * zoneWidth, j * zoneHeight);
 
-                Zones.Add(new Zone
+                var zone = new Zone
                 {
                     Rect = Rectangle.FromCornerAndSize(zoneMin, zoneWidth, zoneHeight)
-                });
+                };
+                zone.UpdateScore();
+
+                zone.DrawZone();
+
+                Zones.Add(zone);
             }
         }
     }

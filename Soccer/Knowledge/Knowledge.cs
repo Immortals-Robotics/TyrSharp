@@ -10,7 +10,6 @@ public partial class Knowledge
     public int OwnRobotsCount { get; private set; }
     public int OpponentRobotsCount { get; private set; }
 
-
     public void Update()
     {
         OwnRobotsCount = Context.OwnRobots.Count(robot => robot.Seen);
@@ -18,11 +17,6 @@ public partial class Knowledge
 
         UpdateGameConditions();
         UpdateDefense();
-
-        foreach (var zone in Context.Knowledge.Zones)
-        {
-            zone.UpdateScore();
-            zone.DrawZone();
-        }
+        UpdateZones();
     }
 }
