@@ -12,13 +12,16 @@ public record CircleBall : IRole
 
     public required Vector2 TargetPosition { get; init; }
     public required bool CanKick { get; init; }
+    public float ShootPower { get; init; } = 3000f;
+    public float ChipPower { get; init; }
 
     public Tactics.ITactic CreateTactic(Robot.Robot robot)
     {
         return new Tactics.CircleBall(robot)
         {
-            TargetAngle = Angle.FromVector(Context.Ball.State.Position - TargetPosition),
-            ShootPower = CanKick ? 3000f : 0f,
+            TargetAngle = (Context.Ball.State.Position - TargetPosition).ToAngle(),
+            ShootPower = CanKick ? ShootPower : 0f,
+            ChipPower = CanKick ? ChipPower : 0f,
         };
     }
 
