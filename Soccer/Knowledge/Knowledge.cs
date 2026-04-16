@@ -17,6 +17,7 @@ public partial class Knowledge
 
         UpdateGameConditions();
         UpdateDefense();
+        UpdateOpponentThreats();
         UpdateZones();
     }
 }
