@@ -291,8 +291,19 @@ public partial class BallPlacement : ITactic
     {
         public State Type => State.Stuck;
         public Timestamp? EnterTime { get; set; }
-        public void Enter() => EnterTime = Context.Time;
-        public void Exit() { }
+        private CircleBall? _circleBall;
+
+        public void Enter()
+        {
+            EnterTime = Context.Time;
+            _circleBall = null;
+        }
+
+        public void Exit()
+        {
+            _circleBall = null;
+        }
+
         public ISkill? Tick()
         {
             var ballPos = Context.Ball.State.Position;
@@ -309,12 +320,15 @@ public partial class BallPlacement : ITactic
                 else
                 {
                     CalcMinBallWallDist(out var wallPt);
-                    return new CircleBall(tactic.Robot)
+                    var targetAngle = (ballPos - wallPt).ToAngle() + Angle.FromDeg(60f);
+                    _circleBall ??= new CircleBall(tactic.Robot)
                     {
-                        TargetAngle = (ballPos - wallPt).ToAngle() + Angle.FromDeg(60f),
-                        ShootPower = 3000f,
-                        ChipPower = 0f
-                    }.Tick();
+                        TargetAngle = targetAngle
+                    };
+                    _circleBall.TargetAngle = targetAngle;
+                    _circleBall.ShootPower = 3000f;
+                    _circleBall.ChipPower = 0f;
+                    return _circleBall.Tick();
                 }
             }
             else
@@ -329,34 +343,43 @@ public partial class BallPlacement : ITactic
     private sealed class LongDistanceState(BallPlacement tactic) : IState<State>
     {
         public State Type => State.LongDistance;
-        public void Enter() { }
-        public void Exit() { }
+        private CircleBall? _circleBall;
+
+        public void Enter()
+        {
+            _circleBall = null;
+        }
+
+        public void Exit()
+        {
+            _circleBall = null;
+        }
+
         public ISkill? Tick()
         {
             var finalBallPos = Context.Referee.DesignatedPosition();
             var ballPos = Context.Ball.State.Position;
-            var receiver_pos = finalBallPos + Vector2.Normalize(finalBallPos - ballPos) * Context.Field.RobotRadius;
+            var receiverPos = finalBallPos + Vector2.Normalize(finalBallPos - ballPos) * Context.Field.RobotRadius;
             if (tactic.PlacerId == 1)
             {
-                return new WaitForBall { StaticPosition = receiver_pos };
+                return new WaitForBall { StaticPosition = receiverPos };
             }
             else
             {
                 var ballPlacer1 = GetPlacer(1);
-                if (ballPlacer1 != null && Vector2.Distance(ballPlacer1.Position, receiver_pos) < 100)
-                    return new CircleBall(tactic.Robot)
-                    {
-                        TargetAngle = (ballPos - receiver_pos).ToAngle(),
-                        ShootPower = 2000f,
-                        ChipPower = 0f
-                    }.Tick();
-                else
-                    return new CircleBall(tactic.Robot)
-                    {
-                        TargetAngle = (ballPos - receiver_pos).ToAngle(),
-                        ShootPower = 0f,
-                        ChipPower = 0f
-                    }.Tick();
+                var targetAngle = (ballPos - receiverPos).ToAngle();
+                var shootPower = ballPlacer1 != null && Vector2.Distance(ballPlacer1.Position, receiverPos) < 100f
+                    ? 2000f
+                    : 0f;
+
+                _circleBall ??= new CircleBall(tactic.Robot)
+                {
+                    TargetAngle = targetAngle
+                };
+                _circleBall.TargetAngle = targetAngle;
+                _circleBall.ShootPower = shootPower;
+                _circleBall.ChipPower = 0f;
+                return _circleBall.Tick();
             }
         }
     }

@@ -19,7 +19,7 @@ public partial class CircleBall : ITactic
     [ConfigEntry] private static float ShmitCoeff { get; set; } = 1.2f;
     [ConfigEntry] private static float DefaultNearBallDis { get; set; } = 140.0f;
 
-    public required Angle TargetAngle { get; init; }
+    public required Angle TargetAngle { get; set; }
     public float ShootPower { get; set; }
     public float ChipPower { get; set; }
     public float? NearDistanceOverride { get; set; }
