@@ -17,7 +17,7 @@ public sealed partial class RobotDebugView : IDisposable
     public static readonly string WindowTitle = $"{IconFonts.FontAwesome6.Microchip} Robot Debug";
     public static bool CapturesGamepad => UseGamepadControl && _isFocused;
     private static bool _isFocused;
-    private const float MaxGamepadDribblerSpeed = 3.0f;
+    private const float MaxGamepadDribblerSpeed = 12.0f;
 
     [ConfigEntry("Command port for the robot", StorageType.User)]
     private static int CommandPort { get; set; } = 5671;
@@ -218,14 +218,14 @@ public sealed partial class RobotDebugView : IDisposable
 
         ImGui.Spacing();
         ImGui.SeparatorText("Actions");
-        ImGui.SliderFloat("Shoot Power (0-1)", ref _shootPower, 0.0f, 1.0f);
+        ImGui.SliderFloat("Shoot Power (0-1)", ref _shootPower, 0.0f, 16.0f);
         ImGui.SameLine();
         if (ImGui.Button("SHOOT"))
         {
             SendCommand(sender, shoot: _shootPower);
         }
 
-        ImGui.SliderFloat("Chip Power (0-1)", ref _chipPower, 0.0f, 1.0f);
+        ImGui.SliderFloat("Chip Power (0-1)", ref _chipPower, 0.0f, 16.0f);
         ImGui.SameLine();
         if (ImGui.Button("CHIP"))
         {
@@ -310,7 +310,7 @@ public sealed partial class RobotDebugView : IDisposable
 
         _continuousSend = false;
 
-        _vx = Gamepad.GetStickAxis(_gamepad, SDLGamepadAxis.Lefty, GamepadDeadzone) * GamepadMaxSpeed;
+        _vx = -Gamepad.GetStickAxis(_gamepad, SDLGamepadAxis.Lefty, GamepadDeadzone) * GamepadMaxSpeed;
         _vy = -Gamepad.GetStickAxis(_gamepad, SDLGamepadAxis.Leftx, GamepadDeadzone) * GamepadMaxSpeed;
 
         var rightX = Gamepad.GetStickAxis(_gamepad, SDLGamepadAxis.Rightx, GamepadDeadzone);
