@@ -1,5 +1,6 @@
 ﻿using System.Numerics;
 using Tyr.Common.Extensions;
+using Tyr.Common.Time;
 using Tyr.Common.Vision.Data;
 
 namespace Tyr.Soccer.Knowledge;
@@ -7,19 +8,49 @@ namespace Tyr.Soccer.Knowledge;
 public partial class Knowledge
 {
     public List<(FilteredRobot Robot, float Threat)> OpponentThreats { get; } = [];
+    private Timestamp _lastEmptyThreatLogTime;
 
     private void UpdateOpponentThreats()
     {
         OpponentThreats.Clear();
 
+        var gkFiltered = 0;
+        var nearBallFiltered = 0;
+        var xSideFiltered = 0;
+
         foreach (var opp in Context.OppRobots)
         {
+            if (opp.Id.Id == Context.Referee.OppInfo().Goalkeeper)
+            {
+                gkFiltered++;
+                continue;
+            }
+
+            if (Vector2.Distance(opp.State.Position, Context.Ball.State.Position) < 500f)
+            {
+                nearBallFiltered++;
+                continue;
+            }
+
+            if (opp.State.Position.X * Context.SideSign < 1000f)
+            {
+                xSideFiltered++;
+                continue;
+            }
+
             var threat = CalculateOpponentThreat(opp);
             if (threat >= 0)
                 OpponentThreats.Add((opp, threat));
         }
 
         OpponentThreats.Sort((a, b) => b.Threat.CompareTo(a.Threat));
+
+        if (Context.OppRobots.Count > 0 && OpponentThreats.Count == 0 && Context.Time - _lastEmptyThreatLogTime > DeltaTime.FromSeconds(1))
+        {
+            _lastEmptyThreatLogTime = Context.Time;
+            Log.ZLogDebug(
+                $"OpponentThreats empty. opp={Context.OppRobots.Count}, gk={gkFiltered}, nearBall={nearBallFiltered}, xSide={xSideFiltered}, side={Context.SideSign}, ball={Context.Ball.State.Position}");
+        }
     }
 
     public static float CalculateOpponentThreat(FilteredRobot robot)
@@ -38,7 +69,7 @@ public partial class Knowledge
         var t1Angle = robot.State.Position.AngleWith(Context.Field.OwnGoalPostBottom());
         var t2Angle = robot.State.Position.AngleWith(Context.Field.OwnGoalPostTop());
 
-        var oppOpenAngleToGoal = MathF.Abs((t2Angle - t1Angle).Deg);
+        var oppOpenAngleToGoal = MathF.Abs((t2Angle - t1Angle).DegNormalized);
 
         var oppToBall = (Context.Ball.State.Position - robot.State.Position).WithLength(1f);
         var oppToGoal = (Context.Field.OwnGoal() - robot.State.Position).WithLength(1f);
