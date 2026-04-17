@@ -14,6 +14,8 @@ namespace Tyr.Vision;
 public sealed partial class Vision
 {
     [ConfigEntry] private static DeltaTime CameraTooOldTime { get; set; } = DeltaTime.FromSeconds(1f);
+    [ConfigEntry("Ignore incoming vision detections on the selected half of the field", StorageType.User)]
+    private static IgnoreVisionHalf IgnoredHalf { get; set; } = IgnoreVisionHalf.None;
 
     public static FieldSize FieldSize { get; set; } = FieldSize.Default;
 
@@ -53,8 +55,9 @@ public sealed partial class Vision
 
         foreach (var detection in frames)
         {
+            var filteredDetection = DetectionFrameFilter.ApplyIgnoredHalf(detection, IgnoredHalf);
             var camera = GetOrCreateCamera(detection.CameraId);
-            camera.OnFrame(detection, _lastFilteredFrame);
+            camera.OnFrame(filteredDetection, _lastFilteredFrame);
         }
 
         // remove old cameras
