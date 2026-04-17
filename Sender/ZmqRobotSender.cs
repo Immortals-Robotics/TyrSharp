@@ -76,6 +76,12 @@ public sealed partial class ZmqRobotSender : ISender
             if (!_senders.TryGetValue(cmd.VisionId, out var sender))
                 continue;
 
+            var mikonaCmd = new MikonaCommand
+            {
+                Charge = !cmd.Halted,
+                Discharge = cmd.Halted
+            };
+
             var robotCmd = new RobotCommand
             {
                 Halted = cmd.Halted,
@@ -89,7 +95,10 @@ public sealed partial class ZmqRobotSender : ISender
                 DribblerForce = cmd.DribblerForce > 0f ? cmd.DribblerForce : DefaultDribblerForce
             };
 
-            if (sender.Send(RobotCommandTopic, robotCmd))
+            var mikonaSent = sender.Send(CommandType.CommandTypeMikona, mikonaCmd);
+            var robotSent = sender.Send(RobotCommandTopic, robotCmd);
+
+            if (mikonaSent || robotSent)
             {
                 Log.ZLogTrace($"Dispatched command to Robot {cmd.VisionId} at {_robotIps[cmd.VisionId]}");
                 anySent = true;

@@ -48,6 +48,8 @@ public sealed partial class RobotDebugView : IDisposable
     private float _chipPower;
     private float _dribblerSpeed;
     private float _dribblerForce = 5.0f;
+    private bool _mikonaCharge = true;
+    private bool _mikonaDischarge;
     private bool _halted;
     private bool _continuousSend;
     private SDLGamepadPtr _gamepad;
@@ -166,6 +168,8 @@ public sealed partial class RobotDebugView : IDisposable
                 $"{IconFonts.FontAwesome6.CircleDot} Ball Detected");
             ImGui.SameLine();
             ImGui.TextColored(Color.Zinc400, $"{IconFonts.FontAwesome6.TemperatureHalf} {status.Diag?.ImuTemp:F1}C");
+
+            DrawMikonaStatus(status);
         }
 
         ImGui.TextColored(Color.Zinc500, $"Gamepad Control: {(UseGamepadControl ? "On" : "Off")} (set in Configs)");
@@ -237,6 +241,17 @@ public sealed partial class RobotDebugView : IDisposable
         ImGui.SliderFloat("Dribbler Force (N)", ref _dribblerForce, 0.0f, 20.0f);
 
         ImGui.Spacing();
+        ImGui.SeparatorText("Mikona Control");
+        ImGui.Checkbox("Charge Enabled", ref _mikonaCharge);
+        ImGui.SameLine();
+        ImGui.Checkbox("Discharge Enabled", ref _mikonaDischarge);
+
+        if (ImGui.Button("SEND MIKONA", new Vector2(-1, 32)))
+        {
+            SendMikonaCommand(sender);
+        }
+
+        ImGui.Spacing();
         ImGui.Separator();
 
         if (_continuousSend)
@@ -265,6 +280,63 @@ public sealed partial class RobotDebugView : IDisposable
         ImGui.PopStyleColor();
     }
 
+    private static void DrawMikonaStatus(HardwareStatus status)
+    {
+        ImGui.Spacing();
+        ImGui.SeparatorText("Mikona");
+
+        var mikona = status.Mikona;
+        if (mikona == null)
+        {
+            ImGui.TextDisabled("No Mikona status received.");
+            return;
+        }
+
+        var stateColor = mikona.Fault ? Color.Red400
+            : mikona.Charging ? Color.Green400
+            : mikona.Discharging ? Color.Orange400
+            : mikona.Done ? Color.Blue400
+            : Color.Zinc400;
+        var stateText = mikona.Fault ? "Fault"
+            : mikona.Charging ? "Charging"
+            : mikona.Discharging ? "Discharging"
+            : mikona.Done ? "Charged"
+            : "Idle";
+
+        ImGui.TextColored(stateColor, $"{IconFonts.FontAwesome6.Bolt} {stateText}");
+        ImGui.SameLine();
+        ImGui.TextColored(mikona.Done ? Color.Green400 : Color.Zinc400,
+            $"{IconFonts.FontAwesome6.CircleCheck} Charged: {(mikona.Done ? "Yes" : "No")}");
+        ImGui.SameLine();
+        ImGui.TextColored(Color.Yellow400, $"{IconFonts.FontAwesome6.Plug} {mikona.Voltage:F1}V");
+
+        ImGui.TextColored(mikona.Fault ? Color.Red400 : Color.Zinc500,
+            $"{IconFonts.FontAwesome6.TriangleExclamation} Fault: {(mikona.Fault ? "Yes" : "No")}");
+
+        var faults = GetMikonaFaultSummary(mikona);
+        if (faults.Count > 0)
+        {
+            ImGui.TextWrapped($"Fault details: {string.Join(", ", faults)}");
+        }
+        else
+        {
+            ImGui.TextDisabled("Fault details: none");
+        }
+    }
+
+    private static List<string> GetMikonaFaultSummary(MikonaStatus mikona)
+    {
+        var faults = new List<string>();
+
+        if (mikona.FaultInvalidCmd) faults.Add("invalid command");
+        if (mikona.FaultChargeTimeout) faults.Add("charge timeout");
+        if (mikona.FaultDischargeStuck) faults.Add("discharge stuck");
+        if (mikona.FaultKickANoDrop) faults.Add("kick A no drop");
+        if (mikona.FaultKickBNoDrop) faults.Add("kick B no drop");
+
+        return faults;
+    }
+
     private void SendCommand(ZmqSender sender, float shoot = 0, float chip = 0)
     {
         SendCommand(sender, shoot, chip, _dribblerSpeed, _dribblerForce);
@@ -286,6 +358,17 @@ public sealed partial class RobotDebugView : IDisposable
         };
 
         sender.Send(CommandType.CommandTypeRobot, robotCmd);
+    }
+
+    private void SendMikonaCommand(ZmqSender sender)
+    {
+        var mikonaCmd = new MikonaCommand
+        {
+            Charge = _mikonaCharge,
+            Discharge = _mikonaDischarge
+        };
+
+        sender.Send(CommandType.CommandTypeMikona, mikonaCmd);
     }
 
     private unsafe void HandleGamepadInput()
