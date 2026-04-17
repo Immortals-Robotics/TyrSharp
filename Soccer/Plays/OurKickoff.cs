@@ -14,8 +14,8 @@ public class OurKickoff : IPlay
         var side = -Context.SideSign; // Side we are attacking towards
 
         // Receiver positions based on C++ kickoffUsPass
-        var mid5Pos = new Vector2(ballPos.X + side * 150f, Context.Field.Height - 300f);
-        var mid1Pos = new Vector2(ballPos.X + side * 150f, -(Context.Field.Height - 300f));
+        var mid5Pos = new Vector2(ballPos.X - side * 150f, Context.Field.Height - 300f);
+        var mid1Pos = new Vector2(ballPos.X - side * 150f, -(Context.Field.Height - 300f));
         var mid2Pos = ballPos.PointOnConnectingLine(Context.Field.OwnGoal(), 1000f);
 
         var elapsed = Context.Referee.Elapsed(Context.Time);

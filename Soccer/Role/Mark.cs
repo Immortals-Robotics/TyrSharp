@@ -21,9 +21,7 @@ public record Mark(FilteredRobot Opponent, Vector2? StaticPosition = null) : IRo
 
     public DeltaTime CostFor(Robot.Robot robot)
     {
-        var targetPos = Opponent.State.Position;
-        var trajectory = TrajectoryBangBang.Make2D(robot.Position, robot.Velocity,
-            targetPos, VelocityProfile.Mamooli);
-        return DeltaTime.FromSeconds(trajectory.Duration);
+        var cost = Context.Knowledge.CalculateMarkCost(robot.Id, (int)Opponent.Id.Id!);
+        return cost < 0 ? DeltaTime.MaxValue : DeltaTime.FromSeconds(cost);
     }
 }

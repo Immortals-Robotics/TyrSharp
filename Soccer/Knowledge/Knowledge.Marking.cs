@@ -1,4 +1,5 @@
 ﻿using System.Numerics;
+using Tyr.Common.Extensions;
 using Tyr.Common.Vision.Data;
 
 namespace Tyr.Soccer.Knowledge;
@@ -23,10 +24,7 @@ public partial class Knowledge
 
     public static float CalculateOpponentThreat(FilteredRobot robot)
     {
-        if (robot.Quality <= 0)
-            return -1;
-
-        if (robot.Id.Id == (int)Context.Referee.OppInfo().Goalkeeper)
+        if (robot.Id.Id == Context.Referee.OppInfo().Goalkeeper)
             return -1;
 
         if (Vector2.Distance(robot.State.Position, Context.Ball.State.Position) < 500)
@@ -40,10 +38,10 @@ public partial class Knowledge
         var t1Angle = robot.State.Position.AngleWith(Context.Field.OwnGoalPostBottom());
         var t2Angle = robot.State.Position.AngleWith(Context.Field.OwnGoalPostTop());
 
-        var oppOpenAngleToGoal = MathF.Abs((t2Angle - t1Angle).DegNormalized);
+        var oppOpenAngleToGoal = MathF.Abs((t2Angle - t1Angle).Deg);
 
-        var oppToBall = Vector2.Normalize(Context.Ball.State.Position - robot.State.Position);
-        var oppToGoal = Vector2.Normalize(Context.Field.OwnGoal() - robot.State.Position);
+        var oppToBall = (Context.Ball.State.Position - robot.State.Position).WithLength(1f);
+        var oppToGoal = (Context.Field.OwnGoal() - robot.State.Position).WithLength(1f);
 
         var oneTouchDot = Vector2.Dot(oppToBall, oppToGoal);
 
@@ -85,14 +83,12 @@ public partial class Knowledge
     public float CalculateMarkCost(int robotId, int oppId)
     {
         var own = Context.OwnRobots[robotId];
-        var oppIndex = Context.OppRobots.FindIndex(r => r.Id.Id == oppId);
+        var oppIndex = Context.OppRobots.FindIndex(r => r.Id.Id == (uint)oppId);
 
         if (!own.Seen || oppIndex == -1)
             return -1;
 
         var opp = Context.OppRobots[oppIndex];
-        if (opp.Quality <= 0)
-            return -1;
 
         const float kPredictT = 0.3f;
 

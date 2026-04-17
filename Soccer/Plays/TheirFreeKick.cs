@@ -15,7 +15,7 @@ public class TheirFreeKick : IPlay
     public Formation Tick()
     {
         var roles = new List<IRole>();
-        
+
         // Goalkeeper
         roles.Add(new Goalie());
 
@@ -27,9 +27,14 @@ public class TheirFreeKick : IPlay
         roles.Add(new DefenceWall());
 
         // Mids: mark opponents or use zones
-        var oppsToMark = Context.OppRobots
-            .OrderBy(opp => Vector2.Distance(opp.State.Position, Context.Field.OwnGoal()))
+        var oppsToMark = Context.Knowledge.OpponentThreats
+            .Select(t => t.Robot)
             .ToList();
+
+        foreach (var opp in oppsToMark)
+        {
+            Log.ZLogDebug($"opp: {opp.Id}");
+        }
 
         var zones = Context.Knowledge.Zones.OrderByDescending(z => z.ScoreDefense).ToList();
         int oppIdx = 0;
