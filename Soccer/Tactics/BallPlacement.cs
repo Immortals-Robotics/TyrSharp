@@ -261,7 +261,7 @@ public partial class BallPlacement : ITactic
             return new GoToPoint
             {
                 Target = target,
-                VelocityProfile = VelocityProfile.Mamooli with { Speed = 1500f },
+                VelocityProfile = VelocityProfile.Mamooli,
                 NavigationFlags = NavigationFlags.BallSmallObstacle
             };
         }
@@ -287,7 +287,7 @@ public partial class BallPlacement : ITactic
             return new GoToPoint
             {
                 Target = target,
-                VelocityProfile = VelocityProfile.Aroom with { Speed = 800f },
+                VelocityProfile = VelocityProfile.Sooski,
                 NavigationFlags = NavigationFlags.NoObstacles
             };
         }
@@ -330,7 +330,7 @@ public partial class BallPlacement : ITactic
             return new GoToPoint
             {
                 Target = tactic.PlacerId == 1 ? kissTouch1 : kissTouch2,
-                VelocityProfile = VelocityProfile.Mamooli with { Speed = 500f },
+                VelocityProfile = VelocityProfile.Sooski,
                 NavigationFlags = NavigationFlags.NoObstacles | NavigationFlags.NoBallObstacle
             };
         }
@@ -469,7 +469,7 @@ public partial class BallPlacement : ITactic
             return new GoToPoint
             {
                 Target = fTarget,
-                VelocityProfile = VelocityProfile.Mamooli with { Speed = 800f },
+                VelocityProfile = VelocityProfile.Sooski,
                 NavigationFlags = NavigationFlags.BallSmallObstacle
             };
         }
@@ -495,7 +495,7 @@ public partial class BallPlacement : ITactic
             return new GoToPoint
             {
                 Target = fTarget,
-                VelocityProfile = VelocityProfile.Mamooli with { Speed = 800f },
+                VelocityProfile = VelocityProfile.Aroom,
                 NavigationFlags = NavigationFlags.BallObstacle
             };
         }
