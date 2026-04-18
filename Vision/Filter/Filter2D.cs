@@ -117,8 +117,9 @@ public class Filter2D
 
     public Vector2 GetPosition(Timestamp timestamp)
     {
-        var dt = timestamp - LastTimestamp;
-        return Position + Velocity * (float)dt.Seconds;
+        var dt = (float)(timestamp - LastTimestamp).Seconds;
+        if (Math.Abs(dt) > 1.0f) return Position;
+        return Position + Velocity * dt;
     }
 
     public float MeasurementError
