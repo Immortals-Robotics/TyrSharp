@@ -6,10 +6,14 @@ namespace Tyr.Soccer.Knowledge;
 public partial class Knowledge
 {
     public List<Zone> Zones { get; } = [];
+    public Queue<Zone> SortedZonesByOffense { get; } = new();
+    public Queue<Zone> SortedZonesByDefense { get; } = new();
 
     private void UpdateZones()
     {
         Zones.Clear();
+        SortedZonesByOffense.Clear();
+        SortedZonesByDefense.Clear();
 
         if (Zone.ZoneCountX == 0 || Zone.ZoneCountY == 0) return;
 
@@ -33,6 +37,16 @@ public partial class Knowledge
 
                 Zones.Add(zone);
             }
+        }
+
+        foreach (var zone in Zones.OrderByDescending(z => z.ScoreOffense))
+        {
+            SortedZonesByOffense.Enqueue(zone);
+        }
+
+        foreach (var zone in Zones.OrderByDescending(z => z.ScoreDefense))
+        {
+            SortedZonesByDefense.Enqueue(zone);
         }
     }
 }

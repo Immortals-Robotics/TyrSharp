@@ -20,14 +20,15 @@ public class TheirBallPlacement : IPlay
         requiredRoles.Add(new Role.StopWall());
 
         // The rest are supporters in offensive zones
-        var zones = Context.Knowledge.Zones.OrderByDescending(z => z.ScoreOffense).ToList();
-        int zoneIdx = 0;
+        var zones = Context.Knowledge.SortedZonesByOffense;
         while (requiredRoles.Count + desiredRoles.Count < Context.OwnRobots.Count)
         {
-            if (zoneIdx < zones.Count)
-                desiredRoles.Add(new Supporter { Zone = zones[zoneIdx++] });
-            else
+            if (zones.Count == 0)
+            {
                 break;
+            }
+
+            desiredRoles.Add(new Supporter { Zone = zones.Dequeue() });
         }
 
         return new Formation

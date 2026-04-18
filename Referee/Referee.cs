@@ -51,7 +51,8 @@ public partial class Referee
 
         if (oldState.GameState != State.GameState ||
             oldState.Ready != State.Ready ||
-            oldState.Color != State.Color)
+            oldState.Color != State.Color ||
+            oldState.Gc.CurrentActionTimeRemaining != State.Gc.CurrentActionTimeRemaining)
         {
             Log.ZLogInformation($"state transition: {oldState} -> {State}");
 

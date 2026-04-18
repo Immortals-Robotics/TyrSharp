@@ -16,12 +16,7 @@ public class Stop : IPlay
         requiredRoles.Add(new Role.Defender(2));
         requiredRoles.Add(new Role.StopWall());
 
-        var sortedZones = new Queue<Zone>();
-        sortedZones.Clear();
-        foreach (var zone in Context.Knowledge.Zones.OrderByDescending(z => z.ScoreOffense))
-        {
-            sortedZones.Enqueue(zone);
-        }
+        var sortedZones = Context.Knowledge.SortedZonesByOffense;
 
         // Subtract required roles from our available robots
         var supportersToAdd = Math.Min(Context.Knowledge.OwnRobotsCount - requiredRoles.Count, sortedZones.Count);

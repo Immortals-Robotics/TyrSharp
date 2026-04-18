@@ -158,7 +158,7 @@ public partial class Zone
         if (oppDisToGoal < 3000)
             scoreGoalDis = 1f;
         else
-            scoreGoalDis = 1f - MathF.Pow(Math.Max(0f, (oppDisToGoal - 3000f) / 3000f), 0f);
+            scoreGoalDis = 1f - MathF.Pow(Math.Max(0f, (oppDisToGoal - 3000f) / 3000f), 0.5f);
 
         var ballToOppDis = Vector2.Distance(Context.Ball.State.Position, point);
 

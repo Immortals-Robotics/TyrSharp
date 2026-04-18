@@ -1,5 +1,4 @@
 using System.Collections.Generic;
-using System.Linq;
 using System.Numerics;
 using Tyr.Common.Math;
 using Tyr.Soccer.Role;
@@ -36,9 +35,8 @@ public class TheirFreeKick : IPlay
             Log.ZLogDebug($"opp: {opp.Id}");
         }
 
-        var zones = Context.Knowledge.Zones.OrderByDescending(z => z.ScoreDefense).ToList();
+        var zones = Context.Knowledge.SortedZonesByDefense;
         int oppIdx = 0;
-        int zoneIdx = 0;
 
         while (roles.Count < Context.OwnRobots.Count)
         {
@@ -48,7 +46,18 @@ public class TheirFreeKick : IPlay
             }
             else
             {
-                roles.Add(new Supporter { Zone = zones.ElementAtOrDefault(zoneIdx++) ?? Context.Knowledge.Zones[0] });
+                if (zones.Count > 0)
+                {
+                    roles.Add(new Supporter { Zone = zones.Dequeue() });
+                }
+                else if (Context.Knowledge.Zones.Count > 0)
+                {
+                    roles.Add(new Supporter { Zone = Context.Knowledge.Zones[0] });
+                }
+                else
+                {
+                    break;
+                }
             }
         }
 
