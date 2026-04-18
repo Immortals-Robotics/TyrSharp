@@ -1,10 +1,44 @@
 [Soccer]
+[Soccer.Tactics]
+[Soccer.Tactics.CircleBall]
+VeryFarBallDis = 600.0 # default: 600
+FarBallDis = 160.0 # default: 160
+FarToNearHys = 0.05 # default: 0.050000s
+NearAngleTol = 4.0 # default: 4
+NearToKickHys = 0.03 # default: 0.030000s
+ShmitCoeff = 1.2000000476837158 # default: 1.2
+DefaultNearBallDis = 140.0 # default: 140
+
+[Soccer.Tactics.BallPlacement]
+BPStateDelay = 0.333 # default: 0.333000s
+BPKissInitDistance = 250.0 # default: 250
+
+[Soccer.Tactics.Mark]
+Distance = 220.0 # default: 220
+
+[Soccer.Tactics.StopWall]
+StopDistance = 650.0 # default: 650
+
+[Soccer.Tactics.Defender]
+TightStartAngle = 40.0 # default: 40
+MaxExtensionArea = 1100.0 # default: 1100
+BallDistanceCoef = 0.699999988079071 # default: 0.7
+DiveHysteresisTime = 0.1 # default: 0.100000s
+
+[Soccer.Tactics.Goalie]
+TightStartAngle = 25.0 # default: 25
+GoalieBoxNotch = 600.0 # default: 600
+GoalieDiveInterceptionOffset = 200.0 # default: 200
+GoalieChip = 150.0 # default: 150
+DiveHysteresisTime = 0.1 # default: 0.100000s
+ClearHysteresisTime = 0.3 # default: 0.300000s
+
+[Soccer.Tactics.Attacker]
+KickSpeed = 6500.0 # default: 6500
+ChipSpeed = 2000.0 # default: 2000
+
+
 [Soccer.Navigation]
-[Soccer.Navigation.Trajectory]
-[Soccer.Navigation.Trajectory.TrajectoryUtils]
-DrawTimeStep = 0.10000000149011612 # default: 0.1
-
-
 [Soccer.Navigation.Obstacle]
 [Soccer.Navigation.Obstacle.Map]
 GridCellSize = 400.0 # default: 400
@@ -31,108 +65,126 @@ NearestFreeRingSpacing = 120.0 # default: 120
 
 [[Soccer.Robot.PhysicalStatus.StatusArray]]
 HasDribbler = false
-HasDirectKick = false
-HasChipKick = false
+HasDirectKick = true
+HasChipKick = true
 Is3dPrinted = false
-
-[[Soccer.Robot.PhysicalStatus.StatusArray]]
-HasDribbler = false
-HasDirectKick = false
-HasChipKick = false
-Is3dPrinted = false
+CenterToDribbler = 75.0
 
 [[Soccer.Robot.PhysicalStatus.StatusArray]]
 HasDribbler = false
 HasDirectKick = true
+HasChipKick = true
+Is3dPrinted = false
+CenterToDribbler = 75.0
+
+[[Soccer.Robot.PhysicalStatus.StatusArray]]
+HasDribbler = false
+HasDirectKick = true
+HasChipKick = true
+Is3dPrinted = false
+CenterToDribbler = 75.0
+
+[[Soccer.Robot.PhysicalStatus.StatusArray]]
+HasDribbler = false
+HasDirectKick = true
+HasChipKick = true
+Is3dPrinted = false
+CenterToDribbler = 75.0
+
+[[Soccer.Robot.PhysicalStatus.StatusArray]]
+HasDribbler = true
+HasDirectKick = true
+HasChipKick = true
+Is3dPrinted = false
+CenterToDribbler = 75.0
+
+[[Soccer.Robot.PhysicalStatus.StatusArray]]
+HasDribbler = false
+HasDirectKick = true
+HasChipKick = true
+Is3dPrinted = false
+CenterToDribbler = 75.0
+
+[[Soccer.Robot.PhysicalStatus.StatusArray]]
+HasDribbler = true
+HasDirectKick = true
+HasChipKick = true
+Is3dPrinted = false
+CenterToDribbler = 75.0
+
+[[Soccer.Robot.PhysicalStatus.StatusArray]]
+HasDribbler = false
+HasDirectKick = true
+HasChipKick = true
+Is3dPrinted = false
+CenterToDribbler = 75.0
+
+[[Soccer.Robot.PhysicalStatus.StatusArray]]
+HasDribbler = true
+HasDirectKick = false
 HasChipKick = false
 Is3dPrinted = false
+CenterToDribbler = 75.0
 
 [[Soccer.Robot.PhysicalStatus.StatusArray]]
 HasDribbler = false
 HasDirectKick = false
 HasChipKick = false
 Is3dPrinted = false
+CenterToDribbler = 75.0
 
 [[Soccer.Robot.PhysicalStatus.StatusArray]]
 HasDribbler = false
 HasDirectKick = false
 HasChipKick = false
 Is3dPrinted = false
+CenterToDribbler = 75.0
+
+[[Soccer.Robot.PhysicalStatus.StatusArray]]
+HasDribbler = false
+HasDirectKick = false
+HasChipKick = false
+Is3dPrinted = true
+CenterToDribbler = 75.0
 
 [[Soccer.Robot.PhysicalStatus.StatusArray]]
 HasDribbler = false
 HasDirectKick = false
 HasChipKick = false
 Is3dPrinted = false
+CenterToDribbler = 75.0
 
 [[Soccer.Robot.PhysicalStatus.StatusArray]]
 HasDribbler = false
 HasDirectKick = false
 HasChipKick = false
 Is3dPrinted = false
+CenterToDribbler = 75.0
 
 [[Soccer.Robot.PhysicalStatus.StatusArray]]
 HasDribbler = false
 HasDirectKick = false
 HasChipKick = false
 Is3dPrinted = false
+CenterToDribbler = 75.0
 
 [[Soccer.Robot.PhysicalStatus.StatusArray]]
 HasDribbler = false
 HasDirectKick = false
 HasChipKick = false
 Is3dPrinted = false
-
-[[Soccer.Robot.PhysicalStatus.StatusArray]]
-HasDribbler = false
-HasDirectKick = false
-HasChipKick = false
-Is3dPrinted = false
-
-[[Soccer.Robot.PhysicalStatus.StatusArray]]
-HasDribbler = false
-HasDirectKick = false
-HasChipKick = false
-Is3dPrinted = false
-
-[[Soccer.Robot.PhysicalStatus.StatusArray]]
-HasDribbler = false
-HasDirectKick = false
-HasChipKick = false
-Is3dPrinted = false
-
-[[Soccer.Robot.PhysicalStatus.StatusArray]]
-HasDribbler = false
-HasDirectKick = false
-HasChipKick = false
-Is3dPrinted = false
-
-[[Soccer.Robot.PhysicalStatus.StatusArray]]
-HasDribbler = false
-HasDirectKick = false
-HasChipKick = false
-Is3dPrinted = false
-
-[[Soccer.Robot.PhysicalStatus.StatusArray]]
-HasDribbler = false
-HasDirectKick = false
-HasChipKick = false
-Is3dPrinted = false
-
-[[Soccer.Robot.PhysicalStatus.StatusArray]]
-HasDribbler = false
-HasDirectKick = false
-HasChipKick = false
-Is3dPrinted = false
+CenterToDribbler = 75.0
 
 
 [Soccer.Robot.VelocityProfile]
-Sooski = { Speed = 450.0, Acceleration = 1620.0 } # default: VelocityProfile { Speed = 450, Acceleration = 1620 }
-Aroom = { Speed = 900.0, Acceleration = 2160.0 } # default: VelocityProfile { Speed = 900, Acceleration = 2160 }
-Mamooli = { Speed = 2000.0, Acceleration = 3500.0 } # default: VelocityProfile { Speed = 3000, Acceleration = 3500 }
-Kharaki = { Speed = 3500.0, Acceleration = 4010.0 } # default: VelocityProfile { Speed = 3500, Acceleration = 4010 }
+Sooski = { Speed = 500.0, Acceleration = 1800.0 } # default: VelocityProfile { Speed = 450, Acceleration = 1620 }
+Aroom = { Speed = 1000.0, Acceleration = 2400.0 } # default: VelocityProfile { Speed = 900, Acceleration = 2160 }
+Mamooli = { Speed = 3300.0, Acceleration = 4000.0 } # default: VelocityProfile { Speed = 3000, Acceleration = 3500 }
+Kharaki = { Speed = 4000.0, Acceleration = 4500.0 } # default: VelocityProfile { Speed = 3500, Acceleration = 4010 }
 
 [Soccer.Robot.Robot]
+# Minimum Dribbler force to accept ball contact
+DribblerDetectForce = 1.0 # default: 1
 # Run navigation as a job on a separate task
 NavigationJob = true # default: True
 # Speed used when we're required by the referee to slow down (eg. stop)
@@ -150,6 +202,7 @@ OppPredictTime = 0.15 # default: 0.150000s
 
 [Soccer.Skills.KickBall]
 PredictionTime = 0.2 # default: 0.200000s
+MaxAngleError = 3.0 # default: 3
 
 [Soccer.Skills.DefenceWall]
 Radius = 550.0 # default: 550
@@ -164,39 +217,120 @@ OppPredictTime = 0.15 # default: 0.150000s
 PenaltyAreaMark = false # default: False
 PenaltyAreaMarkDistance = 200.0 # default: 200
 
+[Soccer.Skills.InterceptV2]
+# Dribbler speed used while receiving a moving ball
+ReceiveDribblerSpeed = 2.0 # default: 2
+# Ball arrival time below which the bot forces blocking on the ball path [s]
+ImminentImpactTimeSeconds = 0.30000001192092896 # default: 0.3
+# Distance from robot kicker to ball path below which the bot forces blocking [mm]
+ImminentImpactDistanceMm = 150.0 # default: 150
+# Time until ball impact below which the dribbler is activated [s]
+DribblerActivationTimeSeconds = 0.20000000298023224 # default: 0.2
+
+[Soccer.Skills.CaptureBall]
+# Dribbler Force used while capturing the ball
+CaptureDribblerForce = 2.0 # default: 2
+# Angle tolerance within which the robot starts charging inward [deg]
+RoughFocusAngleDeg = 15.0 # default: 15
+# Distance margin in front of the ball during approach [mm]
+ApproachMarginMm = 100.0 # default: 100
+# Distance margin behind the ball center during final capture [mm]
+CaptureMarginMm = -20.0 # default: -20
+# Dribbler speed used while capturing the ball
+CaptureDribblerSpeed = 2.0 # default: 2
+
 
 [Soccer.TeamRunner]
-SleepTime = 0.001 # default: 0.001000s
 RunnerPriority = "Highest" # default: Highest
+# If a new hardware status is received in ms hardware status is invalidated
+HardwareStatusValidTime = 1.0 # default: 1.000000s
 
 [Soccer.Knowledge]
 [Soccer.Knowledge.Zone]
 ZoneCountX = 6 # default: 6
 ZoneCountY = 4 # default: 4
 
+[Soccer.Knowledge.BallReceiving]
+# Maximum expected vision latency for receive-point back projection [s]
+ExpectedVisionDeviationSeconds = 0.10000000149011612 # default: 0.1
+# If the preferred receive point is further than this from the current ball path, keep the preferred point [mm]
+MaxProjectionDistanceMm = 1000.0 # default: 1000
+# Margin to keep between a receive destination and a penalty area [mm]
+PenaltyAreaMarginMm = 110.0 # default: 110
+# Distance from receive point to ball where the receive orientation is locked [mm]
+OrientationLockDistanceMm = 200.0 # default: 200
+# Below this planar ball speed the current orientation is kept for receiving [mm/s]
+FacingFallbackSpeedMmPerS = 50.0 # default: 50
+
+[Soccer.Knowledge.Knowledge]
+DefPredictionTime = 0.15 # default: 0.150000s
+GoalieDiveMaximumTimeToReach = 3.0 # default: 3
+GoalieMaxBallSpeedForClear = 1000.0 # default: 1000
+PenaltyAreaExtensionSize = 200.0 # default: 200
+GoalLineExtentionSize = 100.0 # default: 100
+
+[Soccer.Knowledge.BallInterception]
+# Lower planar ball-speed threshold for interception [mm/s]
+MinBallSpeedLowerMmPerS = 100.0 # default: 100
+# Upper planar ball-speed threshold for interception [mm/s]
+MinBallSpeedUpperMmPerS = 250.0 # default: 250
+# Search horizon hard cap for moving-ball interception [s]
+MaxSearchTimeSeconds = 5.0 # default: 5
+# Sampling step for moving-ball interception search [s]
+SearchStepSeconds = 0.05000000074505806 # default: 0.05
+# Sampling step when finding the valid search horizon [s]
+HorizonStepSeconds = 0.05000000074505806 # default: 0.05
+# Height above which interception waits for the next touchdown [mm]
+MaxReceiveHeightMm = 120.0 # default: 120
+# Maximum acceptable absolute slack time between robot and ball [s]
+MaxSlackTimeSeconds = 0.44999998807907104 # default: 0.45
+# Minimum spare time that robot has before ball arrives [s]
+SpareTimeBufferSeconds = 0.30000001192092896 # default: 0.3
+# Minimum spare time that GK has before ball arrives [s]
+GoalieSpareTimeBufferSeconds = 1.0 # default: 1
+# Objective bonus bias toward earlier interceptions [s]
+EarlyInterceptionBonus = 2.0 # default: 2
+# Time window over which the early interception bonus fades out [s]
+EarlyInterceptionWindowSeconds = 2.0 # default: 2
+# Hysteresis bonus for sticking to the previous plan [s]
+HysteresisBonusSeconds = 0.15000000596046448 # default: 0.15
+# Distance within which the previous plan's hysteresis bonus applies [mm]
+HysteresisDistanceMm = 150.0 # default: 150
+
 
 [Soccer.Ai]
 VisionPredictionTime = 0.15 # default: 0.120000s
+RequiredRoleUnfilledPenalty = 30.0 # default: 30.000000s
 
-[Soccer.Tactics]
-[Soccer.Tactics.Mark]
-Distance = 220.0 # default: 220
-
-[Soccer.Tactics.Attacker]
-KickSpeed = 6500.0 # default: 6500
-ChipSpeed = 2000.0 # default: 2000
+[Soccer.Helpers]
+[Soccer.Helpers.BallControl]
+# Kicker-to-ball distance below which the dribbler is enabled [mm]
+NearKickerDistanceMm = 200.0 # default: 200
+# Dribbler speed used when the ball is near the kicker
+NearKickerDribblerSpeed = 2.0 # default: 2
+# Dribbler force used when the ball is near the kicker
+NearKickerDribblerForce = 1.0 # default: 1
 
 
 [Soccer.Runner]
-RunYellow = true # default: False
-RunBlue = true # default: False
+RunYellow = false # default: False
+RunBlue = false # default: False
 
 
 [Common]
-[Common.Network]
-[Common.Network.UdpServer]
-MaxPacketSize = 65536 # default: 65536
+[Common.Runner]
+[Common.Runner.ProcessScheduling]
+# Windows process priority class applied to the whole Tyr process.
+PriorityClass = "AboveNormal" # default: AboveNormal
+# Windows execution-speed throttling for the process. Keep this false to avoid background slowdowns.
+PowerThrottling = false # default: False
+# When true on Windows, the OS may ignore high-resolution timer requests for this process.
+IgnoreTimerResolution = false # default: False
+# Prevents macOS App Nap from throttling the process while the app is doing real-time work.
+DisableAppNap = true # default: True
 
+
+[Common.Network]
 [Common.Network.UdpReceiverConfigs]
 PollTimeout = 0.001 # default: 0.001000s
 WatchdogTimeout = 5.0 # default: 5.000000s
@@ -213,7 +347,7 @@ Port = 5669 # default: 5669
 Timeout = 3.0 # default: 3.000000s
 PollTimeout = 0.1 # default: 0.100000s
 
-[Common.Network.UdpClient]
+[Common.Network.UdpSocket]
 MaxPacketSize = 65536 # default: 65536
 
 [Common.Network.SeafileClient]
@@ -221,18 +355,6 @@ MaxPacketSize = 65536 # default: 65536
 BaseUrl = "https://seafile.tigers-mannheim.de" # default: https://seafile.tigers-mannheim.de
 # The public share token for the log directory
 ShareToken = "e85851d9bc9944bf95bb" # default: e85851d9bc9944bf95bb
-
-
-[Common.Runner]
-[Common.Runner.ProcessScheduling]
-# Windows process priority class applied to the whole Tyr process.
-PriorityClass = "AboveNormal" # default: AboveNormal
-# Windows execution-speed throttling for the process. Keep this false to avoid background slowdowns.
-PowerThrottling = false # default: False
-# When true on Windows, the OS may ignore high-resolution timer requests for this process.
-IgnoreTimerResolution = false # default: False
-# Prevents macOS App Nap from throttling the process while the app is doing real-time work.
-DisableAppNap = true # default: True
 
 
 [Common.Debug]
@@ -272,6 +394,14 @@ ConsoleLevel = "Information" # default: Information
 SleepTime = 0.001 # default: 0.001000s
 ViewerPort = 9000 # default: 9000
 RunnerPriority = "BelowNormal" # default: BelowNormal
+
+
+
+[Common.Math]
+[Common.Math.Shapes]
+[Common.Math.Shapes.Robot]
+# Default distance from robot center to dribbler [mm]
+DefaultCenterToDribbler = 75.0 # default: 75
 
 
 
@@ -466,10 +596,11 @@ SleepTime = 0.001 # default: 0.001000s
 RunnerPriority = "AboveNormal" # default: AboveNormal
 
 [Sender.Simulator]
-Enabled = true # default: False
+Enabled = false # default: False
 BlueAddress = { Ip = "127.0.0.1", Port = 10301 } # default: 127.0.0.1:10301
 YellowAddress = { Ip = "127.0.0.1", Port = 10302 } # default: 127.0.0.1:10302
 ChipAngle = 45.0 # default: 45.00°
+FeedbackPollTimeout = 0.01 # default: 0.010000s
 
 [Sender.RobotStatusPublisher]
 StatusPort = 5670 # default: 5670
@@ -477,7 +608,8 @@ StatusPort = 5670 # default: 5670
 
 [Referee]
 [Referee.GcDataPublisher]
-GcAddress = { Ip = "224.5.23.1", Port = 10003 } # default: 224.5.23.1:10003
+# Address where referee packets are received from the game controller
+GcAddress = { Ip = "127.0.0.1", Port = 10044 } # default: 224.5.23.1:10003
 
 [Referee.Referee]
 RequiredHys = 5 # default: 5
@@ -597,8 +729,10 @@ VelocityThresholdDirection = 2000.0 # default: 2000
 
 
 [Vision.SslVisionDataPublisher]
+Transport = "Udp" # default: Udp
 VisionAddress = { Ip = "224.5.23.2", Port = 10006 } # default: 224.5.23.2:10006
 SimulatorAddress = { Ip = "224.5.23.2", Port = 10025 } # default: 224.5.23.2:10025
+ZmqEndpoint = "tcp://127.0.0.1:5570" # default: tcp://127.0.0.1:5570
 
 [Vision.Vision]
 CameraTooOldTime = 1.0 # default: 1.000000s
@@ -622,8 +756,6 @@ MaxBallBotHullLoss = 0.6000000238418579 # default: 0.6
 MaxBallBotFrontLoss = 1.0 # default: 1
 # Maximum filtered ball height where robot collisions are considered
 MaxHeightForCollision = 130.0 # default: 130
-# Fallback distance from robot center to dribbler when no robot-specific geometry is available
-RobotCenterToDribbler = 75.0 # default: 75
 
 [Vision.Data]
 [Vision.Data.BallParameters]
@@ -692,6 +824,8 @@ FontSize = 17 # default: 17
 Host = "127.0.0.1" # default: 127.0.0.1
 # UDP port for the grSim simulator control channel
 ControlPort = 10300 # default: 10300
+# Polling interval for simulator feedback
+FeedbackPollTimeout = 0.01 # default: 0.010000s
 
 
 
