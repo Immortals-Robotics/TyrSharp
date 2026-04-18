@@ -1,9 +1,9 @@
 using System.Numerics;
 using Hexa.NET.ImGui;
-using NativeFileDialogSharp;
 using Tyr.Common.Config;
 using Tyr.Gui.Backend;
 using Tyr.Gui.Data;
+using Tyr.Gui.Platform;
 using Color = Tyr.Common.Debug.Drawing.Color;
 
 namespace Tyr.Gui.Views;
@@ -317,7 +317,7 @@ public sealed partial class SessionsView(PlaybackSessionManager playbackSessions
     {
         if (sessions.Count == 1)
         {
-            var result = Dialog.FileSave("tyrlog;zip");
+            var result = FileDialogService.FileSave("tyrlog;zip");
             if (!result.IsOk)
                 return;
 
@@ -325,7 +325,7 @@ public sealed partial class SessionsView(PlaybackSessionManager playbackSessions
             return;
         }
 
-        var folderResult = Dialog.FolderPicker();
+        var folderResult = FileDialogService.FolderPicker();
         if (!folderResult.IsOk)
             return;
 
@@ -338,7 +338,7 @@ public sealed partial class SessionsView(PlaybackSessionManager playbackSessions
 
     private void ImportArchive()
     {
-        var result = Dialog.FileOpenMultiple("tyrlog;zip");
+        var result = FileDialogService.FileOpenMultiple("tyrlog;zip");
         if (!result.IsOk)
             return;
 

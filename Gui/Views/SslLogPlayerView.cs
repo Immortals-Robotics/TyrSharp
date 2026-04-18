@@ -1,9 +1,9 @@
 using Hexa.NET.ImGui;
-using NativeFileDialogSharp;
 using Tyr.Vision;
 using Tyr.Common.Config;
 using Tyr.Gui.Backend;
 using Tyr.Common.Network;
+using Tyr.Gui.Platform;
 
 namespace Tyr.Gui.Views;
 
@@ -154,7 +154,7 @@ public sealed partial class SslLogPlayerView(SslLogPlayer player) : IDisposable
         ImGui.SameLine();
         if (ImGui.Button($"{IconFonts.FontAwesome6.FolderOpen}"))
         {
-            var result = Dialog.FileOpen("gz,log.gz;log,sslmsg");
+            var result = FileDialogService.FileOpen("gz,log.gz;log,sslmsg");
             if (result.IsOk)
             {
                 SslLogPlayer.FilePath = result.Path;
