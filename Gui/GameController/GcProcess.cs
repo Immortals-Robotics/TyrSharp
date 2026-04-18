@@ -4,6 +4,7 @@ using System.Net.Http.Headers;
 using System.Runtime.InteropServices;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using Tyr.Common.Network;
 
 namespace Tyr.Gui.GameController;
 
@@ -176,8 +177,9 @@ internal sealed class GcProcess : IDisposable
 
     /// <param name="rconPort">Remote control TCP port (our client connects here).</param>
     /// <param name="uiPort">Web UI port (human browser).</param>
+    /// <param name="publishAddress">Address where referee packets are published.</param>
     /// <returns>True if a new process was started, false if already running or attached.</returns>
-    public bool Start(int rconPort, int uiPort)
+    public bool Start(int rconPort, int uiPort, Address publishAddress)
     {
         if (_status == Status.Running) return false;
 
@@ -207,7 +209,7 @@ internal sealed class GcProcess : IDisposable
             _process = new Process();
             _process.StartInfo.FileName = exe;
             _process.StartInfo.Arguments =
-                $"-remoteControlAddress :{rconPort} -address :{uiPort}";
+                $"-remoteControlAddress :{rconPort} -address :{uiPort} -publishAddress {publishAddress}";
             _process.StartInfo.UseShellExecute = false;
             _process.StartInfo.CreateNoWindow = true;
             // Redirect so the GC doesn't write to our (non-existent) console

@@ -5,6 +5,7 @@ using Tyr.Common.Config;
 using Tyr.Common.Data;
 using Tyr.Gui.Backend;
 using Tyr.Gui.GameController;
+using Tyr.Referee;
 using Color = Tyr.Common.Debug.Drawing.Color;
 
 namespace Tyr.Gui.Views;
@@ -229,7 +230,7 @@ public sealed partial class GameControllerView : IDisposable
 
     private void StartProcess()
     {
-        _process.Start(RemoteControlPort, WebUiPort);
+        _process.Start(RemoteControlPort, WebUiPort, GcDataPublisher.GcAddress);
         
         if (_process.CurrentStatus == GcProcess.Status.Running && AutoConnect)
         {
