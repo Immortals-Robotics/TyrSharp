@@ -13,7 +13,7 @@ public record BallPlacer(int PlacerId) : IRole
     }
 
     public float Importance => 100f;
-    public DeltaTime StickinessBonus => DeltaTime.FromMilliseconds(150);
+    public DeltaTime StickinessBonus => DeltaTime.FromMilliseconds(600);
 
     public DeltaTime CostFor(Robot.Robot robot)
     {
@@ -37,6 +37,14 @@ public record BallPlacer(int PlacerId) : IRole
 
         var trajectory = TrajectoryBangBang.Make2D(robot.Position, robot.Velocity,
             targetPos, VelocityProfile.Mamooli);
-        return DeltaTime.FromSeconds(trajectory.Duration);
+        var baseCost = DeltaTime.FromSeconds(trajectory.Duration);
+
+        // Keep placer ids stable across frames to avoid swapping and resetting the FSM mid-placement.
+        if (Context.GetAssignedRole(robot) is BallPlacer previous && previous.PlacerId != PlacerId)
+        {
+            baseCost += DeltaTime.FromMilliseconds(600);
+        }
+
+        return baseCost;
     }
 }

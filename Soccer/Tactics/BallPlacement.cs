@@ -68,7 +68,7 @@ public partial class BallPlacement : ITactic
             GenerateKissPoints(BPKissInitDistance, out var ballPlacer1Pos, out var ballPlacer2Pos);
             return !Context.Field.FieldAccessArea().Inside(ballPlacer1Pos) || !Context.Field.FieldAccessArea().Inside(ballPlacer2Pos);
         });
-        _fsm.AddTransition(State.KissInit, State.KissTouch, () => AreRobotsAtKissPoints(BPKissInitDistance), BPStateDelay);
+        _fsm.AddTransition(State.KissInit, State.Kissing, () => AreRobotsAtKissPoints(BPKissInitDistance), BPStateDelay);
 
         // KissTouch transitions
         _fsm.AddTransition(State.KissTouch, State.Idle, () => Context.Ball.State.Velocity.Length() >= 100f);
@@ -89,7 +89,8 @@ public partial class BallPlacement : ITactic
         }, BPStateDelay);
 
         // Stuck transitions
-        _fsm.AddTransition(State.Stuck, State.Idle, () => CalcMinBallWallDist(out _) >= 150f && !_forceStuck);
+        _fsm.AddTransition(State.Stuck, State.Idle,
+            () => CalcMinBallWallDist(out _) >= 150f && !_forceStuck && !Context.Knowledge.BallInGoal());
 
         // LongDistance transitions
         _fsm.AddTransition(State.LongDistance, State.Idle, () => Context.Ball.State.Velocity.Length() < 100f && Vector2.Distance(Context.Ball.State.Position, Context.Referee.DesignatedPosition()) < 1000f);
@@ -308,6 +309,12 @@ public partial class BallPlacement : ITactic
         {
             var ballPos = Context.Ball.State.Position;
             var timeInState = Context.Time - (EnterTime ?? Context.Time);
+
+            if (Context.Ball.State.Velocity.Length() > 20.0f)
+            {
+                tactic._forceStuck = false;
+            }
+
             if (tactic.PlacerId == 2)
             {
                 if (timeInState.Seconds >= 1.6f) // 100 frames
