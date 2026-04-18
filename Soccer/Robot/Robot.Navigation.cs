@@ -129,11 +129,11 @@ public partial class Robot
             var collisionImminent = _obsMap.HasCollision(trajectory,
                 collisionLookahead, 0.1f, Physicality.Physical).collided;
 
-            if (collisionImminent)
-            {
-                Draw.DrawCircle(Position, Context.RobotRadius * 1.5f, Color.Red, Options.Outline(50f));
-                trajectory = Trajectory2DFullStop.Make(Position, CurrentMotion, stopProfile);
-            }
+            // if (collisionImminent)
+            // {
+            //     Draw.DrawCircle(Position, Context.RobotRadius * 1.5f, Color.Red, Options.Outline(50f));
+            //     trajectory = Trajectory2DFullStop.Make(Position, CurrentMotion, stopProfile);
+            // }
         }
 
         Move(trajectory);
