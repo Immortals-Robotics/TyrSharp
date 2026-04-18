@@ -21,9 +21,9 @@ public sealed class ZmqReceiver<T> : IDisposable where T : class
     private readonly Action<T> _onData;
     private readonly Func<IReadOnlyList<byte[]>, T> _deserializer;
     private SubscriberSocket? _socket;
-    public Address CurrentAddress => _currentAddress;
-    private Address _currentAddress;
-    private volatile Address? _newAddress;
+    public string CurrentEndpoint => _currentEndpoint;
+    private string _currentEndpoint;
+    private volatile string? _newEndpoint;
     private List<byte[]> _frames = [];
 
     private Timestamp _lastReceivedTime;
@@ -34,6 +34,12 @@ public sealed class ZmqReceiver<T> : IDisposable where T : class
 
     public ZmqReceiver(Address address, Action<T> onData, string? callingModule = null,
         Func<IReadOnlyList<byte[]>, T>? deserializer = null)
+        : this($"tcp://{address}", onData, callingModule, deserializer)
+    {
+    }
+
+    public ZmqReceiver(string endpoint, Action<T> onData, string? callingModule = null,
+        Func<IReadOnlyList<byte[]>, T>? deserializer = null)
     {
         _onData = onData;
         _deserializer = deserializer ?? (frames =>
@@ -41,13 +47,13 @@ public sealed class ZmqReceiver<T> : IDisposable where T : class
             // Default deserializer assumes frame 0 is the topic and frame 1 is the protobuf payload.
             return Serializer.Deserialize<T>(new ReadOnlySpan<byte>(frames[1]));
         });
-        _currentAddress = address;
+        _currentEndpoint = endpoint;
 
-        Log.ZLogDebug($"Initializing ZmqReceiver<{typeof(T).Name}> for {address}");
+        Log.ZLogDebug($"Initializing ZmqReceiver<{typeof(T).Name}> for {endpoint}");
         _lastReceivedTime = Timestamp.Now;
         _hasReceivedFirstPacket = false;
 
-        Connect(address);
+        Connect(endpoint);
 
         Runner = new RunnerSync(Tick, 0, callingModule);
         Runner.Start();
@@ -55,24 +61,28 @@ public sealed class ZmqReceiver<T> : IDisposable where T : class
 
     public void ChangeAddress(Address address)
     {
-        Log.ZLogDebug($"Changing ZmqReceiver<{typeof(T).Name}> address from {_currentAddress} to {address}");
-        _newAddress = address;
+        ChangeEndpoint($"tcp://{address}");
     }
 
-    private void Connect(Address address)
+    public void ChangeEndpoint(string endpoint)
+    {
+        Log.ZLogDebug($"Changing ZmqReceiver<{typeof(T).Name}> endpoint from {_currentEndpoint} to {endpoint}");
+        _newEndpoint = endpoint;
+    }
+
+    private void Connect(string endpoint)
     {
         _socket?.Dispose();
         _socket = new SubscriberSocket();
-        // ZMQ SUB sockets need to connect to PUB sockets
-        _socket.Connect($"tcp://{address}");
+        _socket.Connect(endpoint);
         _socket.SubscribeToAnyTopic();
-        Log.ZLogInformation($"ZMQ (proto) connected to {address}");
+        Log.ZLogInformation($"ZMQ (proto) connected to {endpoint}");
     }
 
     private void ResetSocket()
     {
-        Log.ZLogTrace($"Resetting SubscriberSocket for {typeof(T).Name} on {_currentAddress}");
-        Connect(_currentAddress);
+        Log.ZLogTrace($"Resetting SubscriberSocket for {typeof(T).Name} on {_currentEndpoint}");
+        Connect(_currentEndpoint);
         _lastReceivedTime = Timestamp.Now;
     }
 
@@ -80,12 +90,12 @@ public sealed class ZmqReceiver<T> : IDisposable where T : class
     {
         try
         {
-            if (_newAddress != null)
+            if (_newEndpoint != null)
             {
-                _currentAddress = _newAddress;
+                _currentEndpoint = _newEndpoint;
                 ResetSocket();
-                _newAddress = null;
-                _hasReceivedFirstPacket = false; // Reset for the new address
+                _newEndpoint = null;
+                _hasReceivedFirstPacket = false;
                 return false;
             }
 
@@ -94,7 +104,6 @@ public sealed class ZmqReceiver<T> : IDisposable where T : class
             _frames.Clear();
             if (!_socket.TryReceiveMultipartBytes(ZmqReceiverConfigs.PollTimeout.ToTimeSpan(), ref _frames))
             {
-                // Only trigger watchdog if we have received at least one packet from this source
                 if (_hasReceivedFirstPacket)
                 {
                     var timeSinceLastPacket = Timestamp.Now - _lastReceivedTime;
@@ -102,14 +111,14 @@ public sealed class ZmqReceiver<T> : IDisposable where T : class
                     {
                         if (!_isRecovering)
                         {
-                            Log.ZLogWarning($"ZMQ Watchdog triggered for {typeof(T).Name}. No data received for {timeSinceLastPacket.Seconds:F2}s. Reconnecting to {_currentAddress}");
+                            Log.ZLogWarning($"ZMQ Watchdog triggered for {typeof(T).Name}. No data received for {timeSinceLastPacket.Seconds:F2}s. Reconnecting to {_currentEndpoint}");
                             _isRecovering = true;
                         }
                         else
                         {
                             Log.ZLogTrace($"ZMQ Watchdog still active for {typeof(T).Name} ({timeSinceLastPacket.Seconds:F2}s). Reconnecting...");
                         }
-                        
+
                         ResetSocket();
                     }
                 }
@@ -119,21 +128,21 @@ public sealed class ZmqReceiver<T> : IDisposable where T : class
             try
             {
                 var data = _deserializer(_frames);
-                
+
                 if (!_hasReceivedFirstPacket)
                 {
-                    Log.ZLogInformation($"ZMQ Stream started for {typeof(T).Name}. First packet received from {_currentAddress}");
+                    Log.ZLogInformation($"ZMQ Stream started for {typeof(T).Name}. First packet received from {_currentEndpoint}");
                     _hasReceivedFirstPacket = true;
                 }
 
                 if (_isRecovering)
                 {
-                    Log.ZLogInformation($"ZMQ Watchdog recovered for {typeof(T).Name}. Data is flowing again from {_currentAddress}");
+                    Log.ZLogInformation($"ZMQ Watchdog recovered for {typeof(T).Name}. Data is flowing again from {_currentEndpoint}");
                     _isRecovering = false;
                 }
 
                 _lastReceivedTime = Timestamp.Now;
-                Log.ZLogTrace($"Received {typeof(T).Name} from {_currentAddress}");
+                Log.ZLogTrace($"Received {typeof(T).Name} from {_currentEndpoint}");
                 _onData(data);
                 return true;
             }

@@ -54,7 +54,7 @@ public sealed partial class RobotStatusPublisher : IDisposable
                 
                 _receivers[robot.Id] = receiver;
             }
-            else if (receiver.CurrentAddress.Ip != robot.Ip)
+            else if (receiver.CurrentEndpoint != $"tcp://{robot.Ip}:{StatusPort}")
             {
                 // IP changed? Re-connect
                 Log.ZLogInformation($"Robot {robot.Id} moved to {robot.Ip}, updating connection");
