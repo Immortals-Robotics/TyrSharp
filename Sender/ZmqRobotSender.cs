@@ -39,7 +39,7 @@ public sealed partial class ZmqRobotSender : ISender
             {
                 var address = new Address { Ip = robot.Ip, Port = CmdPort };
                 Log.ZLogInformation($"Connecting to command stream for Robot {robot.Id} at {address}");
-                
+
                 _robotIps[robot.Id] = robot.Ip;
                 _senders[robot.Id] = new ZmqSender(address, ZmqMode.Connect);
             }
@@ -85,12 +85,12 @@ public sealed partial class ZmqRobotSender : ISender
             var robotCmd = new RobotCommand
             {
                 Halted = cmd.Halted,
-                Vx = cmd.Motion.X / 1000.0f, // mm/s -> m/s
-                Vy = cmd.Motion.Y / 1000.0f,
-                CurrentAngle = (float)cmd.CurrentAngle.Deg,
-                TargetAngle = (float)cmd.TargetAngle.Deg,
-                Shoot = GetShootPower(cmd),
-                Chip = GetChipPower(cmd),
+                Vx = cmd.Motion.X * 1.2f / 1000.0f, // mm/s -> m/s
+                Vy = cmd.Motion.Y * 1.2f / 1000.0f,
+                CurrentAngle = cmd.CurrentAngle.Deg,
+                TargetAngle = cmd.TargetAngle.Deg,
+                Chip = cmd.Shoot * 0.7f / 1000.0f,
+                Shoot = cmd is { Chip: > 10, Shoot: 0 } ? 5.0f : 0.0f,
                 DribblerSpeed = cmd.DribblerSpeed,
                 DribblerForce = cmd.DribblerForce > 0f ? cmd.DribblerForce : DefaultDribblerForce
             };
@@ -106,28 +106,6 @@ public sealed partial class ZmqRobotSender : ISender
         }
 
         return anySent;
-    }
-
-    private static float GetShootPower(Command cmd)
-    {
-        if (cmd.Shoot <= 0f)
-        {
-            return 0f;
-        }
-
-        var raw = Math.Clamp(cmd.Shoot, 0.0f, 6500.0f) / 1000.0f;
-        return ShootCalibration.GetCalibratedPower(raw, ShootCalibration.ShootType.Shoot, cmd.VisionId);
-    }
-
-    private static float GetChipPower(Command cmd)
-    {
-        if (cmd.Chip <= 0f)
-        {
-            return 0f;
-        }
-
-        var raw = Math.Clamp(cmd.Chip, 0.0f, 150.0f);
-        return ShootCalibration.GetCalibratedPower(raw, ShootCalibration.ShootType.Chip, cmd.VisionId);
     }
 
     public void Dispose()
