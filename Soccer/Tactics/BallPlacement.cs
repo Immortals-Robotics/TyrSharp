@@ -1,4 +1,5 @@
 using System.Numerics;
+using NumFlat;
 using Tyr.Common.Config;
 using Tyr.Common.Extensions;
 using Tyr.Common.Math;
@@ -56,9 +57,12 @@ public partial class BallPlacement : ITactic
 
         // Idle transitions
         _fsm.AddTransition(State.Idle, State.Idle, () => Context.Ball.State.Velocity.Length() > 100f);
-        _fsm.AddTransition(State.Idle, State.Stuck, () => CalcMinBallWallDist(out _) < 150f || Context.Knowledge.BallInGoal());
-        _fsm.AddTransition(State.Idle, State.LongDistance, () => Vector2.Distance(Context.Ball.State.Position, Context.Referee.DesignatedPosition()) > 4000f);
-        _fsm.AddTransition(State.Idle, State.KissInit, () => Vector2.Distance(Context.Ball.State.Position, Context.Referee.DesignatedPosition()) > 100.0f);
+        _fsm.AddTransition(State.Idle, State.Stuck,
+            () => CalcMinBallWallDist(out _) < 150f || Context.Knowledge.BallInGoal());
+        _fsm.AddTransition(State.Idle, State.LongDistance,
+            () => Vector2.Distance(Context.Ball.State.Position, Context.Referee.DesignatedPosition()) > 4000f);
+        _fsm.AddTransition(State.Idle, State.KissInit,
+            () => Vector2.Distance(Context.Ball.State.Position, Context.Referee.DesignatedPosition()) > 100.0f);
         _fsm.AddTransition(State.Idle, State.Done, () => true); // Fallback to Done if none of the above
 
         // KissInit transitions
@@ -66,9 +70,11 @@ public partial class BallPlacement : ITactic
         _fsm.AddTransition(State.KissInit, State.Stuck, () =>
         {
             GenerateKissPoints(BPKissInitDistance, out var ballPlacer1Pos, out var ballPlacer2Pos);
-            return !Context.Field.FieldAccessArea().Inside(ballPlacer1Pos) || !Context.Field.FieldAccessArea().Inside(ballPlacer2Pos);
+            return !Context.Field.FieldAccessArea().Inside(ballPlacer1Pos) ||
+                   !Context.Field.FieldAccessArea().Inside(ballPlacer2Pos);
         });
-        _fsm.AddTransition(State.KissInit, State.Kissing, () => AreRobotsAtKissPoints(BPKissInitDistance), BPStateDelay);
+        _fsm.AddTransition(State.KissInit, State.Kissing, () => AreRobotsAtKissPoints(BPKissInitDistance),
+            BPStateDelay);
 
         // KissTouch transitions
         _fsm.AddTransition(State.KissTouch, State.Idle, () => Context.Ball.State.Velocity.Length() >= 100f);
@@ -81,11 +87,8 @@ public partial class BallPlacement : ITactic
             var finalBallPos = Context.Referee.DesignatedPosition();
             var ballPlacer1 = GetPlacer(1);
             var ballPlacer2 = GetPlacer(2);
-            if (ballPlacer1 == null || ballPlacer2 == null) return false;
-            var axis = Vector2.Normalize(ballPlacer1.Position - finalBallPos);
-            var kissTouch1 = finalBallPos + axis * 75f;
-            var kissTouch2 = finalBallPos - axis * 75f;
-            return Vector2.Distance(ballPlacer1.Position, kissTouch1) < 20f && Vector2.Distance(ballPlacer2.Position, kissTouch2) < 20f;
+            var middle = (ballPlacer1.Position + ballPlacer2.Position) / 2.0f;
+            return Vector2.Distance(middle, finalBallPos) < 100f;
         }, BPStateDelay);
 
         // Stuck transitions
@@ -93,7 +96,9 @@ public partial class BallPlacement : ITactic
             () => CalcMinBallWallDist(out _) >= 150f && !_forceStuck && !Context.Knowledge.BallInGoal());
 
         // LongDistance transitions
-        _fsm.AddTransition(State.LongDistance, State.Idle, () => Context.Ball.State.Velocity.Length() < 100f && Vector2.Distance(Context.Ball.State.Position, Context.Referee.DesignatedPosition()) < 1000f);
+        _fsm.AddTransition(State.LongDistance, State.Idle,
+            () => Context.Ball.State.Velocity.Length() < 100f &&
+                  Vector2.Distance(Context.Ball.State.Position, Context.Referee.DesignatedPosition()) < 1000f);
 
         // KissingDone transitions
         _fsm.AddTransition(State.KissingDone, State.Done, () =>
@@ -112,8 +117,10 @@ public partial class BallPlacement : ITactic
             var now = Timestamp.Now;
             var finalBallPos = Context.Referee.DesignatedPosition();
 
-            return (now - Context.Ball.LastVisibleTimestamp < DeltaTime.FromSeconds(1) && Vector2.Distance(Context.Ball.State.Position, finalBallPos) > 80.0) || ballPlacer1 != null && Vector2.Distance(ballPlacer1.Position, _ballPlacer1FinalPos) < 20f &&
-                   ballPlacer2 != null && Vector2.Distance(ballPlacer2.Position, _ballPlacer2FinalPos) < 20f;
+            return (now - Context.Ball.LastVisibleTimestamp < DeltaTime.FromSeconds(1) &&
+                    Vector2.Distance(Context.Ball.State.Position, finalBallPos) > 80.0) || ballPlacer1 != null &&
+                Vector2.Distance(ballPlacer1.Position, _ballPlacer1FinalPos) < 20f &&
+                ballPlacer2 != null && Vector2.Distance(ballPlacer2.Position, _ballPlacer2FinalPos) < 20f;
         }, BPStateDelay);
     }
 
@@ -129,8 +136,12 @@ public partial class BallPlacement : ITactic
     {
         var ballPlacer1 = GetPlacer(1);
         var ballPlacer2 = GetPlacer(2);
+
         if (ballPlacer1 == null || ballPlacer2 == null) return true;
-        return Vector2.Distance((ballPlacer1.Position + ballPlacer2.Position) / 2.0f, Context.Ball.State.Position) > 250.0f;
+        var robotsSegment = new LineSegment { Start = ballPlacer1.Position, End = ballPlacer2.Position };
+        var dist = robotsSegment.Distance(Context.Ball.State.Position);
+
+        return dist > 150;
     }
 
     private static bool AreRobotsAtKissPoints(float distance)
@@ -186,8 +197,8 @@ public partial class BallPlacement : ITactic
             new LineSegment { Start = leftGoalBottomLeft, End = leftGoalBottomRight },
             new LineSegment { Start = rightGoalTopLeft, End = rightGoalTopRight },
             new LineSegment { Start = rightGoalBottomLeft, End = rightGoalBottomRight },
-            new LineSegment {Start = leftGoalBottomLeft, End = leftGoalTopLeft},
-            new LineSegment {Start = rightGoalBottomRight, End = rightGoalTopRight}
+            new LineSegment { Start = leftGoalBottomLeft, End = leftGoalTopLeft },
+            new LineSegment { Start = rightGoalBottomRight, End = rightGoalTopRight }
         };
 
         var ballPos = Context.Ball.State.Position;
@@ -208,8 +219,15 @@ public partial class BallPlacement : ITactic
     private sealed class IdleState(BallPlacement tactic) : IState<State>
     {
         public State Type => State.Idle;
-        public void Enter() { }
-        public void Exit() { }
+
+        public void Enter()
+        {
+        }
+
+        public void Exit()
+        {
+        }
+
         public ISkill? Tick()
         {
             tactic.Robot.Halt();
@@ -220,12 +238,20 @@ public partial class BallPlacement : ITactic
     private sealed class KissInitState(BallPlacement tactic) : IState<State>
     {
         public State Type => State.KissInit;
-        public void Enter() { }
-        public void Exit() { }
+
+        public void Enter()
+        {
+        }
+
+        public void Exit()
+        {
+        }
+
         public ISkill? Tick()
         {
             GenerateKissPoints(BPKissInitDistance, out var ballPlacer1Pos, out var ballPlacer2Pos);
-            if (!Context.Field.FieldAccessArea().Inside(ballPlacer1Pos) || !Context.Field.FieldAccessArea().Inside(ballPlacer2Pos))
+            if (!Context.Field.FieldAccessArea().Inside(ballPlacer1Pos) ||
+                !Context.Field.FieldAccessArea().Inside(ballPlacer2Pos))
             {
                 tactic._forceStuck = true;
             }
@@ -244,8 +270,15 @@ public partial class BallPlacement : ITactic
     private sealed class KissTouchState(BallPlacement tactic) : IState<State>
     {
         public State Type => State.KissTouch;
-        public void Enter() { }
-        public void Exit() { }
+
+        public void Enter()
+        {
+        }
+
+        public void Exit()
+        {
+        }
+
         public ISkill? Tick()
         {
             GenerateKissPoints(75f, out var ballPlacer1Pos, out var ballPlacer2Pos);
@@ -263,27 +296,42 @@ public partial class BallPlacement : ITactic
     private sealed class KissingState(BallPlacement tactic) : IState<State>
     {
         public State Type => State.Kissing;
-        public void Enter() { }
-        public void Exit() { }
+
+        public void Enter()
+        {
+        }
+
+        public void Exit()
+        {
+        }
+
         public ISkill? Tick()
         {
             var finalBallPos = Context.Referee.DesignatedPosition();
             var ballPlacer1 = GetPlacer(1);
             var ballPlacer2 = GetPlacer(2);
+
+            var direction = Vector2.Normalize((ballPlacer1.Position + ballPlacer2.Position) / 2.0f - finalBallPos);
+
             if (ballPlacer1 != null && ballPlacer2 != null)
             {
-                tactic._ballPlacer1FinalPos = finalBallPos + Vector2.Normalize(ballPlacer1.Position - finalBallPos) * BPKissInitDistance;
-                tactic._ballPlacer2FinalPos = finalBallPos + Vector2.Normalize(ballPlacer2.Position - finalBallPos) * BPKissInitDistance;
+                //var direction = Vector2.Normalize((ballPlacer1.Position + ballPlacer2.Position) / 2.0f - finalBallPos);
+                tactic._ballPlacer2FinalPos = finalBallPos +
+                                              direction *
+                                              BPKissInitDistance;
+                tactic._ballPlacer1FinalPos = finalBallPos -
+                                              direction *
+                                              BPKissInitDistance;
             }
 
-            var axis = Vector2.Normalize((ballPlacer1?.Position ?? tactic.Robot.Position) - finalBallPos);
-            var kissTouch1 = finalBallPos + axis * 75f;
-            var kissTouch2 = finalBallPos - axis * 75f;
+            //var axis = Vector2.Normalize((ballPlacer1?.Position ?? tactic.Robot.Position) - finalBallPos);
+            var kissTouch2 = finalBallPos + direction * 75f;
+            var kissTouch1 = finalBallPos - direction * 75f;
             return new GoToPoint
             {
                 Target = tactic.PlacerId == 1 ? kissTouch1 : kissTouch2,
-                VelocityProfile = VelocityProfile.Mamooli with { Speed = 800f },
-                NavigationFlags = NavigationFlags.NoObstacles
+                VelocityProfile = VelocityProfile.Mamooli with { Speed = 500f },
+                NavigationFlags = NavigationFlags.NoObstacles | NavigationFlags.NoBallObstacle
             };
         }
     }
@@ -317,7 +365,7 @@ public partial class BallPlacement : ITactic
 
             if (tactic.PlacerId == 2)
             {
-                if (timeInState.Seconds >= 1.6f) // 100 frames
+                if (false && timeInState.Seconds >= 1.6f) // 100 frames
                 {
                     CalcMinBallWallDist(out var wallPt);
                     var esc = ballPos + Vector2.Normalize(ballPos - wallPt) * 1000f;
@@ -394,8 +442,15 @@ public partial class BallPlacement : ITactic
     private sealed class KissingDoneState(BallPlacement tactic) : IState<State>
     {
         public State Type => State.KissingDone;
-        public void Enter() { }
-        public void Exit() { }
+
+        public void Enter()
+        {
+        }
+
+        public void Exit()
+        {
+        }
+
         public ISkill? Tick()
         {
             var finalBallPos = Context.Referee.DesignatedPosition();
@@ -403,8 +458,10 @@ public partial class BallPlacement : ITactic
             var ballPlacer2 = GetPlacer(2);
             if (ballPlacer1 != null && ballPlacer2 != null)
             {
-                tactic._ballPlacer1FinalPos = finalBallPos + Vector2.Normalize(ballPlacer1.Position - finalBallPos) * 600.0f;
-                tactic._ballPlacer2FinalPos = finalBallPos + Vector2.Normalize(ballPlacer2.Position - finalBallPos) * 800.0f;
+                tactic._ballPlacer1FinalPos =
+                    finalBallPos + Vector2.Normalize(ballPlacer1.Position - finalBallPos) * 600.0f;
+                tactic._ballPlacer2FinalPos =
+                    finalBallPos + Vector2.Normalize(ballPlacer2.Position - finalBallPos) * 800.0f;
             }
 
             var fTarget = tactic.PlacerId == 1 ? tactic._ballPlacer1FinalPos : tactic._ballPlacer2FinalPos;
@@ -421,8 +478,15 @@ public partial class BallPlacement : ITactic
     private sealed class DoneState(BallPlacement tactic) : IState<State>
     {
         public State Type => State.Done;
-        public void Enter() { }
-        public void Exit() { }
+
+        public void Enter()
+        {
+        }
+
+        public void Exit()
+        {
+        }
+
         public ISkill? Tick()
         {
             var finalBallPos = Context.Referee.DesignatedPosition();
