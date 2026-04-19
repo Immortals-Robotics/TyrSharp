@@ -4,6 +4,8 @@ namespace Tyr.Soccer.Role;
 
 public record Goalie : IRole
 {
+    public bool IsGoalie => true;
+
     public Tactics.ITactic CreateTactic(Robot.Robot robot)
     {
         return new Tactics.Goalie(robot);

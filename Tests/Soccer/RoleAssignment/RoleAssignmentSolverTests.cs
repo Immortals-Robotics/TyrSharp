@@ -214,6 +214,29 @@ public sealed class RoleAssignmentSolverTests : IDisposable
         Assert.Equal(1, result.FilledRoles[0].Robot.Id);
     }
 
+    [Fact]
+    public void Solve_ExcludesRefereeGoalkeeperFromAssignmentAndForcesGoalieOnlyRole()
+    {
+        var robots = CreateRobots(0, 1);
+        _context.SetOwnRobots(robots);
+        _context.SetGoalkeeper(0);
+        var goalieRole = new TestRole("GoalieOnly", 1, 100f, DeltaTime.Zero, new Dictionary<int, double>(), isGoalie: true)
+        {
+        };
+        var fieldRole = new TestRole("Field", 1, 10f, DeltaTime.Zero, new Dictionary<int, double> { [0] = 0.01, [1] = 1.0 })
+        {
+        };
+
+        var result = _solver.Solve(new Formation
+        {
+            RequiredRoles = [goalieRole, fieldRole]
+        }, previousRoleMapping: new Dictionary<int, IRole?>());
+
+        Assert.Contains(result.FilledRoles, x => x.Robot.Id == 0 && Equals(x.Role, goalieRole));
+        Assert.Contains(result.FilledRoles, x => x.Robot.Id == 1 && Equals(x.Role, fieldRole));
+        Assert.DoesNotContain(result.UnassignedRobots, robot => robot.Id == 0);
+    }
+
     private static IReadOnlyList<RobotRef> CreateRobots(params int[] ids)
     {
         return ids.Select(id => new RobotRef
@@ -232,8 +255,11 @@ public sealed class RoleAssignmentSolverTests : IDisposable
         int Variant,
         float Importance,
         DeltaTime StickinessBonus,
-        IReadOnlyDictionary<int, double> Costs) : IRole
+        IReadOnlyDictionary<int, double> Costs,
+        bool isGoalie = false) : IRole
     {
+        public bool IsGoalie { get; } = isGoalie;
+
         public DeltaTime CostFor(RobotRef robot) => DeltaTime.FromSeconds(Costs[robot.Id]);
 
         public ITactic CreateTactic(RobotRef robot) => new NullTactic(robot);
@@ -270,7 +296,8 @@ public sealed class RoleAssignmentSolverTests : IDisposable
                     Color = TeamColor.Blue,
                     Gc = new SslReferee
                     {
-                        BlueTeamOnPositiveHalf = true
+                        BlueTeamOnPositiveHalf = true,
+                        Blue = new global::Tyr.Common.Data.Ssl.Gc.TeamInfo { Goalkeeper = 99 }
                     },
                 },
                 Field = FieldSize.DivisionA,
@@ -285,6 +312,30 @@ public sealed class RoleAssignmentSolverTests : IDisposable
             Context.Data.Value = Context.Data.Value! with
             {
                 OwnRobots = robots.ToList()
+            };
+        }
+
+        public void SetGoalkeeper(int robotId)
+        {
+            var referee = Context.Data.Value!.Referee;
+            var gc = referee.Gc;
+
+            if (Context.Color == TeamColor.Blue)
+            {
+                var blue = gc.Blue;
+                blue.Goalkeeper = (uint)robotId;
+                gc.Blue = blue;
+            }
+            else
+            {
+                var yellow = gc.Yellow;
+                yellow.Goalkeeper = (uint)robotId;
+                gc.Yellow = yellow;
+            }
+
+            Context.Data.Value = Context.Data.Value! with
+            {
+                Referee = referee with { Gc = gc }
             };
         }
 

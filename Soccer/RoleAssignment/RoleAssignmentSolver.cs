@@ -17,9 +17,16 @@ internal sealed class RoleAssignmentSolver
         Formation formation,
         IReadOnlyDictionary<int, Role.IRole?> previousRoleMapping)
     {
-        var robots = Context.OwnRobots.Where(r => r.Seen).ToArray();
-        var realRoles = formation.RequiredRoles.Concat(formation.DesiredRoles).ToArray();
-        var requiredCount = formation.RequiredRoles.Count;
+        var goalkeeperId = (int)Context.Referee.OurInfo().Goalkeeper;
+        var assignedGoalieRobot = Context.OwnRobots.FirstOrDefault(r => r.Id == goalkeeperId && r.Seen);
+        var robots = Context.OwnRobots.Where(r => r.Seen && r.Id != goalkeeperId).ToArray();
+
+        var requiredGoalieRoles = formation.RequiredRoles.Where(r => r.IsGoalie).ToArray();
+        var realRoles = formation.RequiredRoles
+            .Where(r => !r.IsGoalie)
+            .Concat(formation.DesiredRoles.Where(r => !r.IsGoalie))
+            .ToArray();
+        var requiredCount = formation.RequiredRoles.Count - requiredGoalieRoles.Length;
         var robotCount = robots.Length;
         var roleCount = realRoles.Length;
         var size = Math.Max(roleCount, robotCount);
@@ -27,7 +34,14 @@ internal sealed class RoleAssignmentSolver
 
         if (size == 0)
         {
-            return RoleAssignmentResult.Empty;
+            return BuildResultWithForcedGoalie(
+                [],
+                [],
+                [],
+                [],
+                0.0,
+                requiredGoalieRoles,
+                assignedGoalieRobot);
         }
 
         var costs = new double[size, size];
@@ -89,6 +103,50 @@ internal sealed class RoleAssignmentSolver
             {
                 unassignedRobots.Add(robots[col]);
             }
+        }
+
+        return BuildResultWithForcedGoalie(
+            filledRoles,
+            unfilledRoles,
+            unassignedRobots,
+            roleMapping,
+            totalCost,
+            requiredGoalieRoles,
+            assignedGoalieRobot);
+    }
+
+    private RoleAssignmentResult BuildResultWithForcedGoalie(
+        List<FilledRoleAssignment> filledRoles,
+        List<UnfilledRoleAssignment> unfilledRoles,
+        List<RobotRef> unassignedRobots,
+        Dictionary<int, Role.IRole?> roleMapping,
+        double totalCost,
+        IReadOnlyList<Role.IRole> requiredGoalieRoles,
+        RobotRef? assignedGoalieRobot)
+    {
+        var goalieRole = requiredGoalieRoles.FirstOrDefault();
+        if (goalieRole != null)
+        {
+            if (assignedGoalieRobot != null)
+            {
+                filledRoles.Add(new FilledRoleAssignment(assignedGoalieRobot, goalieRole));
+                roleMapping[assignedGoalieRobot.Id] = goalieRole;
+            }
+            else
+            {
+                var isRequired = requiredGoalieRoles.Count > 0;
+                unfilledRoles.Add(new UnfilledRoleAssignment(goalieRole, isRequired));
+                if (isRequired)
+                {
+                    totalCost += goalieRole.Importance * _requiredRoleUnfilledPenaltySeconds;
+                }
+            }
+        }
+
+        foreach (var extraRequiredGoalieRole in requiredGoalieRoles.Skip(goalieRole == null ? 0 : 1))
+        {
+            unfilledRoles.Add(new UnfilledRoleAssignment(extraRequiredGoalieRole, true));
+            totalCost += extraRequiredGoalieRole.Importance * _requiredRoleUnfilledPenaltySeconds;
         }
 
         return new RoleAssignmentResult(filledRoles, unfilledRoles, unassignedRobots, roleMapping, totalCost);
