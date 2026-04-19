@@ -12,7 +12,7 @@ public record Defender(int DefId) : IRole
         return new Tactics.Defender(robot, DefId);
     }
 
-    public float Importance => 80f;
+    public float Importance => 10f;
 
     public DeltaTime CostFor(Robot.Robot robot)
     {

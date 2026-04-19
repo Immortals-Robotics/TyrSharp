@@ -1,18 +1,13 @@
 using System.Numerics;
-using Tyr.Common.Config;
 using Tyr.Common.Math.Shapes;
 using Tyr.Soccer.Skills;
 using Tyr.Soccer.Tactics.Fsm;
 
 namespace Tyr.Soccer.Tactics;
 
-[Configurable]
-public partial class Attacker : ITactic
+public class Attacker : ITactic
 {
-    [ConfigEntry] private static float KickSpeed { get; set; } = 6500.0f;
-    [ConfigEntry] private static float ChipSpeed { get; set; } = 2000.0f;
-
-    public Robot.Robot Robot { get; private set; }
+    public Robot.Robot Robot { get; }
 
     public enum State
     {
@@ -25,16 +20,21 @@ public partial class Attacker : ITactic
 
     private readonly Fsm<State> _fsm;
 
+    private Vector2 _targetPosition;
+    private float _kick;
+    private float _chip;
+
     public Attacker(Robot.Robot robot)
     {
         Robot = robot;
+        ApplyDecision(Context.Knowledge.GetAttackerDecision(robot.Id));
 
         _fsm = new Fsm<State>(State.None);
         _fsm.AddState(new NoneState());
         _fsm.AddTransition(State.None, State.Kick, () =>
         {
             var ballVelocity = Context.Ball.State.Velocity.Xy().Length();
-            return ballVelocity <= 1000.0f || IsRollingKickFeasible(Robot);
+            return ballVelocity <= 1000.0f || IsRollingKickFeasible();
         });
         _fsm.AddTransition(State.None, State.WaitForBall, () =>
             InterceptV2.HasImminentImpact(Robot));
@@ -46,7 +46,7 @@ public partial class Attacker : ITactic
         _fsm.AddTransition(State.Interception, State.WaitForBall, () =>
             InterceptV2.HasImminentImpact(Robot));
 
-        _fsm.AddState(new WaitForBallState());
+        _fsm.AddState(new WaitForBallState(this));
         _fsm.AddTransition(State.WaitForBall, State.TurnAndShoot, () =>
         {
             if (IsBallTowardsMe(Robot) && GetBallLineDistance(Robot) <= 1000.0f) return false;
@@ -58,7 +58,7 @@ public partial class Attacker : ITactic
         {
             if (IsBallTowardsMe(Robot) && GetBallLineDistance(Robot) <= 1000.0f) return false;
             var ballRolling = Context.Ball.State.Velocity.Xy().Length() > 1000.0f;
-            return !ballRolling || IsRollingKickFeasible(Robot);
+            return !ballRolling || IsRollingKickFeasible();
         });
         _fsm.AddTransition(State.WaitForBall, State.Interception, () =>
         {
@@ -66,7 +66,7 @@ public partial class Attacker : ITactic
             return true;
         });
 
-        _fsm.AddState(new TurnAndShootState());
+        _fsm.AddState(new TurnAndShootState(this));
         _fsm.AddTransition(State.TurnAndShoot, State.Interception, () =>
         {
             var ballFar = Vector2.Distance(Context.Ball.State.Position, Robot.Position) > 500.0f;
@@ -79,7 +79,7 @@ public partial class Attacker : ITactic
             return ballFar;
         });
 
-        _fsm.AddState(new KickState(Robot));
+        _fsm.AddState(new KickState(this));
         _fsm.AddTransition(State.Kick, State.Interception, () =>
         {
             var ballVelocity = Context.Ball.State.Velocity.Xy().Length();
@@ -87,20 +87,38 @@ public partial class Attacker : ITactic
             var ballTooFast = ballVelocity > 5000.0f;
             var ballTooFar = Vector2.Distance(Context.Ball.State.Position, Robot.Position) > 250.0f;
 
-            return ballTooFast || (ballRolling && !IsRollingKickFeasible(Robot) && ballTooFar);
+            return ballTooFast || (ballRolling && !IsRollingKickFeasible() && ballTooFar);
         });
     }
 
     public ISkill? Tick()
     {
+        ApplyDecision(Context.Knowledge.GetAttackerDecision(Robot.Id));
         _fsm.DrawDebug(Robot);
         return _fsm.Tick();
     }
 
-    private static Vector2 GetBallToGoal()
+    private void ApplyDecision(Knowledge.Knowledge.AttackerDecision decision)
     {
-        var oppGoal = Context.Field.OppGoal();
-        return Vector2.Normalize(oppGoal - Context.Ball.State.Position);
+        _targetPosition = decision.TargetPosition;
+        _kick = decision.Kick;
+        _chip = decision.Chip;
+    }
+
+    private Vector2 GetBallToTargetDirection()
+    {
+        var ballToTarget = _targetPosition - Context.Ball.State.Position;
+        if (ballToTarget.LengthSquared() < 0.001f)
+        {
+            ballToTarget = Context.Field.OppGoal() - Context.Ball.State.Position;
+        }
+
+        if (ballToTarget.LengthSquared() < 0.001f)
+        {
+            return Robot.Angle.ToUnitVec();
+        }
+
+        return Vector2.Normalize(ballToTarget);
     }
 
     private static bool IsBallTowardsMe(Robot.Robot robot)
@@ -121,14 +139,14 @@ public partial class Attacker : ITactic
         return ballLine.Distance(robot.Position);
     }
 
-    private static bool IsRollingKickFeasible(Robot.Robot robot)
+    private bool IsRollingKickFeasible()
     {
-        var ballToGoal = GetBallToGoal();
+        var ballToTarget = GetBallToTargetDirection();
         if (Context.Ball.State.Velocity.LengthSquared() < 0.001f) return false;
 
-        float angleDiff = MathF.Abs(Context.Ball.State.Velocity.Xy().AngleDiff(ballToGoal).DegNormalized);
-        bool ballRollingTowardsGoal = Context.Ball.State.Velocity.Xy().Length() > 0.0f && angleDiff < 15.0f;
-        return ballRollingTowardsGoal && !IsBallTowardsMe(robot);
+        float angleDiff = MathF.Abs(Context.Ball.State.Velocity.Xy().AngleDiff(ballToTarget).DegNormalized);
+        bool ballRollingTowardsTarget = Context.Ball.State.Velocity.Xy().Length() > 0.0f && angleDiff < 15.0f;
+        return ballRollingTowardsTarget && !IsBallTowardsMe(Robot);
     }
 
     private sealed class NoneState : IState<State>
@@ -161,7 +179,7 @@ public partial class Attacker : ITactic
         }
     }
 
-    private sealed class WaitForBallState : IState<State>
+    private sealed class WaitForBallState(Attacker tactic) : IState<State>
     {
         public State Type => State.WaitForBall;
 
@@ -171,14 +189,17 @@ public partial class Attacker : ITactic
 
         public ISkill Tick()
         {
-            var oppGoal = Context.Field.OppGoal();
-            var targetToGoal = Vector2.Normalize(oppGoal - Context.Ball.State.Position);
-
+            var targetToGoal = tactic.GetBallToTargetDirection();
             float angleDiff = MathF.Abs((-Context.Ball.State.Velocity.Xy()).AngleDiff(targetToGoal).DegNormalized);
 
             if (angleDiff < 60.0f)
             {
-                return new OneTouch { Kick = KickSpeed, Chip = ChipSpeed };
+                return new OneTouch
+                {
+                    TargetPoint = tactic._targetPosition,
+                    Kick = tactic._kick,
+                    Chip = tactic._chip
+                };
             }
 
             return new WaitForBall { StaticPosition = Context.Ball.State.Position + targetToGoal * 500f };
@@ -189,7 +210,7 @@ public partial class Attacker : ITactic
         }
     }
 
-    private sealed class TurnAndShootState : IState<State>
+    private sealed class TurnAndShootState(Attacker tactic) : IState<State>
     {
         public State Type => State.TurnAndShoot;
 
@@ -199,9 +220,9 @@ public partial class Attacker : ITactic
 
         public ISkill Tick() => new TurnAndShoot
         {
-            Angle = GetBallToGoal().ToAngle(),
-            Kick = KickSpeed,
-            Chip = ChipSpeed
+            Angle = tactic.GetBallToTargetDirection().ToAngle(),
+            Kick = tactic._kick,
+            Chip = tactic._chip
         };
 
         public void Exit()
@@ -209,7 +230,7 @@ public partial class Attacker : ITactic
         }
     }
 
-    private sealed class KickState(Robot.Robot robot) : IState<State>
+    private sealed class KickState(Attacker tactic) : IState<State>
     {
         public State Type => State.Kick;
 
@@ -219,11 +240,11 @@ public partial class Attacker : ITactic
 
         public ISkill Tick()
         {
-            var ballToGoal = GetBallToGoal();
-            var angleCorrect = MathF.Abs(robot.Angle.ToUnitVec().AngleDiff(ballToGoal).DegNormalized) < 5.0f;
-            var kick = angleCorrect ? KickSpeed : 1.0f;
-            var chip = angleCorrect ? ChipSpeed : 0.0f;
-            return new KickBall { Angle = ballToGoal.ToAngle(), Kick = kick, Chip = chip };
+            var ballToTarget = tactic.GetBallToTargetDirection();
+            var angleCorrect = MathF.Abs(tactic.Robot.Angle.ToUnitVec().AngleDiff(ballToTarget).DegNormalized) < 5.0f;
+            var kick = angleCorrect ? tactic._kick : 0.0f;
+            var chip = angleCorrect ? tactic._chip : 0.0f;
+            return new KickBall { Angle = ballToTarget.ToAngle(), Kick = kick, Chip = chip };
         }
 
         public void Exit()

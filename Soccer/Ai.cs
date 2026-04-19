@@ -183,6 +183,7 @@ public partial class Ai
         {
             RoleAssignment = assignmentResult
         };
+        Context.Knowledge.Update();
 
         // we then re-create tactics for robots who have changed role
         foreach (var robot in Context.OwnRobots)

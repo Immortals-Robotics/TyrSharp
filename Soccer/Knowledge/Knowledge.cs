@@ -15,9 +15,11 @@ public partial class Knowledge
         OwnRobotsCount = Context.OwnRobots.Count(robot => robot.Seen);
         OpponentRobotsCount = Context.OppRobots.Count;
 
+        UpdateAttackerAssignmentCosts();
         UpdateGameConditions();
         UpdateDefense();
         UpdateOpponentThreats();
         UpdateZones();
+        UpdateAttackerDecisions();
     }
 }

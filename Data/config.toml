@@ -27,15 +27,11 @@ DiveHysteresisTime = 0.1 # default: 0.100000s
 
 [Soccer.Tactics.Goalie]
 TightStartAngle = 25.0 # default: 25
-GoalieBoxNotch = 600.0 # default: 600
+GoalieBoxNotch = 900.0 # default: 600
 GoalieDiveInterceptionOffset = 200.0 # default: 200
 GoalieChip = 150.0 # default: 150
 DiveHysteresisTime = 0.1 # default: 0.100000s
 ClearHysteresisTime = 0.3 # default: 0.300000s
-
-[Soccer.Tactics.Attacker]
-KickSpeed = 6500.0 # default: 6500
-ChipSpeed = 2000.0 # default: 2000
 
 
 [Soccer.Navigation]
@@ -66,7 +62,7 @@ NearestFreeRingSpacing = 120.0 # default: 120
 [[Soccer.Robot.PhysicalStatus.StatusArray]]
 HasDribbler = false
 HasDirectKick = true
-HasChipKick = true
+HasChipKick = false
 Is3dPrinted = false
 CenterToDribbler = 75.0
 
@@ -263,6 +259,21 @@ OrientationLockDistanceMm = 200.0 # default: 200
 FacingFallbackSpeedMmPerS = 50.0 # default: 50
 
 [Soccer.Knowledge.Knowledge]
+# Ball-speed threshold for switching attacker assignment from static-ball reach to moving-ball interception [mm/s]
+AttackerStaticBallMaxSpeedMmPerS = 300.0 # default: 300
+AttackerKickSpeed = 6500.0 # default: 6500
+PassKickSpeed = 4.0 # default: 3000
+PassChipSpeed = 1.0 # default: 2000
+DefensiveChipSpeed = 1.0 # default: 2000
+GoalOpenAngleForPassDeg = 55.0 # default: 15
+OpponentNearBallDistance = 150.0 # default: 150
+ReceiverReachedDistance = 1000.0 # default: 1000
+MinReceiverBallDistance = 1000.0 # default: 1000
+MaxPassToOwnGoalDot = 0.8500000238418579 # default: 0.85
+PassShootHysteresisMax = 30 # default: 30
+PassBlockerRadius = 150.0 # default: 150
+ShootBlockerRadius = 90.0 # default: 90
+FarBallShotDistance = 400.0 # default: 400
 DefPredictionTime = 0.15 # default: 0.150000s
 GoalieDiveMaximumTimeToReach = 3.0 # default: 3
 GoalieMaxBallSpeedForClear = 1000.0 # default: 1000
@@ -299,7 +310,7 @@ HysteresisDistanceMm = 150.0 # default: 150
 
 
 [Soccer.Ai]
-VisionPredictionTime = 0.15 # default: 0.120000s
+VisionPredictionTime = 0.125 # default: 0.120000s
 RequiredRoleUnfilledPenalty = 30.0 # default: 30.000000s
 
 [Soccer.Helpers]
@@ -312,9 +323,10 @@ NearKickerDribblerSpeed = 2.0 # default: 2
 NearKickerDribblerForce = 1.0 # default: 1
 
 
-[Soccer.Runner]
-RunYellow = false # default: False
-RunBlue = false # default: False
+[Soccer.Plays]
+[Soccer.Plays.Stop]
+MarkInStop = true # default: True
+
 
 
 [Common]
@@ -596,7 +608,7 @@ SleepTime = 0.001 # default: 0.001000s
 RunnerPriority = "AboveNormal" # default: AboveNormal
 
 [Sender.Simulator]
-Enabled = false # default: False
+Enabled = true # default: False
 BlueAddress = { Ip = "127.0.0.1", Port = 10301 } # default: 127.0.0.1:10301
 YellowAddress = { Ip = "127.0.0.1", Port = 10302 } # default: 127.0.0.1:10302
 ChipAngle = 45.0 # default: 45.00°
@@ -731,7 +743,6 @@ VelocityThresholdDirection = 2000.0 # default: 2000
 [Vision.SslVisionDataPublisher]
 Transport = "Udp" # default: Udp
 VisionAddress = { Ip = "224.5.23.2", Port = 10006 } # default: 224.5.23.2:10006
-SimulatorAddress = { Ip = "224.5.23.2", Port = 10025 } # default: 224.5.23.2:10025
 ZmqEndpoint = "tcp://127.0.0.1:5570" # default: tcp://127.0.0.1:5570
 
 [Vision.Vision]
@@ -760,15 +771,15 @@ MaxHeightForCollision = 130.0 # default: 130
 [Vision.Data]
 [Vision.Data.BallParameters]
 # Radius of the ball in [mm]
-Radius = 21.5 # default: 21
+Radius = 21.0 # default: 21
 # Use ball radius and ball model parameters from SSL-Vision geometry when available
 UseVisionBallParameters = true # default: False
 # Sliding acceleration in [mm/s^2], expected to be negative
-AccelerationSlide = -3500.0 # default: -3000
+AccelerationSlide = -10000.0 # default: -3000
 # Rolling acceleration in [mm/s^2], expected to be negative
-AccelerationRoll = -310.0 # default: -260
+AccelerationRoll = -700.0 # default: -260
 # Fraction of the initial velocity where the ball starts to roll
-KSwitch = 0.6399999856948853 # default: 0.64
+KSwitch = 0.699999988079071 # default: 0.64
 # Ball inertia distribution between 0.4 (massive sphere) and 0.66 (hollow sphere)
 InertiaDistribution = 0.5 # default: 0.5
 # Amount of spin transferred during a redirect.
@@ -776,11 +787,11 @@ RedirectSpinFactor = 0.800000011920929 # default: 0.8
 # Restitution coefficient for redirected balls from a bot.
 RedirectRestitutionCoefficient = 0.20000000298023224 # default: 0.2
 # Chip kick velocity damping factor in XY direction for the first hop
-ChipDampingXyFirstHop = 0.5899999737739563 # default: 0.8
+ChipDampingXyFirstHop = 0.6000000238418579 # default: 0.8
 # Chip kick velocity damping factor in XY direction for all following hops
-ChipDampingXyOtherHops = 0.7300000190734863 # default: 0.85
+ChipDampingXyOtherHops = 0.9599999785423279 # default: 0.85
 # Chip kick velocity damping factor in Z direction
-ChipDampingZ = 0.5199999809265137 # default: 0.47
+ChipDampingZ = 0.41999998688697815 # default: 0.47
 # If a chipped ball does not reach this height it is considered rolling [mm]
 MinHopHeight = 10.0 # default: 10
 # Max. ball height that can be intercepted by robots [mm]
