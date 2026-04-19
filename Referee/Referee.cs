@@ -57,7 +57,11 @@ public partial class Referee
             Log.ZLogInformation($"state transition: {oldState} -> {State}");
 
             State = State with { Timestamp = State.Gc.PacketTimestamp };
-            _lastBall = _vision.Ball;
+            if (oldState.GameState != State.GameState)
+            {
+                _lastBall = _vision.Ball;
+            }
+
             _moveHysteresis = 0;
 
             return true;
@@ -80,7 +84,7 @@ public partial class Referee
 
         _lastBall ??= _vision.Ball;
 
-        var ballMoveDis = Vector3.Distance(_vision.Ball.State.Position3D, _lastBall.Value.State.Position3D);
+        var ballMoveDis = Vector2.Distance(_vision.Ball.State.Position, _lastBall.Value.State.Position);
         if (ballMoveDis > BallMoveDis)
         {
             _moveHysteresis = int.Clamp(_moveHysteresis + 1, 0, RequiredHys);
