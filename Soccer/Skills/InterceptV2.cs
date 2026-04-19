@@ -36,6 +36,11 @@ public sealed partial class InterceptV2 : ISkill
     [ConfigEntry("Time until ball impact below which the dribbler is activated [s]")]
     private static float DribblerActivationTimeSeconds { get; set; } = 0.2f;
 
+    [ConfigEntry("Default fallback distance from ball toward our goal when no interception solution is available [mm]")]
+    private static float DefaultFallbackDistanceMm { get; set; } = 500f;
+
+    public Vector2? FallbackPoint { get; set; }
+
     public static bool HasImminentImpact(Robot.Robot robot, Angle? targetAngle = null) =>
         TryGetImminentImpact(robot, out _, targetAngle);
 
@@ -101,8 +106,6 @@ public sealed partial class InterceptV2 : ISkill
 
     private bool _hasTargetAngle;
     private Angle _lastTargetAngle;
-    private bool _hasDestination;
-    private Vector2 _lastDestination;
     private BallInterception.InterceptPlan? _lastPlan;
 
     public void Execute(Robot.Robot robot)
@@ -122,8 +125,6 @@ public sealed partial class InterceptV2 : ISkill
         {
             _hasTargetAngle = true;
             _lastTargetAngle = forcedReceive.FacingAngle;
-            _hasDestination = true;
-            _lastDestination = forcedReceive.Destination;
             DrawDebug(
                 forcedReceive.BallPosition,
                 forcedReceive.InterceptPoint,
@@ -151,18 +152,7 @@ public sealed partial class InterceptV2 : ISkill
 
         if (!hasPlan)
         {
-            if (_hasDestination)
-            {
-                robot.Navigate(_lastDestination, VelocityProfile.Mamooli, navigationFlags);
-                robot.TargetAngle = _lastTargetAngle;
-                robot.SetDribbler(0f, 0f); // No impact imminent if plan lost
-            }
-            else
-            {
-                robot.Halt();
-                Reset();
-            }
-
+            NavigateToFallback(robot, ballPosition, ballVelocity, navigationFlags);
             return;
         }
 
@@ -177,16 +167,8 @@ public sealed partial class InterceptV2 : ISkill
 
         if (!float.IsFinite(finalDestination.X) || !float.IsFinite(finalDestination.Y))
         {
-            if (_hasDestination)
-            {
-                finalDestination = _lastDestination;
-            }
-            else
-            {
-                Reset();
-                robot.Halt();
-                return;
-            }
+            NavigateToFallback(robot, ballPosition, ballVelocity, navigationFlags);
+            return;
         }
 
         robot.Navigate(finalDestination, VelocityProfile.Mamooli, navigationFlags);
@@ -196,12 +178,44 @@ public sealed partial class InterceptV2 : ISkill
 
         _hasTargetAngle = true;
         _lastTargetAngle = plan.FacingAngle;
-        _hasDestination = true;
-        _lastDestination = finalDestination;
         _lastPlan = plan;
 
         DrawDebug(ballPosition, plan.BallState.Position, finalDestination, plan.FacingAngle, plan.TimeSeconds,
             "SOLVED");
+    }
+
+    private void NavigateToFallback(
+        Robot.Robot robot,
+        Vector2 ballPosition,
+        Vector2 ballVelocity,
+        NavigationFlags navigationFlags)
+    {
+        var fallbackPoint = ResolveFallbackDestination(ballPosition, ballVelocity);
+        var fallbackAngle = fallbackPoint.AngleWith(ballPosition);
+
+        robot.Navigate(fallbackPoint, VelocityProfile.Mamooli, navigationFlags);
+        robot.TargetAngle = fallbackAngle;
+        SetReceiveDribbler(robot, false);
+
+        _hasTargetAngle = true;
+        _lastTargetAngle = fallbackAngle;
+        _lastPlan = null;
+
+        DrawDebug(ballPosition, ballPosition, fallbackPoint, fallbackAngle, 0f, "FALLBACK");
+    }
+
+    private Vector2 ResolveFallbackDestination(Vector2 ballPosition, Vector2 ballVelocity)
+    {
+        var rawFallback = FallbackPoint ?? ballPosition.PointOnConnectingLine(Context.Field.OwnGoal(), DefaultFallbackDistanceMm);
+
+        return Context.Knowledge.BallReceiving.ClampToLegalDestination(
+            rawFallback,
+            Context.Field.RectangleWithBoundary,
+            Context.Field.OwnPenaltyArea(),
+            Context.Field.OppPenaltyArea(),
+            Context.Knowledge.BallReceiving.PenaltyAreaMargin,
+            ballPosition,
+            ballVelocity);
     }
 
     private static bool TryGetImminentImpact(Robot.Robot robot, out ImminentImpact imminentImpact,
@@ -233,13 +247,6 @@ public sealed partial class InterceptV2 : ISkill
         return Context.Knowledge.BallReceiving.IsBallMovingTowardsPoint(ballPosition, ballVelocity, robot.Position)
             ? NavigationFlags.NoBallObstacle
             : NavigationFlags.BallObstacle;
-    }
-
-    private void Reset()
-    {
-        _hasTargetAngle = false;
-        _hasDestination = false;
-        _lastPlan = null;
     }
 
     private static void DrawDebug(

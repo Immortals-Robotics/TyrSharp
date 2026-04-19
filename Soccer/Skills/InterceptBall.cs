@@ -1,20 +1,26 @@
+using System.Numerics;
 using Tyr.Common;
+using Tyr.Common.Config;
 using Tyr.Common.Extensions;
 using Tyr.Common.Math;
-using Tyr.Common.Time;
 using Tyr.Soccer.Knowledge;
 using Tyr.Soccer.Robot;
 
 namespace Tyr.Soccer.Skills;
 
-public sealed class InterceptBall : ISkill
+[Configurable]
+public sealed partial class InterceptBall : ISkill
 {
     private const float ReceiveDribblerSpeed = 2f;
     private const float ReceiveDribblerForce = 5f;
     private const float DribblerActivationTimeSeconds = 0.2f;
 
+    [ConfigEntry("Default fallback distance from ball toward our goal when no interception solution is available [mm]")]
+    private static float DefaultFallbackDistanceMm { get; set; } = 500f;
+
     public Angle Angle { get; set; }
     public float WaitTimeSeconds { get; set; }
+    public Vector2? FallbackPoint { get; set; }
 
     private BallInterception.InterceptPlan? _lastPlan;
 
@@ -43,7 +49,10 @@ public sealed class InterceptBall : ISkill
 
         if (!hasPlan)
         {
-            robot.Halt();
+            var fallbackPoint = ResolveFallbackDestination(ballPosition, ballVelocity);
+            robot.Navigate(fallbackPoint, VelocityProfile.Mamooli, NavigationFlags.NoBallObstacle);
+            robot.TargetAngle = fallbackPoint.AngleWith(ballPosition);
+            robot.SetDribbler(0f, 0f);
             _lastPlan = null;
             return;
         }
@@ -66,5 +75,19 @@ public sealed class InterceptBall : ISkill
             dribblerActive ? ReceiveDribblerForce : 0f);
 
         _lastPlan = plan;
+    }
+
+    private Vector2 ResolveFallbackDestination(Vector2 ballPosition, Vector2 ballVelocity)
+    {
+        var rawFallback = FallbackPoint ?? ballPosition.PointOnConnectingLine(Context.Field.OwnGoal(), DefaultFallbackDistanceMm);
+
+        return Context.Knowledge.BallReceiving.ClampToLegalDestination(
+            rawFallback,
+            Context.Field.RectangleWithBoundary,
+            Context.Field.OwnPenaltyArea(),
+            Context.Field.OppPenaltyArea(),
+            Context.Knowledge.BallReceiving.PenaltyAreaMargin,
+            ballPosition,
+            ballVelocity);
     }
 }
