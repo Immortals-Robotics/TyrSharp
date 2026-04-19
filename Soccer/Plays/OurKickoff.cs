@@ -30,6 +30,19 @@ public class OurKickoff : IPlay
 
         Log.ZLogDebug($"elapsed: {elapsed}");
 
+        // The rest are supporters in offensive zones
+        var desiredRoles = new List<IRole>();
+        var zones = Context.Knowledge.SortedZonesByDefense;
+        while (4 + desiredRoles.Count < Context.OwnRobots.Count)
+        {
+            if (zones.Count == 0)
+            {
+                break;
+            }
+
+            desiredRoles.Add(new Supporter { Zone = zones.Dequeue() });
+        }
+
         return new Formation
         {
             RequiredRoles =
@@ -44,12 +57,7 @@ public class OurKickoff : IPlay
                     ShootPower = shootPower
                 },
             ],
-            DesiredRoles =
-            [
-                new Waiter(mid5Pos),
-                new Waiter(mid1Pos),
-                new Waiter(mid2Pos),
-            ]
+            DesiredRoles = desiredRoles
         };
     }
 }
