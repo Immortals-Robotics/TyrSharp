@@ -9,6 +9,6 @@ public interface IRole
 
     bool IsGoalie => false;
     float Importance { get; }
-    DeltaTime StickinessBonus => DeltaTime.FromMilliseconds(50);
+    DeltaTime StickinessBonus => DeltaTime.FromMilliseconds(200);
     DeltaTime CostFor(Robot.Robot robot);
 }

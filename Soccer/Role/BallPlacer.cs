@@ -13,7 +13,7 @@ public record BallPlacer(int PlacerId) : IRole
     }
 
     public float Importance => 100f;
-    public DeltaTime StickinessBonus => DeltaTime.FromMilliseconds(600);
+    public DeltaTime StickinessBonus => DeltaTime.FromMilliseconds(1000);
 
     public DeltaTime CostFor(Robot.Robot robot)
     {

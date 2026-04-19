@@ -13,7 +13,6 @@ public record Defender(int DefId) : IRole
     }
 
     public float Importance => 80f;
-    public DeltaTime StickinessBonus => DeltaTime.FromMilliseconds(150);
 
     public DeltaTime CostFor(Robot.Robot robot)
     {
