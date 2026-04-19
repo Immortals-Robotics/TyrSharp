@@ -268,10 +268,10 @@ FacingFallbackSpeedMmPerS = 50.0 # default: 50
 # Ball-speed threshold for switching attacker assignment from static-ball reach to moving-ball interception [mm/s]
 AttackerStaticBallMaxSpeedMmPerS = 300.0 # default: 300
 AttackerKickSpeed = 6000.0 # default: 6500
-PassKickSpeed = 3500.0 # default: 3000
-PassChipSpeed = 40.0 # default: 2000
+PassKickSpeed = 4000.0 # default: 3000
+PassChipSpeed = 35.0 # default: 2000
 DefensiveChipSpeed = 80.0 # default: 2000
-GoalOpenAngleForPassDeg = 15.0 # default: 15
+GoalOpenAngleForPassDeg = 8.0 # default: 15
 OpponentNearBallDistance = 150.0 # default: 150
 ReceiverReachedDistance = 1000.0 # default: 1000
 MinReceiverBallDistance = 1000.0 # default: 1000
