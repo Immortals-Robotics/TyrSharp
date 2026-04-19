@@ -267,6 +267,8 @@ FacingFallbackSpeedMmPerS = 50.0 # default: 50
 [Soccer.Knowledge.Knowledge]
 # Ball-speed threshold for switching attacker assignment from static-ball reach to moving-ball interception [mm/s]
 AttackerStaticBallMaxSpeedMmPerS = 300.0 # default: 300
+AttackerAssignmentNoKickPenalty = 5.0 # default: 5.000000s
+AttackerAssignmentNoDribblerPenalty = 0.5 # default: 0.500000s
 AttackerKickSpeed = 6000.0 # default: 6500
 PassKickSpeed = 4000.0 # default: 3000
 PassChipSpeed = 35.0 # default: 2000
