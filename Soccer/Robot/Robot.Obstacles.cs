@@ -95,6 +95,9 @@ public partial class Robot
         // goal posts
         const float wallThickness = 20.0f;
         var goalPostSize = new Vector2(Context.Field.GoalDepth, wallThickness);
+        var backGoalWallSize = new Vector2(wallThickness, Context.Field.GoalWidth);
+        var postExtensionLength = MathF.Max(0.0f, Context.Field.BoundaryWidthGoalLine - Context.Field.GoalDepth);
+        var postExtensionSize = new Vector2(postExtensionLength, wallThickness);
 
         var posts = new[]
         {
@@ -113,6 +116,46 @@ public partial class Robot
 
         foreach (var post in posts)
             _obsMap.Add(post, Physicality.Physical);
+
+        if (postExtensionLength > 0.0f)
+        {
+            var postExtensions = new[]
+            {
+                Rectangle.FromCornerAndSize(
+                    new Vector2(-Context.Field.Width - Context.Field.GoalDepth - postExtensionSize.X,
+                        -Context.Field.GoalWidth / 2f - postExtensionSize.Y),
+                    postExtensionSize.X, postExtensionSize.Y),
+                Rectangle.FromCornerAndSize(
+                    new Vector2(-Context.Field.Width - Context.Field.GoalDepth - postExtensionSize.X,
+                        Context.Field.GoalWidth / 2f - postExtensionSize.Y),
+                    postExtensionSize.X, postExtensionSize.Y),
+                Rectangle.FromCornerAndSize(
+                    new Vector2(Context.Field.Width + Context.Field.GoalDepth,
+                        -Context.Field.GoalWidth / 2f - postExtensionSize.Y),
+                    postExtensionSize.X, postExtensionSize.Y),
+                Rectangle.FromCornerAndSize(
+                    new Vector2(Context.Field.Width + Context.Field.GoalDepth,
+                        Context.Field.GoalWidth / 2f - postExtensionSize.Y),
+                    postExtensionSize.X, postExtensionSize.Y)
+            };
+
+            foreach (var postExtension in postExtensions)
+                _obsMap.Add(postExtension, Physicality.Physical);
+        }
+
+        var backGoalWalls = new[]
+        {
+            Rectangle.FromCornerAndSize(
+                new Vector2(-Context.Field.Width - Context.Field.GoalDepth, -Context.Field.GoalWidth / 2f),
+                backGoalWallSize.X, backGoalWallSize.Y),
+            Rectangle.FromCornerAndSize(
+                new Vector2(Context.Field.Width + Context.Field.GoalDepth - backGoalWallSize.X,
+                    -Context.Field.GoalWidth / 2f),
+                backGoalWallSize.X, backGoalWallSize.Y)
+        };
+
+        foreach (var backGoalWall in backGoalWalls)
+            _obsMap.Add(backGoalWall, Physicality.Physical);
 
         var halfPenaltyWidth = Context.Field.PenaltyAreaWidth / 2f;
 
