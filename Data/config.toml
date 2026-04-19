@@ -78,8 +78,8 @@ ShootK = 4000.0 # default: 4000
 
 [Soccer.Skills.MarkToGoal]
 OppPredictTime = 0.15 # default: 0.150000s
-PenaltyAreaMark = false # default: False
-PenaltyAreaMarkDistance = 200.0 # default: 200
+PenaltyAreaMark = true # default: False
+PenaltyAreaMarkDistance = 100.0 # default: 200
 
 [Soccer.Skills.InterceptV2]
 # Dribbler speed used while receiving a moving ball
