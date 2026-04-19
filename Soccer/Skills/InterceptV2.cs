@@ -206,7 +206,8 @@ public sealed partial class InterceptV2 : ISkill
 
     private Vector2 ResolveFallbackDestination(Vector2 ballPosition, Vector2 ballVelocity)
     {
-        var rawFallback = FallbackPoint ?? ballPosition.PointOnConnectingLine(Context.Field.OwnGoal(), DefaultFallbackDistanceMm);
+        var rawFallback = FallbackPoint ??
+                          ballPosition.PointOnConnectingLine(Context.Field.OwnGoal(), DefaultFallbackDistanceMm);
 
         return Context.Knowledge.BallReceiving.ClampToLegalDestination(
             rawFallback,
@@ -244,8 +245,13 @@ public sealed partial class InterceptV2 : ISkill
         Vector2 ballPosition,
         Vector2 ballVelocity)
     {
-        return Context.Knowledge.BallReceiving.IsBallMovingTowardsPoint(ballPosition, ballVelocity, robot.Position)
-            ? NavigationFlags.NoBallObstacle
+        if (Context.Knowledge.BallReceiving.IsBallMovingTowardsPoint(ballPosition, ballVelocity, robot.Position))
+        {
+            return NavigationFlags.NoBallObstacle;
+        }
+
+        return Context.Ball.State.Velocity.Length() < 300.0f
+            ? NavigationFlags.BallMediumObstacle
             : NavigationFlags.BallObstacle;
     }
 
