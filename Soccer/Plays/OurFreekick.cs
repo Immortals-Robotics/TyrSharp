@@ -24,7 +24,7 @@ public class OurFreekick : IPlay
 
         if (Context.Referee.Gc.CurrentActionTimeRemaining < DeltaTime.FromSeconds(2))
         {
-            chipPower = 1000;
+            chipPower = 50;
         }
 
         Log.ZLogDebug($"chip: {Context.Referee.Gc.CurrentActionTimeRemaining} -> {chipPower}");
