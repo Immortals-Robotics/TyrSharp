@@ -88,28 +88,12 @@ public partial class Knowledge
 
         if (IsDefending)
         {
-            if (sideSign * ballX < -800)
+            if (sideSign * ballX < -500)
             {
                 IsDefending = false;
             }
         }
-        else if (sideSign * ballX > -300)
-        {
-            IsDefending = true;
-        }
-
-        var currentRefCommand = Context.Referee.Gc.Command;
-        if (_lastRefCommand != currentRefCommand)
-        {
-            if (Context.Referee.TheirRestart())
-            {
-                _oppRestartTimestamp = Context.Time;
-            }
-
-            _lastRefCommand = currentRefCommand;
-        }
-
-        if (Context.Referee.TheirRestart() && (Context.Time - _oppRestartTimestamp).Seconds < 2.0)
+        else if (sideSign * ballX > 500)
         {
             IsDefending = true;
         }
