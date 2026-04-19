@@ -56,6 +56,56 @@ NearestFreeRingSpacing = 120.0 # default: 120
 
 
 
+[Soccer.Skills]
+[Soccer.Skills.InterceptBall]
+# Default fallback distance from ball toward our goal when no interception solution is available [mm]
+DefaultFallbackDistanceMm = 500.0 # default: 500
+
+[Soccer.Skills.MarkToBall]
+OppPredictTime = 0.15 # default: 0.150000s
+
+[Soccer.Skills.KickBall]
+PredictionTime = 0.2 # default: 0.200000s
+MaxAngleError = 3.0 # default: 3
+
+[Soccer.Skills.DefenceWall]
+Radius = 550.0 # default: 550
+
+[Soccer.Skills.OneTouch]
+Beta = 0.4000000059604645 # default: 0.4
+Gamma = 0.14000000059604645 # default: 0.14
+ShootK = 4000.0 # default: 4000
+
+[Soccer.Skills.MarkToGoal]
+OppPredictTime = 0.15 # default: 0.150000s
+PenaltyAreaMark = false # default: False
+PenaltyAreaMarkDistance = 200.0 # default: 200
+
+[Soccer.Skills.InterceptV2]
+# Dribbler speed used while receiving a moving ball
+ReceiveDribblerSpeed = 2.0 # default: 2
+# Ball arrival time below which the bot forces blocking on the ball path [s]
+ImminentImpactTimeSeconds = 0.30000001192092896 # default: 0.3
+# Distance from robot kicker to ball path below which the bot forces blocking [mm]
+ImminentImpactDistanceMm = 150.0 # default: 150
+# Time until ball impact below which the dribbler is activated [s]
+DribblerActivationTimeSeconds = 0.20000000298023224 # default: 0.2
+# Default fallback distance from ball toward our goal when no interception solution is available [mm]
+DefaultFallbackDistanceMm = 500.0 # default: 500
+
+[Soccer.Skills.CaptureBall]
+# Dribbler Force used while capturing the ball
+CaptureDribblerForce = 2.0 # default: 2
+# Angle tolerance within which the robot starts charging inward [deg]
+RoughFocusAngleDeg = 15.0 # default: 15
+# Distance margin in front of the ball during approach [mm]
+ApproachMarginMm = 100.0 # default: 100
+# Distance margin behind the ball center during final capture [mm]
+CaptureMarginMm = -20.0 # default: -20
+# Dribbler speed used while capturing the ball
+CaptureDribblerSpeed = 2.0 # default: 2
+
+
 [Soccer.Robot]
 [Soccer.Robot.PhysicalStatus]
 
@@ -192,50 +242,6 @@ PenaltyAreaExtensionBehindGoal = 300.0 # default: 300
 BigPenaltyAddition = 220.0 # default: 220
 
 
-[Soccer.Skills]
-[Soccer.Skills.MarkToBall]
-OppPredictTime = 0.15 # default: 0.150000s
-
-[Soccer.Skills.KickBall]
-PredictionTime = 0.2 # default: 0.200000s
-MaxAngleError = 3.0 # default: 3
-
-[Soccer.Skills.DefenceWall]
-Radius = 550.0 # default: 550
-
-[Soccer.Skills.OneTouch]
-Beta = 0.4000000059604645 # default: 0.4
-Gamma = 0.14000000059604645 # default: 0.14
-ShootK = 4000.0 # default: 4000
-
-[Soccer.Skills.MarkToGoal]
-OppPredictTime = 0.15 # default: 0.150000s
-PenaltyAreaMark = false # default: False
-PenaltyAreaMarkDistance = 200.0 # default: 200
-
-[Soccer.Skills.InterceptV2]
-# Dribbler speed used while receiving a moving ball
-ReceiveDribblerSpeed = 2.0 # default: 2
-# Ball arrival time below which the bot forces blocking on the ball path [s]
-ImminentImpactTimeSeconds = 0.30000001192092896 # default: 0.3
-# Distance from robot kicker to ball path below which the bot forces blocking [mm]
-ImminentImpactDistanceMm = 150.0 # default: 150
-# Time until ball impact below which the dribbler is activated [s]
-DribblerActivationTimeSeconds = 0.20000000298023224 # default: 0.2
-
-[Soccer.Skills.CaptureBall]
-# Dribbler Force used while capturing the ball
-CaptureDribblerForce = 2.0 # default: 2
-# Angle tolerance within which the robot starts charging inward [deg]
-RoughFocusAngleDeg = 15.0 # default: 15
-# Distance margin in front of the ball during approach [mm]
-ApproachMarginMm = 100.0 # default: 100
-# Distance margin behind the ball center during final capture [mm]
-CaptureMarginMm = -20.0 # default: -20
-# Dribbler speed used while capturing the ball
-CaptureDribblerSpeed = 2.0 # default: 2
-
-
 [Soccer.TeamRunner]
 RunnerPriority = "Highest" # default: Highest
 # If a new hardware status is received in ms hardware status is invalidated
@@ -261,11 +267,11 @@ FacingFallbackSpeedMmPerS = 50.0 # default: 50
 [Soccer.Knowledge.Knowledge]
 # Ball-speed threshold for switching attacker assignment from static-ball reach to moving-ball interception [mm/s]
 AttackerStaticBallMaxSpeedMmPerS = 300.0 # default: 300
-AttackerKickSpeed = 6500.0 # default: 6500
-PassKickSpeed = 4.0 # default: 3000
-PassChipSpeed = 1.0 # default: 2000
-DefensiveChipSpeed = 1.0 # default: 2000
-GoalOpenAngleForPassDeg = 55.0 # default: 15
+AttackerKickSpeed = 6000.0 # default: 6500
+PassKickSpeed = 3500.0 # default: 3000
+PassChipSpeed = 40.0 # default: 2000
+DefensiveChipSpeed = 80.0 # default: 2000
+GoalOpenAngleForPassDeg = 15.0 # default: 15
 OpponentNearBallDistance = 150.0 # default: 150
 ReceiverReachedDistance = 1000.0 # default: 1000
 MinReceiverBallDistance = 1000.0 # default: 1000
@@ -773,7 +779,7 @@ MaxHeightForCollision = 130.0 # default: 130
 # Radius of the ball in [mm]
 Radius = 21.5 # default: 21
 # Use ball radius and ball model parameters from SSL-Vision geometry when available
-UseVisionBallParameters = true # default: False
+UseVisionBallParameters = false # default: False
 # Sliding acceleration in [mm/s^2], expected to be negative
 AccelerationSlide = -3500.0 # default: -3000
 # Rolling acceleration in [mm/s^2], expected to be negative
