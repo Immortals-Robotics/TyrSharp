@@ -92,10 +92,11 @@ public static class FieldSizeExtensions
         return Rectangle.FromCornerAndSize(new Vector2(0, -h), Context.SideSign * field.Width, 2 * h);
     }
 
-    public static Rectangle TheirHalf(this FieldSize field)
+    public static Rectangle TheirHalf(this FieldSize field, float goalLineMargin = 0f)
     {
         float h = field.Height + field.BoundaryWidth;
-        return Rectangle.FromCornerAndSize(new Vector2(0, -h), -Context.SideSign * field.Width, 2 * h);
+        return Rectangle.FromCornerAndSize(new Vector2(0, -h),
+            -Context.SideSign * (field.Width + goalLineMargin), 2 * h);
     }
 
     public static Rectangle FieldAccessArea(this FieldSize field)

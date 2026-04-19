@@ -193,7 +193,7 @@ public partial class Robot
         }
 
         if (theirHalf)
-            _obsMap.Add(Context.Field.TheirHalf(), Physicality.Virtual);
+            _obsMap.Add(Context.Field.TheirHalf(Context.Field.BoundaryWidthGoalLine), Physicality.Virtual);
 
         // placement line clearance
         if (ballPlacementLine)
