@@ -143,6 +143,12 @@ public sealed class KnowledgeAttackerCostTests : IDisposable
                     Position = position,
                     Velocity = velocity
                 }
+            },
+            PhysicalStatus = new Tyr.Common.Data.Robot.HardwareStatus
+            {
+                HasDirectKick = true,
+                HasChipKick = true,
+                HasDribbler = true
             }
         };
     }
