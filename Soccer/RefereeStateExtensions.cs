@@ -40,7 +40,7 @@ public static class RefereeStateExtensions
     public static bool CanKickBall(this State state) => state.Running() || (state.OurRestart() && state.Ready);
 
     public static bool ShouldSlowDown(this State state) =>
-        state.Stop() || state.BallPlacement() || state.CanEnterField();
+        state.Stop() || state.CanEnterField();
 
     public static bool CanEnterField(this State state) => state.Timeout();
 

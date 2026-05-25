@@ -152,9 +152,9 @@ Is3dPrinted = false
 CenterToDribbler = 75.0
 
 [[Soccer.Robot.PhysicalStatus.StatusArray]]
-HasDribbler = true
-HasDirectKick = true
-HasChipKick = true
+HasDribbler = false
+HasDirectKick = false
+HasChipKick = false
 Is3dPrinted = false
 CenterToDribbler = 75.0
 
@@ -166,7 +166,7 @@ Is3dPrinted = false
 CenterToDribbler = 75.0
 
 [[Soccer.Robot.PhysicalStatus.StatusArray]]
-HasDribbler = true
+HasDribbler = false
 HasDirectKick = false
 HasChipKick = false
 Is3dPrinted = false
@@ -268,12 +268,12 @@ FacingFallbackSpeedMmPerS = 50.0 # default: 50
 # Ball-speed threshold for switching attacker assignment from static-ball reach to moving-ball interception [mm/s]
 AttackerStaticBallMaxSpeedMmPerS = 300.0 # default: 300
 AttackerAssignmentNoKickPenalty = 5.0 # default: 5.000000s
-AttackerAssignmentNoDribblerPenalty = 0.5 # default: 0.500000s
+AttackerAssignmentNoDribblerPenalty = 0.1 # default: 0.500000s
 AttackerKickSpeed = 6000.0 # default: 6500
 PassKickSpeed = 4000.0 # default: 3000
 PassChipSpeed = 35.0 # default: 2000
 DefensiveChipSpeed = 80.0 # default: 2000
-GoalOpenAngleForPassDeg = 8.0 # default: 15
+GoalOpenAngleForPassDeg = 4.0 # default: 15
 OpponentNearBallDistance = 150.0 # default: 150
 ReceiverReachedDistance = 1000.0 # default: 1000
 MinReceiverBallDistance = 1000.0 # default: 1000
@@ -616,7 +616,7 @@ SleepTime = 0.001 # default: 0.001000s
 RunnerPriority = "AboveNormal" # default: AboveNormal
 
 [Sender.Simulator]
-Enabled = true # default: False
+Enabled = false # default: False
 BlueAddress = { Ip = "127.0.0.1", Port = 10301 } # default: 127.0.0.1:10301
 YellowAddress = { Ip = "127.0.0.1", Port = 10302 } # default: 127.0.0.1:10302
 ChipAngle = 45.0 # default: 45.00°
@@ -629,7 +629,7 @@ StatusPort = 5670 # default: 5670
 [Referee]
 [Referee.GcDataPublisher]
 # Address where referee packets are received from the game controller
-GcAddress = { Ip = "127.0.0.1", Port = 10044 } # default: 224.5.23.1:10003
+GcAddress = { Ip = "224.5.23.1", Port = 10003 } # default: 224.5.23.1:10003
 
 [Referee.Referee]
 RequiredHys = 5 # default: 5

@@ -130,7 +130,7 @@ public partial class CircleBall : ITactic
             {
                 Target = targetPoint,
                 LookAt = Context.Ball.State.Position,
-                VelocityProfile = VelocityProfile.Mamooli
+                VelocityProfile = VelocityProfile.Aroom
             };
         }
     }

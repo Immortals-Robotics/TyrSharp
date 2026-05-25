@@ -45,6 +45,11 @@ public record BallPlacer(int PlacerId) : IRole
             baseCost += DeltaTime.FromMilliseconds(600);
         }
 
+        if (!robot.PhysicalStatus.HasDirectKick)
+        {
+            baseCost += DeltaTime.FromSeconds(10);
+        }
+
         return baseCost;
     }
 }

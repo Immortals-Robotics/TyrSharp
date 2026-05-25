@@ -17,6 +17,8 @@ public class OurKickoff : IPlay
         var mid5Pos = new Vector2(ballPos.X - side * 150f, Context.Field.Height - 300f);
         var mid1Pos = new Vector2(ballPos.X - side * 150f, -(Context.Field.Height - 300f));
         var mid2Pos = ballPos.PointOnConnectingLine(Context.Field.OwnGoal(), 1000f);
+        var mid3Pos = ballPos.PointOnConnectingLine(Context.Field.OwnGoal(), 2000f);
+
 
         var elapsed = Context.Referee.Elapsed(Context.Time);
         var canKick = Context.Referee.CanKickBall();
@@ -32,7 +34,12 @@ public class OurKickoff : IPlay
 
         // The rest are supporters in offensive zones
         var desiredRoles = new List<IRole>();
-        var zones = Context.Knowledge.SortedZonesByDefense;
+        desiredRoles.Add(new Waiter(mid5Pos));
+        desiredRoles.Add(new Waiter(mid1Pos));
+        desiredRoles.Add(new Waiter(mid2Pos));
+        desiredRoles.Add(new Waiter(mid3Pos));
+
+        /*var zones = Context.Knowledge.SortedZonesByDefense;
         while (4 + desiredRoles.Count < Context.OwnRobots.Count)
         {
             if (zones.Count == 0)
@@ -41,7 +48,7 @@ public class OurKickoff : IPlay
             }
 
             desiredRoles.Add(new Supporter { Zone = zones.Dequeue() });
-        }
+        }*/
 
         return new Formation
         {
