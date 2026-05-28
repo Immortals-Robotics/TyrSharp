@@ -25,6 +25,7 @@ public partial class Knowledge
 
     private readonly Dictionary<int, AttackerDecision> _attackerDecisions = [];
     private readonly Dictionary<int, int> _passShootHysteresisByRobot = [];
+    private readonly List<int> _staleHysteresisKeys = []; // Bolt: pre-allocated list to avoid per-frame allocations
 
     public AttackerDecision GetAttackerDecision(int robotId)
     {
@@ -49,7 +50,17 @@ public partial class Knowledge
             _attackerDecisions[robotId] = BuildAttackerDecision(assignment.Robot, attackerRole);
         }
 
-        foreach (var robotId in _passShootHysteresisByRobot.Keys.Where(id => !assignedAttackers.Contains(id)).ToList())
+        // Bolt: eliminates LINQ .Where(...).ToList() allocation per frame
+        _staleHysteresisKeys.Clear();
+        foreach (var robotId in _passShootHysteresisByRobot.Keys)
+        {
+            if (!assignedAttackers.Contains(robotId))
+            {
+                _staleHysteresisKeys.Add(robotId);
+            }
+        }
+
+        foreach (var robotId in _staleHysteresisKeys)
         {
             _passShootHysteresisByRobot.Remove(robotId);
         }

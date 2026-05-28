@@ -100,8 +100,11 @@ public sealed partial class TeamRunner : IDisposable
             ApplySimFeedback(simFeedback);
 
 
-        foreach (var robot in Context.OwnRobots.Where(r => r.HardwareStatus.IsValid()))
+        // Bolt: eliminates LINQ .Where() closure and enumerator allocs per frame
+        foreach (var robot in Context.OwnRobots)
         {
+            if (!robot.HardwareStatus.IsValid()) continue;
+
             var now = Timestamp.Now;
             if (now - robot.HardwareStatus.LastUpdate > HardwareStatusValidTime)
             {
@@ -126,12 +129,16 @@ public sealed partial class TeamRunner : IDisposable
                 }
             }
 
-            Log.ZLogDebug(
-                $"Robot {status.Info!.RobotId}: " +
-                $"battery={status.Power?.V24Voltage:F2}V " +
-                $"temp={status.Diag?.ImuTemp:F1}°C " +
-                $"ball={robot.HasBallContact} " +
-                $"motors=[{string.Join(", ", status.Motors?.Motors.Select(m => $"{m.Target:F0}/{m.Actual:F0}") ?? [])}]");
+            // Bolt: gates expensive LINQ and string interpolation inside the hot path when debug logs are off
+            if (Log.IsEnabled(LogLevel.Debug))
+            {
+                Log.ZLogDebug(
+                    $"Robot {status.Info!.RobotId}: " +
+                    $"battery={status.Power?.V24Voltage:F2}V " +
+                    $"temp={status.Diag?.ImuTemp:F1}°C " +
+                    $"ball={robot.HasBallContact} " +
+                    $"motors=[{string.Join(", ", status.Motors?.Motors.Select(m => $"{m.Target:F0}/{m.Actual:F0}") ?? [])}]");
+            }
         }
 
         if (_refereeSubscriber.Reader.TryRead(out var referee))
