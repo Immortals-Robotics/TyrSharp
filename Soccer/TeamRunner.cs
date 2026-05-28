@@ -130,7 +130,7 @@ public sealed partial class TeamRunner : IDisposable
             }
 
             // Bolt: gates expensive LINQ and string interpolation inside the hot path when debug logs are off
-            if (Log.IsEnabled(LogLevel.Debug))
+            if (Log.IsEnabled(Microsoft.Extensions.Logging.LogLevel.Debug))
             {
                 Log.ZLogDebug(
                     $"Robot {status.Info!.RobotId}: " +
