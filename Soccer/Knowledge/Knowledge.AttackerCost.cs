@@ -63,6 +63,11 @@ public partial class Knowledge
 
     private DeltaTime CalculateAttackerAssignmentCost(RobotRef robot)
     {
+        if (robot.Id == Context.Referee.OurInfo().Goalkeeper)
+        {
+            return DeltaTime.MaxValue;
+        }
+
         var reachTimeToCurrentBall = CalculateReachTimeToCurrentBall(robot);
         var ballSpeed = Context.Ball.State.Velocity.Xy().Length();
 
