@@ -87,6 +87,7 @@ public partial class BallPlacement : ITactic
             var finalBallPos = Context.Referee.DesignatedPosition();
             var ballPlacer1 = GetPlacer(1);
             var ballPlacer2 = GetPlacer(2);
+            if (ballPlacer1 == null || ballPlacer2 == null) return false;
             var middle = (ballPlacer1.Position + ballPlacer2.Position) / 2.0f;
             return Vector2.Distance(middle, finalBallPos) < 100f;
         }, BPStateDelay);
@@ -105,8 +106,9 @@ public partial class BallPlacement : ITactic
         {
             var ballPlacer1 = GetPlacer(1);
             var ballPlacer2 = GetPlacer(2);
-            return ballPlacer1 != null && Vector2.Distance(ballPlacer1.Position, _ballPlacer1FinalPos) < 20f &&
-                   ballPlacer2 != null && Vector2.Distance(ballPlacer2.Position, _ballPlacer2FinalPos) < 20f;
+            if (ballPlacer1 == null || ballPlacer2 == null) return false;
+            return Vector2.Distance(ballPlacer1.Position, _ballPlacer1FinalPos) < 20f &&
+                   Vector2.Distance(ballPlacer2.Position, _ballPlacer2FinalPos) < 20f;
         }, BPStateDelay);
 
         // Done transitions
@@ -114,13 +116,14 @@ public partial class BallPlacement : ITactic
         {
             var ballPlacer1 = GetPlacer(1);
             var ballPlacer2 = GetPlacer(2);
+            if (ballPlacer1 == null || ballPlacer2 == null) return false;
             var now = Timestamp.Now;
             var finalBallPos = Context.Referee.DesignatedPosition();
 
             return (now - Context.Ball.LastVisibleTimestamp < DeltaTime.FromSeconds(1) &&
-                    Vector2.Distance(Context.Ball.State.Position, finalBallPos) > 80.0) || ballPlacer1 != null &&
+                    Vector2.Distance(Context.Ball.State.Position, finalBallPos) > 80.0) ||
                 Vector2.Distance(ballPlacer1.Position, _ballPlacer1FinalPos) < 20f &&
-                ballPlacer2 != null && Vector2.Distance(ballPlacer2.Position, _ballPlacer2FinalPos) < 20f;
+                Vector2.Distance(ballPlacer2.Position, _ballPlacer2FinalPos) < 20f;
         }, BPStateDelay);
     }
 
@@ -311,10 +314,10 @@ public partial class BallPlacement : ITactic
             var ballPlacer1 = GetPlacer(1);
             var ballPlacer2 = GetPlacer(2);
 
-            var direction = Vector2.Normalize((ballPlacer1.Position + ballPlacer2.Position) / 2.0f - finalBallPos);
-
+            var direction = Vector2.Zero;
             if (ballPlacer1 != null && ballPlacer2 != null)
             {
+                direction = Vector2.Normalize((ballPlacer1.Position + ballPlacer2.Position) / 2.0f - finalBallPos);
                 //var direction = Vector2.Normalize((ballPlacer1.Position + ballPlacer2.Position) / 2.0f - finalBallPos);
                 tactic._ballPlacer2FinalPos = finalBallPos +
                                               direction *
@@ -322,6 +325,10 @@ public partial class BallPlacement : ITactic
                 tactic._ballPlacer1FinalPos = finalBallPos -
                                               direction *
                                               BPKissInitDistance;
+            }
+            else
+            {
+                direction = Vector2.Normalize(tactic.Robot.Position - finalBallPos);
             }
 
             //var axis = Vector2.Normalize((ballPlacer1?.Position ?? tactic.Robot.Position) - finalBallPos);
