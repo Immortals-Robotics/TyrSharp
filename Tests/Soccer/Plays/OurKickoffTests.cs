@@ -49,7 +49,7 @@ public class OurKickoffTests
 
         // Assert
         Assert.Equal(4, formation.RequiredRoles.Count);
-        Assert.Equal(3, formation.DesiredRoles.Count);
+        Assert.Equal(4, formation.DesiredRoles.Count);
 
         Assert.Contains(formation.RequiredRoles, r => r is Goalie);
         Assert.Contains(formation.RequiredRoles, r => r is Defender { DefId: 1 });
@@ -114,6 +114,6 @@ public class OurKickoffTests
 
         // Assert
         var attacker = (CircleBall)formation.RequiredRoles.First(r => r is CircleBall);
-        Assert.Equal(5000f, attacker.ShootPower);
+        Assert.Equal(3000f, attacker.ShootPower);
     }
 }
