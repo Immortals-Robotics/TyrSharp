@@ -13,18 +13,37 @@ public partial class RobotMerger
         "Factor to weight stdDeviation during tracker merging, reasonable range: 1.0 - 2.0. High values lead to more jitter")]
     private static float MergePower { get; set; } = 1.5f;
 
+    private readonly Dictionary<RobotId, List<RobotTracker>> _trackersById = new();
+
     public List<FilteredRobot> Process(IEnumerable<Camera> cameras, Timestamp timestamp)
     {
-        var trackersById = cameras
-            .SelectMany(camera => camera.Robots.Values)
-            .GroupBy(robot => robot.Id)
-            .ToDictionary(grouping => grouping.Key, grouping => grouping.ToList());
-
-        var mergedRobots = new List<FilteredRobot>();
-
-        foreach (var (id, trackers) in trackersById)
+        // Bolt: eliminates ~30+ allocs/frame - replaces SelectMany/GroupBy/ToDictionary with reused dictionary and explicit loops
+        foreach (var list in _trackersById.Values)
         {
-            mergedRobots.Add(Merge(id, trackers, timestamp));
+            list.Clear();
+        }
+
+        foreach (var camera in cameras)
+        {
+            foreach (var robot in camera.Robots.Values)
+            {
+                if (!_trackersById.TryGetValue(robot.Id, out var list))
+                {
+                    list = new List<RobotTracker>();
+                    _trackersById[robot.Id] = list;
+                }
+                list.Add(robot);
+            }
+        }
+
+        var mergedRobots = new List<FilteredRobot>(_trackersById.Count);
+
+        foreach (var (id, trackers) in _trackersById)
+        {
+            if (trackers.Count > 0)
+            {
+                mergedRobots.Add(Merge(id, trackers, timestamp));
+            }
         }
 
         return mergedRobots;
