@@ -20,6 +20,11 @@ public partial class Knowledge
 
     public DeltaTime GetAttackerAssignmentCost(RobotRef robot)
     {
+        if (robot.Id == Context.Referee.OurInfo().Goalkeeper)
+        {
+            return DeltaTime.MaxValue;
+        }
+
         if (_attackerAssignmentCosts.TryGetValue(robot.Id, out var cached))
         {
             return cached;
