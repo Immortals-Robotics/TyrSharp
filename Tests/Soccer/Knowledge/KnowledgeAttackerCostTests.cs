@@ -131,6 +131,13 @@ public sealed class KnowledgeAttackerCostTests : IDisposable
 
     private static RobotRef CreateRobot(int id, Vector2 position, Vector2 velocity)
     {
+        Tyr.Soccer.Robot.PhysicalStatus.StatusArray[id] = new Tyr.Soccer.Robot.PhysicalStatus
+        {
+            HasDirectKick = true,
+            HasChipKick = true,
+            HasDribbler = true
+        };
+
         return new RobotRef
         {
             Filtered = new FilteredRobot

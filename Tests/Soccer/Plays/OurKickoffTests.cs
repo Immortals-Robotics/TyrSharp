@@ -38,7 +38,7 @@ public class OurKickoffTests
             Referee = referee,
             Field = field,
             Timer = new Tyr.Common.Time.Timer(),
-            Knowledge = null!,
+            Knowledge = new Tyr.Soccer.Knowledge.Knowledge(),
             RoleAssignment = null!
         };
 
@@ -103,7 +103,7 @@ public class OurKickoffTests
             Referee = referee,
             Field = field,
             Timer = new Tyr.Common.Time.Timer(),
-            Knowledge = null!,
+            Knowledge = new Tyr.Soccer.Knowledge.Knowledge(),
             RoleAssignment = null!
         };
 

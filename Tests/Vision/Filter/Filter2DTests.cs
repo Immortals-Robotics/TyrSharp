@@ -159,13 +159,13 @@ public class Filter2DTests
             initialTimestamp);
 
         // Act
-        var futureTimestamp = initialTimestamp + DeltaTime.FromSeconds(2.5);
+        var futureTimestamp = initialTimestamp + DeltaTime.FromSeconds(0.5);
         var estimatedPosition = filter.GetPosition(futureTimestamp);
 
         // Assert
         // Position should be initial + velocity*dt
-        var expectedX = initialPosition.X + initialVelocity.X * 2.5f;
-        var expectedY = initialPosition.Y + initialVelocity.Y * 2.5f;
+        var expectedX = initialPosition.X + initialVelocity.X * 0.5f;
+        var expectedY = initialPosition.Y + initialVelocity.Y * 0.5f;
         Assert.Equal(expectedX, estimatedPosition.X, 0.001);
         Assert.Equal(expectedY, estimatedPosition.Y, 0.001);
     }
