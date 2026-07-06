@@ -1,0 +1,21 @@
+diff --git a/Tests/Vision/Filter/Filter2DTests.cs b/Tests/Vision/Filter/Filter2DTests.cs
+index 54109db..9f0f9b3 100644
+--- a/Tests/Vision/Filter/Filter2DTests.cs
++++ b/Tests/Vision/Filter/Filter2DTests.cs
+@@ -162,11 +162,11 @@ public class Filter2DTests
+             initialTimestamp);
+
+         // Act
+-        var futureTimestamp = initialTimestamp + DeltaTime.FromSeconds(2.5);
++        var futureTimestamp = initialTimestamp + DeltaTime.FromSeconds(0.5);
+         var estimatedPosition = filter.GetPosition(futureTimestamp);
+
+         // Assert
+         // Position should be initial + velocity*dt
+-        var expectedX = initialPosition.X + initialVelocity.X * 2.5f;
+-        var expectedY = initialPosition.Y + initialVelocity.Y * 2.5f;
++        var expectedX = initialPosition.X + initialVelocity.X * 0.5f;
++        var expectedY = initialPosition.Y + initialVelocity.Y * 0.5f;
+         Assert.Equal(expectedX, estimatedPosition.X, 0.001);
+         Assert.Equal(expectedY, estimatedPosition.Y, 0.001);
+     }

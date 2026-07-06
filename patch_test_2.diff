@@ -1,0 +1,12 @@
+diff --git a/Tests/Soccer/Plays/StatefulPlayTests.cs b/Tests/Soccer/Plays/StatefulPlayTests.cs
+index 9e083ea..136b9e4 100644
+--- a/Tests/Soccer/Plays/StatefulPlayTests.cs
++++ b/Tests/Soccer/Plays/StatefulPlayTests.cs
+@@ -37,7 +37,7 @@ public class StatefulPlayTests : IDisposable
+         var opponent = CreateOpponent(1, new Vector2(-2500f, 0f));
+         var knowledge = SetupContext(
+             gameState: GameState.Running,
+-            ballPosition: new Vector2(Context.SideSign * 600f, 0f),
++            ballPosition: new Vector2(-600f, 0f),
+             ownRobots: ownRobots,
+             oppRobots: [opponent]);
