@@ -17,13 +17,24 @@ public partial class BallMerger
 
     private Timestamp? _lastBallUpdateTimestamp;
 
+    // Bolt: eliminate multiple LINQ allocations per frame
+    private readonly List<BallTracker> _ballTrackers = new();
+    private readonly List<BallTracker> _validTrackers = new();
+    private readonly Dictionary<uint, BallTracker> _selectedTrackers = new();
+    private readonly List<BallTracker> _selectedTrackersList = new();
+
     public MergedBall? Process(IEnumerable<Camera> cameras, Timestamp timestamp, FilteredBall lastFilteredBall)
     {
-        var ballTrackers = cameras
-            .SelectMany(camera => camera.Balls)
-            .ToList();
+        _ballTrackers.Clear();
+        foreach (var camera in cameras)
+        {
+            foreach (var ball in camera.Balls)
+            {
+                _ballTrackers.Add(ball);
+            }
+        }
 
-        if (ballTrackers.Count == 0) return null;
+        if (_ballTrackers.Count == 0) return null;
 
         _lastBallUpdateTimestamp ??= lastFilteredBall.Timestamp;
 
@@ -31,9 +42,9 @@ public partial class BallMerger
         var searchRadius = MathF.Abs((float)dt.Seconds * BallTracker.MaxLinearVelocity);
         searchRadius = MathF.Max(searchRadius, MinSearchRadius);
 
-        List<BallTracker> validTrackers = [];
+        _validTrackers.Clear();
 
-        foreach (var ballTracker in ballTrackers)
+        foreach (var ballTracker in _ballTrackers)
         {
             if (!ballTracker.IsGrownUp) continue;
 
@@ -46,22 +57,32 @@ public partial class BallMerger
 
             if (Vector2.Distance(trackerPos, searchPosition) < searchRadius)
             {
-                validTrackers.Add(ballTracker);
+                _validTrackers.Add(ballTracker);
             }
         }
 
-        if (validTrackers.Count == 0) return null;
+        if (_validTrackers.Count == 0) return null;
 
         // select at most one tracker per camera
-        var selectedTrackers = validTrackers
-            .GroupBy(tracker => tracker.Camera.Id)
-            .Select(grouping => grouping.MaxBy(tracker => tracker.LastRawBall.CaptureTimestamp))
-            .OfType<BallTracker>()
-            .ToList();
+        _selectedTrackers.Clear();
+        _selectedTrackersList.Clear();
+        foreach (var tracker in _validTrackers)
+        {
+            if (!_selectedTrackers.TryGetValue(tracker.Camera.Id, out var existingTracker) ||
+                tracker.LastRawBall.CaptureTimestamp > existingTracker.LastRawBall.CaptureTimestamp)
+            {
+                _selectedTrackers[tracker.Camera.Id] = tracker;
+            }
+        }
 
-        Assert.IsPositive(selectedTrackers.Count);
+        foreach (var tracker in _selectedTrackers.Values)
+        {
+            _selectedTrackersList.Add(tracker);
+        }
 
-        var mergedBall = Merge(selectedTrackers, timestamp);
+        Assert.IsPositive(_selectedTrackersList.Count);
+
+        var mergedBall = Merge(_selectedTrackersList, timestamp);
 
         if (mergedBall.LatestRawBall.HasValue)
         {

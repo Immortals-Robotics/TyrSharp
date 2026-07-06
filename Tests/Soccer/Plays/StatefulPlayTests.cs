@@ -34,7 +34,7 @@ public sealed class StatefulPlayTests : IDisposable
         var opponent = CreateOpponent(1, new Vector2(-2500f, 0f));
         var knowledge = SetupContext(
             gameState: GameState.Running,
-            ballPosition: Vector2.Zero,
+            ballPosition: new Vector2(-600f, 0f),
             ownRobots: ownRobots,
             oppRobots: [opponent]);
 
