@@ -12,17 +12,7 @@ public partial class Knowledge
 
     public void Update()
     {
-        // Bolt: eliminates ~1 enumerator alloc/frame by avoiding LINQ Count()
-        var ownCount = 0;
-        foreach (var robot in Context.OwnRobots)
-        {
-            if (robot.Seen)
-            {
-                ownCount++;
-            }
-        }
-        OwnRobotsCount = ownCount;
-
+        OwnRobotsCount = Context.OwnRobots.Count(robot => robot.Seen);
         OpponentRobotsCount = Context.OppRobots.Count;
 
         UpdateAttackerAssignmentCosts();

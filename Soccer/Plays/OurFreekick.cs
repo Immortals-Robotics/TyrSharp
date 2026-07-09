@@ -18,10 +18,7 @@ public class OurFreekick : IPlay
 
         var zones = Context.Knowledge.SortedZonesByOffense;
         var bestOffenseZone = zones.Count > 0 ? zones.Peek() : null;
-        if (bestOffenseZone != null)
-        {
-            Draw.DrawCircle(bestOffenseZone.BestPosOffence, 200, Color.Amber, Options.Outline());
-        }
+        Draw.DrawCircle(bestOffenseZone.BestPosOffence, 200, Color.Amber, Options.Outline());
         var chipperTarget = bestOffenseZone?.BestPosOffence ?? Context.Field.OppGoal();
         var chipPower = 0;
 
