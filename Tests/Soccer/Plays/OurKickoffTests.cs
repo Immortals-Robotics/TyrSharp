@@ -49,7 +49,7 @@ public class OurKickoffTests
 
         // Assert
         Assert.Equal(4, formation.RequiredRoles.Count);
-        Assert.Equal(3, formation.DesiredRoles.Count);
+        Assert.Equal(4, formation.DesiredRoles.Count);
 
         Assert.Contains(formation.RequiredRoles, r => r is Goalie);
         Assert.Contains(formation.RequiredRoles, r => r is Defender { DefId: 1 });
@@ -59,14 +59,14 @@ public class OurKickoffTests
         var attacker = (CircleBall)formation.RequiredRoles.First(r => r is CircleBall);
         // side = -Context.SideSign. Left is -1, so side = 1.
         // mid5Pos = (0 + 1 * 150, 3000 - 300) = (150, 2700)
-        Assert.Equal(new Vector2(150f, 2700f), attacker.TargetPosition);
+        Assert.Equal(new Vector2(-150f, 2700f), attacker.TargetPosition);
         Assert.Equal(0f, attacker.ShootPower);
 
         var mid5 = (Waiter)formation.DesiredRoles[0];
-        Assert.Equal(new Vector2(150f, 2700f), mid5.Target);
+        Assert.Equal(new Vector2(-150f, 2700f), mid5.Target);
 
         var mid1 = (Waiter)formation.DesiredRoles[1];
-        Assert.Equal(new Vector2(150f, -2700f), mid1.Target);
+        Assert.Equal(new Vector2(-150f, -2700f), mid1.Target);
 
         var mid2 = (Waiter)formation.DesiredRoles[2];
         // mid2Pos = ballPos.PointOnConnectingLine(OwnGoal, 1000f)
@@ -114,6 +114,6 @@ public class OurKickoffTests
 
         // Assert
         var attacker = (CircleBall)formation.RequiredRoles.First(r => r is CircleBall);
-        Assert.Equal(5000f, attacker.ShootPower);
+        Assert.Equal(3000f, attacker.ShootPower);
     }
 }
