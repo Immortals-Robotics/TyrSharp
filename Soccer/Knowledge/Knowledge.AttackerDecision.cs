@@ -49,9 +49,14 @@ public partial class Knowledge
             _attackerDecisions[robotId] = BuildAttackerDecision(assignment.Robot, attackerRole);
         }
 
-        foreach (var robotId in _passShootHysteresisByRobot.Keys.Where(id => !assignedAttackers.Contains(id)).ToList())
+        var keysToRemove = new List<int>();
+        foreach (var robotId in _passShootHysteresisByRobot.Keys)
         {
-            _passShootHysteresisByRobot.Remove(robotId);
+            if (!assignedAttackers.Contains(robotId)) keysToRemove.Add(robotId);
+        }
+        foreach (var id in keysToRemove)
+        {
+            _passShootHysteresisByRobot.Remove(id);
         }
     }
 
