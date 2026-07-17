@@ -1,8 +1,9 @@
-﻿using System.Numerics;
+using System.Numerics;
 using Tyr.Common.Config;
 using Tyr.Common.Data.Ssl;
 using Tyr.Common.Math;
 using Tyr.Common.Vision.Data;
+using Tyr.Common.Data;
 
 namespace Tyr.Vision.Tracking;
 
@@ -13,18 +14,108 @@ public partial class RobotMerger
         "Factor to weight stdDeviation during tracker merging, reasonable range: 1.0 - 2.0. High values lead to more jitter")]
     private static float MergePower { get; set; } = 1.5f;
 
+    // Use a fixed size array of lists for max robots * 2 teams
+    private readonly List<RobotTracker>[] _trackersById = new List<RobotTracker>[CommonConfigs.MaxRobots * 2];
+
+    // For unknown or out of bounds ids
+    // Bolt: We use a custom struct key and explicitly reuse pools to eliminate allocation overhead for dynamic groupings
+    private readonly Dictionary<RobotId, List<RobotTracker>> _unknownTrackersById = new(new RobotIdComparer());
+    private readonly List<List<RobotTracker>> _unknownTrackersPool = new();
+    private int _unknownTrackersPoolIndex;
+
+    private sealed class RobotIdComparer : IEqualityComparer<RobotId>
+    {
+        public bool Equals(RobotId x, RobotId y)
+        {
+            return x.Id == y.Id && x.Team == y.Team;
+        }
+
+        public int GetHashCode(RobotId obj)
+        {
+            return HashCode.Combine(obj.Id, obj.Team);
+        }
+    }
+
+    public RobotMerger()
+    {
+        for (int i = 0; i < _trackersById.Length; i++)
+        {
+            _trackersById[i] = new List<RobotTracker>();
+        }
+    }
+
+    private int GetIndex(RobotId id)
+    {
+        if (id.Id is null || id.Team is null || id.Id >= CommonConfigs.MaxRobots || id.Team == TeamColor.Unknown)
+            return -1;
+
+        int offset = id.Team == TeamColor.Blue ? 0 : CommonConfigs.MaxRobots;
+        return (int)id.Id.Value + offset;
+    }
+
     public List<FilteredRobot> Process(IEnumerable<Camera> cameras, Timestamp timestamp)
     {
-        var trackersById = cameras
-            .SelectMany(camera => camera.Robots.Values)
-            .GroupBy(robot => robot.Id)
-            .ToDictionary(grouping => grouping.Key, grouping => grouping.ToList());
-
-        var mergedRobots = new List<FilteredRobot>();
-
-        foreach (var (id, trackers) in trackersById)
+        for (int i = 0; i < _trackersById.Length; i++)
         {
-            mergedRobots.Add(Merge(id, trackers, timestamp));
+            _trackersById[i].Clear();
+        }
+
+        _unknownTrackersById.Clear();
+        _unknownTrackersPoolIndex = 0;
+
+        int activeRobotCount = 0;
+
+        foreach (var camera in cameras)
+        {
+            foreach (var tracker in camera.Robots.Values)
+            {
+                var idx = GetIndex(tracker.Id);
+                if (idx == -1)
+                {
+                    if (!_unknownTrackersById.TryGetValue(tracker.Id, out var unknownList))
+                    {
+                        if (_unknownTrackersPoolIndex < _unknownTrackersPool.Count)
+                        {
+                            unknownList = _unknownTrackersPool[_unknownTrackersPoolIndex++];
+                            unknownList.Clear();
+                        }
+                        else
+                        {
+                            unknownList = new List<RobotTracker>();
+                            _unknownTrackersPool.Add(unknownList);
+                            _unknownTrackersPoolIndex++;
+                        }
+                        _unknownTrackersById[tracker.Id] = unknownList;
+                    }
+                    unknownList.Add(tracker);
+                }
+                else
+                {
+                    if (_trackersById[idx].Count == 0)
+                    {
+                        activeRobotCount++;
+                    }
+                    _trackersById[idx].Add(tracker);
+                }
+            }
+        }
+
+        // Bolt: eliminates ~N allocs/frame — replacing LINQ groupings with pre-allocated list array processing
+        var mergedRobots = new List<FilteredRobot>(activeRobotCount + _unknownTrackersById.Count);
+
+        for (int i = 0; i < _trackersById.Length; i++)
+        {
+            var trackers = _trackersById[i];
+            if (trackers.Count > 0)
+            {
+                var id = trackers[0].Id;
+                mergedRobots.Add(Merge(id, trackers, timestamp));
+            }
+        }
+
+        foreach (var pair in _unknownTrackersById)
+        {
+            mergedRobots.Add(Merge(pair.Key, pair.Value, timestamp));
         }
 
         return mergedRobots;
