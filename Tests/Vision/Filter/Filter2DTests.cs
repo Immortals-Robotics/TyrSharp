@@ -159,15 +159,38 @@ public class Filter2DTests
             initialTimestamp);
 
         // Act
-        var futureTimestamp = initialTimestamp + DeltaTime.FromSeconds(2.5);
+        var futureTimestamp = initialTimestamp + DeltaTime.FromSeconds(0.5);
         var estimatedPosition = filter.GetPosition(futureTimestamp);
 
         // Assert
         // Position should be initial + velocity*dt
-        var expectedX = initialPosition.X + initialVelocity.X * 2.5f;
-        var expectedY = initialPosition.Y + initialVelocity.Y * 2.5f;
+        var expectedX = initialPosition.X + initialVelocity.X * 0.5f;
+        var expectedY = initialPosition.Y + initialVelocity.Y * 0.5f;
         Assert.Equal(expectedX, estimatedPosition.X, 0.001);
         Assert.Equal(expectedY, estimatedPosition.Y, 0.001);
+    }
+
+    [Fact]
+    public void GetPosition_DoesNotExtrapolateBeyondOneSecond()
+    {
+        // Arrange
+        var initialPosition = new Vector2(10, 20);
+        var initialVelocity = new Vector2(2, 3);
+        var covariance = 5.0f;
+        var modelError = 1.0f;
+        var measurementError = 2.0f;
+        var initialTimestamp = Timestamp.FromDateTime(new DateTime(2023, 1, 1, 12, 0, 0));
+        var filter = new Filter2D(initialPosition, initialVelocity, covariance, modelError, measurementError,
+            initialTimestamp);
+
+        // Act
+        var futureTimestamp = initialTimestamp + DeltaTime.FromSeconds(2.5);
+        var estimatedPosition = filter.GetPosition(futureTimestamp);
+
+        // Assert
+        // Extrapolation is clamped for |dt| > 1 s: the raw position is returned
+        Assert.Equal(initialPosition.X, estimatedPosition.X, 0.001);
+        Assert.Equal(initialPosition.Y, estimatedPosition.Y, 0.001);
     }
 
     [Fact]

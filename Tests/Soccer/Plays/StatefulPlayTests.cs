@@ -32,9 +32,11 @@ public sealed class StatefulPlayTests : IDisposable
     {
         var ownRobots = CreateOwnRobots(6);
         var opponent = CreateOpponent(1, new Vector2(-2500f, 0f));
+        // We play on the negative half (SideSign = -1); IsDefending latches once
+        // the ball is more than 500 mm into our half.
         var knowledge = SetupContext(
             gameState: GameState.Running,
-            ballPosition: Vector2.Zero,
+            ballPosition: new Vector2(-1000f, 0f),
             ownRobots: ownRobots,
             oppRobots: [opponent]);
 
@@ -79,9 +81,10 @@ public sealed class StatefulPlayTests : IDisposable
     {
         var ownRobots = CreateOwnRobots(6);
         var opponent = CreateOpponent(1, new Vector2(-2500f, 200f));
+        // Ball in our half so IsDefending latches (see NormalPlay test above).
         var knowledge = SetupContext(
             gameState: GameState.Stop,
-            ballPosition: Vector2.Zero,
+            ballPosition: new Vector2(-1000f, 0f),
             ownRobots: ownRobots,
             oppRobots: [opponent]);
 

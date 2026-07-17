@@ -22,11 +22,19 @@ namespace Tyr.Tests.Soccer.KnowledgeTests;
 public sealed class KnowledgeAttackerCostTests : IDisposable
 {
     private readonly ContextData? _previous;
+    private readonly PhysicalStatus[] _previousStatusArray;
 
     public KnowledgeAttackerCostTests()
     {
         _previous = Context.Data.Value;
         ServiceLocator.BallTrajectoryFactory = new BallTrajectoryFactory();
+
+        // Fully-able robots by default, so the ability penalty doesn't skew
+        // the pure cost assertions below.
+        _previousStatusArray = PhysicalStatus.StatusArray;
+        PhysicalStatus.StatusArray = Enumerable.Range(0, CommonConfigs.MaxRobots)
+            .Select(_ => new PhysicalStatus { HasDribbler = true, HasDirectKick = true, HasChipKick = true })
+            .ToArray();
 
         Context.Data.Value = new ContextData
         {
@@ -110,23 +118,29 @@ public sealed class KnowledgeAttackerCostTests : IDisposable
     }
 
     [Fact]
-    public void GetAttackerAssignmentCost_ForGoalie_ReturnsMaxValue()
+    public void GetAttackerAssignmentCost_PenalizesMissingKickerAndDribbler()
     {
-        var goalie = CreateRobot(0, new Vector2(300f, -200f), Vector2.Zero);
-        SetOwnRobots(goalie);
-        SetGoalkeeper(0);
-        SetBall(new Vector3(-500f, 0f, 0f), new Vector3(1800f, 0f, 0f));
+        // Two robots at the same spot; robot 1 has no kicker/dribbler.
+        PhysicalStatus.StatusArray[1] = new PhysicalStatus();
+
+        var fullyAble = CreateRobot(0, new Vector2(1200f, 400f), Vector2.Zero);
+        var limited = CreateRobot(1, new Vector2(1200f, 400f), Vector2.Zero);
+        SetOwnRobots(fullyAble, limited);
+        SetGoalkeeper(2);
+        SetBall(new Vector3(0f, 0f, 0f), new Vector3(250f, 0f, 0f));
 
         Context.Knowledge.Update();
 
-        var actual = Context.Knowledge.GetAttackerAssignmentCost(goalie);
+        var fullyAbleCost = Context.Knowledge.GetAttackerAssignmentCost(fullyAble);
+        var limitedCost = Context.Knowledge.GetAttackerAssignmentCost(limited);
 
-        Assert.Equal(DeltaTime.MaxValue, actual);
+        Assert.True(limitedCost > fullyAbleCost);
     }
 
     public void Dispose()
     {
         Context.Data.Value = _previous!;
+        PhysicalStatus.StatusArray = _previousStatusArray;
     }
 
     private static RobotRef CreateRobot(int id, Vector2 position, Vector2 velocity)
