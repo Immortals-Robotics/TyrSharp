@@ -13,11 +13,20 @@ public sealed class TrajectoryUtilsTests
     {
         using var subscriber = DebugBus.Subscribe<Trajectory2DDrawable>(Mode.All);
 
-        TrajectoryUtils.DrawTrajectory(CreateTrajectory2D(), Color.Black);
+        // The bus is a global static channel, so tests running in parallel can
+        // publish trajectory drawables too. Mark ours with a sentinel color
+        // and assert exactly one matching drawable arrives.
+        var sentinel = Color.Fuchsia100;
+        TrajectoryUtils.DrawTrajectory(CreateTrajectory2D(), sentinel);
 
-        Assert.True(subscriber.Reader.TryRead(out var command));
-        Assert.Equal(Color.Black, command.Color);
-        Assert.False(subscriber.Reader.TryRead(out _));
+        var matches = 0;
+        while (subscriber.Reader.TryRead(out var command))
+        {
+            if (command.Color == sentinel)
+                matches++;
+        }
+
+        Assert.Equal(1, matches);
     }
 
     private static Trajectory2D CreateTrajectory2D()

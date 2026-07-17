@@ -257,20 +257,34 @@ public sealed class DebugDbTests
         DebugBus.PublishFrame(frame);
         DebugBus.Publish(secondEntry);
 
-        Assert.True(subscriber.Reader.TryRead(out var publishedFirst));
-        Assert.True(publishedFirst.TryGetEntry<TestDebugEntry>(out var firstTyped));
-        Assert.Equal(firstEntry.Value, firstTyped.Value);
-        Assert.Equal(firstEntry.Label, firstTyped.Label);
+        // The dump channel is a global static bus, so entries published by
+        // tests running in parallel can interleave with ours. Skip foreign
+        // traffic and assert only the relative order of our own publishes.
+        var observed = new List<string>();
+        while (subscriber.Reader.TryRead(out var published))
+        {
+            if (published.TryGetEntry<TestDebugEntry>(out var typed))
+            {
+                if (typed.Label == firstEntry.Label)
+                {
+                    Assert.Equal(firstEntry.Value, typed.Value);
+                    observed.Add("first");
+                }
+                else if (typed.Label == secondEntry.Label)
+                {
+                    Assert.Equal(secondEntry.Value, typed.Value);
+                    observed.Add("second");
+                }
+            }
+            else if (published.TryGetFrame(out var typedFrame) &&
+                     typedFrame.ModuleName == frame.ModuleName &&
+                     typedFrame.StartTimestamp == frame.StartTimestamp)
+            {
+                observed.Add("frame");
+            }
+        }
 
-        Assert.True(subscriber.Reader.TryRead(out var publishedFrame));
-        Assert.True(publishedFrame.TryGetFrame(out var typedFrame));
-        Assert.Equal(frame.ModuleName, typedFrame.ModuleName);
-        Assert.Equal(frame.StartTimestamp, typedFrame.StartTimestamp);
-
-        Assert.True(subscriber.Reader.TryRead(out var publishedSecond));
-        Assert.True(publishedSecond.TryGetEntry<TestDebugEntry>(out var secondTyped));
-        Assert.Equal(secondEntry.Value, secondTyped.Value);
-        Assert.Equal(secondEntry.Label, secondTyped.Label);
+        Assert.Equal(new[] { "first", "frame", "second" }, observed);
     }
 
     [Fact]

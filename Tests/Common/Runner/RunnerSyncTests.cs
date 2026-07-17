@@ -4,6 +4,7 @@ using Xunit.Abstractions;
 
 namespace Tyr.Tests.Common.Runner;
 
+[Collection(TimingCollection.Name)]
 public class RunnerSyncTests(ITestOutputHelper testOutputHelper)
 {
     [Fact]
@@ -112,8 +113,11 @@ public class RunnerSyncTests(ITestOutputHelper testOutputHelper)
             var meanInterval = intervals.Average();
             var meanError = System.Math.Abs(meanInterval - expectedIntervalMs);
 
-            Assert.True(outlierRatio <= maxOutlierRatio,
-                $"[{tickRateHz} Hz] Outlier ratio too high: {outlierRatio:P2} (allowed {maxOutlierRatio:P0})");
+            // With ~1s of samples, 1% rounds to a single interval — allow an
+            // absolute floor so one OS scheduling hiccup doesn't fail the test.
+            var maxOutliers = System.Math.Max(3, (int)(intervals.Count * maxOutlierRatio));
+            Assert.True(outliers <= maxOutliers,
+                $"[{tickRateHz} Hz] Too many outliers: {outliers} of {intervals.Count} (allowed {maxOutliers})");
 
             Assert.True(meanError <= toleranceMs,
                 $"[{tickRateHz} Hz] Mean tick interval error {meanError:F4}ms exceeds tolerance of {toleranceMs}ms");
