@@ -174,9 +174,13 @@ public partial class Ai
         var newRoleMapping = assignmentResult.RoleMapping;
 
         Log.ZLogDebug($"Role assignment total cost: {assignmentResult.TotalCost:F3}");
-        foreach (var unfilledRole in assignmentResult.UnfilledRoles.Where(r => r.IsRequired))
+        // Bolt: eliminates ~1 enumerator & closure alloc/frame by avoiding LINQ Where()
+        foreach (var unfilledRole in assignmentResult.UnfilledRoles)
         {
-            Log.ZLogWarning($"Required role left unfilled: {unfilledRole.Role}");
+            if (unfilledRole.IsRequired)
+            {
+                Log.ZLogWarning($"Required role left unfilled: {unfilledRole.Role}");
+            }
         }
 
         Context.Data.Value = Context.Data.Value! with

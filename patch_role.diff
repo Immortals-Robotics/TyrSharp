@@ -1,0 +1,15 @@
+--- Soccer/RoleAssignment/RoleAssignmentSolver.cs
++++ Soccer/RoleAssignment/RoleAssignmentSolver.cs
+@@ -9,9 +9,9 @@
+     private readonly double _requiredRoleUnfilledPenaltySeconds;
+
+     // Bolt: reuse intermediate lists to eliminate per-frame allocations
+-    private readonly List<RobotRef> _robots = new(16);
+-    private readonly List<Role.IRole> _requiredGoalieRoles = new(4);
+-    private readonly List<Role.IRole> _realRoles = new(16);
++    private List<RobotRef> _robots = new(16);
++    private List<Role.IRole> _requiredGoalieRoles = new(4);
++    private List<Role.IRole> _realRoles = new(16);
+
+     public RoleAssignmentSolver(double requiredRoleUnfilledPenaltySeconds)
+     {

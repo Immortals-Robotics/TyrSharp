@@ -1,0 +1,195 @@
+--- Soccer/RoleAssignment/RoleAssignmentSolver.cs
++++ Soccer/RoleAssignment/RoleAssignmentSolver.cs
+@@ -8,11 +8,6 @@
+ {
+     private readonly double _requiredRoleUnfilledPenaltySeconds;
+
+-    // Bolt: reuse intermediate lists to eliminate per-frame allocations
+-    private readonly List<RobotRef> _robots = new(16);
+-    private readonly List<Role.IRole> _requiredGoalieRoles = new(4);
+-    private readonly List<Role.IRole> _realRoles = new(16);
+-
+     public RoleAssignmentSolver(double requiredRoleUnfilledPenaltySeconds)
+     {
+         _requiredRoleUnfilledPenaltySeconds = requiredRoleUnfilledPenaltySeconds;
+@@ -24,37 +19,25 @@
+     {
+         var goalkeeperId = (int)Context.Referee.OurInfo().Goalkeeper;
+-        RobotRef? assignedGoalieRobot = null;
+-
+-        _robots.Clear();
+-        foreach (var r in Context.OwnRobots)
+-        {
+-            if (!r.Seen) continue;
+-            if (r.Id == goalkeeperId)
+-                assignedGoalieRobot = r;
+-            else
+-                _robots.Add(r);
+-        }
++        var assignedGoalieRobot = Context.OwnRobots.FirstOrDefault(r => r.Id == goalkeeperId && r.Seen);
+
+-        _requiredGoalieRoles.Clear();
+-        _realRoles.Clear();
+-
+-        foreach (var r in formation.RequiredRoles)
+-        {
+-            if (r.IsGoalie)
+-                _requiredGoalieRoles.Add(r);
+-            else
+-                _realRoles.Add(r);
+-        }
++        // Bolt: replace LINQ With pooling to prevent per-frame enumerator allocations safely
++        var robotsPool = System.Buffers.ArrayPool<RobotRef>.Shared.Rent(Context.OwnRobots.Count);
++        var robotCount = 0;
++        foreach (var r in Context.OwnRobots)
++        {
++            if (r.Seen && r.Id != goalkeeperId)
++            {
++                robotsPool[robotCount++] = r;
++            }
++        }
+
+-        foreach (var r in formation.DesiredRoles)
+-        {
+-            if (!r.IsGoalie)
+-                _realRoles.Add(r);
+-        }
++        var requiredGoalieRolesPool = System.Buffers.ArrayPool<Role.IRole>.Shared.Rent(formation.RequiredRoles.Count);
++        var requiredGoalieRolesCount = 0;
++        foreach (var r in formation.RequiredRoles)
++        {
++            if (r.IsGoalie)
++            {
++                requiredGoalieRolesPool[requiredGoalieRolesCount++] = r;
++            }
++        }
+
+-        var requiredCount = formation.RequiredRoles.Count - _requiredGoalieRoles.Count;
+-        var robotCount = _robots.Count;
+-        var roleCount = _realRoles.Count;
++        var realRolesPool = System.Buffers.ArrayPool<Role.IRole>.Shared.Rent(formation.RequiredRoles.Count + formation.DesiredRoles.Count);
++        var roleCount = 0;
++        var requiredCount = 0;
++        foreach (var r in formation.RequiredRoles)
++        {
++            if (!r.IsGoalie)
++            {
++                realRolesPool[roleCount++] = r;
++                requiredCount++;
++            }
++        }
++        foreach (var r in formation.DesiredRoles)
++        {
++            if (!r.IsGoalie)
++            {
++                realRolesPool[roleCount++] = r;
++            }
++        }
++
+         var size = Math.Max(roleCount, robotCount);
+         var dummyRobotCount = Math.Max(0, roleCount - robotCount);
+
+@@ -66,7 +49,8 @@
+                 [],
+                 [],
+                 0.0,
+-                _requiredGoalieRoles,
++                requiredGoalieRolesPool,
++                requiredGoalieRolesCount,
+                 assignedGoalieRobot);
++
++            System.Buffers.ArrayPool<RobotRef>.Shared.Return(robotsPool);
++            System.Buffers.ArrayPool<Role.IRole>.Shared.Return(requiredGoalieRolesPool);
++            System.Buffers.ArrayPool<Role.IRole>.Shared.Return(realRolesPool);
++            return res;
+         }
+
+         var costs = new double[size, size];
+@@ -82,11 +66,11 @@
+
+         for (var roleIndex = 0; roleIndex < roleCount; roleIndex++)
+         {
+-            var role = _realRoles[roleIndex];
++            var role = realRolesPool[roleIndex];
+
+             for (var robotIndex = 0; robotIndex < robotCount; robotIndex++)
+             {
+-                var robot = _robots[robotIndex];
++                var robot = robotsPool[robotIndex];
+                 costs[roleIndex, robotIndex] = ComputeWeightedCost(role, robot, previousRoleMapping);
+             }
+
+@@ -113,12 +97,12 @@
+
+             if (row < roleCount)
+             {
+-                var role = _realRoles[row];
++                var role = realRolesPool[row];
+                 var isRequired = row < requiredCount;
+                 if (col < robotCount)
+                 {
+-                    filledRoles.Add(new FilledRoleAssignment(_robots[col], role));
+-                    roleMapping[_robots[col].Id] = role;
++                    filledRoles.Add(new FilledRoleAssignment(robotsPool[col], role));
++                    roleMapping[robotsPool[col].Id] = role;
+                 }
+                 else
+                 {
+@@ -127,17 +111,22 @@
+             }
+             else if (col < robotCount)
+             {
+-                unassignedRobots.Add(_robots[col]);
++                unassignedRobots.Add(robotsPool[col]);
+             }
+         }
+
+-        return BuildResultWithForcedGoalie(
++        var result = BuildResultWithForcedGoalie(
+             filledRoles,
+             unfilledRoles,
+             unassignedRobots,
+             roleMapping,
+             totalCost,
+-            _requiredGoalieRoles,
++            requiredGoalieRolesPool,
++            requiredGoalieRolesCount,
+             assignedGoalieRobot);
++
++        System.Buffers.ArrayPool<RobotRef>.Shared.Return(robotsPool);
++        System.Buffers.ArrayPool<Role.IRole>.Shared.Return(requiredGoalieRolesPool);
++        System.Buffers.ArrayPool<Role.IRole>.Shared.Return(realRolesPool);
++        return result;
+     }
+
+@@ -147,10 +136,11 @@
+         List<RobotRef> unassignedRobots,
+         Dictionary<int, Role.IRole?> roleMapping,
+         double totalCost,
+-        IReadOnlyList<Role.IRole> requiredGoalieRoles,
++        Role.IRole[] requiredGoalieRoles,
++        int requiredGoalieRolesCount,
+         RobotRef? assignedGoalieRobot)
+     {
+-        var goalieRole = requiredGoalieRoles.Count > 0 ? requiredGoalieRoles[0] : null;
++        var goalieRole = requiredGoalieRolesCount > 0 ? requiredGoalieRoles[0] : null;
+         if (goalieRole != null)
+         {
+             if (assignedGoalieRobot != null)
+@@ -159,7 +149,7 @@
+             }
+             else
+             {
+-                var isRequired = requiredGoalieRoles.Count > 0;
++                var isRequired = requiredGoalieRolesCount > 0;
+                 unfilledRoles.Add(new UnfilledRoleAssignment(goalieRole, isRequired));
+                 if (isRequired)
+                 {
+@@ -170,9 +160,9 @@
+
+         var skipCount = goalieRole == null ? 0 : 1;
+-        for (var i = skipCount; i < requiredGoalieRoles.Count; i++)
++        for (var i = skipCount; i < requiredGoalieRolesCount; i++)
+         {
+             var extraRequiredGoalieRole = requiredGoalieRoles[i];
+             unfilledRoles.Add(new UnfilledRoleAssignment(extraRequiredGoalieRole, true));
