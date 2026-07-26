@@ -13,18 +13,88 @@ public partial class RobotMerger
         "Factor to weight stdDeviation during tracker merging, reasonable range: 1.0 - 2.0. High values lead to more jitter")]
     private static float MergePower { get; set; } = 1.5f;
 
+    // Bolt: eliminates ~N allocs/frame — replacing LINQ GroupBy/ToDictionary with fixed-size arrays and loops
+    private readonly List<RobotTracker>[] _trackersByRobotIndex = new List<RobotTracker>[Tyr.Common.Data.CommonConfigs.MaxRobots * 2];
+    private readonly Dictionary<RobotId, List<RobotTracker>> _fallbackTrackers = new();
+
+    public RobotMerger()
+    {
+        for (int i = 0; i < _trackersByRobotIndex.Length; i++)
+        {
+            _trackersByRobotIndex[i] = new List<RobotTracker>(8);
+        }
+    }
+
+    private int GetRobotIndex(RobotId id)
+    {
+        if (!id.Id.HasValue || !id.Team.HasValue || id.Team == Tyr.Common.Data.TeamColor.Unknown)
+            return -1;
+
+        var idVal = id.Id.Value;
+        if (idVal >= Tyr.Common.Data.CommonConfigs.MaxRobots)
+            return -1;
+
+        return id.Team == Tyr.Common.Data.TeamColor.Yellow ? (int)idVal : (int)idVal + Tyr.Common.Data.CommonConfigs.MaxRobots;
+    }
+
     public List<FilteredRobot> Process(IEnumerable<Camera> cameras, Timestamp timestamp)
     {
-        var trackersById = cameras
-            .SelectMany(camera => camera.Robots.Values)
-            .GroupBy(robot => robot.Id)
-            .ToDictionary(grouping => grouping.Key, grouping => grouping.ToList());
-
-        var mergedRobots = new List<FilteredRobot>();
-
-        foreach (var (id, trackers) in trackersById)
+        for (int i = 0; i < _trackersByRobotIndex.Length; i++)
         {
-            mergedRobots.Add(Merge(id, trackers, timestamp));
+            _trackersByRobotIndex[i].Clear();
+        }
+
+        foreach (var trackers in _fallbackTrackers.Values)
+        {
+            trackers.Clear();
+        }
+
+        foreach (var camera in cameras)
+        {
+            foreach (var tracker in camera.Robots.Values)
+            {
+                var index = GetRobotIndex(tracker.Id);
+                if (index >= 0)
+                {
+                    _trackersByRobotIndex[index].Add(tracker);
+                }
+                else
+                {
+                    if (!_fallbackTrackers.TryGetValue(tracker.Id, out var fallbackList))
+                    {
+                        fallbackList = new List<RobotTracker>(8);
+                        _fallbackTrackers[tracker.Id] = fallbackList;
+                    }
+                    fallbackList.Add(tracker);
+                }
+            }
+        }
+
+        var mergedRobots = new List<FilteredRobot>(Tyr.Common.Data.CommonConfigs.MaxRobots * 2);
+
+        for (uint idVal = 0; idVal < Tyr.Common.Data.CommonConfigs.MaxRobots; idVal++)
+        {
+            var yellowIndex = (int)idVal;
+            var yellowTrackers = _trackersByRobotIndex[yellowIndex];
+            if (yellowTrackers.Count > 0)
+            {
+                mergedRobots.Add(Merge(new RobotId { Id = idVal, Team = Tyr.Common.Data.TeamColor.Yellow }, yellowTrackers, timestamp));
+            }
+
+            var blueIndex = (int)idVal + Tyr.Common.Data.CommonConfigs.MaxRobots;
+            var blueTrackers = _trackersByRobotIndex[blueIndex];
+            if (blueTrackers.Count > 0)
+            {
+                mergedRobots.Add(Merge(new RobotId { Id = idVal, Team = Tyr.Common.Data.TeamColor.Blue }, blueTrackers, timestamp));
+            }
+        }
+
+        foreach (var kvp in _fallbackTrackers)
+        {
+            if (kvp.Value.Count > 0)
+            {
+                mergedRobots.Add(Merge(kvp.Key, kvp.Value, timestamp));
+            }
         }
 
         return mergedRobots;
