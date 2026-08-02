@@ -15,8 +15,8 @@ public partial class Knowledge
     [ConfigEntry] public static float PenaltyAreaExtensionSize { get; set; } = 200.0f;
     [ConfigEntry] public static float GoalLineExtentionSize { get; set; } = 100.0f;
 
-    private Common.Data.Ssl.Gc.Command? _lastRefCommand;
-    private Common.Time.Timestamp _oppRestartTimestamp;
+    // private Common.Data.Ssl.Gc.Command? _lastRefCommand;
+    // private Common.Time.Timestamp _oppRestartTimestamp;
 
     public bool GoalieDiveAllowed { get; private set; }
     public bool BallIsGoaling { get; private set; }
