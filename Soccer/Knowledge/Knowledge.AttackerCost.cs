@@ -25,8 +25,10 @@ public partial class Knowledge
             return cached;
         }
 
-        return CalculateAttackerAssignmentCost(robot) +
-               CalculateAttackerAbilityPenalty(robot);
+        var cost = CalculateAttackerAssignmentCost(robot);
+        if (cost == DeltaTime.MaxValue) return cost;
+
+        return cost + CalculateAttackerAbilityPenalty(robot);
     }
 
     private void UpdateAttackerAssignmentCosts()
@@ -40,8 +42,12 @@ public partial class Knowledge
                 continue;
             }
 
-            _attackerAssignmentCosts[robot.Id] = CalculateAttackerAssignmentCost(robot) +
-                                                 CalculateAttackerAbilityPenalty(robot);
+            var cost = CalculateAttackerAssignmentCost(robot);
+            if (cost != DeltaTime.MaxValue)
+            {
+                cost += CalculateAttackerAbilityPenalty(robot);
+            }
+            _attackerAssignmentCosts[robot.Id] = cost;
         }
     }
 
@@ -63,6 +69,14 @@ public partial class Knowledge
 
     private DeltaTime CalculateAttackerAssignmentCost(RobotRef robot)
     {
+        var isGoalie = Context.Color == Common.Data.TeamColor.Blue
+            ? robot.Id == Context.Referee.Gc.Blue.Goalkeeper
+            : robot.Id == Context.Referee.Gc.Yellow.Goalkeeper;
+
+        if (isGoalie)
+        {
+            return DeltaTime.MaxValue;
+        }
         var reachTimeToCurrentBall = CalculateReachTimeToCurrentBall(robot);
         var ballSpeed = Context.Ball.State.Velocity.Xy().Length();
 
