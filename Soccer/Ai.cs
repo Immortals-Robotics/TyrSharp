@@ -10,6 +10,7 @@ using Tyr.Common.Sender.Data;
 using Tyr.Common.Time;
 using Tyr.Soccer.Plays;
 using Tyr.Soccer.RoleAssignment;
+using Microsoft.Extensions.Logging;
 using Tyr.Soccer.Tactics;
 using Command = Tyr.Common.Sender.Data.Command;
 using Vision = Tyr.Common.Vision.Data;
@@ -148,7 +149,11 @@ public partial class Ai
 
     public void Process()
     {
-        Log.ZLogDebug($"fps: {Context.Timer.FpsSmooth}");
+        // Bolt: eliminates string interpolation allocation when debug logging is disabled (~100 allocs/sec)
+        if (Log.IsEnabled(LogLevel.Debug))
+        {
+            Log.ZLogDebug($"fps: {Context.Timer.FpsSmooth}");
+        }
         Plot.Plot("fps", Context.Timer.Fps);
 
         foreach (var robot in Context.OwnRobots)
@@ -173,10 +178,19 @@ public partial class Ai
         var assignmentResult = assignmentSolver.Solve(formation, previousAssignment.RoleMapping);
         var newRoleMapping = assignmentResult.RoleMapping;
 
-        Log.ZLogDebug($"Role assignment total cost: {assignmentResult.TotalCost:F3}");
-        foreach (var unfilledRole in assignmentResult.UnfilledRoles.Where(r => r.IsRequired))
+        // Bolt: eliminates string interpolation allocation when debug logging is disabled (~100 allocs/sec)
+        if (Log.IsEnabled(LogLevel.Debug))
         {
-            Log.ZLogWarning($"Required role left unfilled: {unfilledRole.Role}");
+            Log.ZLogDebug($"Role assignment total cost: {assignmentResult.TotalCost:F3}");
+        }
+
+        // Bolt: eliminates ~1 enumerator & closure alloc/frame by avoiding LINQ Where() (~100 allocs/sec)
+        foreach (var unfilledRole in assignmentResult.UnfilledRoles)
+        {
+            if (unfilledRole.IsRequired)
+            {
+                Log.ZLogWarning($"Required role left unfilled: {unfilledRole.Role}");
+            }
         }
 
         Context.Data.Value = Context.Data.Value! with
