@@ -424,11 +424,6 @@ public sealed partial class RobotDebugView : IDisposable
         SendCommand(sender, shoot, chip, _dribblerSpeed, _dribblerSpeed > 0f ? _dribblerForce : 0f);
     }
 
-    private unsafe bool IsButtonDown(SDLGamepadButton button)
-    {
-        return _gamepad.Handle != null && SDL.GetGamepadButton(_gamepad, button);
-    }
-
     private unsafe bool ConsumeButton(SDLGamepadButton button)
     {
         if (_gamepad.Handle == null)

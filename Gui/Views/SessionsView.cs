@@ -285,27 +285,6 @@ public sealed partial class SessionsView(PlaybackSessionManager playbackSessions
             : groups.OrderBy(keySelector, comparer).ToList();
     }
 
-    private IEnumerable<PlaybackSessionInfo> GetSortedSessions()
-    {
-        var sessions = playbackSessions.Sessions;
-        var sortSpecs = ImGui.TableGetSortSpecs();
-        if (sortSpecs.IsNull || sortSpecs.SpecsCount <= 0)
-            return sessions;
-
-        var sortSpec = sortSpecs.Specs[0];
-        var descending = sortSpec.SortDirection == ImGuiSortDirection.Descending;
-        sortSpecs.SpecsDirty = false;
-
-        return sortSpec.ColumnIndex switch
-        {
-            2 => OrderBy(sessions, static session => session.DisplayName, descending, StringComparer.OrdinalIgnoreCase),
-            3 => OrderBy(sessions, static session => session.Metadata.CreatedAtUtc, descending),
-            4 => OrderBy(sessions, GetSessionRangeValue, descending),
-            5 => OrderBy(sessions, static session => session.Metadata.MachineName, descending, StringComparer.OrdinalIgnoreCase),
-            _ => sessions,
-        };
-    }
-
     private List<PlaybackSessionInfo> GetSelectedSessions()
     {
         return playbackSessions.Sessions
@@ -481,22 +460,6 @@ public sealed partial class SessionsView(PlaybackSessionManager playbackSessions
         }
 
         ImGui.EndPopup();
-    }
-
-    private static IEnumerable<PlaybackSessionInfo> OrderBy<TKey>(
-        IEnumerable<PlaybackSessionInfo> sessions,
-        Func<PlaybackSessionInfo, TKey> keySelector,
-        bool descending,
-        IComparer<TKey>? comparer = null)
-    {
-        if (descending)
-            return comparer is null
-                ? sessions.OrderByDescending(keySelector)
-                : sessions.OrderByDescending(keySelector, comparer);
-
-        return comparer is null
-            ? sessions.OrderBy(keySelector)
-            : sessions.OrderBy(keySelector, comparer);
     }
 
     private static double GetSessionRangeValue(PlaybackSessionInfo session)
