@@ -53,11 +53,11 @@ public sealed partial class Runner : IDisposable
 
     public void Dispose()
     {
+        _runner.Stop();
+
         foreach (var sender in _senders)
         {
             sender.Dispose();
         }
-
-        _runner.Stop();
     }
 }
