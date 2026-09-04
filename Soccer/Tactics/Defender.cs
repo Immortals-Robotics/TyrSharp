@@ -32,7 +32,7 @@ public partial class Defender : ITactic
     }
 
     private readonly Fsm<State> _fsm;
-    private static int _shirjeSelectHys = 0;
+    private int _shirjeSelectHys;
 
     public Defender(Robot.Robot robot, int defId)
     {
@@ -56,7 +56,7 @@ public partial class Defender : ITactic
     private NavigationFlags GetNavigationFlags()
     {
         var flags = NavigationFlags.None;
-        if (Context.Referee.OurBallPlacement() | Context.Referee.TheirBallPlacement())
+        if (Context.Referee.OurBallPlacement() || Context.Referee.TheirBallPlacement())
             flags |= NavigationFlags.BallPlacementLine;
 
         // If ball is further from our goal than the robot, don't avoid it
