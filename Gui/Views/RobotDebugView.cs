@@ -222,14 +222,14 @@ public sealed partial class RobotDebugView : IDisposable
 
         ImGui.Spacing();
         ImGui.SeparatorText("Actions");
-        ImGui.SliderFloat("Shoot Power (0-1)", ref _shootPower, 0.0f, 16.0f);
+        ImGui.SliderFloat("Shoot Power (0-16)", ref _shootPower, 0.0f, 16.0f);
         ImGui.SameLine();
         if (ImGui.Button("SHOOT"))
         {
             SendCommand(sender, shoot: _shootPower);
         }
 
-        ImGui.SliderFloat("Chip Power (0-1)", ref _chipPower, 0.0f, 16.0f);
+        ImGui.SliderFloat("Chip Power (0-16)", ref _chipPower, 0.0f, 16.0f);
         ImGui.SameLine();
         if (ImGui.Button("CHIP"))
         {
