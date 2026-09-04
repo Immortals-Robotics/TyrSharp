@@ -414,7 +414,7 @@ internal sealed class BenchmarkScenario
                 foreach (var plotId in db.QueryShardKeys<PlotCommand>(module))
                 {
                     lookupCount++;
-                    if (db.TryGetShardMeta<PlotCommand>(module, plotId).HasValue)
+                    if (db.TryGetShardMeta<PlotCommand>(module, plotId) is not null)
                         resultCount++;
                 }
             }

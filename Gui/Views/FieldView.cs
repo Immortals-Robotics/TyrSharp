@@ -154,6 +154,10 @@ public sealed partial class FieldView : IDisposable
     {
         prepared.Reset();
 
+        // Evaluated once per shard (call site) inside the query, so disabled
+        // call sites are skipped before any of their entries are deserialized.
+        Func<Debug.Meta, bool> metaFilter = filterSnapshot.IsEnabled;
+
         foreach (var module in _debugDb.QueryModules())
         {
             if (!filterSnapshot.IsEnabled(module))
@@ -163,58 +167,21 @@ public sealed partial class FieldView : IDisposable
             if (!frame.HasValue)
                 continue;
 
+            var (start, end) = frame.Value;
             var preparedModule = prepared.AddModule(module);
-            foreach (var rectangle in _debugDb.Query<Rectangle>(module, frame.Value.Start, frame.Value.End))
-                if (filterSnapshot.IsEnabled(rectangle.Meta))
-                    preparedModule.Rectangles.Add(rectangle);
-
-            foreach (var circle in _debugDb.Query<Circle>(module, frame.Value.Start, frame.Value.End))
-                if (filterSnapshot.IsEnabled(circle.Meta))
-                    preparedModule.Circles.Add(circle);
-
-            foreach (var arc in _debugDb.Query<Arc>(module, frame.Value.Start, frame.Value.End))
-                if (filterSnapshot.IsEnabled(arc.Meta))
-                    preparedModule.Arcs.Add(arc);
-
-            foreach (var arrow in _debugDb.Query<Arrow>(module, frame.Value.Start, frame.Value.End))
-                if (filterSnapshot.IsEnabled(arrow.Meta))
-                    preparedModule.Arrows.Add(arrow);
-
-            foreach (var line in _debugDb.Query<Line>(module, frame.Value.Start, frame.Value.End))
-                if (filterSnapshot.IsEnabled(line.Meta))
-                    preparedModule.Lines.Add(line);
-
-            foreach (var lineSegment in _debugDb.Query<LineSegment>(module, frame.Value.Start, frame.Value.End))
-                if (filterSnapshot.IsEnabled(lineSegment.Meta))
-                    preparedModule.LineSegments.Add(lineSegment);
-
-            foreach (var path in _debugDb.Query<Debug.Drawing.Drawables.Path>(module, frame.Value.Start, frame.Value.End))
-                if (filterSnapshot.IsEnabled(path.Meta))
-                    preparedModule.Paths.Add(path);
-
-            foreach (var point in _debugDb.Query<Point>(module, frame.Value.Start, frame.Value.End))
-                if (filterSnapshot.IsEnabled(point.Meta))
-                    preparedModule.Points.Add(point);
-
-            foreach (var robot in _debugDb.Query<Robot>(module, frame.Value.Start, frame.Value.End))
-                if (filterSnapshot.IsEnabled(robot.Meta))
-                    preparedModule.Robots.Add(robot);
-
-            foreach (var text in _debugDb.Query<Text>(module, frame.Value.Start, frame.Value.End))
-                if (filterSnapshot.IsEnabled(text.Meta))
-                    preparedModule.Texts.Add(text);
-
-            foreach (var triangle in _debugDb.Query<Triangle>(module, frame.Value.Start, frame.Value.End))
-                if (filterSnapshot.IsEnabled(triangle.Meta))
-                    preparedModule.Triangles.Add(triangle);
-
-            foreach (var trajectory in _debugDb.Query<Trajectory2DDrawable>(module, frame.Value.Start, frame.Value.End))
-                if (filterSnapshot.IsEnabled(trajectory.Meta))
-                    preparedModule.Trajectories.Add(trajectory);
-
-            foreach (var trajectory in _debugDb.Query<Trajectory2DChainedDrawable>(module, frame.Value.Start, frame.Value.End))
-                if (filterSnapshot.IsEnabled(trajectory.Meta))
-                    preparedModule.ChainedTrajectories.Add(trajectory);
+            _debugDb.QueryInto(preparedModule.Rectangles, module, start, end, metaFilter: metaFilter);
+            _debugDb.QueryInto(preparedModule.Circles, module, start, end, metaFilter: metaFilter);
+            _debugDb.QueryInto(preparedModule.Arcs, module, start, end, metaFilter: metaFilter);
+            _debugDb.QueryInto(preparedModule.Arrows, module, start, end, metaFilter: metaFilter);
+            _debugDb.QueryInto(preparedModule.Lines, module, start, end, metaFilter: metaFilter);
+            _debugDb.QueryInto(preparedModule.LineSegments, module, start, end, metaFilter: metaFilter);
+            _debugDb.QueryInto(preparedModule.Paths, module, start, end, metaFilter: metaFilter);
+            _debugDb.QueryInto(preparedModule.Points, module, start, end, metaFilter: metaFilter);
+            _debugDb.QueryInto(preparedModule.Robots, module, start, end, metaFilter: metaFilter);
+            _debugDb.QueryInto(preparedModule.Texts, module, start, end, metaFilter: metaFilter);
+            _debugDb.QueryInto(preparedModule.Triangles, module, start, end, metaFilter: metaFilter);
+            _debugDb.QueryInto(preparedModule.Trajectories, module, start, end, metaFilter: metaFilter);
+            _debugDb.QueryInto(preparedModule.ChainedTrajectories, module, start, end, metaFilter: metaFilter);
 
             if (preparedModule.IsEmpty)
                 prepared.RemoveLastModule();

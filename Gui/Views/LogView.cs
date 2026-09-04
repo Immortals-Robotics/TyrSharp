@@ -48,8 +48,12 @@ public sealed partial class LogView(IDebugDb debugDb) : IDisposable
             PreparePerFrame(time, filterSnapshot, prepared);
     }
 
+    private readonly List<Entry> _queryScratch = [];
+
     private void PreparePerFrame(PlaybackTime time, DebugFilterSnapshot filterSnapshot, PreparedData prepared)
     {
+        Func<Debug.Meta, bool> metaFilter = filterSnapshot.IsEnabled;
+
         foreach (var module in debugDb.QueryModules())
         {
             if (!filterSnapshot.IsEnabled(module))
@@ -59,11 +63,10 @@ public sealed partial class LogView(IDebugDb debugDb) : IDisposable
             if (!frame.HasValue)
                 continue;
 
-            foreach (var log in debugDb.Query<Entry>(module, frame.Value.Start, frame.Value.End))
+            _queryScratch.Clear();
+            debugDb.QueryInto(_queryScratch, module, frame.Value.Start, frame.Value.End, metaFilter: metaFilter);
+            foreach (var log in _queryScratch)
             {
-                if (!filterSnapshot.IsEnabled(log.Meta))
-                    continue;
-
                 if (log.Level < LogLevel)
                     continue;
 
