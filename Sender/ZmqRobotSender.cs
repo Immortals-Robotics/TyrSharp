@@ -10,10 +10,10 @@ namespace Tyr.Sender;
 [Configurable]
 public sealed partial class ZmqRobotSender : ISender
 {
-    [ConfigEntry] private static bool Enabled { get; set; } = true;
-    [ConfigEntry] private static int CmdPort { get; set; } = 5671;
-    [ConfigEntry] private static float DefaultDribblerForce { get; set; } = 5.0f;
-    [ConfigEntry] private static CommandType RobotCommandTopic { get; set; } = CommandType.CommandTypeRobot;
+    [ConfigEntry] private static partial bool Enabled { get; set; } = true;
+    [ConfigEntry] private static partial int CmdPort { get; set; } = 5671;
+    [ConfigEntry] private static partial float DefaultDribblerForce { get; set; } = 5.0f;
+    [ConfigEntry] private static partial CommandType RobotCommandTopic { get; set; } = CommandType.CommandTypeRobot;
 
     private readonly ConcurrentDictionary<int, ZmqSender> _senders = new();
     private readonly Subscriber<IReadOnlyList<DiscoveredRobot>> _discoverySubscriber;

@@ -17,10 +17,10 @@ namespace Tyr.Soccer.Tactics;
 [Configurable]
 public partial class Defender : ITactic
 {
-    [ConfigEntry] private static float TightStartAngle { get; set; } = 40.0f;
-    [ConfigEntry] private static float MaxExtensionArea { get; set; } = 1100.0f;
-    [ConfigEntry] private static float BallDistanceCoef { get; set; } = 0.7f;
-    [ConfigEntry] private static DeltaTime DiveHysteresisTime { get; set; } = DeltaTime.FromMilliseconds(100);
+    [ConfigEntry] private static partial float TightStartAngle { get; set; } = 40.0f;
+    [ConfigEntry] private static partial float MaxExtensionArea { get; set; } = 1100.0f;
+    [ConfigEntry] private static partial float BallDistanceCoef { get; set; } = 0.7f;
+    [ConfigEntry] private static partial DeltaTime DiveHysteresisTime { get; set; } = DeltaTime.FromMilliseconds(100);
 
     public Robot.Robot Robot { get; }
     private int DefId { get; }

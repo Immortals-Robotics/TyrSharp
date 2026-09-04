@@ -15,25 +15,25 @@ namespace Tyr.Vision;
 public partial class Camera(uint id)
 {
     [ConfigEntry("Time after which an invisible ball is removed")]
-    private static DeltaTime InvisibleLifetimeBall { get; set; } = DeltaTime.FromSeconds(1f);
+    private static partial DeltaTime InvisibleLifetimeBall { get; set; } = DeltaTime.FromSeconds(1f);
 
     [ConfigEntry("Time after which an invisible robot is removed")]
-    private static DeltaTime InvisibleLifetimeRobot { get; set; } = DeltaTime.FromSeconds(2f);
+    private static partial DeltaTime InvisibleLifetimeRobot { get; set; } = DeltaTime.FromSeconds(2f);
 
     [ConfigEntry("Maximum number of ball trackers")]
-    private static int MaxBallTrackers { get; set; } = 10;
+    private static partial int MaxBallTrackers { get; set; } = 10;
 
     [ConfigEntry("Max. distance to copy state from filtered bot to new trackers")]
-    private static float CopyTrackerMaxDistance { get; set; } = 200f;
+    private static partial float CopyTrackerMaxDistance { get; set; } = 200f;
 
     [ConfigEntry("Maximum speed loss against the robot hull during ball collisions")]
-    private static float MaxBallBotHullLoss { get; set; } = 0.6f;
+    private static partial float MaxBallBotHullLoss { get; set; } = 0.6f;
 
     [ConfigEntry("Maximum speed loss against the robot front during ball collisions")]
-    private static float MaxBallBotFrontLoss { get; set; } = 1.0f;
+    private static partial float MaxBallBotFrontLoss { get; set; } = 1.0f;
 
     [ConfigEntry("Maximum filtered ball height where robot collisions are considered")]
-    private static float MaxHeightForCollision { get; set; } = 130f;
+    private static partial float MaxHeightForCollision { get; set; } = 130f;
 
     public uint Id { get; } = id;
 

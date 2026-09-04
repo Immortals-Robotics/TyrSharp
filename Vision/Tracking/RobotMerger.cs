@@ -11,7 +11,7 @@ public partial class RobotMerger
 {
     [ConfigEntry(
         "Factor to weight stdDeviation during tracker merging, reasonable range: 1.0 - 2.0. High values lead to more jitter")]
-    private static float MergePower { get; set; } = 1.5f;
+    private static partial float MergePower { get; set; } = 1.5f;
 
     public List<FilteredRobot> Process(IEnumerable<Camera> cameras, Timestamp timestamp)
     {

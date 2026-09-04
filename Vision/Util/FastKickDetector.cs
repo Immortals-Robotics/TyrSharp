@@ -9,16 +9,16 @@ namespace Tyr.Vision.Util;
 public partial class FastKickDetector : IKickDetector
 {
     [ConfigEntry(description: "Minimum distance to ball for kick detection [mm]")]
-    public static float KickNearBallMinDist { get; set; } = 150.0f;
+    public static partial float KickNearBallMinDist { get; set; } = 150.0f;
 
     [ConfigEntry(description: "Ball velocity threshold [mm/s]")]
-    private static double VelocityThreshold { get; set; } = 1000.0;
+    private static partial double VelocityThreshold { get; set; } = 1000.0;
 
     [ConfigEntry(description: "Fast ball direction change threshold [deg]")]
-    private static double DirectionThreshold { get; set; } = 20.0;
+    private static partial double DirectionThreshold { get; set; } = 20.0;
 
     [ConfigEntry(description: "Ball velocity threshold for direction change [mm/s]")]
-    private static double VelocityThresholdDirection { get; set; } = 2000.0;
+    private static partial double VelocityThresholdDirection { get; set; } = 2000.0;
 
 
     private readonly Dictionary<uint, List<MergedBall>> _rawBallRecordsMap = new Dictionary<uint, List<MergedBall>>();

@@ -10,14 +10,14 @@ namespace Tyr.Common.Data.Ssl.Vision.Geometry;
 /// </summary>
 [ProtoContract]
 [Configurable]
-public struct FieldSize
+public partial struct FieldSize
 {
     public FieldSize()
     {
     }
 
     [ConfigEntry("Division used to fill in missing optional SSL-Vision geometry fields")]
-    public static Division DefaultDivision { get; set; } = Division.A;
+    public static partial Division DefaultDivision { get; set; } = Division.A;
 
     public static FieldSize Default => DefaultDivision switch
     {

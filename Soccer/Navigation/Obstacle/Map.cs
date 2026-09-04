@@ -10,9 +10,9 @@ namespace Tyr.Soccer.Navigation.Obstacle;
 [Configurable]
 public partial class Map
 {
-    [ConfigEntry] private static float GridCellSize { get; set; } = 400f;
-    [ConfigEntry] private static float MaxTrajectorySegmentLength { get; set; } = 125f;
-    [ConfigEntry] private static float MinTrajectoryStepTime { get; set; } = 0.01f;
+    [ConfigEntry] private static partial float GridCellSize { get; set; } = 400f;
+    [ConfigEntry] private static partial float MaxTrajectorySegmentLength { get; set; } = 125f;
+    [ConfigEntry] private static partial float MinTrajectoryStepTime { get; set; } = 0.01f;
 
     private static readonly string Layer = Meta.DebugLayer("Obstacles");
 

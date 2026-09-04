@@ -14,19 +14,19 @@ namespace Tyr.Soccer.Skills;
 public sealed partial class CaptureBall : ISkill
 {
     [ConfigEntry("Dribbler Force used while capturing the ball")]
-    private static float CaptureDribblerForce { get; set; } = 2f;
+    private static partial float CaptureDribblerForce { get; set; } = 2f;
 
     [ConfigEntry("Angle tolerance within which the robot starts charging inward [deg]")]
-    private static float RoughFocusAngleDeg { get; set; } = 15f;
+    private static partial float RoughFocusAngleDeg { get; set; } = 15f;
 
     [ConfigEntry("Distance margin in front of the ball during approach [mm]")]
-    private static float ApproachMarginMm { get; set; } = 100f;
+    private static partial float ApproachMarginMm { get; set; } = 100f;
 
     [ConfigEntry("Distance margin behind the ball center during final capture [mm]")]
-    private static float CaptureMarginMm { get; set; } = -20f;
+    private static partial float CaptureMarginMm { get; set; } = -20f;
 
     [ConfigEntry("Dribbler speed used while capturing the ball")]
-    private static float CaptureDribblerSpeed { get; set; } = 2f;
+    private static partial float CaptureDribblerSpeed { get; set; } = 2f;
 
     public void Execute(Robot.Robot robot)
     {

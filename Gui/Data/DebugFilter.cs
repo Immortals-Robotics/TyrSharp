@@ -17,7 +17,7 @@ public sealed partial class DebugFilter(Tyr.Common.Debug.Db.IDebugDb debugDb) : 
     // Dictionary to track the enabled state of each node in the tree
     // Format: "module" or "module/file" or "module/layer/file" or "module/layer/file/member" or "module/layer/file/member/line"
     [ConfigEntry(StorageType.User, editable: false)]
-    private static Dictionary<string, bool> FilterState { get; set; } = [];
+    private static partial Dictionary<string, bool> FilterState { get; set; } = [];
     private static readonly TimeSpan MetadataRefreshInterval = TimeSpan.FromSeconds(1);
 
     private readonly Dictionary<string, Dictionary<string, Dictionary<string, Dictionary<string, HashSet<MetaTreeItem>>>>> _metaTrees = [];

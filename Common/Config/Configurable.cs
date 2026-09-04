@@ -1,47 +1,115 @@
-﻿using System.Reflection;
 using Tomlet.Models;
 
 namespace Tyr.Common.Config;
 
-public class Configurable
+/// <summary>
+/// Runtime handle for a <c>[Configurable]</c> type: its entries, change notification and TOML conversion.
+/// Instances are created by the generated <c>Configurable</c> property of each configurable type.
+/// </summary>
+public sealed class Configurable
 {
+    /// <summary>
+    /// Raised after one or more entries of the given storage type changed. Fires on the thread that
+    /// made the change, which is the config file watcher thread for reloads from disk. Handlers that
+    /// must run on a specific thread should poll <see cref="Version"/> from that thread instead.
+    /// </summary>
     public event Action<StorageType>? OnUpdated;
 
-    public readonly Type Type;
-
+    public Type Type { get; }
+    public string Name => Type.Name;
     public string Namespace => Type.Namespace ?? "Tyr.Global";
+    public string? Description { get; }
 
-    public string? Description => _meta.Description;
-
-    private readonly ConfigurableAttribute _meta;
-
-    private readonly List<ConfigEntry> _entries;
-
+    private readonly ConfigEntry[] _entries;
     public IReadOnlyList<ConfigEntry> Entries => _entries;
 
-    internal Configurable(Type type)
+    private int _version;
+    private int _batchDepth;
+    private int _pendingMask;
+
+    /// <summary>Incremented on every change of any entry. Compare against a stored value to poll for changes.</summary>
+    public int Version => Volatile.Read(ref _version);
+
+    public Configurable(Type type, string? description, ConfigEntry[] entries)
     {
         Type = type;
-        _meta = type.GetCustomAttribute<ConfigurableAttribute>()!;
+        Description = description;
+        _entries = entries;
 
-        _entries = Type
-            .GetProperties(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static)
-            .Where(info => info.GetCustomAttribute<ConfigEntryAttribute>() != null)
-            .Select(info => new ConfigEntry(info, this))
-            .ToList();
+        foreach (var entry in entries)
+        {
+            entry.Owner = this;
+        }
     }
 
+    public ConfigEntry? Find(string name)
+    {
+        foreach (var entry in _entries)
+        {
+            if (entry.Name == name) return entry;
+        }
+
+        return null;
+    }
+
+    /// <summary>
+    /// Records a change of an entry with the given storage type. Notifications are raised immediately,
+    /// or once at the end of the outermost <see cref="BeginBatch"/> scope.
+    /// </summary>
     public void MarkChanged(StorageType storageType)
     {
-        Log.ZLogTrace($"Configurable of type {Type.FullName} was updated.");
+        Interlocked.Increment(ref _version);
+
+        if (Volatile.Read(ref _batchDepth) > 0)
+        {
+            Interlocked.Or(ref _pendingMask, 1 << (int)storageType);
+            return;
+        }
+
+        Raise(storageType);
+    }
+
+    /// <summary>
+    /// Coalesces change notifications until the returned scope is disposed:
+    /// every storage type that changed inside the scope is notified exactly once.
+    /// </summary>
+    public BatchScope BeginBatch()
+    {
+        Interlocked.Increment(ref _batchDepth);
+        return new BatchScope(this);
+    }
+
+    private void EndBatch()
+    {
+        if (Interlocked.Decrement(ref _batchDepth) != 0) return;
+
+        var mask = Interlocked.Exchange(ref _pendingMask, 0);
+        for (var bit = 0; mask != 0; bit++, mask >>= 1)
+        {
+            if ((mask & 1) != 0) Raise((StorageType)bit);
+        }
+    }
+
+    private void Raise(StorageType storageType)
+    {
+        Log.ZLogTrace($"Configurable {Type.FullName} updated ({storageType}).");
         OnUpdated?.Invoke(storageType);
+        Registry.NotifyUpdated(storageType);
+    }
+
+    public readonly struct BatchScope(Configurable owner) : IDisposable
+    {
+        public void Dispose() => owner.EndBatch();
     }
 
     public void SetDefaults()
     {
-        foreach (var entry in Entries)
+        using (BeginBatch())
         {
-            entry.Value = entry.DefaultValue;
+            foreach (var entry in _entries)
+            {
+                entry.ResetToDefault();
+            }
         }
     }
 
@@ -50,14 +118,16 @@ public class Configurable
         var table = new TomlTable();
         table.Comments.PrecedingComment = Description;
 
-        foreach (var entry in Entries)
+        foreach (var entry in _entries)
         {
             if (entry.StorageType != storageType) continue;
-            if (entry.Value is null) continue;
 
             try
             {
-                table.Put(Registry.ConvertName($"{entry.Name}"), entry);
+                var value = entry.ToToml();
+                if (value is null) continue;
+
+                table.PutValue(entry.Name, value);
             }
             catch (Exception exception)
             {
@@ -71,21 +141,22 @@ public class Configurable
 
     public void FromToml(TomlTable table, StorageType storageType)
     {
-        foreach (var entry in Entries)
+        using (BeginBatch())
         {
-            if (entry.StorageType != storageType) continue;
-
-            var key = Registry.ConvertName($"{entry.Name}");
-            if (!table.TryGetValue(key, out var value)) continue;
-
-            try
+            foreach (var entry in _entries)
             {
-                entry.FromToml(value);
-            }
-            catch (Exception exception)
-            {
-                Log.ZLogError(exception,
-                    $"Failed to parse {entry.StorageType} config entry {entry.Name} of type {entry.Type} from TOML");
+                if (entry.StorageType != storageType) continue;
+                if (!table.TryGetValue(entry.Name, out var value)) continue;
+
+                try
+                {
+                    entry.FromToml(value);
+                }
+                catch (Exception exception)
+                {
+                    Log.ZLogError(exception,
+                        $"Failed to parse {entry.StorageType} config entry {entry.Name} of type {entry.Type} from TOML");
+                }
             }
         }
     }

@@ -18,22 +18,22 @@ public sealed partial class GameControllerView : IDisposable
     private static readonly string TeamsTabTitle = $"{IconFonts.FontAwesome6.PeopleGroup}  Teams";
 
     [ConfigEntry("Hostname or IP address where the game controller is running", StorageType.User)]
-    private static string GameControllerHost { get; set; } = "localhost";
+    private static partial string GameControllerHost { get; set; } = "localhost";
 
     [ConfigEntry("TCP port for the team remote control protocol", StorageType.User)]
-    private static int RemoteControlPort { get; set; } = 10011;
+    private static partial int RemoteControlPort { get; set; } = 10011;
 
     [ConfigEntry("HTTP port for the web UI and referee WebSocket API", StorageType.User)]
-    private static int WebUiPort { get; set; } = 8081;
+    private static partial int WebUiPort { get; set; } = 8081;
 
     [ConfigEntry("Automatically start the  game controller", StorageType.User)]
-    private static bool AutoStart { get;  set; } = false;
+    private static partial bool AutoStart { get;  set; } = false;
     
     [ConfigEntry("Automatically connect referee API and team rcon after starting the managed process", StorageType.User)]
-    private static bool AutoConnect { get; set; } = true;
+    private static partial bool AutoConnect { get; set; } = true;
 
     [ConfigEntry("Team to issue gamepad commands for", StorageType.User)]
-    private static TeamColor GamepadTeam { get; set; } = TeamColor.Yellow;
+    private static partial TeamColor GamepadTeam { get; set; } = TeamColor.Yellow;
 
     private SDLGamepadPtr _gamepad;
     private readonly bool[] _lastButtons = new bool[32]; // SDL_GAMEPAD_BUTTON_MAX is usually small

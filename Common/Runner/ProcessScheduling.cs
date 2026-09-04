@@ -9,16 +9,16 @@ namespace Tyr.Common.Runner;
 public static partial class ProcessScheduling
 {
     [ConfigEntry("Windows process priority class applied to the whole Tyr process.")]
-    public static ProcessPriorityClass PriorityClass { get; set; } = ProcessPriorityClass.AboveNormal;
+    public static partial ProcessPriorityClass PriorityClass { get; set; } = ProcessPriorityClass.AboveNormal;
 
     [ConfigEntry("Windows execution-speed throttling for the process. Keep this false to avoid background slowdowns.")]
-    public static bool PowerThrottling { get; set; } = false;
+    public static partial bool PowerThrottling { get; set; } = false;
 
     [ConfigEntry("When true on Windows, the OS may ignore high-resolution timer requests for this process.")]
-    public static bool IgnoreTimerResolution { get; set; } = false;
+    public static partial bool IgnoreTimerResolution { get; set; } = false;
 
     [ConfigEntry("Prevents macOS App Nap from throttling the process while the app is doing real-time work.")]
-    public static bool DisableAppNap { get; set; } = true;
+    public static partial bool DisableAppNap { get; set; } = true;
 
     private static bool _initialized;
     private static nint _macOsActivity;
@@ -29,15 +29,7 @@ public static partial class ProcessScheduling
 
         _initialized = true;
 
-        try
-        {
-            Registry.Get(typeof(ProcessScheduling)).OnUpdated += _ => Apply();
-        }
-        catch (KeyNotFoundException)
-        {
-            // If config registration is not ready yet, we still apply the startup defaults below.
-        }
-
+        Configurable.OnUpdated += _ => Apply();
         Apply();
     }
 

@@ -51,12 +51,9 @@ public partial class ConfigsView
         try { document = new TomlParser().Parse(content); }
         catch { return result; }
 
-        foreach (var configurable in Registry.Configurables.Values)
+        foreach (var configurable in Registry.Configurables)
         {
-            var fullPath = $"{configurable.Namespace}.{configurable.Type.Name}";
-            var tomlPath = string.Join('.', fullPath.Split('.').Skip(1));
-
-            if (!document.TryGetValue(tomlPath, out var tableValue) || tableValue is not TomlTable table)
+            if (!document.TryGetValue(Registry.TomlPath(configurable), out var tableValue) || tableValue is not TomlTable table)
                 continue;
 
             foreach (var entry in configurable.Entries)
@@ -108,7 +105,7 @@ public partial class ConfigsView
             if (IsAnyFilterActive)
             {
                 ImGui.Separator();
-                var totalItems = Registry.Configurables.Values.Sum(c => c.Entries.Count);
+                var totalItems = Registry.Configurables.Sum(c => c.Entries.Count);
                 var visibleItems = CountMatchingFields(Registry.Tree);
                 ImGui.TextColored(Color.Zinc400, $"{visibleItems} of {totalItems} items matching");
             }
@@ -208,30 +205,25 @@ public partial class ConfigsView
         return configurable.Entries.Any(e => EntryPassesFilter(e, nameMatch));
     }
 
-    private void DrawTree(Dictionary<string, object> tree, int depth = 0)
+    private void DrawTree(ConfigTreeNode tree, int depth = 0)
     {
-        foreach (var (key, value) in tree)
+        foreach (var (key, node) in tree.Children)
         {
-            switch (value)
+            if (node.Configurable is { } configurable)
             {
-                case Configurable configurable:
-                    if (ConfigurableHasVisibleEntries(configurable))
-                        DrawConfigurable(key, configurable);
-                    break;
-
-                case Dictionary<string, object> subTree:
-                    if (ChildrenMatchSearch(subTree))
-                    {
-                        var icon = depth == 0
-                            ? $"{IconFonts.FontAwesome6.CubesStacked}"
-                            : $"{IconFonts.FontAwesome6.Cube}";
-                        if (ImGui.TreeNodeEx($"{icon} {key}", TreeNodeFlags))
-                        {
-                            DrawTree(subTree, depth + 1);
-                            ImGui.TreePop();
-                        }
-                    }
-                    break;
+                if (ConfigurableHasVisibleEntries(configurable))
+                    DrawConfigurable(key, configurable);
+            }
+            else if (ChildrenMatchSearch(node))
+            {
+                var icon = depth == 0
+                    ? $"{IconFonts.FontAwesome6.CubesStacked}"
+                    : $"{IconFonts.FontAwesome6.Cube}";
+                if (ImGui.TreeNodeEx($"{icon} {key}", TreeNodeFlags))
+                {
+                    DrawTree(node, depth + 1);
+                    ImGui.TreePop();
+                }
             }
         }
     }
@@ -352,7 +344,7 @@ public partial class ConfigsView
         if (isModifiedFromDefault)
         {
             if (ImGui.SmallButton($"{IconFonts.FontAwesome6.RotateLeft}"))
-                field.Value = field.DefaultValue;
+                field.ResetToDefault();
 
             if (ImGui.IsItemHovered(ImGuiHoveredFlags.ForTooltip))
             {
@@ -373,10 +365,7 @@ public partial class ConfigsView
             if (anyResetShown) ImGui.SameLine();
 
             if (ImGui.SmallButton($"{IconFonts.FontAwesome6.CodeBranch}"))
-            {
-                field.Value = committedValue!;
-                field.MarkChanged();
-            }
+                field.Set(committedValue);
 
             if (ImGui.IsItemHovered(ImGuiHoveredFlags.ForTooltip))
             {
@@ -393,54 +382,47 @@ public partial class ConfigsView
         // Value
         ImGui.TableNextColumn();
         ImGui.PushFont(FontRegistry.Instance.MonoFont, FontRegistry.Instance.MonoFont.LegacySize);
+        // Set() always notifies once, which also covers lists and objects edited in place
         var (changed, newVal) = DrawFieldEditor(field.Value);
-        if (changed)
-        {
-            field.Value = newVal!;
-            field.MarkChanged();
-        }
+        if (changed) field.Set(newVal);
         ImGui.PopFont();
 
         ImGui.EndDisabled();
         ImGui.PopID();
     }
 
-    private bool ChildrenMatchSearch(Dictionary<string, object> tree)
+    private bool ChildrenMatchSearch(ConfigTreeNode tree)
     {
         if (!IsAnyFilterActive) return true;
 
-        foreach (var value in tree.Values)
+        foreach (var node in tree.Children.Values)
         {
-            switch (value)
+            if (node.Configurable is { } configurable)
             {
-                case Configurable configurable:
-                    if (ConfigurableHasVisibleEntries(configurable)) return true;
-                    break;
-                case Dictionary<string, object> subTree:
-                    if (ChildrenMatchSearch(subTree)) return true;
-                    break;
+                if (ConfigurableHasVisibleEntries(configurable)) return true;
+            }
+            else if (ChildrenMatchSearch(node))
+            {
+                return true;
             }
         }
 
         return false;
     }
 
-    private int CountMatchingFields(Dictionary<string, object> tree)
+    private int CountMatchingFields(ConfigTreeNode tree)
     {
         var count = 0;
-        foreach (var value in tree.Values)
+        foreach (var node in tree.Children.Values)
         {
-            switch (value)
+            if (node.Configurable is { } configurable)
             {
-                case Configurable configurable:
-                {
-                    var nameMatch = _filter.PassFilter(configurable.Type.Name);
-                    count += configurable.Entries.Count(e => EntryPassesFilter(e, nameMatch));
-                    break;
-                }
-                case Dictionary<string, object> subTree:
-                    count += CountMatchingFields(subTree);
-                    break;
+                var nameMatch = _filter.PassFilter(configurable.Type.Name);
+                count += configurable.Entries.Count(e => EntryPassesFilter(e, nameMatch));
+            }
+            else
+            {
+                count += CountMatchingFields(node);
             }
         }
         return count;

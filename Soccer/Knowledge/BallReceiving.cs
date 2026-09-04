@@ -14,20 +14,20 @@ public partial class BallReceiving
     private const float LegalSeparationEpsilonMm = 1f;
 
     [ConfigEntry("Maximum expected vision latency for receive-point back projection [s]")]
-    private static float ExpectedVisionDeviationSeconds { get; set; } = 0.1f;
+    private static partial float ExpectedVisionDeviationSeconds { get; set; } = 0.1f;
 
     [ConfigEntry(
         "If the preferred receive point is further than this from the current ball path, keep the preferred point [mm]")]
-    private static float MaxProjectionDistanceMm { get; set; } = 1000f;
+    private static partial float MaxProjectionDistanceMm { get; set; } = 1000f;
 
     [ConfigEntry("Margin to keep between a receive destination and a penalty area [mm]")]
-    private static float PenaltyAreaMarginMm { get; set; } = 110f;
+    private static partial float PenaltyAreaMarginMm { get; set; } = 110f;
 
     [ConfigEntry("Distance from receive point to ball where the receive orientation is locked [mm]")]
-    private static float OrientationLockDistanceMm { get; set; } = 200f;
+    private static partial float OrientationLockDistanceMm { get; set; } = 200f;
 
     [ConfigEntry("Below this planar ball speed the current orientation is kept for receiving [mm/s]")]
-    private static float FacingFallbackSpeedMmPerS { get; set; } = 50f;
+    private static partial float FacingFallbackSpeedMmPerS { get; set; } = 50f;
 
     public float OrientationLockDistance => OrientationLockDistanceMm;
     public float PenaltyAreaMargin => PenaltyAreaMarginMm;

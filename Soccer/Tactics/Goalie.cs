@@ -18,12 +18,12 @@ namespace Tyr.Soccer.Tactics;
 [Configurable]
 public partial class Goalie : ITactic
 {
-    [ConfigEntry] private static float TightStartAngle { get; set; } = 25.0f;
-    [ConfigEntry] private static float GoalieBoxNotch { get; set; } = 600.0f;
-    [ConfigEntry] private static float GoalieDiveInterceptionOffset { get; set; } = 200.0f;
-    [ConfigEntry] private static float GoalieChip { get; set; } = 150.0f;
-    [ConfigEntry] private static DeltaTime DiveHysteresisTime { get; set; } = DeltaTime.FromMilliseconds(100);
-    [ConfigEntry] private static DeltaTime ClearHysteresisTime { get; set; } = DeltaTime.FromMilliseconds(300);
+    [ConfigEntry] private static partial float TightStartAngle { get; set; } = 25.0f;
+    [ConfigEntry] private static partial float GoalieBoxNotch { get; set; } = 600.0f;
+    [ConfigEntry] private static partial float GoalieDiveInterceptionOffset { get; set; } = 200.0f;
+    [ConfigEntry] private static partial float GoalieChip { get; set; } = 150.0f;
+    [ConfigEntry] private static partial DeltaTime DiveHysteresisTime { get; set; } = DeltaTime.FromMilliseconds(100);
+    [ConfigEntry] private static partial DeltaTime ClearHysteresisTime { get; set; } = DeltaTime.FromMilliseconds(300);
     public Robot.Robot Robot { get; private set; }
 
     public enum State

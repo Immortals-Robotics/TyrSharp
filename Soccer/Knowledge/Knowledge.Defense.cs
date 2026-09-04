@@ -9,11 +9,11 @@ namespace Tyr.Soccer.Knowledge;
 [Configurable]
 public partial class Knowledge
 {
-    [ConfigEntry] public static DeltaTime DefPredictionTime { get; set; } = DeltaTime.FromMilliseconds(150);
-    [ConfigEntry] public static float GoalieDiveMaximumTimeToReach { get; set; } = 3.0f;
-    [ConfigEntry] public static float GoalieMaxBallSpeedForClear { get; set; } = 1000;
-    [ConfigEntry] public static float PenaltyAreaExtensionSize { get; set; } = 200.0f;
-    [ConfigEntry] public static float GoalLineExtentionSize { get; set; } = 100.0f;
+    [ConfigEntry] public static partial DeltaTime DefPredictionTime { get; set; } = DeltaTime.FromMilliseconds(150);
+    [ConfigEntry] public static partial float GoalieDiveMaximumTimeToReach { get; set; } = 3.0f;
+    [ConfigEntry] public static partial float GoalieMaxBallSpeedForClear { get; set; } = 1000;
+    [ConfigEntry] public static partial float PenaltyAreaExtensionSize { get; set; } = 200.0f;
+    [ConfigEntry] public static partial float GoalLineExtentionSize { get; set; } = 100.0f;
 
     private Common.Data.Ssl.Gc.Command? _lastRefCommand;
     private Common.Time.Timestamp _oppRestartTimestamp;

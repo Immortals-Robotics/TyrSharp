@@ -15,13 +15,13 @@ namespace Tyr.Vision.Estimators.Direct;
 public partial class DirectKickEstimator : IKickEstimator
 {
     [ConfigEntry("Max fitting error until this estimator is dropped [mm]")]
-    private static double MaxFittingError { get; set; } = 100.0;
+    private static partial double MaxFittingError { get; set; } = 100.0;
 
     [ConfigEntry("Max direction deviation until this estimator is dropped [deg]")]
-    private static double MaxDirectionErrorDegrees { get; set; } = 20.0;
+    private static partial double MaxDirectionErrorDegrees { get; set; } = 20.0;
 
     [ConfigEntry("Max number of records to keep over all cameras")]
-    private static int MaxNumberOfRecords { get; set; } = 50;
+    private static partial int MaxNumberOfRecords { get; set; } = 50;
 
     private readonly List<RawBall> _records = [];
     private readonly List<RawBall> _allRecords = [];

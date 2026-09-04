@@ -17,11 +17,11 @@ namespace Tyr.Gui.Views;
 public partial class PlotView(IDebugDb debugDb)
 {
     public static readonly string WindowTitle = $"{IconFonts.FontAwesome6.ChartLine} Plots";
-    [ConfigEntry] private static double TimeAxisMinRange { get; set; } = 1;
-    [ConfigEntry] private static double TimeAxisMaxRange { get; set; } = 200;
+    [ConfigEntry] private static partial double TimeAxisMinRange { get; set; } = 1;
+    [ConfigEntry] private static partial double TimeAxisMaxRange { get; set; } = 200;
 
-    [ConfigEntry] private static double YAxisMinRange { get; set; } = 1;
-    [ConfigEntry] private static int MaxPoints { get; set; } = 500;
+    [ConfigEntry] private static partial double YAxisMinRange { get; set; } = 1;
+    [ConfigEntry] private static partial int MaxPoints { get; set; } = 500;
 
     private DeltaTime _linkedHistoryRange = DeltaTime.Zero;
     private readonly HashSet<PlotKey> _openPlots = [];

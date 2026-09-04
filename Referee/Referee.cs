@@ -10,8 +10,8 @@ namespace Tyr.Referee;
 [Configurable]
 public partial class Referee
 {
-    [ConfigEntry] private static int RequiredHys { get; set; } = 5;
-    [ConfigEntry] private static float BallMoveDis { get; set; } = 50.0f;
+    [ConfigEntry] private static partial int RequiredHys { get; set; } = 5;
+    [ConfigEntry] private static partial float BallMoveDis { get; set; } = 50.0f;
 
     private FilteredFrame _vision = new();
 

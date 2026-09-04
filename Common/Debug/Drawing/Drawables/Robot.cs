@@ -9,13 +9,13 @@ namespace Tyr.Common.Debug.Drawing.Drawables;
 [MemoryPackable]
 public partial record struct Robot : IEntry
 {
-    [ConfigEntry] public static float DefaultRadius { get; set; } = 90f;
+    [ConfigEntry] public static partial float DefaultRadius { get; set; } = 90f;
 
     [ConfigEntry("Angle in degrees of the flat front of the robot")]
-    public static Angle FlatAngle { get; set; } = Angle.FromDeg(45f);
+    public static partial Angle FlatAngle { get; set; } = Angle.FromDeg(45f);
 
-    [ConfigEntry] public static float TextSize { get; set; } = 135f;
-    [ConfigEntry] public static Color TextColor { get; set; } = Color.Zinc950;
+    [ConfigEntry] public static partial float TextSize { get; set; } = 135f;
+    [ConfigEntry] public static partial Color TextColor { get; set; } = Color.Zinc950;
 
     [MemoryPackIgnore] public Time.Timestamp Timestamp { get; set; }
     [MemoryPackIgnore] public Meta Meta { get; set; }

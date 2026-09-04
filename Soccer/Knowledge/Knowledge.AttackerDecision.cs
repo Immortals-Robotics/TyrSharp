@@ -6,19 +6,19 @@ namespace Tyr.Soccer.Knowledge;
 
 public partial class Knowledge
 {
-    [ConfigEntry] private static float AttackerKickSpeed { get; set; } = 6500.0f;
-    [ConfigEntry] private static float PassKickSpeed { get; set; } = 3000.0f;
-    [ConfigEntry] private static float PassChipSpeed { get; set; } = 2000.0f;
-    [ConfigEntry] private static float DefensiveChipSpeed { get; set; } = 2000.0f;
-    [ConfigEntry] private static float GoalOpenAngleForPassDeg { get; set; } = 15.0f;
-    [ConfigEntry] private static float OpponentNearBallDistance { get; set; } = 150.0f;
-    [ConfigEntry] private static float ReceiverReachedDistance { get; set; } = 1000.0f;
-    [ConfigEntry] private static float MinReceiverBallDistance { get; set; } = 1000.0f;
-    [ConfigEntry] private static float MaxPassToOwnGoalDot { get; set; } = 0.85f;
-    [ConfigEntry] private static int PassShootHysteresisMax { get; set; } = 30;
-    [ConfigEntry] private static float PassBlockerRadius { get; set; } = 150.0f;
-    [ConfigEntry] private static float ShootBlockerRadius { get; set; } = 90.0f;
-    [ConfigEntry] private static float FarBallShotDistance { get; set; } = 400.0f;
+    [ConfigEntry] private static partial float AttackerKickSpeed { get; set; } = 6500.0f;
+    [ConfigEntry] private static partial float PassKickSpeed { get; set; } = 3000.0f;
+    [ConfigEntry] private static partial float PassChipSpeed { get; set; } = 2000.0f;
+    [ConfigEntry] private static partial float DefensiveChipSpeed { get; set; } = 2000.0f;
+    [ConfigEntry] private static partial float GoalOpenAngleForPassDeg { get; set; } = 15.0f;
+    [ConfigEntry] private static partial float OpponentNearBallDistance { get; set; } = 150.0f;
+    [ConfigEntry] private static partial float ReceiverReachedDistance { get; set; } = 1000.0f;
+    [ConfigEntry] private static partial float MinReceiverBallDistance { get; set; } = 1000.0f;
+    [ConfigEntry] private static partial float MaxPassToOwnGoalDot { get; set; } = 0.85f;
+    [ConfigEntry] private static partial int PassShootHysteresisMax { get; set; } = 30;
+    [ConfigEntry] private static partial float PassBlockerRadius { get; set; } = 150.0f;
+    [ConfigEntry] private static partial float ShootBlockerRadius { get; set; } = 90.0f;
+    [ConfigEntry] private static partial float FarBallShotDistance { get; set; } = 400.0f;
 
     public readonly record struct AttackerDecision(Vector2 TargetPosition, float Kick, float Chip, bool IsPass);
     private readonly record struct PassCandidate(Vector2 TargetPosition, float Score);

@@ -13,7 +13,7 @@ namespace Tyr.Sender;
 [Configurable]
 public sealed partial class RobotStatusPublisher : IDisposable
 {
-    [ConfigEntry] private static int StatusPort { get; set; } = 5670;
+    [ConfigEntry] private static partial int StatusPort { get; set; } = 5670;
     
     private readonly ConcurrentDictionary<int, ZmqReceiver<StatusUpdate>> _receivers = new();
     private readonly HashSet<int> _activeIds = [];

@@ -15,11 +15,11 @@ public enum SslVisionPublisherTransport
 [Configurable]
 public sealed partial class SslVisionDataPublisher : IDisposable
 {
-    [ConfigEntry] private static SslVisionPublisherTransport Transport { get; set; } = SslVisionPublisherTransport.Udp;
-    [ConfigEntry] private static Address VisionAddress { get; set; } = new() { Ip = "224.5.23.2", Port = 10006 };
-    [ConfigEntry(StorageType.User)] private static Address SimulatorAddress { get; set; } = new() { Ip = "224.5.23.2", Port = 10025 };
-    [ConfigEntry] private static string ZmqEndpoint { get; set; } = "tcp://127.0.0.1:5570";
-    [ConfigEntry(StorageType.User)] private static bool UseSimulator { get; set; } = false;
+    [ConfigEntry] private static partial SslVisionPublisherTransport Transport { get; set; } = SslVisionPublisherTransport.Udp;
+    [ConfigEntry] private static partial Address VisionAddress { get; set; } = new() { Ip = "224.5.23.2", Port = 10006 };
+    [ConfigEntry(StorageType.User)] private static partial Address SimulatorAddress { get; set; } = new() { Ip = "224.5.23.2", Port = 10025 };
+    [ConfigEntry] private static partial string ZmqEndpoint { get; set; } = "tcp://127.0.0.1:5570";
+    [ConfigEntry(StorageType.User)] private static partial bool UseSimulator { get; set; } = false;
 
     internal static Address CurrentUdpAddress => UseSimulator ? SimulatorAddress : VisionAddress;
     internal static string CurrentZmqEndpoint => ZmqEndpoint;
@@ -86,7 +86,7 @@ public sealed class UdpSslVisionDataPublisher : IDisposable
 
     public UdpSslVisionDataPublisher()
     {
-        Registry.Get(typeof(SslVisionDataPublisher)).OnUpdated += OnConfigUpdated;
+        SslVisionDataPublisher.Configurable.OnUpdated += OnConfigUpdated;
 
         _udpReceiver = new UdpReceiver<WrapperPacket>(SslVisionDataPublisher.CurrentUdpAddress, SslVisionPacketPublisher.Publish, "SslVision");
         Log.ZLogInformation($"UDP SSL Vision Data publisher initialized on {SslVisionDataPublisher.CurrentUdpAddress}.");
@@ -99,7 +99,7 @@ public sealed class UdpSslVisionDataPublisher : IDisposable
 
     public void Dispose()
     {
-        Registry.Get(typeof(SslVisionDataPublisher)).OnUpdated -= OnConfigUpdated;
+        SslVisionDataPublisher.Configurable.OnUpdated -= OnConfigUpdated;
         _udpReceiver.Dispose();
     }
 }
@@ -110,7 +110,7 @@ public sealed class ZmqSslVisionDataPublisher : IDisposable
 
     public ZmqSslVisionDataPublisher()
     {
-        Registry.Get(typeof(SslVisionDataPublisher)).OnUpdated += OnConfigUpdated;
+        SslVisionDataPublisher.Configurable.OnUpdated += OnConfigUpdated;
 
         _zmqReceiver = new ZmqReceiver<WrapperPacket>(
             SslVisionDataPublisher.CurrentZmqEndpoint,
@@ -136,7 +136,7 @@ public sealed class ZmqSslVisionDataPublisher : IDisposable
 
     public void Dispose()
     {
-        Registry.Get(typeof(SslVisionDataPublisher)).OnUpdated -= OnConfigUpdated;
+        SslVisionDataPublisher.Configurable.OnUpdated -= OnConfigUpdated;
         _zmqReceiver.Dispose();
     }
 }

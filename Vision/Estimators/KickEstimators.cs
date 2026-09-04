@@ -14,19 +14,19 @@ namespace Tyr.Vision.Estimators;
 public partial class KickEstimators
 {
     [ConfigEntry("Factor by which a new estimator must be better than the last one to become active")]
-    private static double EstimatorSwitchHysteresis { get; set; } = 0.2;
+    private static partial double EstimatorSwitchHysteresis { get; set; } = 0.2;
 
     [ConfigEntry("Maximum angle deviation between two detected kicks before a new flat estimator is spawned [deg]")]
-    private static double SpawnAngleDeviationDegrees { get; set; } = 20.0;
+    private static partial double SpawnAngleDeviationDegrees { get; set; } = 20.0;
 
     [ConfigEntry("Maximum distance between two detected kicks before a new flat estimator is spawned [mm]")]
-    private static double SpawnPositionDeviation { get; set; } = 500.0;
+    private static partial double SpawnPositionDeviation { get; set; } = 500.0;
 
     [ConfigEntry("Maximum number of kick events to keep for debug history")]
-    private static int KickEventHistorySize { get; set; } = 10;
+    private static partial int KickEventHistorySize { get; set; } = 10;
 
     [ConfigEntry("Maximum number of filtered ball states to keep for estimator warm-start history")]
-    private static int FilteredBallHistorySize { get; set; } = 20;
+    private static partial int FilteredBallHistorySize { get; set; } = 20;
 
     private readonly List<IKickEstimator> _estimators = [];
     private readonly Queue<DetectedKick> _kickEventHistory = [];

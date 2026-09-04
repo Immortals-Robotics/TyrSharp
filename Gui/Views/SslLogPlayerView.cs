@@ -13,7 +13,7 @@ public sealed partial class SslLogPlayerView(SslLogPlayer player) : IDisposable
     public static readonly string WindowTitle = $"{IconFonts.FontAwesome6.Film} SSL Log Player";
     
     [ConfigEntry("Whether the SSL Log Player window is visible", StorageType.User)] 
-    private static bool IsOpen { get; set; } = true;
+    private static partial bool IsOpen { get; set; } = true;
 
     private static readonly string CacheDir =
         Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Tyr", "logs");

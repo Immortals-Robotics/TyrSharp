@@ -6,11 +6,11 @@ namespace Tyr.Soccer.Navigation.Planner;
 
 public partial class Planner
 {
-    [ConfigEntry] private static float MinRadius { get; set; } = 100f;
-    [ConfigEntry] private static float RadiusStep { get; set; } = 1000f;
-    [ConfigEntry] private static int RadiusStepCount { get; set; } = 2;
+    [ConfigEntry] private static partial float MinRadius { get; set; } = 100f;
+    [ConfigEntry] private static partial float RadiusStep { get; set; } = 1000f;
+    [ConfigEntry] private static partial int RadiusStepCount { get; set; } = 2;
 
-    [ConfigEntry] private static int AngleStepCount { get; set; } = 16;
+    [ConfigEntry] private static partial int AngleStepCount { get; set; } = 16;
 
     private IEnumerable<Vector2> GenerateIntermediateTargetsSystematic(Vector2 center)
     {

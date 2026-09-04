@@ -14,8 +14,8 @@ namespace Tyr.Soccer.Tactics;
 [Configurable]
 public partial class BallPlacement : ITactic
 {
-    [ConfigEntry] public static DeltaTime BPStateDelay { get; set; } = DeltaTime.FromMilliseconds(333);
-    [ConfigEntry] public static float BPKissInitDistance { get; set; } = 250f;
+    [ConfigEntry] public static partial DeltaTime BPStateDelay { get; set; } = DeltaTime.FromMilliseconds(333);
+    [ConfigEntry] public static partial float BPKissInitDistance { get; set; } = 250f;
 
     public enum State
     {

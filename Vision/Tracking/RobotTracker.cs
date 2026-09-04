@@ -12,22 +12,22 @@ namespace Tyr.Vision.Tracking;
 [Configurable]
 public partial class RobotTracker
 {
-    [ConfigEntry] private static float InitialCovarianceXy { get; set; } = 100.0f;
-    [ConfigEntry] private static float ModelErrorXy { get; set; } = 0.1f;
-    [ConfigEntry] private static float MeasurementErrorXy { get; set; } = 20.0f;
+    [ConfigEntry] private static partial float InitialCovarianceXy { get; set; } = 100.0f;
+    [ConfigEntry] private static partial float ModelErrorXy { get; set; } = 0.1f;
+    [ConfigEntry] private static partial float MeasurementErrorXy { get; set; } = 20.0f;
 
-    [ConfigEntry] private static float InitialCovarianceW { get; set; } = 100.0f;
-    [ConfigEntry] private static float ModelErrorW { get; set; } = 0.1f;
-    [ConfigEntry] private static float MeasurementErrorW { get; set; } = 2.0f;
+    [ConfigEntry] private static partial float InitialCovarianceW { get; set; } = 100.0f;
+    [ConfigEntry] private static partial float ModelErrorW { get; set; } = 0.1f;
+    [ConfigEntry] private static partial float MeasurementErrorW { get; set; } = 2.0f;
 
     [ConfigEntry("Maximum assumed robot speed in [mm/s] to filter outliers")]
-    private static float MaxLinearVelocity { get; set; } = 6000.0f;
+    private static partial float MaxLinearVelocity { get; set; } = 6000.0f;
 
     [ConfigEntry("Maximum assumed angular robot speed in [deg/s] to filter outliers")]
-    private static float MaxAngularVelocity { get; set; } = 1700f;
+    private static partial float MaxAngularVelocity { get; set; } = 1700f;
 
     [ConfigEntry("Reciprocal health is used as uncertainty, increased on update, decreased on prediction")]
-    private static int MaxHealth { get; set; } = 20;
+    private static partial int MaxHealth { get; set; } = 20;
 
     public Filter2D FilterXy { get; }
     public Filter1D FilterW { get; }

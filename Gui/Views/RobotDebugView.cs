@@ -20,16 +20,16 @@ public sealed partial class RobotDebugView : IDisposable
     private const float MaxGamepadDribblerSpeed = 12.0f;
 
     [ConfigEntry("Command port for the robot", StorageType.User)]
-    private static int CommandPort { get; set; } = 5671;
+    private static partial int CommandPort { get; set; } = 5671;
 
     [ConfigEntry("Use the first connected gamepad to drive the selected robot from Robot Debug", StorageType.User)]
-    private static bool UseGamepadControl { get; set; } = false;
+    private static partial bool UseGamepadControl { get; set; } = false;
 
     [ConfigEntry("Left-stick full-scale robot speed in m/s", StorageType.User)]
-    private static float GamepadMaxSpeed { get; set; } = 2.5f;
+    private static partial float GamepadMaxSpeed { get; set; } = 2.5f;
 
     [ConfigEntry("Stick deadzone for robot debug gamepad control", StorageType.User)]
-    private static float GamepadDeadzone { get; set; } = 0.18f;
+    private static partial float GamepadDeadzone { get; set; } = 0.18f;
 
     private readonly Subscriber<IReadOnlyList<DiscoveredRobot>> _discoverySubscriber;
     private readonly Subscriber<StatusUpdate> _statusSubscriber;

@@ -9,10 +9,10 @@ namespace Tyr.Common.Debug.Logging;
 public static partial class Logging
 {
     [ConfigEntry("The level logs are filtered at the source. Anything below this will be rejected on the log call.")]
-    private static LogLevel Level { get; set; } = LogLevel.Debug;
+    private static partial LogLevel Level { get; set; } = LogLevel.Debug;
 
     [ConfigEntry("The minimum level written to the console/stdout sink. Anything below this will still be available to other log sinks.")]
-    private static LogLevel ConsoleLevel { get; set; } = LogLevel.Information;
+    private static partial LogLevel ConsoleLevel { get; set; } = LogLevel.Information;
 
     static Logging()
     {

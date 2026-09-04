@@ -7,7 +7,7 @@ namespace Tyr.Vision.Util;
 public partial class KickValidator
 {
     [ConfigEntry("Minimum required ball velocity [mm/s]")]
-    private static double MinVelocity { get; set; } = 600.0;
+    private static partial double MinVelocity { get; set; } = 600.0;
 
     private bool VelocityValidator()
     {
