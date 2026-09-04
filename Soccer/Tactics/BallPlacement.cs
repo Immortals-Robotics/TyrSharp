@@ -21,7 +21,6 @@ public partial class BallPlacement : ITactic
     {
         Idle,
         KissInit,
-        KissTouch,
         Kissing,
         Stuck,
         LongDistance,
@@ -34,9 +33,10 @@ public partial class BallPlacement : ITactic
 
     private readonly Fsm<State> _fsm;
 
-    // Shared data that needs to be persisted across states but is calculated deterministically
-    private Vector2 _ballPlacer1FinalPos;
-    private Vector2 _ballPlacer2FinalPos;
+    // Shared data that needs to be persisted across states but is calculated deterministically.
+    // Null until Kissing/KissingDone has computed them; Done falls back to a retreat from the current position.
+    private Vector2? _ballPlacer1FinalPos;
+    private Vector2? _ballPlacer2FinalPos;
     private bool _forceStuck;
 
     public BallPlacement(Robot.Robot robot, int placerId)
@@ -48,7 +48,6 @@ public partial class BallPlacement : ITactic
 
         _fsm.AddState(new IdleState(this));
         _fsm.AddState(new KissInitState(this));
-        _fsm.AddState(new KissTouchState(this));
         _fsm.AddState(new KissingState(this));
         _fsm.AddState(new StuckState(this));
         _fsm.AddState(new LongDistanceState(this));
@@ -76,10 +75,6 @@ public partial class BallPlacement : ITactic
         _fsm.AddTransition(State.KissInit, State.Kissing, () => AreRobotsAtKissPoints(BPKissInitDistance),
             BPStateDelay);
 
-        // KissTouch transitions
-        _fsm.AddTransition(State.KissTouch, State.Idle, () => Context.Ball.State.Velocity.Length() >= 100f);
-        _fsm.AddTransition(State.KissTouch, State.Kissing, () => AreRobotsAtKissPoints(75f), BPStateDelay);
-
         // Kissing transitions
         _fsm.AddTransition(State.Kissing, State.Idle, () => IsPlaceBallLost());
         _fsm.AddTransition(State.Kissing, State.KissingDone, () =>
@@ -87,6 +82,7 @@ public partial class BallPlacement : ITactic
             var finalBallPos = Context.Referee.DesignatedPosition();
             var ballPlacer1 = GetPlacer(1);
             var ballPlacer2 = GetPlacer(2);
+            if (ballPlacer1 == null || ballPlacer2 == null) return false;
             var middle = (ballPlacer1.Position + ballPlacer2.Position) / 2.0f;
             return Vector2.Distance(middle, finalBallPos) < 100f;
         }, BPStateDelay);
@@ -105,22 +101,19 @@ public partial class BallPlacement : ITactic
         {
             var ballPlacer1 = GetPlacer(1);
             var ballPlacer2 = GetPlacer(2);
-            return ballPlacer1 != null && Vector2.Distance(ballPlacer1.Position, _ballPlacer1FinalPos) < 20f &&
-                   ballPlacer2 != null && Vector2.Distance(ballPlacer2.Position, _ballPlacer2FinalPos) < 20f;
+            return ballPlacer1 != null && _ballPlacer1FinalPos.HasValue &&
+                   Vector2.Distance(ballPlacer1.Position, _ballPlacer1FinalPos.Value) < 20f &&
+                   ballPlacer2 != null && _ballPlacer2FinalPos.HasValue &&
+                   Vector2.Distance(ballPlacer2.Position, _ballPlacer2FinalPos.Value) < 20f;
         }, BPStateDelay);
 
-        // Done transitions
+        // Done transitions: re-place only if the ball is still visible and has drifted off the designated position
         _fsm.AddTransition(State.Done, State.Idle, () =>
         {
-            var ballPlacer1 = GetPlacer(1);
-            var ballPlacer2 = GetPlacer(2);
-            var now = Timestamp.Now;
             var finalBallPos = Context.Referee.DesignatedPosition();
-
-            return (now - Context.Ball.LastVisibleTimestamp < DeltaTime.FromSeconds(1) &&
-                    Vector2.Distance(Context.Ball.State.Position, finalBallPos) > 80.0) || ballPlacer1 != null &&
-                Vector2.Distance(ballPlacer1.Position, _ballPlacer1FinalPos) < 20f &&
-                ballPlacer2 != null && Vector2.Distance(ballPlacer2.Position, _ballPlacer2FinalPos) < 20f;
+            var ballRecentlySeen = Context.Time - Context.Ball.LastVisibleTimestamp < DeltaTime.FromSeconds(1);
+            var ballOffTarget = Vector2.Distance(Context.Ball.State.Position, finalBallPos) > 80.0f;
+            return ballRecentlySeen && ballOffTarget;
         }, BPStateDelay);
     }
 
@@ -131,6 +124,20 @@ public partial class BallPlacement : ITactic
     }
 
     private static Robot.Robot? GetPlacer(int id) => Context.FindAssignedRobot<Role.BallPlacer>(p => p.PlacerId == id);
+
+    // Where a placer should back off to once the ball is placed, along the ray from the ball through `from`.
+    private static Vector2 RetreatPosition(int placerId, Vector2 finalBallPos, Vector2 from)
+    {
+        var away = from - finalBallPos;
+        var dir = away.LengthSquared() > 1f ? Vector2.Normalize(away) : Vector2.UnitX;
+        return finalBallPos + dir * (placerId == 1 ? 600.0f : 800.0f);
+    }
+
+    private Vector2 FinalPosition(Vector2 finalBallPos)
+    {
+        var stored = PlacerId == 1 ? _ballPlacer1FinalPos : _ballPlacer2FinalPos;
+        return stored ?? RetreatPosition(PlacerId, finalBallPos, Robot.Position);
+    }
 
     private static bool IsPlaceBallLost()
     {
@@ -267,32 +274,6 @@ public partial class BallPlacement : ITactic
         }
     }
 
-    private sealed class KissTouchState(BallPlacement tactic) : IState<State>
-    {
-        public State Type => State.KissTouch;
-
-        public void Enter()
-        {
-        }
-
-        public void Exit()
-        {
-        }
-
-        public ISkill? Tick()
-        {
-            GenerateKissPoints(75f, out var ballPlacer1Pos, out var ballPlacer2Pos);
-            var target = tactic.PlacerId == 1 ? ballPlacer1Pos : ballPlacer2Pos;
-            tactic.Robot.Face(Context.Ball.State.Position);
-            return new GoToPoint
-            {
-                Target = target,
-                VelocityProfile = VelocityProfile.Sooski,
-                NavigationFlags = NavigationFlags.NoObstacles
-            };
-        }
-    }
-
     private sealed class KissingState(BallPlacement tactic) : IState<State>
     {
         public State Type => State.Kissing;
@@ -311,20 +292,16 @@ public partial class BallPlacement : ITactic
             var ballPlacer1 = GetPlacer(1);
             var ballPlacer2 = GetPlacer(2);
 
-            var direction = Vector2.Normalize((ballPlacer1.Position + ballPlacer2.Position) / 2.0f - finalBallPos);
-
-            if (ballPlacer1 != null && ballPlacer2 != null)
+            if (ballPlacer1 == null || ballPlacer2 == null)
             {
-                //var direction = Vector2.Normalize((ballPlacer1.Position + ballPlacer2.Position) / 2.0f - finalBallPos);
-                tactic._ballPlacer2FinalPos = finalBallPos +
-                                              direction *
-                                              BPKissInitDistance;
-                tactic._ballPlacer1FinalPos = finalBallPos -
-                                              direction *
-                                              BPKissInitDistance;
+                tactic.Robot.Halt();
+                return null;
             }
 
-            //var axis = Vector2.Normalize((ballPlacer1?.Position ?? tactic.Robot.Position) - finalBallPos);
+            var direction = Vector2.Normalize((ballPlacer1.Position + ballPlacer2.Position) / 2.0f - finalBallPos);
+            tactic._ballPlacer2FinalPos = finalBallPos + direction * BPKissInitDistance;
+            tactic._ballPlacer1FinalPos = finalBallPos - direction * BPKissInitDistance;
+
             var kissTouch2 = finalBallPos + direction * 75f;
             var kissTouch1 = finalBallPos - direction * 75f;
             return new GoToPoint
@@ -339,12 +316,10 @@ public partial class BallPlacement : ITactic
     private sealed class StuckState(BallPlacement tactic) : IState<State>
     {
         public State Type => State.Stuck;
-        public Timestamp? EnterTime { get; set; }
         private CircleBall? _circleBall;
 
         public void Enter()
         {
-            EnterTime = Context.Time;
             _circleBall = null;
         }
 
@@ -356,7 +331,6 @@ public partial class BallPlacement : ITactic
         public ISkill? Tick()
         {
             var ballPos = Context.Ball.State.Position;
-            var timeInState = Context.Time - (EnterTime ?? Context.Time);
 
             if (Context.Ball.State.Velocity.Length() > 20.0f)
             {
@@ -365,33 +339,21 @@ public partial class BallPlacement : ITactic
 
             if (tactic.PlacerId == 2)
             {
-                if (false && timeInState.Seconds >= 1.6f) // 100 frames
+                CalcMinBallWallDist(out var wallPt);
+                var targetAngle = (ballPos - wallPt).ToAngle() + Angle.FromDeg(60f);
+                _circleBall ??= new CircleBall(tactic.Robot)
                 {
-                    CalcMinBallWallDist(out var wallPt);
-                    var esc = ballPos + Vector2.Normalize(ballPos - wallPt) * 1000f;
-                    tactic.Robot.TargetAngle = esc.AngleWith(ballPos);
-                    return new GoToPoint { Target = esc, NavigationFlags = NavigationFlags.NoObstacles };
-                }
-                else
-                {
-                    CalcMinBallWallDist(out var wallPt);
-                    var targetAngle = (ballPos - wallPt).ToAngle() + Angle.FromDeg(60f);
-                    _circleBall ??= new CircleBall(tactic.Robot)
-                    {
-                        TargetAngle = targetAngle
-                    };
-                    _circleBall.TargetAngle = targetAngle;
-                    _circleBall.ShootPower = 3000f;
-                    _circleBall.ChipPower = 0f;
-                    return _circleBall.Tick();
-                }
+                    TargetAngle = targetAngle
+                };
+                _circleBall.TargetAngle = targetAngle;
+                _circleBall.ShootPower = 3000f;
+                _circleBall.ChipPower = 0f;
+                return _circleBall.Tick();
             }
-            else
-            {
-                tactic.Robot.TargetAngle = tactic.Robot.Position.AngleWith(ballPos);
-                tactic.Robot.Halt();
-                return null;
-            }
+
+            tactic.Robot.TargetAngle = tactic.Robot.Position.AngleWith(ballPos);
+            tactic.Robot.Halt();
+            return null;
         }
     }
 
@@ -458,13 +420,11 @@ public partial class BallPlacement : ITactic
             var ballPlacer2 = GetPlacer(2);
             if (ballPlacer1 != null && ballPlacer2 != null)
             {
-                tactic._ballPlacer1FinalPos =
-                    finalBallPos + Vector2.Normalize(ballPlacer1.Position - finalBallPos) * 600.0f;
-                tactic._ballPlacer2FinalPos =
-                    finalBallPos + Vector2.Normalize(ballPlacer2.Position - finalBallPos) * 800.0f;
+                tactic._ballPlacer1FinalPos = RetreatPosition(1, finalBallPos, ballPlacer1.Position);
+                tactic._ballPlacer2FinalPos = RetreatPosition(2, finalBallPos, ballPlacer2.Position);
             }
 
-            var fTarget = tactic.PlacerId == 1 ? tactic._ballPlacer1FinalPos : tactic._ballPlacer2FinalPos;
+            var fTarget = tactic.FinalPosition(finalBallPos);
             tactic.Robot.TargetAngle = fTarget.AngleWith(finalBallPos);
             return new GoToPoint
             {
@@ -490,7 +450,7 @@ public partial class BallPlacement : ITactic
         public ISkill? Tick()
         {
             var finalBallPos = Context.Referee.DesignatedPosition();
-            var fTarget = tactic.PlacerId == 1 ? tactic._ballPlacer1FinalPos : tactic._ballPlacer2FinalPos;
+            var fTarget = tactic.FinalPosition(finalBallPos);
             tactic.Robot.Face(finalBallPos);
             return new GoToPoint
             {
