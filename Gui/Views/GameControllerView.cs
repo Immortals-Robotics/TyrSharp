@@ -250,9 +250,9 @@ public sealed partial class GameControllerView : IDisposable
 
         if (_apiClient.State == GcApiClient.ConnectionState.Connecting) return;
 
-        _apiClient.Connect("localhost", WebUiPort);
-        _rconYellow.Connect("localhost", RemoteControlPort, TeamColor.Yellow);
-        _rconBlue.Connect("localhost", RemoteControlPort, TeamColor.Blue);
+        _apiClient.Connect(GameControllerHost, WebUiPort);
+        _rconYellow.Connect(GameControllerHost, RemoteControlPort, TeamColor.Yellow);
+        _rconBlue.Connect(GameControllerHost, RemoteControlPort, TeamColor.Blue);
     }
 
     // ── Referee tab ───────────────────────────────────────────────────────────
