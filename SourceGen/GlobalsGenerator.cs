@@ -62,7 +62,7 @@ public class GlobalsGenerator : IIncrementalGenerator
                              private static bool UseCachedInstance => CallingModuleName == null || CallingModuleName == ModuleName;
 
                              internal static ILogger Log => UseCachedInstance ? _log : Common.Debug.Registry.GetLogger(CallingModuleName!);
-                             internal static Common.Debug.Assertion.AssertProxy Assert => new(_assert, _assertResolver);
+                             internal static Common.Debug.Assertion.AssertProxy Assert => new(_assertResolver);
                              internal static Common.Debug.Drawing.Drawer Draw => UseCachedInstance ? _draw : Common.Debug.Registry.GetDrawer(CallingModuleName!);
                              internal static Common.Debug.Plotting.Plotter Plot => UseCachedInstance ? _plot : Common.Debug.Registry.GetPlotter(CallingModuleName!);
                              internal static Random Rand { get; private set; } = null!;
