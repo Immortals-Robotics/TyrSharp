@@ -28,9 +28,22 @@ public static class DebugTypeRegistry
     }
 #pragma warning restore CA2255
 
+    // Called on every publish, so the per-type work must happen once: the generic static
+    // initializer runs exactly once per T and reading it afterwards is a plain field load.
     public static void Register<T>() where T : struct, IEntry
     {
-        Register(typeof(T));
+        _ = Registered<T>.Done;
+    }
+
+    private static class Registered<T> where T : struct, IEntry
+    {
+        public static readonly bool Done = RegisterOnce();
+
+        private static bool RegisterOnce()
+        {
+            Register(typeof(T));
+            return true;
+        }
     }
 
     public static void Register(Type type)
