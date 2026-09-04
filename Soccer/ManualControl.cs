@@ -370,8 +370,6 @@ internal sealed class ManualControlState(TeamColor team)
                 return;
 
             case ManualSkillAction.InterceptBall:
-                _interceptBall.Angle = Context.Ball.State.Velocity.Xy().ToAngle();
-                _interceptBall.WaitTimeSeconds = 0f;
                 _interceptBall.Execute(robot);
                 return;
 

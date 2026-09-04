@@ -18,8 +18,6 @@ public sealed partial class InterceptBall : ISkill
     [ConfigEntry("Default fallback distance from ball toward our goal when no interception solution is available [mm]")]
     private static float DefaultFallbackDistanceMm { get; set; } = 500f;
 
-    public Angle Angle { get; set; }
-    public float WaitTimeSeconds { get; set; }
     public Vector2? FallbackPoint { get; set; }
 
     private BallInterception.InterceptPlan? _lastPlan;
