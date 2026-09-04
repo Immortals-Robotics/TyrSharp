@@ -198,8 +198,8 @@ public partial class Ai
 
             if (currentRole == null || !currentRole.Equals(newRole))
             {
-                Log.ZLogInformation(
-                    $"Switching robot {robot.Id}'s role fro {currentRole?.GetType().Name} to {newRole?.GetType().Name}");
+                Log.ZLogDebug(
+                    $"Switching robot {robot.Id}'s role from {currentRole?.GetType().Name} to {newRole.GetType().Name}");
                 _tacticMapping[robot.Id] = newRole?.CreateTactic(robot);
             }
         }
