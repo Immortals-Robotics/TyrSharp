@@ -47,6 +47,7 @@ public sealed class DebugDbIngest : IDisposable
     private readonly Lock _drainsLock = new();
     private readonly HashSet<Type> _drainedTypes = [];
     private IDrain[] _drains = [];
+    private readonly List<Frame> _pendingFrames = [];
     private bool _disposed;
 
     /// <summary>Raised on the pumping thread for every frame ingested.</summary>
@@ -60,17 +61,37 @@ public sealed class DebugDbIngest : IDisposable
 
     private void OnTypeRegistered(Type type)
     {
-        // Claim the type first, then subscribe outside the lock: subscribing runs the
-        // channel's static constructor, which itself registers the type and re-enters here
-        // (possibly from another thread), so it must not have to wait on our lock.
+        // Claim the type and open its buckets under the lock (so neither can happen after
+        // Dispose), but subscribe outside it: subscribing runs the channel's static
+        // constructor, which itself registers the type and re-enters here, possibly from
+        // another thread, so it must never have to wait on our lock.
         lock (_drainsLock)
         {
             if (_disposed || !_drainedTypes.Add(type))
                 return;
+
+            try
+            {
+                _db.RegisterType(type);
+            }
+            catch
+            {
+                _drainedTypes.Remove(type);
+                throw;
+            }
         }
 
-        _db.RegisterType(type);
-        var drain = (IDrain)CreateDrainMethod.MakeGenericMethod(type).Invoke(null, null)!;
+        IDrain drain;
+        try
+        {
+            drain = (IDrain)CreateDrainMethod.MakeGenericMethod(type).Invoke(null, null)!;
+        }
+        catch
+        {
+            lock (_drainsLock)
+                _drainedTypes.Remove(type);
+            throw;
+        }
 
         lock (_drainsLock)
         {
@@ -93,25 +114,42 @@ public sealed class DebugDbIngest : IDisposable
     /// <summary>
     /// Ingests up to <paramref name="budget"/> items per source. Returns true when anything
     /// was ingested, so the caller knows whether to sleep.
+    ///
+    /// A frame closes the previous frame's time window for readers, so a frame must never
+    /// become visible before the entries published ahead of it. Entries and frames travel
+    /// on separate channels, so: take the frames queued now, drain every entry channel, and
+    /// only then append the taken frames, and only once every entry channel ran empty
+    /// (otherwise they stay pending until a later pump drains the backlog).
     /// </summary>
     public bool Pump(int budget = 1000)
     {
-        var any = false;
-
         var frames = _frames.Reader;
-        var frameCount = 0;
-        while (frameCount < budget && frames.TryRead(out var frame))
+        var taken = 0;
+        while (taken < budget && frames.TryRead(out var frame))
+        {
+            _pendingFrames.Add(frame);
+            taken++;
+        }
+
+        var any = taken > 0;
+        var drainedEverything = true;
+        foreach (var drain in Volatile.Read(ref _drains))
+        {
+            var count = drain.Pump(_db, budget);
+            any |= count > 0;
+            drainedEverything &= count < budget;
+        }
+
+        if (!drainedEverything)
+            return any;
+
+        foreach (var frame in _pendingFrames)
         {
             _db.AppendFrame(frame);
             FrameIngested?.Invoke(frame);
-            frameCount++;
         }
 
-        any |= frameCount > 0;
-
-        foreach (var drain in Volatile.Read(ref _drains))
-            any |= drain.Pump(_db, budget) > 0;
-
+        _pendingFrames.Clear();
         return any;
     }
 

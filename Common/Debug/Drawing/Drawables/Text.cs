@@ -7,7 +7,7 @@ namespace Tyr.Common.Debug.Drawing.Drawables;
 public partial record struct Text : IEntry
 {
     [MemoryPackIgnore] public Time.Timestamp Timestamp { get; set; }
-    [MemoryPackIgnore] public Meta Meta { get; set; }
+    [MemoryPackIgnore] public Meta Meta { get; set; } = Meta.Empty;
     [MemoryPackIgnore] public string? ShardKey => null;
 
     public required string Content { get; init; }

@@ -77,7 +77,20 @@ public static class DebugTypeRegistry
         if (!Types.TryAdd(type, 0))
             return;
 
-        Volatile.Read(ref _registered)?.Invoke(type);
+        var handlers = Volatile.Read(ref _registered);
+        if (handlers is null)
+            return;
+
+        // Register runs inside the publisher's channel type initializer; an exception here
+        // would leave that channel permanently unusable, so listeners' failures stay here.
+        try
+        {
+            handlers(type);
+        }
+        catch (Exception ex)
+        {
+            Log.ZLogError(ex, $"Debug type registration listener failed for {type.FullName}");
+        }
     }
 
     public static IReadOnlyList<Type> GetRegisteredTypes()

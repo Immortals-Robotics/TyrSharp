@@ -11,6 +11,10 @@ public static class DebugBus
 {
     private static class Channel<T> where T : struct, IEntry
     {
+        // Instance must be initialized before the static constructor body runs: registering
+        // the type notifies listeners (the dumper), which subscribe to this very channel from
+        // inside the notification, re-entering this class while it is still initializing.
+        // Field initializers run first, so Instance is already set by then. Keep it that way.
         public static readonly BroadcastChannel<T> Instance = new();
 
         static Channel()

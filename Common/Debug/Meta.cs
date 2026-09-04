@@ -47,9 +47,6 @@ public sealed class Meta
     private static readonly ConcurrentDictionary<Key, Meta> Cache = [];
     private static int _nextId = -1;
 
-    /// <summary>Number of distinct metas created so far; every <see cref="Id"/> is below this.</summary>
-    public static int Count => Volatile.Read(ref _nextId) + 1;
-
     public static Meta GetOrCreate(
         string module, string? layer = null,
         string? file = null, string? member = null, int line = 0, string? expression = null)

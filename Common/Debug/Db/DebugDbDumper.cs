@@ -62,6 +62,11 @@ public sealed partial class DebugDbDumper : IDisposable
     {
         _runner.Stop();
 
+        // Save the tail of the session: whatever was published since the last tick.
+        while (_ingest.Pump(int.MaxValue))
+        {
+        }
+
         _ingest.Dispose();
         _viewer.Dispose();
         _db.Dispose();

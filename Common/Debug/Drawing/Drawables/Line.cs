@@ -8,7 +8,7 @@ namespace Tyr.Common.Debug.Drawing.Drawables;
 public partial record struct Line : IEntry
 {
     [MemoryPackIgnore] public Time.Timestamp Timestamp { get; set; }
-    [MemoryPackIgnore] public Meta Meta { get; set; }
+    [MemoryPackIgnore] public Meta Meta { get; set; } = Meta.Empty;
     [MemoryPackIgnore] public string? ShardKey => null;
 
     public Vector2 Point { get; init; }

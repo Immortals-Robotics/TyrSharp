@@ -34,8 +34,9 @@ public sealed class DebugDb : IDebugDb
 
     // Source location id → resolved Meta / module id. Filled by the interning path and
     // lazily by queries; Meta instances are interned so a racing double-resolve is benign.
-    private readonly Meta?[] _metaBySourceId = new Meta?[MappedSourceLocationTable.MaxLocations];
-    private readonly int[] _moduleIdBySourceId = new int[MappedSourceLocationTable.MaxLocations];
+    // Both grow together under _internLock and are published before _sourceIdByMeta.
+    private Meta?[] _metaBySourceId = new Meta?[256];
+    private int[] _moduleIdBySourceId = new int[256];
 
     private readonly ConcurrentDictionary<int, ModuleFrameIndex> _frameIndices = new();
     private readonly Lock _internLock = new();
@@ -113,9 +114,12 @@ public sealed class DebugDb : IDebugDb
 
     public void Append<T>(T entry) where T : struct, IEntry
     {
-        var meta = entry.Meta ?? Meta.Empty;
-        var sourceId = GetSourceId(meta);
-        var moduleId = _moduleIdBySourceId[sourceId];
+        // A default-constructed entry has no Meta; normalize once so the shard, the
+        // journal, and anything reading the entry back all see the same thing.
+        entry.Meta ??= Meta.Empty;
+
+        var sourceId = GetSourceId(entry.Meta);
+        var moduleId = Volatile.Read(ref _moduleIdBySourceId)[sourceId];
         var shardKeyId = GetShardKeyId(entry.ShardKey);
 
         var shard = GetOrCreateBucketSet(typeof(T))
@@ -157,9 +161,7 @@ public sealed class DebugDb : IDebugDb
 
             var sourceId = _sources.Intern(meta, _strings);
             var moduleId = _sources.GetInternal(sourceId).ModuleId;
-            _moduleIdBySourceId[sourceId] = moduleId;
-            Volatile.Write(ref _metaBySourceId[sourceId], meta);
-            AddModule(moduleId);
+            StoreSource(sourceId, meta, moduleId);
 
             if (meta.Id >= table.Length)
             {
@@ -172,6 +174,30 @@ public sealed class DebugDb : IDebugDb
             Volatile.Write(ref _sourceIdByMeta, table);
             return sourceId;
         }
+    }
+
+    // Must be called under _internLock. Publishes the per-source tables before returning,
+    // so a reader that later finds sourceId through _sourceIdByMeta sees both entries.
+    private void StoreSource(int sourceId, Meta meta, int moduleId)
+    {
+        var metas = _metaBySourceId;
+        var modules = _moduleIdBySourceId;
+        if (sourceId >= metas.Length)
+        {
+            var size = System.Math.Max(metas.Length * 2, sourceId + 1);
+            var grownMetas = new Meta?[size];
+            var grownModules = new int[size];
+            Array.Copy(metas, grownMetas, metas.Length);
+            Array.Copy(modules, grownModules, modules.Length);
+            metas = grownMetas;
+            modules = grownModules;
+        }
+
+        modules[sourceId] = moduleId;
+        metas[sourceId] = meta;
+        Volatile.Write(ref _moduleIdBySourceId, modules);
+        Volatile.Write(ref _metaBySourceId, metas);
+        AddModule(moduleId);
     }
 
     private int GetShardKeyId(string? shardKey)
@@ -189,17 +215,16 @@ public sealed class DebugDb : IDebugDb
     /// <summary>Meta for a persisted source location id, resolving and caching it on first use.</summary>
     private Meta ResolveMeta(int sourceId)
     {
-        var meta = Volatile.Read(ref _metaBySourceId[sourceId]);
-        if (meta is not null)
-            return meta;
+        var metas = Volatile.Read(ref _metaBySourceId);
+        if ((uint)sourceId < (uint)metas.Length && metas[sourceId] is { } cached)
+            return cached;
 
-        meta = _sources.Get(sourceId, _strings);
+        var meta = _sources.Get(sourceId, _strings);
         var moduleId = _sources.GetInternal(sourceId).ModuleId;
 
         lock (_internLock)
         {
-            _moduleIdBySourceId[sourceId] = moduleId;
-            AddModule(moduleId);
+            StoreSource(sourceId, meta, moduleId);
 
             var table = _sourceIdByMeta;
             if (meta.Id >= table.Length)
@@ -213,7 +238,6 @@ public sealed class DebugDb : IDebugDb
                 table[meta.Id] = sourceId;
 
             Volatile.Write(ref _sourceIdByMeta, table);
-            Volatile.Write(ref _metaBySourceId[sourceId], meta);
         }
 
         return meta;
@@ -342,6 +366,7 @@ public sealed class DebugDb : IDebugDb
 
     private struct ShardMatch
     {
+        public Bucket Bucket;
         public BucketView View;
         public Meta Meta;
         public int Index;
@@ -398,7 +423,8 @@ public sealed class DebugDb : IDebugDb
                 if (metaFilter is not null && !metaFilter(meta))
                     continue;
 
-                var view = shard.Bucket.View;
+                var bucket = shard.Bucket;
+                var view = bucket.View;
                 var count = view.RecordCount;
                 var lo = view.LowerBound(t0, count);
                 var hi = view.UpperBound(t1, count);
@@ -407,6 +433,7 @@ public sealed class DebugDb : IDebugDb
 
                 matches[matchCount++] = new ShardMatch
                 {
+                    Bucket = bucket,
                     View = view,
                     Meta = meta,
                     Index = lo,
@@ -440,7 +467,7 @@ public sealed class DebugDb : IDebugDb
                         lastBucket = bucket;
                     }
 
-                    if (TryDeserialize(record, match.View, match.Meta, out T entry))
+                    if (TryDeserialize(record, match.View, match.Bucket, match.Meta, out T entry))
                     {
                         destination.Add(entry);
                         added++;
@@ -467,7 +494,7 @@ public sealed class DebugDb : IDebugDb
                     lastBucket = bucket;
                 }
 
-                if (TryDeserialize(record, match.View, match.Meta, out T entry))
+                if (TryDeserialize(record, match.View, match.Bucket, match.Meta, out T entry))
                 {
                     destination.Add(entry);
                     added++;
@@ -544,13 +571,20 @@ public sealed class DebugDb : IDebugDb
         }
     }
 
-    private static bool TryDeserialize<T>(in InternalRecord record, BucketView view, Meta meta, out T entry) where T : struct, IEntry
+    private static bool TryDeserialize<T>(in InternalRecord record, BucketView view, Bucket bucket, Meta meta, out T entry) where T : struct, IEntry
     {
         if (!view.TryGetBlob(record, out var blob))
         {
-            Trace.WriteLine($"DebugDb warning: {typeof(T).FullName} record at timestamp {record.Timestamp} points outside its blob file. Skipping.");
-            entry = default;
-            return false;
+            // The records and blobs files grow independently, so a view taken before a
+            // blobs-only growth can address a record whose blob lies past its own blob
+            // mapping. Record indices are stable across views; retry on the current one.
+            var current = bucket.View;
+            if (ReferenceEquals(current, view) || !current.TryGetBlob(record, out blob))
+            {
+                Trace.WriteLine($"DebugDb warning: {typeof(T).FullName} record at timestamp {record.Timestamp} points outside its blob file. Skipping.");
+                entry = default;
+                return false;
+            }
         }
 
         try
