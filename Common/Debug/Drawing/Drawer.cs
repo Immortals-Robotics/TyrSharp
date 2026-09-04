@@ -1,4 +1,3 @@
-using System.Collections.Concurrent;
 using System.Runtime.CompilerServices;
 using Cysharp.Text;
 using Tyr.Common.Data;
@@ -13,61 +12,54 @@ using Vector2 = System.Numerics.Vector2;
 
 namespace Tyr.Common.Debug.Drawing;
 
-public sealed class Drawer(string module) : IDisposable
+/// <summary>
+/// Draw entry point for one calling module. Instances are shared by every thread that
+/// resolves to the same module name (including per-robot navigation tasks), so the draw
+/// methods must stay stateless; only the BeginLayer/EndLayer scope is per-instance state.
+/// </summary>
+public sealed class Drawer(string module)
 {
     private string? _layer;
 
-    private Utf16ValueStringBuilder _stringBuilder = ZString.CreateStringBuilder();
-    private readonly ConcurrentDictionary<int, string> _expressionCache = new();
-
-    private string InternExpression(ReadOnlySpan<char> span)
-    {
-        var hashCode = string.GetHashCode(span);
-
-        return _expressionCache.TryGetValue(hashCode, out var existing)
-            ? existing
-            : _expressionCache.GetOrAdd(hashCode, string.Intern(new string(span)));
-    }
-
-    private string MakeExpression(
+    private static string MakeExpression(
         string name1, string? expression1,
         string name2, string? expression2)
     {
-        _stringBuilder.Clear();
-        _stringBuilder.AppendFormat("{0}: {1}, {2}: {3}",
+        using var builder = ZString.CreateStringBuilder();
+        builder.AppendFormat("{0}: {1}, {2}: {3}",
             name1, expression1,
             name2, expression2);
-        return InternExpression(_stringBuilder.AsSpan());
+        return InternedStringCache.GetOrAdd(builder.AsSpan());
     }
 
-    private string MakeExpression(
+    private static string MakeExpression(
         string name1, string? expression1,
         string name2, string? expression2,
         string name3, string? expression3)
     {
-        _stringBuilder.Clear();
-        _stringBuilder.AppendFormat("{0}: {1}, {2}: {3}, {4}: {5}",
+        using var builder = ZString.CreateStringBuilder();
+        builder.AppendFormat("{0}: {1}, {2}: {3}, {4}: {5}",
             name1, expression1,
             name2, expression2,
             name3, expression3);
-        return InternExpression(_stringBuilder.AsSpan());
+        return InternedStringCache.GetOrAdd(builder.AsSpan());
     }
 
-    private string MakeExpression(
+    private static string MakeExpression(
         string name1, string? expression1,
         string name2, string? expression2,
         string name3, string? expression3,
         string name4, string? expression4,
         string name5, string? expression5)
     {
-        _stringBuilder.Clear();
-        _stringBuilder.AppendFormat("{0}: {1}, {2}: {3}, {4}: {5}, {6}: {7}, {8}: {9}",
+        using var builder = ZString.CreateStringBuilder();
+        builder.AppendFormat("{0}: {1}, {2}: {3}, {4}: {5}, {6}: {7}, {8}: {9}",
             name1, expression1,
             name2, expression2,
             name3, expression3,
             name4, expression4,
             name5, expression5);
-        return InternExpression(_stringBuilder.AsSpan());
+        return InternedStringCache.GetOrAdd(builder.AsSpan());
     }
 
     private void Draw<T>(T entry,
@@ -473,10 +465,5 @@ public sealed class Drawer(string module) : IDisposable
             nameof(size), sizeExpression);
 
         Draw(text, member, file, line, expression, layer ?? _layer);
-    }
-
-    public void Dispose()
-    {
-        _stringBuilder.Dispose();
     }
 }

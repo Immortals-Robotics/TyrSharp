@@ -27,8 +27,8 @@ public ref struct InternedStringHandler
     public void AppendFormatted(string? value) => _builder.Append(value ?? string.Empty);
 
     /// <summary>
-    /// Returns a permanently interned string for the built content, then disposes the pooled buffer.
-    /// Uses a hash-keyed cache to skip allocation on repeated calls with the same content.
+    /// Returns a permanently cached string for the built content, then disposes the pooled buffer.
+    /// Repeated calls with the same content return the same instance without allocating.
     /// </summary>
     internal string ToInternedString()
     {
@@ -39,21 +39,29 @@ public ref struct InternedStringHandler
     }
 }
 
+/// <summary>
+/// Process-wide cache that maps string content to a single permanent instance.
+/// Entries are never evicted, so only feed it strings from a bounded vocabulary
+/// (plot ids, draw expressions, log messages).
+/// </summary>
 internal static class InternedStringCache
 {
-    private static readonly ConcurrentDictionary<int, string> Cache = new();
+    private static readonly ConcurrentDictionary<string, string> Cache = new();
+
+    private static readonly ConcurrentDictionary<string, string>.AlternateLookup<ReadOnlySpan<char>> SpanLookup =
+        Cache.GetAlternateLookup<ReadOnlySpan<char>>();
 
     /// <summary>
-    /// Returns a cached interned string for <paramref name="span"/>.
+    /// Returns the cached instance whose content equals <paramref name="span"/>.
     /// Allocates only on the first call per unique content.
-    /// Note: uses hash-only keying (same trade-off as <see cref="Drawing.Drawer"/>).
     /// </summary>
     public static string GetOrAdd(ReadOnlySpan<char> span)
     {
-        var hash = string.GetHashCode(span);
-        if (Cache.TryGetValue(hash, out var existing))
+        if (SpanLookup.TryGetValue(span, out var existing))
             return existing;
-        return Cache.GetOrAdd(hash, string.Intern(new string(span)));
+
+        var created = new string(span);
+        return Cache.GetOrAdd(created, created);
     }
 
     /// <summary>

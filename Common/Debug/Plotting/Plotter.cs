@@ -18,8 +18,8 @@ public class Plotter(string module)
     {
         var meta = Meta.GetOrCreate(module, layer, file, member, line, expression);
 
-        id = string.Intern(id);
-        
+        id = InternedStringCache.GetOrAdd(id);
+
         var command = new Command
         {
             Value = PlotValue.From(value),
