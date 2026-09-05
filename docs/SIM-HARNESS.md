@@ -209,3 +209,8 @@ Get-Content run.log | ? { $_ -match '\| (Warning|Error) \|' } | % { ($_ -replace
 - `ball-placement-already-placed` confirms the Group 1 `BallPlacement` fix: with the ball already on
   the designated position the two placers back off to ~650 mm and ~800 mm from it and the ball
   does not move; before the fix they would have driven to the field centre.
+- After the Group 4 change (roles sized from the seen-robot count, generated roles desired rather
+  than required) the same free-kick scenario logs zero unfilled-role warnings and the robots do
+  the same thing they did before.
+- `their-kickoff` shows the kickoff `DefenceWall`: one yellow robot settles at 790 mm from the
+  ball on the line to our goal within ~2 s of the kickoff command.
