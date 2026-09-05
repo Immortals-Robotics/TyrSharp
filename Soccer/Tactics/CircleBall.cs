@@ -11,13 +11,13 @@ namespace Tyr.Soccer.Tactics;
 [Configurable]
 public partial class CircleBall : ITactic
 {
-    [ConfigEntry] private static float VeryFarBallDis { get; set; } = 600.0f;
-    [ConfigEntry] private static float FarBallDis { get; set; } = 160.0f;
-    [ConfigEntry] private static DeltaTime FarToNearHys { get; set; } = DeltaTime.FromMilliseconds(50);
-    [ConfigEntry] private static float NearAngleTol { get; set; } = 4.0f;
-    [ConfigEntry] private static DeltaTime NearToKickHys { get; set; } = DeltaTime.FromMilliseconds(30);
-    [ConfigEntry] private static float ShmitCoeff { get; set; } = 1.2f;
-    [ConfigEntry] private static float DefaultNearBallDis { get; set; } = 140.0f;
+    [ConfigEntry] private static partial float VeryFarBallDis { get; set; } = 600.0f;
+    [ConfigEntry] private static partial float FarBallDis { get; set; } = 160.0f;
+    [ConfigEntry] private static partial DeltaTime FarToNearHys { get; set; } = DeltaTime.FromMilliseconds(50);
+    [ConfigEntry] private static partial float NearAngleTol { get; set; } = 4.0f;
+    [ConfigEntry] private static partial DeltaTime NearToKickHys { get; set; } = DeltaTime.FromMilliseconds(30);
+    [ConfigEntry] private static partial float ShmitCoeff { get; set; } = 1.2f;
+    [ConfigEntry] private static partial float DefaultNearBallDis { get; set; } = 140.0f;
 
     public required Angle TargetAngle { get; set; }
     public float ShootPower { get; set; }

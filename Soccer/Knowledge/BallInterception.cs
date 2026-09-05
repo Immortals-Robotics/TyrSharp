@@ -14,43 +14,43 @@ namespace Tyr.Soccer.Knowledge;
 public partial class BallInterception
 {
     [ConfigEntry("Lower planar ball-speed threshold for interception [mm/s]")]
-    private static float MinBallSpeedLowerMmPerS { get; set; } = 100f;
+    private static partial float MinBallSpeedLowerMmPerS { get; set; } = 100f;
 
     [ConfigEntry("Upper planar ball-speed threshold for interception [mm/s]")]
-    private static float MinBallSpeedUpperMmPerS { get; set; } = 250f;
+    private static partial float MinBallSpeedUpperMmPerS { get; set; } = 250f;
 
     [ConfigEntry("Search horizon hard cap for moving-ball interception [s]")]
-    private static float MaxSearchTimeSeconds { get; set; } = 5f;
+    private static partial float MaxSearchTimeSeconds { get; set; } = 5f;
 
     [ConfigEntry("Sampling step for moving-ball interception search [s]")]
-    private static float SearchStepSeconds { get; set; } = 0.05f;
+    private static partial float SearchStepSeconds { get; set; } = 0.05f;
 
     [ConfigEntry("Sampling step when finding the valid search horizon [s]")]
-    private static float HorizonStepSeconds { get; set; } = 0.05f;
+    private static partial float HorizonStepSeconds { get; set; } = 0.05f;
 
     [ConfigEntry("Height above which interception waits for the next touchdown [mm]")]
-    private static float MaxReceiveHeightMm { get; set; } = 120f;
+    private static partial float MaxReceiveHeightMm { get; set; } = 120f;
 
     [ConfigEntry("Maximum acceptable absolute slack time between robot and ball [s]")]
-    private static float MaxSlackTimeSeconds { get; set; } = 0.45f;
+    private static partial float MaxSlackTimeSeconds { get; set; } = 0.45f;
 
     [ConfigEntry("Minimum spare time that robot has before ball arrives [s]")]
-    private static float SpareTimeBufferSeconds { get; set; } = 0.3f;
+    private static partial float SpareTimeBufferSeconds { get; set; } = 0.3f;
 
     [ConfigEntry("Minimum spare time that GK has before ball arrives [s]")]
-    private static float GoalieSpareTimeBufferSeconds { get; set; } = 1f;
+    private static partial float GoalieSpareTimeBufferSeconds { get; set; } = 1f;
 
     [ConfigEntry("Objective bonus bias toward earlier interceptions [s]")]
-    private static float EarlyInterceptionBonus { get; set; } = 2.0f;
+    private static partial float EarlyInterceptionBonus { get; set; } = 2.0f;
 
     [ConfigEntry("Time window over which the early interception bonus fades out [s]")]
-    private static float EarlyInterceptionWindowSeconds { get; set; } = 2.0f;
+    private static partial float EarlyInterceptionWindowSeconds { get; set; } = 2.0f;
 
     [ConfigEntry("Hysteresis bonus for sticking to the previous plan [s]")]
-    private static float HysteresisBonusSeconds { get; set; } = 0.15f;
+    private static partial float HysteresisBonusSeconds { get; set; } = 0.15f;
 
     [ConfigEntry("Distance within which the previous plan's hysteresis bonus applies [mm]")]
-    private static float HysteresisDistanceMm { get; set; } = 150f;
+    private static partial float HysteresisDistanceMm { get; set; } = 150f;
 
     private bool _ballMoving;
 

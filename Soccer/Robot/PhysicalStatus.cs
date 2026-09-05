@@ -3,10 +3,10 @@
 namespace Tyr.Soccer.Robot;
 
 [Configurable]
-public readonly record struct PhysicalStatus()
+public readonly partial record struct PhysicalStatus()
 {
     [ConfigEntry]
-    public static PhysicalStatus[] StatusArray { get; set; } = new PhysicalStatus[Common.Data.CommonConfigs.MaxRobots];
+    public static partial PhysicalStatus[] StatusArray { get; set; } = new PhysicalStatus[Common.Data.CommonConfigs.MaxRobots];
 
     public bool HasDribbler { get; init; }
     public bool HasDirectKick { get; init; }

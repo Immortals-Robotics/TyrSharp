@@ -8,7 +8,7 @@ namespace Tyr.Soccer.Tactics;
 [Configurable]
 public partial class StopWall(Robot.Robot robot) : ITactic
 {
-    [ConfigEntry] private static float StopDistance { get; set; } = 650f;
+    [ConfigEntry] private static partial float StopDistance { get; set; } = 650f;
 
     public Robot.Robot Robot => robot;
 

@@ -15,10 +15,10 @@ namespace Tyr.Soccer;
 [Configurable]
 public sealed partial class TeamRunner : IDisposable
 {
-    [ConfigEntry] private static ThreadPriority RunnerPriority { get; set; } = ThreadPriority.Highest;
+    [ConfigEntry] private static partial ThreadPriority RunnerPriority { get; set; } = ThreadPriority.Highest;
 
     [ConfigEntry("If a new hardware status is received in ms hardware status is invalidated")]
-    private static DeltaTime HardwareStatusValidTime { get; set; } = DeltaTime.FromMilliseconds(1000);
+    private static partial DeltaTime HardwareStatusValidTime { get; set; } = DeltaTime.FromMilliseconds(1000);
 
     private readonly Subscriber<Referee.State> _refereeSubscriber;
     private readonly Subscriber<Vision.FilteredFrame> _visionSubscriber;

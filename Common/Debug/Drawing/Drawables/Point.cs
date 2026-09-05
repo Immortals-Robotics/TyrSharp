@@ -9,7 +9,7 @@ namespace Tyr.Common.Debug.Drawing.Drawables;
 public partial record struct Point : IEntry
 {
     [ConfigEntry("Size of the cross used to draw points")]
-    private static float DefaultSize { get; set; } = 25f;
+    private static partial float DefaultSize { get; set; } = 25f;
 
     [MemoryPackIgnore] public Time.Timestamp Timestamp { get; set; }
     [MemoryPackIgnore] public Meta Meta { get; set; } = Meta.Empty;

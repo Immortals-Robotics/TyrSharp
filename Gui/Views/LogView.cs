@@ -16,9 +16,9 @@ namespace Tyr.Gui.Views;
 public sealed partial class LogView(IDebugDb debugDb) : IDisposable
 {
     public static readonly string WindowTitle = $"{IconFonts.FontAwesome6.Terminal} Logs";
-    [ConfigEntry(StorageType.User)] private static LogLevel LogLevel { get; set; } = LogLevel.Debug;
-    [ConfigEntry(StorageType.User)] private static bool JournalMode { get; set; } = false;
-    [ConfigEntry(StorageType.User)] internal static bool GroupJournalEntries { get; set; } = true;
+    [ConfigEntry(StorageType.User)] private static partial LogLevel LogLevel { get; set; } = LogLevel.Debug;
+    [ConfigEntry(StorageType.User)] private static partial bool JournalMode { get; set; } = false;
+    [ConfigEntry(StorageType.User)] internal static partial bool GroupJournalEntries { get; set; } = true;
 
     private Utf8ValueStringBuilder _stringBuilder = ZString.CreateUtf8StringBuilder();
 
@@ -438,7 +438,6 @@ public sealed partial class LogView(IDebugDb debugDb) : IDisposable
         if (ImGui.Button($"{IconFonts.FontAwesome6.BookOpen} Journal##journal"))
         {
             JournalMode = !JournalMode;
-            Configurable.MarkChanged(StorageType.User);
         }
         if (journalActive) ImGui.PopStyleColor();
         if (ImGui.IsItemHovered(ImGuiHoveredFlags.ForTooltip))
@@ -452,7 +451,6 @@ public sealed partial class LogView(IDebugDb debugDb) : IDisposable
         if (ImGui.Button($"{IconFonts.FontAwesome6.LayerGroup}##group"))
         {
             GroupJournalEntries = !GroupJournalEntries;
-            Configurable.MarkChanged(StorageType.User);
         }
         if (groupActive) ImGui.PopStyleColor();
         if (!journalActive) ImGui.EndDisabled();
@@ -470,7 +468,6 @@ public sealed partial class LogView(IDebugDb debugDb) : IDisposable
         if (ImGui.Combo("Level", ref index, names, names.Length))
         {
             LogLevel = Debug.EnumCache<LogLevel>.GetByIndex(index);
-            Configurable.MarkChanged(StorageType.User);
         }
 
         ImGui.PopStyleColor();

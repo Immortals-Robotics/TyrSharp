@@ -9,11 +9,11 @@ namespace Tyr.Vision.Util;
 public partial class KickValidator
 {
     [ConfigEntry("Minimum distance from bot to lead point on orientation line")]
-    private static double MinDistanceInFront { get; set; } = 70.0;
+    private static partial double MinDistanceInFront { get; set; } = 70.0;
 
     [ConfigEntry(
         "Minimum distance from orientation line to ball position (distance is increased with distance from bot)")]
-    private static double MinDistanceOrthogonal { get; set; } = 40.0;
+    private static partial double MinDistanceOrthogonal { get; set; } = 40.0;
 
     private bool InKickerValidator(List<MergedBall> balls, List<FilteredRobot> robots)
     {

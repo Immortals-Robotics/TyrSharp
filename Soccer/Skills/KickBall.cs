@@ -12,8 +12,8 @@ namespace Tyr.Soccer.Skills;
 [Configurable]
 public sealed partial class KickBall : ISkill
 {
-    [ConfigEntry] private static DeltaTime PredictionTime { get; set; } = DeltaTime.FromMilliseconds(200);
-    [ConfigEntry] private static float MaxAngleError { get; set; } = 3;
+    [ConfigEntry] private static partial DeltaTime PredictionTime { get; set; } = DeltaTime.FromMilliseconds(200);
+    [ConfigEntry] private static partial float MaxAngleError { get; set; } = 3;
 
     public Angle Angle { get; set; }
     public float Kick { get; set; }

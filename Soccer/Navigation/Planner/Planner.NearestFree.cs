@@ -5,9 +5,9 @@ namespace Tyr.Soccer.Navigation.Planner;
 
 public partial class Planner
 {
-    [ConfigEntry] private static float AcceptableFreeDistance { get; set; } = 50f;
-    [ConfigEntry] private static int NearestFreeIterations { get; set; } = 1000;
-    [ConfigEntry] private static float NearestFreeRingSpacing { get; set; } = 120f;
+    [ConfigEntry] private static partial float AcceptableFreeDistance { get; set; } = 50f;
+    [ConfigEntry] private static partial int NearestFreeIterations { get; set; } = 1000;
+    [ConfigEntry] private static partial float NearestFreeRingSpacing { get; set; } = 120f;
 
     private Vector2 NearestFree(Vector2 state, float margin)
     {

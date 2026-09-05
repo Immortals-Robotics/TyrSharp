@@ -13,7 +13,7 @@ public sealed partial class ManualControlView
     public static readonly string WindowTitle = $"{IconFonts.FontAwesome6.Gamepad} Manual Control";
 
     [ConfigEntry("Team to control from the manual soccer skill view", StorageType.User)]
-    private static TeamColor ManualTeam { get; set; } = TeamColor.Yellow;
+    private static partial TeamColor ManualTeam { get; set; } = TeamColor.Yellow;
 
     private static readonly ManualSkillAction[] ManualActions =
     [

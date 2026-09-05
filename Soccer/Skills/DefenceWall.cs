@@ -8,7 +8,7 @@ namespace Tyr.Soccer.Skills;
 [Configurable]
 public partial class DefenceWall : ISkill
 {
-    [ConfigEntry] private static float Radius { get; set; } = 550f;
+    [ConfigEntry] private static partial float Radius { get; set; } = 550f;
 
     public bool Kickoff { get; set; }
 

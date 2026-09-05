@@ -12,7 +12,7 @@ namespace Tyr.Soccer.Robot;
 public partial class Robot
 {
     [ConfigEntry("Minimum Dribbler force to accept ball contact")]
-    private static float DribblerDetectForce { get; set; } = 1.0f;
+    private static partial float DribblerDetectForce { get; set; } = 1.0f;
 
     private float _shoot;
     private float _chip;

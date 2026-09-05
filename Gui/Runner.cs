@@ -13,21 +13,24 @@ namespace Tyr.Gui;
 [Configurable]
 public sealed partial class Runner : IDisposable
 {
-    [ConfigEntry(StorageType.User)] private static int MaxFps { get; set; } = 0;
-    [ConfigEntry(StorageType.User)] private static bool VSync { get; set; } = true;
-    [ConfigEntry(StorageType.User)] private static ThreadPriority RunnerPriority { get; set; } = ThreadPriority.Highest;
+    [ConfigEntry(StorageType.User)] private static partial int MaxFps { get; set; } = 0;
+    [ConfigEntry(StorageType.User)] private static partial bool VSync { get; set; } = true;
+    [ConfigEntry(StorageType.User)] private static partial ThreadPriority RunnerPriority { get; set; } = ThreadPriority.Highest;
 
-    [ConfigEntry(StorageType.User)] private static int WindowWidth { get; set; } = 1280;
-    [ConfigEntry(StorageType.User)] private static int WindowHeight { get; set; } = 720;
+    [ConfigEntry(StorageType.User)] private static partial int WindowWidth { get; set; } = 1280;
+    [ConfigEntry(StorageType.User)] private static partial int WindowHeight { get; set; } = 720;
 
-    [ConfigEntry(StorageType.User, false)] private static int? WindowPosX { get; set; }
-    [ConfigEntry(StorageType.User, false)] private static int? WindowPosY { get; set; }
+    [ConfigEntry(StorageType.User, false)] private static partial int? WindowPosX { get; set; }
+    [ConfigEntry(StorageType.User, false)] private static partial int? WindowPosY { get; set; }
 
-    [ConfigEntry(StorageType.User, false)] private static bool WindowMaximized { get; set; }
-    [ConfigEntry(StorageType.User, editable: false)] private static string ImGuiIni { get; set; } = "";
+    [ConfigEntry(StorageType.User, false)] private static partial bool WindowMaximized { get; set; }
+    [ConfigEntry(StorageType.User, editable: false)] private static partial string ImGuiIni { get; set; } = "";
 
     private readonly RunnerSync _runner;
     private bool _defaultLayoutPending;
+
+    // config changes are applied from the GUI thread, so poll instead of subscribing to OnUpdated
+    private int _configVersion;
 
     // backend
     private readonly SdlWindow _window;
@@ -96,7 +99,7 @@ public sealed partial class Runner : IDisposable
         // and the runner
         _runner = new RunnerSync(Tick, MaxFps, ModuleName, RunnerPriority);
 
-        Configurable.OnUpdated += _ => OnConfigsChanged();
+        _configVersion = Configurable.Version;
     }
 
     public void RegisterSslLogPlayer(Tyr.Vision.SslLogPlayer player)
@@ -119,41 +122,22 @@ public sealed partial class Runner : IDisposable
 
     private bool Tick()
     {
+        // apply config changes (config window, file reload); the window state written below bumps the
+        // version too, which costs one harmless re-apply on the next tick
+        var configVersion = Configurable.Version;
+        if (configVersion != _configVersion)
+        {
+            _configVersion = configVersion;
+            OnConfigsChanged();
+        }
+
         // update
         _window.PollEvents();
 
-        var (width, height) = _window.GetSize();
-        if (width != WindowWidth)
-        {
-            WindowWidth = width;
-            Configurable.MarkChanged(StorageType.User);
-        }
-
-        if (height != WindowHeight)
-        {
-            WindowHeight = height;
-            Configurable.MarkChanged(StorageType.User);
-        }
-
-        var (x, y) = _window.GetPos();
-        if (x != WindowPosX)
-        {
-            WindowPosX = x;
-            Configurable.MarkChanged(StorageType.User);
-        }
-
-        if (y != WindowPosY)
-        {
-            WindowPosY = y;
-            Configurable.MarkChanged(StorageType.User);
-        }
-
-        var maximized = _window.GetMaximized();
-        if (maximized != WindowMaximized)
-        {
-            WindowMaximized = maximized;
-            Configurable.MarkChanged(StorageType.User);
-        }
+        // the setters only notify when the value actually changed
+        (WindowWidth, WindowHeight) = _window.GetSize();
+        (WindowPosX, WindowPosY) = _window.GetPos();
+        WindowMaximized = _window.GetMaximized();
 
         _sslLogPlayer?.Tick();
 
@@ -193,7 +177,6 @@ public sealed partial class Runner : IDisposable
         if (_imgui.WantsIniSave)
         {
             ImGuiIni = _imgui.SaveIniToMemory();
-            Configurable.MarkChanged(StorageType.User);
         }
 
         if (_window.ShouldClose)

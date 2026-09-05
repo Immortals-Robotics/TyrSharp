@@ -9,8 +9,8 @@ namespace Tyr.Common.Network;
 [Configurable]
 public static partial class UdpReceiverConfigs
 {
-    [ConfigEntry] public static DeltaTime PollTimeout { get; set; } = DeltaTime.FromMilliseconds(1);
-    [ConfigEntry] public static DeltaTime WatchdogTimeout { get; set; } = DeltaTime.FromSeconds(5);
+    [ConfigEntry] public static partial DeltaTime PollTimeout { get; set; } = DeltaTime.FromMilliseconds(1);
+    [ConfigEntry] public static partial DeltaTime WatchdogTimeout { get; set; } = DeltaTime.FromSeconds(5);
 }
 
 public sealed class UdpReceiver<T> : IDisposable where T : class

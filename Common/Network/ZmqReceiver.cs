@@ -10,8 +10,8 @@ namespace Tyr.Common.Network;
 [Configurable]
 public static partial class ZmqReceiverConfigs
 {
-    [ConfigEntry] public static DeltaTime PollTimeout { get; set; } = DeltaTime.FromMilliseconds(10);
-    [ConfigEntry] public static DeltaTime WatchdogTimeout { get; set; } = DeltaTime.FromSeconds(5);
+    [ConfigEntry] public static partial DeltaTime PollTimeout { get; set; } = DeltaTime.FromMilliseconds(10);
+    [ConfigEntry] public static partial DeltaTime WatchdogTimeout { get; set; } = DeltaTime.FromSeconds(5);
 }
 
 // Protobuf-based ZMQ subscriber. Use this for proto3 messages (class types).

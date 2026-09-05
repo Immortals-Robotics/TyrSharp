@@ -14,10 +14,10 @@ public sealed partial class SeafileClient : IDisposable
     };
 
     [ConfigEntry("The Seafile server base URL")]
-    private static string BaseUrl { get; set; } = "https://seafile.tigers-mannheim.de";
+    private static partial string BaseUrl { get; set; } = "https://seafile.tigers-mannheim.de";
 
     [ConfigEntry("The public share token for the log directory")]
-    private static string ShareToken { get; set; } = "e85851d9bc9944bf95bb";
+    private static partial string ShareToken { get; set; } = "e85851d9bc9944bf95bb";
 
     public async Task<List<SeafileDirent>> ListDirentsAsync(string path, CancellationToken ct = default)
     {

@@ -12,8 +12,8 @@ namespace Tyr.Gui.Views;
 public sealed partial class SessionsView(PlaybackSessionManager playbackSessions)
 {
     public static readonly string WindowTitle = $"{IconFonts.FontAwesome6.HardDrive} Sessions";
-    [ConfigEntry("Whether to restore the session window on startup.", StorageType.User)] private static bool KeepWindowOpen { get; set; } = true;
-    [ConfigEntry("Automatically compress completed sessions into .tyrlog archives in the background.", StorageType.User)] public static bool AutoCompact { get; set; } = false;
+    [ConfigEntry("Whether to restore the session window on startup.", StorageType.User)] private static partial bool KeepWindowOpen { get; set; } = true;
+    [ConfigEntry("Automatically compress completed sessions into .tyrlog archives in the background.", StorageType.User)] public static partial bool AutoCompact { get; set; } = false;
 
     private readonly HashSet<string> _selectedMetadataPaths = [];
     private readonly Dictionary<string, string> _groupSelectedPaths = [];
@@ -473,11 +473,6 @@ public sealed partial class SessionsView(PlaybackSessionManager playbackSessions
         return double.NegativeInfinity;
     }
 
-    private static void MarkWindowStateChanged()
-    {
-        Configurable.MarkChanged(StorageType.User);
-    }
-
     private void SetOpen(bool isOpen)
     {
         if (IsOpen == isOpen)
@@ -485,6 +480,5 @@ public sealed partial class SessionsView(PlaybackSessionManager playbackSessions
 
         IsOpen = isOpen;
         KeepWindowOpen = isOpen;
-        MarkWindowStateChanged();
     }
 }

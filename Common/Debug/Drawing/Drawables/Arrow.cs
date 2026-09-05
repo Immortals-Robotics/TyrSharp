@@ -8,7 +8,7 @@ namespace Tyr.Common.Debug.Drawing.Drawables;
 [MemoryPackable]
 public partial record struct Arrow : IEntry
 {
-    [ConfigEntry] private static float DefaultHeadSize { get; set; } = 20f;
+    [ConfigEntry] private static partial float DefaultHeadSize { get; set; } = 20f;
 
     [MemoryPackIgnore] public Time.Timestamp Timestamp { get; set; }
     [MemoryPackIgnore] public Meta Meta { get; set; } = Meta.Empty;

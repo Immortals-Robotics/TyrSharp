@@ -9,7 +9,7 @@ namespace Tyr.Referee;
 public sealed partial class GcDataPublisher : IDisposable
 {
     [ConfigEntry("Address where referee packets are received from the game controller")]
-    public static Address GcAddress { get; set; } = new() { Ip = "224.5.23.1", Port = 10003 };
+    public static partial Address GcAddress { get; set; } = new() { Ip = "224.5.23.1", Port = 10003 };
 
     private readonly UdpReceiver<Gc.Referee> _udpReceiver;
 

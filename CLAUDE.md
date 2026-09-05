@@ -53,12 +53,23 @@ Every project has a `Module.cs` with `[GenerateGlobals]`. This triggers `Globals
 - `Draw` — debug drawing
 - `Plot` — debug plotting
 - `Rand` — random
-- Automatic `Config.Registry.RegisterAssembly(...)` via `[ModuleInitializer]`
+- A `[ModuleInitializer]` that calls `Config.Registry.Register(<Type>.Configurable)` once for every `[Configurable]` type in the assembly (no reflection, no assembly scan)
 
-`ConfigurableGenerator` emits a partial class with a `Configurable` property for any class marked `[Configurable]`.
+`ConfigurableGenerator` emits, for any type marked `[Configurable]`, the implementing partial: each `[ConfigEntry]` static partial property gets a setter with change detection, plus a `Configurable` handle describing every entry. It reports `TYR001`–`TYR003` for non-partial types, malformed entries and unsupported type shapes.
 
 ### Configuration System
-Classes annotated with `[Configurable]` expose static `[ConfigEntry]` properties. Two `Storage` instances are loaded: a project config (`Data/config.toml`) and a user override (`user.toml`). Config is live-reloaded via file watchers with debouncing. Classes subscribe to `Configurable.OnUpdated` to react to changes.
+Types annotated with `[Configurable]` must be `partial` and declare static **partial** `[ConfigEntry]` properties whose initializer is the default value:
+
+```csharp
+[Configurable]
+public sealed partial class Runner
+{
+    [ConfigEntry("Frames per second, 0 = unlimited", StorageType.User)]
+    private static partial int MaxFps { get; set; } = 0;
+}
+```
+
+`ConfigurableGenerator` implements each property with change detection: assigning an equal value is a no-op, a different value bumps `Configurable.Version` and raises `Configurable.OnUpdated`. It also emits a per-type `Configurable` handle that lists the entries with typed getters/setters, so the runtime uses no reflection; each assembly's module initializer (in `Globals.g.cs`) registers those handles with `Config.Registry`. Two `Storage` instances are loaded: a project config (`Data/config.toml`) and a user override (`user.toml`). A storage loaded before a module registered its configurables replays its values onto them, and saves merge into the parsed file so tables owned by modules not loaded in this process survive. Config is live-reloaded via file watchers with debouncing. `OnUpdated` fires on the thread that made the change (the watcher thread for reloads); code that must react on a specific thread polls `Configurable.Version` instead. Values edited in place (lists, dictionaries) do not go through a setter, so call `Configurable.MarkChanged(storageType)` or `ConfigEntry.Set` for those. Conversely, values the process re-derives at runtime from an external source must not be written back to disk — wrap those assignments in `using var _ = Configurable.SuppressNotifications();` (see `Vision.Data.BallParameters.Apply`).
 
 ### Soccer AI Loop
 `Soccer.Runner` creates two `TeamRunner` instances (Yellow and Blue), enabled by config. Each `TeamRunner` subscribes to vision, referee, and field-size channels, then on each tick:

@@ -11,7 +11,7 @@ namespace Tyr.Common.Network;
 [Configurable]
 public sealed partial class UdpSocket : IDisposable
 {
-    [ConfigEntry] private static int MaxPacketSize { get; set; } = 64 * 1024;
+    [ConfigEntry] private static partial int MaxPacketSize { get; set; } = 64 * 1024;
     private const int SioUdpConnReset = -1744830452;
 
     private Socket? _socket;

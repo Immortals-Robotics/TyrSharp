@@ -8,8 +8,8 @@ namespace Tyr.Sender;
 [Configurable]
 public sealed partial class Runner : IDisposable
 {
-    [ConfigEntry] private static DeltaTime SleepTime { get; set; } = DeltaTime.FromMilliseconds(1);
-    [ConfigEntry] private static ThreadPriority RunnerPriority { get; set; } = ThreadPriority.AboveNormal;
+    [ConfigEntry] private static partial DeltaTime SleepTime { get; set; } = DeltaTime.FromMilliseconds(1);
+    [ConfigEntry] private static partial ThreadPriority RunnerPriority { get; set; } = ThreadPriority.AboveNormal;
 
     private readonly Subscriber<Common.Sender.Data.CommandsWrapper> _commandsSubscriber;
     

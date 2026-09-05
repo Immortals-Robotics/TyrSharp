@@ -8,36 +8,36 @@ namespace Tyr.Sender;
 [Configurable]
 public sealed partial class Nrf : ISender // TODO: this is untested, test at the competition
 {
-    [ConfigEntry] private static bool Enabled { get; set; } = false;
+    [ConfigEntry] private static partial bool Enabled { get; set; } = false;
 
-    [ConfigEntry] private static Address Address { get; set; } = new() { Ip = "224.5.92.5", Port = 60005 };
+    [ConfigEntry] private static partial Address Address { get; set; } = new() { Ip = "224.5.92.5", Port = 60005 };
 
     [ConfigEntry("Scale factor to convert mm/s to NRF protocol units")]
-    private static float MotionScaleFactor { get; set; } = 22.0f;
+    private static partial float MotionScaleFactor { get; set; } = 22.0f;
 
     [ConfigEntry("NRF Move command packet length")]
-    private static byte MoveCommandLength { get; set; } = 15;
+    private static partial byte MoveCommandLength { get; set; } = 15;
 
     [ConfigEntry("NRF Move command identifier")]
-    private static byte MoveCommandId { get; set; } = 12;
+    private static partial byte MoveCommandId { get; set; } = 12;
 
     [ConfigEntry("Maximum shoot power in NRF protocol units")]
-    private static float MaxShootPower { get; set; } = 6500.0f;
+    private static partial float MaxShootPower { get; set; } = 6500.0f;
 
     [ConfigEntry("Scale factor for shoot power conversion")]
-    private static float ShootPowerScale { get; set; } = 1000.0f;
+    private static partial float ShootPowerScale { get; set; } = 1000.0f;
 
     [ConfigEntry("Maximum chip power in NRF protocol units")]
-    private static float MaxChipPower { get; set; } = 150.0f;
+    private static partial float MaxChipPower { get; set; } = 150.0f;
 
     [ConfigEntry("NRF Halt command packet length")]
-    private static byte HaltCommandLength { get; set; } = 10;
+    private static partial byte HaltCommandLength { get; set; } = 10;
 
     [ConfigEntry("NRF Halt command identifier")]
-    private static byte HaltCommandId { get; set; } = 6;
+    private static partial byte HaltCommandId { get; set; } = 6;
 
     [ConfigEntry("NRF Demo/Heartbeat packet length")]
-    private static byte DemoCommandLength { get; set; } = 10;
+    private static partial byte DemoCommandLength { get; set; } = 10;
 
     private readonly UdpSocket _udp = new();
     private Span<byte> Buffer => _udp.GetBuffer();

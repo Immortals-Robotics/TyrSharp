@@ -8,7 +8,7 @@ namespace Tyr.Soccer.Tactics;
 [Configurable]
 public partial class Mark : ITactic
 {
-    [ConfigEntry] private static float Distance { get; set; } = 220f;
+    [ConfigEntry] private static partial float Distance { get; set; } = 220f;
 
     public required Robot.Robot Robot { get; init; } = null!;
 

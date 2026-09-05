@@ -16,7 +16,7 @@ public enum ZmqMode
 [Configurable]
 public sealed partial class ZmqSender : IDisposable
 {
-    [ConfigEntry] private static int MaxPacketSize { get; set; } = 64 * 1024;
+    [ConfigEntry] private static partial int MaxPacketSize { get; set; } = 64 * 1024;
 
     private readonly PushSocket _socket;
     private readonly byte[] _buffer;

@@ -13,9 +13,9 @@ namespace Tyr.Vision;
 [Configurable]
 public sealed partial class Vision
 {
-    [ConfigEntry] private static DeltaTime CameraTooOldTime { get; set; } = DeltaTime.FromSeconds(1f);
+    [ConfigEntry] private static partial DeltaTime CameraTooOldTime { get; set; } = DeltaTime.FromSeconds(1f);
     [ConfigEntry("Ignore incoming vision detections on the selected half of the field", StorageType.User)]
-    private static IgnoreVisionHalf IgnoredHalf { get; set; } = IgnoreVisionHalf.None;
+    private static partial IgnoreVisionHalf IgnoredHalf { get; set; } = IgnoreVisionHalf.None;
 
     public static FieldSize FieldSize { get; set; } = FieldSize.Default;
 

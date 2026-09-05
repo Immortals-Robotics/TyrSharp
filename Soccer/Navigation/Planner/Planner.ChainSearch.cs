@@ -6,7 +6,7 @@ namespace Tyr.Soccer.Navigation.Planner;
 
 public partial class Planner
 {
-    [ConfigEntry] private static float ChainSearchTimeStep { get; set; } = 0.2f;
+    [ConfigEntry] private static partial float ChainSearchTimeStep { get; set; } = 0.2f;
 
     // finds a trajectory that consists of
     // 1- init to time t1 somewhere on the input trajectory

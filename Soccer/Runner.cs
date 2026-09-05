@@ -6,8 +6,8 @@ namespace Tyr.Soccer;
 [Configurable]
 public sealed partial class Runner : IDisposable
 {
-    [ConfigEntry(StorageType.User)] private static bool RunYellow { get; set; } = false;
-    [ConfigEntry(StorageType.User)] private static bool RunBlue { get; set; } = false;
+    [ConfigEntry(StorageType.User)] private static partial bool RunYellow { get; set; } = false;
+    [ConfigEntry(StorageType.User)] private static partial bool RunBlue { get; set; } = false;
 
     private readonly TeamRunner _blueRunner;
     private readonly TeamRunner _yellowRunner;

@@ -14,7 +14,7 @@ public partial class ShootCalibration
     }
 
     [ConfigEntry]
-    private static Vector2[] ShootCoeffs { get; set; } =
+    private static partial Vector2[] ShootCoeffs { get; set; } =
     [
         new(4.45f, 2.59f), //  0
         new(4.48f, 2.6f), //  1
@@ -35,7 +35,7 @@ public partial class ShootCalibration
     ];
 
     [ConfigEntry]
-    private static Vector2[] ChipCoeffs { get; set; } =
+    private static partial Vector2[] ChipCoeffs { get; set; } =
     [
         new(1.00000f, 2.32507f), //  0
         new(0.77461f, 2.81861f), //  1

@@ -10,10 +10,10 @@ namespace Tyr.Soccer.Knowledge;
 public partial class Knowledge
 {
     [ConfigEntry("Ball-speed threshold for switching attacker assignment from static-ball reach to moving-ball interception [mm/s]")]
-    private static float AttackerStaticBallMaxSpeedMmPerS { get; set; } = 300f;
+    private static partial float AttackerStaticBallMaxSpeedMmPerS { get; set; } = 300f;
 
-    [ConfigEntry] private static DeltaTime AttackerAssignmentNoKickPenalty { get; set; } = DeltaTime.FromSeconds(5f);
-    [ConfigEntry] private static DeltaTime AttackerAssignmentNoDribblerPenalty { get; set; } = DeltaTime.FromSeconds(0.5f);
+    [ConfigEntry] private static partial DeltaTime AttackerAssignmentNoKickPenalty { get; set; } = DeltaTime.FromSeconds(5f);
+    [ConfigEntry] private static partial DeltaTime AttackerAssignmentNoDribblerPenalty { get; set; } = DeltaTime.FromSeconds(0.5f);
 
 
     private readonly Dictionary<int, DeltaTime> _attackerAssignmentCosts = [];

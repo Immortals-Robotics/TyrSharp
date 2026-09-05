@@ -17,8 +17,8 @@ namespace Tyr.Gui.Rendering;
 [Configurable]
 internal partial class DrawableRenderer
 {
-    [ConfigEntry] private static Color FilledOutlineColor { get; set; } = Color.Zinc950.WithAlpha(0.5f);
-    [ConfigEntry] private static float TrajectoryDrawTimeStep { get; set; } = 0.1f;
+    [ConfigEntry] private static partial Color FilledOutlineColor { get; set; } = Color.Zinc950.WithAlpha(0.5f);
+    [ConfigEntry] private static partial float TrajectoryDrawTimeStep { get; set; } = 0.1f;
 
     public Camera2D Camera { get; } = new();
 

@@ -11,7 +11,7 @@ namespace Tyr.Vision.Util;
 public partial class SlowKickDetector : IKickDetector
 {
     [ConfigEntry(description: "Minimum time between two kicks [s]")]
-    private static double MinDeltaTime { get; set; } = 0.1;
+    private static partial double MinDeltaTime { get; set; } = 0.1;
 
     private const int HistorySize = 5;
 

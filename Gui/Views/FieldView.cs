@@ -23,22 +23,22 @@ namespace Tyr.Gui.Views;
 public sealed partial class FieldView : IDisposable
 {
     public static readonly string WindowTitle = $"{IconFonts.FontAwesome6.Video} Field";
-    [ConfigEntry] private static float ZoomFactor { get; set; } = 1.1f;
-    [ConfigEntry] private static float ZoomDefault { get; set; } = 0.1f;
-    [ConfigEntry] private static float ZoomLimitFactor { get; set; } = 10f;
-    [ConfigEntry] private static float FitPaddingFactor { get; set; } = 1.05f;
+    [ConfigEntry] private static partial float ZoomFactor { get; set; } = 1.1f;
+    [ConfigEntry] private static partial float ZoomDefault { get; set; } = 0.1f;
+    [ConfigEntry] private static partial float ZoomLimitFactor { get; set; } = 10f;
+    [ConfigEntry] private static partial float FitPaddingFactor { get; set; } = 1.05f;
 
     [ConfigEntry]
-    private static Debug.Drawing.Color LineColor { get; set; } = Debug.Drawing.Color.White.WithAlpha(0.7f);
+    private static partial Debug.Drawing.Color LineColor { get; set; } = Debug.Drawing.Color.White.WithAlpha(0.7f);
 
     [ConfigEntry]
-    private static Debug.Drawing.Color BoundaryColor { get; set; } = Debug.Drawing.Color.Green900;
+    private static partial Debug.Drawing.Color BoundaryColor { get; set; } = Debug.Drawing.Color.Green900;
 
     [ConfigEntry]
-    private static Debug.Drawing.Color FieldColor { get; set; } = Debug.Drawing.Color.Green800;
+    private static partial Debug.Drawing.Color FieldColor { get; set; } = Debug.Drawing.Color.Green800;
 
     [ConfigEntry]
-    private static Debug.Drawing.Color WallColor { get; set; } = Debug.Drawing.Color.Zinc300.WithAlpha(0.85f);
+    private static partial Debug.Drawing.Color WallColor { get; set; } = Debug.Drawing.Color.Zinc300.WithAlpha(0.85f);
 
     private readonly IDebugDb _debugDb;
     private readonly DrawableRenderer _renderer = new();

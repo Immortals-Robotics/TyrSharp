@@ -11,9 +11,9 @@ namespace Tyr.Soccer.Skills;
 [Configurable]
 public partial class MarkToGoal : ISkill
 {
-    [ConfigEntry] private static DeltaTime OppPredictTime { get; set; } = DeltaTime.FromMilliseconds(150f);
-    [ConfigEntry] private static bool PenaltyAreaMark { get; set; } = false;
-    [ConfigEntry] private static float PenaltyAreaMarkDistance { get; set; } = 200f;
+    [ConfigEntry] private static partial DeltaTime OppPredictTime { get; set; } = DeltaTime.FromMilliseconds(150f);
+    [ConfigEntry] private static partial bool PenaltyAreaMark { get; set; } = false;
+    [ConfigEntry] private static partial float PenaltyAreaMarkDistance { get; set; } = 200f;
 
     public required FilteredRobot Opponent { get; set; }
     public float Distance { get; set; } = 220f;
