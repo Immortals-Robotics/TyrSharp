@@ -29,7 +29,7 @@ public sealed class Drawer(string module)
         builder.AppendFormat("{0}: {1}, {2}: {3}",
             name1, expression1,
             name2, expression2);
-        return InternedStringCache.GetOrAdd(builder.AsSpan());
+        return InternedStringCache.Shared.GetOrAdd(builder.AsSpan());
     }
 
     private static string MakeExpression(
@@ -42,7 +42,7 @@ public sealed class Drawer(string module)
             name1, expression1,
             name2, expression2,
             name3, expression3);
-        return InternedStringCache.GetOrAdd(builder.AsSpan());
+        return InternedStringCache.Shared.GetOrAdd(builder.AsSpan());
     }
 
     private static string MakeExpression(
@@ -59,7 +59,7 @@ public sealed class Drawer(string module)
             name3, expression3,
             name4, expression4,
             name5, expression5);
-        return InternedStringCache.GetOrAdd(builder.AsSpan());
+        return InternedStringCache.Shared.GetOrAdd(builder.AsSpan());
     }
 
     private void Draw<T>(T entry,

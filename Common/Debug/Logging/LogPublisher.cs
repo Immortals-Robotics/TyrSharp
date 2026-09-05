@@ -5,6 +5,11 @@ namespace Tyr.Common.Debug.Logging;
 
 public sealed class LogPublisher : IAsyncLogProcessor
 {
+    // Log text is open-ended (fps counters, timestamps), so the dedup cache is capped: once it fills,
+    // repeated messages are still shared but new ones are plain allocations instead of permanent entries.
+    private const int MaxCachedMessages = 4096;
+    private static readonly InternedStringCache MessageCache = new(MaxCachedMessages);
+
     [ThreadStatic]
     private static ArrayBufferWriter<byte>? _buffer;
 
@@ -21,7 +26,7 @@ public sealed class LogPublisher : IAsyncLogProcessor
             var buffer = _buffer ??= new ArrayBufferWriter<byte>(256);
             buffer.ResetWrittenCount();
             formattable.ToString(buffer);
-            message = InternedStringCache.GetOrAdd(buffer.WrittenSpan);
+            message = MessageCache.GetOrAdd(buffer.WrittenSpan);
         }
         else
         {

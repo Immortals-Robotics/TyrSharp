@@ -33,43 +33,58 @@ public ref struct InternedStringHandler
     internal string ToInternedString()
     {
         var span = _builder.AsSpan();
-        var result = InternedStringCache.GetOrAdd(span);
+        var result = InternedStringCache.Shared.GetOrAdd(span);
         _builder.Dispose();
         return result;
     }
 }
 
 /// <summary>
-/// Process-wide cache that maps string content to a single permanent instance.
-/// Entries are never evicted, so only feed it strings from a bounded vocabulary
-/// (plot ids, draw expressions, log messages).
+/// Maps string content to a single long-lived instance so repeated content is not re-allocated.
+/// Entries are never evicted, so <see cref="Shared"/> must only see a bounded vocabulary
+/// (plot ids, draw expressions); callers with open-ended content use their own capped instance
+/// and get a fresh string once the cap is reached.
 /// </summary>
-internal static class InternedStringCache
+internal sealed class InternedStringCache
 {
-    private static readonly ConcurrentDictionary<string, string> Cache = new();
+    public static InternedStringCache Shared { get; } = new();
 
-    private static readonly ConcurrentDictionary<string, string>.AlternateLookup<ReadOnlySpan<char>> SpanLookup =
-        Cache.GetAlternateLookup<ReadOnlySpan<char>>();
+    private readonly ConcurrentDictionary<string, string> _cache = new();
+    private readonly ConcurrentDictionary<string, string>.AlternateLookup<ReadOnlySpan<char>> _spanLookup;
+    private readonly int _maxEntries;
+    private int _count;
 
-    /// <summary>
-    /// Returns the cached instance whose content equals <paramref name="span"/>.
-    /// Allocates only on the first call per unique content.
-    /// </summary>
-    public static string GetOrAdd(ReadOnlySpan<char> span)
+    public InternedStringCache(int maxEntries = int.MaxValue)
     {
-        if (SpanLookup.TryGetValue(span, out var existing))
-            return existing;
-
-        var created = new string(span);
-        return Cache.GetOrAdd(created, created);
+        _maxEntries = maxEntries;
+        _spanLookup = _cache.GetAlternateLookup<ReadOnlySpan<char>>();
     }
 
     /// <summary>
-    /// Returns a cached interned string for a UTF-8 <paramref name="utf8Span"/>.
+    /// Returns the cached instance whose content equals <paramref name="span"/>.
+    /// Allocates only on the first call per unique content, or on every call once the cache is full.
+    /// </summary>
+    public string GetOrAdd(ReadOnlySpan<char> span)
+    {
+        if (_spanLookup.TryGetValue(span, out var existing))
+            return existing;
+
+        var created = new string(span);
+        if (Volatile.Read(ref _count) >= _maxEntries)
+            return created;
+
+        var stored = _cache.GetOrAdd(created, created);
+        if (ReferenceEquals(stored, created))
+            Interlocked.Increment(ref _count);
+        return stored;
+    }
+
+    /// <summary>
+    /// Returns a cached string for a UTF-8 <paramref name="utf8Span"/>.
     /// Decodes to a stack-allocated char buffer (up to 512 chars) then delegates to
     /// <see cref="GetOrAdd(ReadOnlySpan{char})"/>. Zero heap allocations on cache hit.
     /// </summary>
-    public static string GetOrAdd(ReadOnlySpan<byte> utf8Span)
+    public string GetOrAdd(ReadOnlySpan<byte> utf8Span)
     {
         var maxCharCount = Encoding.UTF8.GetMaxCharCount(utf8Span.Length);
         Span<char> charSpan = maxCharCount <= 512

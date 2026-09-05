@@ -18,7 +18,7 @@ public class Plotter(string module)
     {
         var meta = Meta.GetOrCreate(module, layer, file, member, line, expression);
 
-        id = InternedStringCache.GetOrAdd(id);
+        id = InternedStringCache.Shared.GetOrAdd(id);
 
         var command = new Command
         {
