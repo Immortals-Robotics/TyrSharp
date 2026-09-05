@@ -4,9 +4,40 @@ using Tyr.Common.Debug.Drawing.Drawables;
 
 namespace Tyr.Common.Debug;
 
+/// <summary>
+/// Set of every debug entry type seen by the process. Types register here from module
+/// initializers (so a playback database can open their buckets) and from the first
+/// publish/subscribe on <see cref="DebugBus"/>. <see cref="Registered"/> fires for types
+/// that register after a listener attached, so a running dumper can start draining them.
+/// </summary>
 public static class DebugTypeRegistry
 {
     private static readonly ConcurrentDictionary<Type, byte> Types = new();
+    private static readonly Lock RegisteredLock = new();
+    private static Action<Type>? _registered;
+
+    /// <summary>
+    /// Raised for newly registered types. Attaching a handler also replays every type
+    /// registered so far, so a listener never misses one. A type that registers while a
+    /// handler is being attached can be delivered twice; handlers must tolerate that.
+    /// Handlers run outside any registry lock, so they may register or subscribe freely.
+    /// </summary>
+    public static event Action<Type> Registered
+    {
+        add
+        {
+            lock (RegisteredLock)
+                _registered += value;
+
+            foreach (var type in GetRegisteredTypes())
+                value(type);
+        }
+        remove
+        {
+            lock (RegisteredLock)
+                _registered -= value;
+        }
+    }
 
 #pragma warning disable CA2255 // The 'ModuleInitializer' attribute should only be used in
     [ModuleInitializer]
@@ -32,14 +63,15 @@ public static class DebugTypeRegistry
     // initializer runs exactly once per T and reading it afterwards is a plain field load.
     public static void Register<T>() where T : struct, IEntry
     {
-        _ = Registered<T>.Done;
+        _ = RegisterOnce<T>.Done;
     }
 
-    private static class Registered<T> where T : struct, IEntry
+    // Named to avoid colliding with the Registered event above.
+    private static class RegisterOnce<T> where T : struct, IEntry
     {
-        public static readonly bool Done = RegisterOnce();
+        public static readonly bool Done = Run();
 
-        private static bool RegisterOnce()
+        private static bool Run()
         {
             Register(typeof(T));
             return true;
@@ -56,7 +88,23 @@ public static class DebugTypeRegistry
         if (!typeof(IEntry).IsAssignableFrom(type))
             throw new ArgumentException($"Debug entry type {type.FullName} must implement {nameof(IEntry)}.", nameof(type));
 
-        Types.TryAdd(type, 0);
+        if (!Types.TryAdd(type, 0))
+            return;
+
+        var handlers = Volatile.Read(ref _registered);
+        if (handlers is null)
+            return;
+
+        // Register runs inside the publisher's channel type initializer; an exception here
+        // would leave that channel permanently unusable, so listeners' failures stay here.
+        try
+        {
+            handlers(type);
+        }
+        catch (Exception ex)
+        {
+            Log.ZLogError(ex, $"Debug type registration listener failed for {type.FullName}");
+        }
     }
 
     public static IReadOnlyList<Type> GetRegisteredTypes()

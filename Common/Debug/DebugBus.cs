@@ -2,38 +2,44 @@ using Tyr.Common.Dataflow;
 
 namespace Tyr.Common.Debug;
 
+/// <summary>
+/// One broadcast channel per debug entry type. The channel for a type is a generic static,
+/// so publishing costs no dictionary lookup, and touching it registers the type with
+/// <see cref="DebugTypeRegistry"/> exactly once.
+/// </summary>
 public static class DebugBus
 {
-    private static readonly BroadcastChannel<DebugDumpEntry> DumpChannel = new();
+    private static class Channel<T> where T : struct, IEntry
+    {
+        // Instance must be initialized before the static constructor body runs: registering
+        // the type notifies listeners (the dumper), which subscribe to this very channel from
+        // inside the notification, re-entering this class while it is still initializing.
+        // Field initializers run first, so Instance is already set by then. Keep it that way.
+        public static readonly BroadcastChannel<T> Instance = new();
+
+        static Channel()
+        {
+            DebugTypeRegistry.Register<T>();
+        }
+    }
 
     public static void Publish<T>(T entry) where T : struct, IEntry
     {
-        DebugTypeRegistry.Register<T>();
-        GetChannel<T>().Publish(entry);
-        DumpChannel.Publish(DebugDumpEntry.From(entry));
+        Channel<T>.Instance.Publish(entry);
     }
 
     public static Subscriber<T> Subscribe<T>(Mode mode) where T : struct, IEntry
     {
-        DebugTypeRegistry.Register<T>();
-        return GetChannel<T>().Subscribe(mode);
+        return Channel<T>.Instance.Subscribe(mode);
     }
 
     public static void PublishFrame(Frame frame)
     {
         Hub.Frames.Publish(frame);
-        DumpChannel.Publish(DebugDumpEntry.From(frame));
     }
 
-    public static Subscriber<DebugDumpEntry> SubscribeDumpEntries(Mode mode)
+    public static Subscriber<Frame> SubscribeFrames(Mode mode)
     {
-        return DumpChannel.Subscribe(mode);
-    }
-
-    private static BroadcastChannel<T> GetChannel<T>() where T : struct, IEntry => Channel<T>.Instance;
-
-    private static class Channel<T> where T : struct, IEntry
-    {
-        public static readonly BroadcastChannel<T> Instance = new();
+        return Hub.Frames.Subscribe(mode);
     }
 }

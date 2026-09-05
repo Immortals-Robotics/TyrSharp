@@ -375,6 +375,8 @@ public partial class PlotView(IDebugDb debugDb)
         return (min, max);
     }
 
+    private readonly List<Command> _queryScratch = new(MaxPoints);
+
     private void GatherPreparedData(
         string moduleName, string id,
         Timestamp origin, DeltaTime min, DeltaTime max, PreparedSeries prepared)
@@ -387,7 +389,9 @@ public partial class PlotView(IDebugDb debugDb)
         var startTimestamp = origin + min;
         var endTimestamp = origin + max;
 
-        foreach (var plot in debugDb.QueryWithoutMeta<Command>(moduleName, startTimestamp, endTimestamp, id, MaxPoints))
+        _queryScratch.Clear();
+        debugDb.QueryInto(_queryScratch, moduleName, startTimestamp, endTimestamp, id, MaxPoints);
+        foreach (var plot in _queryScratch)
         {
             prepared.Time.Add((float)(plot.Timestamp - origin).Seconds);
             AddPlotValue(plot.Value, prepared);

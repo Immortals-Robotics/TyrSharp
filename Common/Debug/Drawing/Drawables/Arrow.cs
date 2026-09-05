@@ -11,7 +11,7 @@ public partial record struct Arrow : IEntry
     [ConfigEntry] private static float DefaultHeadSize { get; set; } = 20f;
 
     [MemoryPackIgnore] public Time.Timestamp Timestamp { get; set; }
-    [MemoryPackIgnore] public Meta Meta { get; set; }
+    [MemoryPackIgnore] public Meta Meta { get; set; } = Meta.Empty;
     [MemoryPackIgnore] public string? ShardKey => null;
 
     public Vector2 Start { get; init; }

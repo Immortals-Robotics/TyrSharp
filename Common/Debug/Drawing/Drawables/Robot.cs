@@ -18,7 +18,7 @@ public partial record struct Robot : IEntry
     [ConfigEntry] public static Color TextColor { get; set; } = Color.Zinc950;
 
     [MemoryPackIgnore] public Time.Timestamp Timestamp { get; set; }
-    [MemoryPackIgnore] public Meta Meta { get; set; }
+    [MemoryPackIgnore] public Meta Meta { get; set; } = Meta.Empty;
     [MemoryPackIgnore] public string? ShardKey => null;
 
     public Vector2 Position { get; init; }

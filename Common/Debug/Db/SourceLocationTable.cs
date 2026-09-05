@@ -1,4 +1,4 @@
-﻿using System.IO.MemoryMappedFiles;
+using System.IO.MemoryMappedFiles;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
@@ -23,61 +23,41 @@ internal struct InternalSourceLocation
 //   [4 bytes: count]
 //   [InternalSourceLocation][InternalSourceLocation]...
 //
+// Deduplication lives in DebugDb (keyed by Meta.Id); this table only appends
+// and resolves. Single writer (Intern) under the owner's lock; readers only
+// touch rows below Count, which is published after the row is written.
 
 internal sealed class MappedSourceLocationTable : IDisposable
 {
-    private const int MaxLocations = 64 * 1024;
+    public const int MaxLocations = 64 * 1024;
     private const int HeaderSize = 4;
     private static readonly int EntrySize = Unsafe.SizeOf<InternalSourceLocation>();
     private static readonly long FileCapacity = HeaderSize + (long)MaxLocations * EntrySize;
 
+    private readonly string _path;
     private readonly MemoryMappedFile _mmf;
     private readonly MemoryMappedViewAccessor _accessor;
     private readonly unsafe byte* _ptr;
-
-    // In-memory reverse lookup: Meta → id
-    // We rebuild Meta from string pool on load for the map keys
-    private readonly Dictionary<Meta, int> _map = new();
+    private bool _dirty;
 
     public unsafe MappedSourceLocationTable(string path)
     {
-        var fs = new FileStream(path, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.ReadWrite);
-        _mmf = MemoryMappedFile.CreateFromFile(fs, null, FileCapacity, MemoryMappedFileAccess.ReadWrite, HandleInheritability.None, leaveOpen: false);
+        _path = path;
+        _mmf = MappedFiles.Open(path, FileCapacity);
         _accessor = _mmf.CreateViewAccessor(0, FileCapacity);
         byte* p = null;
         _accessor.SafeMemoryMappedViewHandle.AcquirePointer(ref p);
         _ptr = p;
     }
 
-    /// <summary>
-    /// Rebuild the in-memory lookup map from the mmap'd data + string pool.
-    /// Call after MappedStringPool.Reload().
-    /// </summary>
-    public unsafe void Reload(MappedStringPool strings)
-    {
-        _map.Clear();
-        var count = *(int*)_ptr;
-        var dataBase = _ptr + HeaderSize;
+    public unsafe int Count => Volatile.Read(ref Unsafe.AsRef<int>(_ptr));
 
-        for (int i = 0; i < count; i++)
-        {
-            var isl = Unsafe.ReadUnaligned<InternalSourceLocation>(dataBase + i * EntrySize);
-            var loc = Resolve(isl, strings);
-            _map[loc] = i;
-        }
-    }
-
-    public unsafe int Count => *(int*)_ptr;
-
-    /// <summary>
-    /// Intern a source location. Returns its id.
-    /// NOT thread-safe — caller must hold a lock.
-    /// </summary>
+    /// <summary>Append a source location and return its id. Single writer only.</summary>
     public unsafe int Intern(Meta loc, MappedStringPool strings)
     {
-        if (_map.TryGetValue(loc, out var id)) return id;
-
-        Assert.IsTrue(Count < MaxLocations);
+        var id = *(int*)_ptr;
+        if (id >= MaxLocations)
+            throw new InvalidOperationException($"Debug source location table is full ({MaxLocations} locations).");
 
         var isl = new InternalSourceLocation
         {
@@ -89,45 +69,38 @@ internal sealed class MappedSourceLocationTable : IDisposable
             ExpressionId = strings.Intern(loc.Expression),
         };
 
-        id = *(int*)_ptr;
-
-        // Write entry
-        Unsafe.WriteUnaligned(_ptr + HeaderSize + id * EntrySize, isl);
-
-        // Update count
-        *(int*)_ptr = id + 1;
-
-        _map[loc] = id;
+        _dirty = true;
+        Unsafe.WriteUnaligned(_ptr + HeaderSize + (long)id * EntrySize, isl);
+        Volatile.Write(ref Unsafe.AsRef<int>(_ptr), id + 1);
         return id;
     }
 
     public unsafe InternalSourceLocation GetInternal(int id)
     {
-        return Unsafe.ReadUnaligned<InternalSourceLocation>(_ptr + HeaderSize + id * EntrySize);
+        return Unsafe.ReadUnaligned<InternalSourceLocation>(_ptr + HeaderSize + (long)id * EntrySize);
     }
 
     public Meta Get(int id, MappedStringPool strings)
     {
-        return Resolve(GetInternal(id), strings);
-    }
-
-    private static Meta Resolve(InternalSourceLocation isl, MappedStringPool strings)
-    {
-        return new Meta
-        {
-            Module     = strings.Get(isl.ModuleId)!,
-            Layer      = strings.Get(isl.LayerId)!,
-            File       = strings.Get(isl.FileId),
-            Member     = strings.Get(isl.MemberId),
-            Line       = isl.Line,
-            Expression = strings.Get(isl.ExpressionId),
-        };
+        var isl = GetInternal(id);
+        return Meta.GetOrCreate(
+            strings.Get(isl.ModuleId)!,
+            strings.Get(isl.LayerId),
+            strings.Get(isl.FileId),
+            strings.Get(isl.MemberId),
+            isl.Line,
+            strings.Get(isl.ExpressionId));
     }
 
     public void Dispose()
     {
+        var used = HeaderSize + (long)Count * EntrySize;
+
         _accessor.SafeMemoryMappedViewHandle.ReleasePointer();
         _accessor.Dispose();
         _mmf.Dispose();
+
+        if (_dirty)
+            MappedFiles.TryTruncate(_path, used);
     }
 }
