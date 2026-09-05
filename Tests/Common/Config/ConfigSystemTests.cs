@@ -21,6 +21,19 @@ public sealed partial class LateConfig
     [ConfigEntry] public static partial int Value { get; set; } = 1;
 }
 
+/// <summary>
+/// These tests mutate the process-global <see cref="Registry"/> and the static entries of
+/// <see cref="SampleConfig"/>/<see cref="LateConfig"/>, and one of them attaches a real
+/// <see cref="Storage"/> to the registry. Anything else touching the config system must therefore
+/// not run at the same time, so every such test class joins this collection.
+/// </summary>
+[CollectionDefinition(Name, DisableParallelization = true)]
+public sealed class ConfigSystemCollection
+{
+    public const string Name = "Config system";
+}
+
+[Collection(ConfigSystemCollection.Name)]
 public class ConfigSystemTests
 {
     private static Configurable Sample
@@ -104,10 +117,18 @@ public class ConfigSystemTests
     {
         var configurable = Sample;
         var count = 0;
-        configurable.OnUpdated += _ => count++;
+        void Handler(StorageType _) => count++;
+        configurable.OnUpdated += Handler;
 
-        configurable.Find("Name")!.Set("sample"); // unchanged value
-        Assert.Equal(1, count);
+        try
+        {
+            configurable.Find("Name")!.Set("sample"); // unchanged value
+            Assert.Equal(1, count);
+        }
+        finally
+        {
+            configurable.OnUpdated -= Handler;
+        }
     }
 
     [Fact]
@@ -115,19 +136,66 @@ public class ConfigSystemTests
     {
         var configurable = Sample;
         var events = new List<StorageType>();
-        configurable.OnUpdated += events.Add;
+        void Handler(StorageType storageType) => events.Add(storageType);
+        configurable.OnUpdated += Handler;
 
-        using (configurable.BeginBatch())
+        try
         {
-            SampleConfig.Gain = 5f;
-            SampleConfig.Optional = 1f;
-            SampleConfig.Count = 9;
-            Assert.Empty(events);
-        }
+            using (configurable.BeginBatch())
+            {
+                SampleConfig.Gain = 5f;
+                SampleConfig.Optional = 1f;
+                SampleConfig.Count = 9;
+                Assert.Empty(events);
+            }
 
-        Assert.Equal(2, events.Count);
-        Assert.Contains(StorageType.Project, events);
-        Assert.Contains(StorageType.User, events);
+            Assert.Equal(2, events.Count);
+            Assert.Contains(StorageType.Project, events);
+            Assert.Contains(StorageType.User, events);
+        }
+        finally
+        {
+            configurable.OnUpdated -= Handler;
+        }
+    }
+
+    [Fact]
+    public void SuppressNotifications_AppliesValuesWithoutNotifying()
+    {
+        var configurable = Sample;
+        var events = new List<StorageType>();
+        void Handler(StorageType storageType) => events.Add(storageType);
+        configurable.OnUpdated += Handler;
+
+        try
+        {
+            var version = configurable.Version;
+            var registryVersion = Registry.Version;
+
+            using (configurable.SuppressNotifications())
+            {
+                SampleConfig.Gain = 7f; // through the generated setter
+                configurable.Find("Name")!.Set("suppressed"); // through ConfigEntry.Set, which always marks
+            }
+
+            // the values are applied ...
+            Assert.Equal(7f, SampleConfig.Gain);
+            Assert.Equal("suppressed", SampleConfig.Name);
+
+            // ... but nothing was notified, so an attached Storage never learns of them
+            Assert.Empty(events);
+            Assert.Equal(version, configurable.Version);
+            Assert.Equal(registryVersion, Registry.Version);
+
+            // and the scope really did end
+            SampleConfig.Gain = 8f;
+            Assert.Equal([StorageType.Project], events);
+            Assert.Equal(version + 1, configurable.Version);
+        }
+        finally
+        {
+            configurable.OnUpdated -= Handler;
+        }
     }
 
     [Fact]
@@ -135,21 +203,29 @@ public class ConfigSystemTests
     {
         var configurable = Sample;
         var count = 0;
-        configurable.OnUpdated += _ => count++;
+        void Handler(StorageType _) => count++;
+        configurable.OnUpdated += Handler;
 
-        var table = new TomlTable();
-        table.PutValue("Gain", new TomlDouble(4.5));
-        table.PutValue("Optional", new TomlDouble(0.25));
-        table.PutValue("Name", new TomlString("loaded"));
-        table.PutValue("Count", new TomlLong(42)); // user entry, must be ignored for a project load
+        try
+        {
+            var table = new TomlTable();
+            table.PutValue("Gain", new TomlDouble(4.5));
+            table.PutValue("Optional", new TomlDouble(0.25));
+            table.PutValue("Name", new TomlString("loaded"));
+            table.PutValue("Count", new TomlLong(42)); // user entry, must be ignored for a project load
 
-        configurable.FromToml(table, StorageType.Project);
+            configurable.FromToml(table, StorageType.Project);
 
-        Assert.Equal(1, count);
-        Assert.Equal(4.5f, SampleConfig.Gain);
-        Assert.Equal(0.25f, SampleConfig.Optional);
-        Assert.Equal("loaded", SampleConfig.Name);
-        Assert.Equal(3, SampleConfig.Count);
+            Assert.Equal(1, count);
+            Assert.Equal(4.5f, SampleConfig.Gain);
+            Assert.Equal(0.25f, SampleConfig.Optional);
+            Assert.Equal("loaded", SampleConfig.Name);
+            Assert.Equal(3, SampleConfig.Count);
+        }
+        finally
+        {
+            configurable.OnUpdated -= Handler;
+        }
     }
 
     [Fact]

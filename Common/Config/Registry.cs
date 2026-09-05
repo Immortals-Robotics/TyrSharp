@@ -19,8 +19,10 @@ public static class Registry
     /// <summary>All registered configurables, ordered by their TOML path. The array is replaced on registration, never mutated.</summary>
     public static IReadOnlyList<Configurable> Configurables => Volatile.Read(ref _all);
 
+    private static ConfigTreeNode _tree = new("");
+
     /// <summary>Namespace tree of all registered configurables. Rebuilt and swapped on registration.</summary>
-    public static ConfigTreeNode Tree { get; private set; } = new("");
+    public static ConfigTreeNode Tree => Volatile.Read(ref _tree);
 
     /// <summary>Incremented on every change of any entry of any configurable.</summary>
     public static int Version => Volatile.Read(ref _version);
@@ -60,7 +62,7 @@ public static class Registry
             var all = ByType.Values.ToArray();
             Array.Sort(all, static (a, b) => string.CompareOrdinal(TomlPath(a), TomlPath(b)));
             Volatile.Write(ref _all, all);
-            Tree = BuildTree(all);
+            Volatile.Write(ref _tree, BuildTree(all));
 
             storages = Storages.ToArray();
         }

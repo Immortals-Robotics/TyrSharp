@@ -52,6 +52,9 @@ internal static partial class BallParameters
             return;
         }
 
+        // values derived from the vision geometry packet must not overwrite the tuned ones on disk
+        using var _ = Configurable.SuppressNotifications();
+
         Radius = fieldSize.BallRadius;
     }
 
@@ -61,6 +64,9 @@ internal static partial class BallParameters
         {
             return;
         }
+
+        // values derived from the vision ball models must not overwrite the tuned ones on disk
+        using var _ = Configurable.SuppressNotifications();
 
         if (models.StraightTwoPhase.HasValue)
         {

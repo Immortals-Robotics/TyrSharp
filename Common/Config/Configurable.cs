@@ -26,6 +26,7 @@ public sealed class Configurable
     private int _version;
     private int _batchDepth;
     private int _pendingMask;
+    private int _suppressDepth;
 
     /// <summary>Incremented on every change of any entry. Compare against a stored value to poll for changes.</summary>
     public int Version => Volatile.Read(ref _version);
@@ -54,10 +55,13 @@ public sealed class Configurable
 
     /// <summary>
     /// Records a change of an entry with the given storage type. Notifications are raised immediately,
-    /// or once at the end of the outermost <see cref="BeginBatch"/> scope.
+    /// or once at the end of the outermost <see cref="BeginBatch"/> scope, or not at all inside a
+    /// <see cref="SuppressNotifications"/> scope.
     /// </summary>
     public void MarkChanged(StorageType storageType)
     {
+        if (Volatile.Read(ref _suppressDepth) > 0) return;
+
         Interlocked.Increment(ref _version);
 
         if (Volatile.Read(ref _batchDepth) > 0)
@@ -97,9 +101,36 @@ public sealed class Configurable
         Registry.NotifyUpdated(storageType);
     }
 
+    /// <summary>
+    /// Suppresses change notification for the duration of the returned scope: setters still assign,
+    /// but no version bump, no <see cref="OnUpdated"/> and no registry notification happen, so an
+    /// attached <see cref="Storage"/> never sees the write and does not persist it.
+    /// <para>
+    /// Use this for entries the process re-derives at runtime from an external source (e.g. ball
+    /// parameters taken from the SSL vision geometry packet), which must not overwrite the tuned
+    /// value on disk. The GUI editor and the TOML load path deliberately do not use it.
+    /// </para>
+    /// <para>
+    /// The scope is per configurable and process-global, not thread-local: a concurrent write to the
+    /// same configurable from another thread is suppressed as well. Keep scopes short and on one thread.
+    /// </para>
+    /// </summary>
+    public SuppressScope SuppressNotifications()
+    {
+        Interlocked.Increment(ref _suppressDepth);
+        return new SuppressScope(this);
+    }
+
+    private void EndSuppress() => Interlocked.Decrement(ref _suppressDepth);
+
     public readonly struct BatchScope(Configurable owner) : IDisposable
     {
         public void Dispose() => owner.EndBatch();
+    }
+
+    public readonly struct SuppressScope(Configurable owner) : IDisposable
+    {
+        public void Dispose() => owner.EndSuppress();
     }
 
     public void SetDefaults()
