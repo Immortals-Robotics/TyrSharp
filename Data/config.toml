@@ -483,36 +483,36 @@ RobotCommandTopic = "CommandTypeRobot" # default: CommandTypeRobot
 [Sender.ShootCalibration]
 
 [[Sender.ShootCalibration.ShootCoeffs]]
-X = 4.449999809265137
-Y = 2.5899999141693115
+X = 4.45
+Y = 2.59
 
 [[Sender.ShootCalibration.ShootCoeffs]]
-X = 4.480000019073486
-Y = 2.5999999046325684
+X = 4.48
+Y = 2.6
 
 [[Sender.ShootCalibration.ShootCoeffs]]
-X = 3.4200000762939453
-Y = 3.430000066757202
+X = 3.42
+Y = 3.43
 
 [[Sender.ShootCalibration.ShootCoeffs]]
-X = 6.21999979019165
-Y = -0.4300000071525574
+X = 6.22
+Y = -0.43
 
 [[Sender.ShootCalibration.ShootCoeffs]]
-X = 9.739999771118164
-Y = 12.800000190734863
+X = 9.74
+Y = 12.8
 
 [[Sender.ShootCalibration.ShootCoeffs]]
-X = 4.460000038146973
-Y = 2.6600000858306885
+X = 4.46
+Y = 2.66
 
 [[Sender.ShootCalibration.ShootCoeffs]]
-X = 9.739999771118164
-Y = 12.800000190734863
+X = 9.74
+Y = 12.8
 
 [[Sender.ShootCalibration.ShootCoeffs]]
-X = 4.019999980926514
-Y = 3.380000114440918
+X = 4.02
+Y = 3.38
 
 [[Sender.ShootCalibration.ShootCoeffs]]
 X = 1.0
@@ -548,35 +548,35 @@ Y = 0.0
 
 [[Sender.ShootCalibration.ChipCoeffs]]
 X = 1.0
-Y = 2.3250699043273926
+Y = 2.32507
 
 [[Sender.ShootCalibration.ChipCoeffs]]
-X = 0.7746099829673767
-Y = 2.8186099529266357
+X = 0.77461
+Y = 2.81861
 
 [[Sender.ShootCalibration.ChipCoeffs]]
-X = 1.690619945526123
-Y = 1.5429199934005737
+X = 1.69062
+Y = 1.54292
 
 [[Sender.ShootCalibration.ChipCoeffs]]
-X = 0.9056100249290466
-Y = 3.1300699710845947
+X = 0.90561
+Y = 3.13007
 
 [[Sender.ShootCalibration.ChipCoeffs]]
-X = 1.0136699676513672
-Y = 1.7466700077056885
+X = 1.01367
+Y = 1.74667
 
 [[Sender.ShootCalibration.ChipCoeffs]]
-X = 1.0136699676513672
-Y = 1.7466700077056885
+X = 1.01367
+Y = 1.74667
 
 [[Sender.ShootCalibration.ChipCoeffs]]
-X = 1.456570029258728
-Y = 1.1877000331878662
+X = 1.45657
+Y = 1.1877
 
 [[Sender.ShootCalibration.ChipCoeffs]]
-X = 1.0136699676513672
-Y = 1.7466700077056885
+X = 1.01367
+Y = 1.74667
 
 [[Sender.ShootCalibration.ChipCoeffs]]
 X = 1.0
@@ -648,10 +648,10 @@ MergePower = 1.5 # default: 1.5
 
 [Vision.Tracking.RobotTracker]
 InitialCovarianceXy = 100.0 # default: 100
-ModelErrorXy = 0.10000000149011612 # default: 0.1
+ModelErrorXy = 0.1 # default: 0.1
 MeasurementErrorXy = 20.0 # default: 20
 InitialCovarianceW = 100.0 # default: 100
-ModelErrorW = 0.10000000149011612 # default: 0.1
+ModelErrorW = 0.1 # default: 0.1
 MeasurementErrorW = 2.0 # default: 2
 # Maximum assumed robot speed in [mm/s] to filter outliers
 MaxLinearVelocity = 6000.0 # default: 6000
@@ -662,7 +662,7 @@ MaxHealth = 20 # default: 20
 
 [Vision.Tracking.BallTracker]
 InitialCovariance = 1000.0 # default: 1000
-ModelError = 0.10000000149011612 # default: 0.1
+ModelError = 0.1 # default: 0.1
 MeasurementError = 100.0 # default: 100
 # Maximum assumed ball speed in [mm/s] to filter outliers
 MaxLinearVelocity = 15000.0 # default: 15000
@@ -770,7 +770,7 @@ MaxBallTrackers = 10 # default: 10
 # Max. distance to copy state from filtered bot to new trackers
 CopyTrackerMaxDistance = 200.0 # default: 200
 # Maximum speed loss against the robot hull during ball collisions
-MaxBallBotHullLoss = 0.6000000238418579 # default: 0.6
+MaxBallBotHullLoss = 0.6 # default: 0.6
 # Maximum speed loss against the robot front during ball collisions
 MaxBallBotFrontLoss = 1.0 # default: 1
 # Maximum filtered ball height where robot collisions are considered
@@ -787,19 +787,19 @@ AccelerationSlide = -3500.0 # default: -3000
 # Rolling acceleration in [mm/s^2], expected to be negative
 AccelerationRoll = -310.0 # default: -260
 # Fraction of the initial velocity where the ball starts to roll
-KSwitch = 0.6399999856948853 # default: 0.64
+KSwitch = 0.64 # default: 0.64
 # Ball inertia distribution between 0.4 (massive sphere) and 0.66 (hollow sphere)
 InertiaDistribution = 0.5 # default: 0.5
 # Amount of spin transferred during a redirect.
-RedirectSpinFactor = 0.800000011920929 # default: 0.8
+RedirectSpinFactor = 0.8 # default: 0.8
 # Restitution coefficient for redirected balls from a bot.
-RedirectRestitutionCoefficient = 0.20000000298023224 # default: 0.2
+RedirectRestitutionCoefficient = 0.2 # default: 0.2
 # Chip kick velocity damping factor in XY direction for the first hop
-ChipDampingXyFirstHop = 0.5899999737739563 # default: 0.8
+ChipDampingXyFirstHop = 0.59 # default: 0.8
 # Chip kick velocity damping factor in XY direction for all following hops
-ChipDampingXyOtherHops = 0.7300000190734863 # default: 0.85
+ChipDampingXyOtherHops = 0.73 # default: 0.85
 # Chip kick velocity damping factor in Z direction
-ChipDampingZ = 0.5199999809265137 # default: 0.47
+ChipDampingZ = 0.52 # default: 0.47
 # If a chipped ball does not reach this height it is considered rolling [mm]
 MinHopHeight = 10.0 # default: 10
 # Max. ball height that can be intercepted by robots [mm]
