@@ -5,11 +5,12 @@ using Tyr.Soccer.Robot;
 
 namespace Tyr.Soccer.Role;
 
-public record DefenceWall : IRole
+/// <param name="Kickoff">Their kickoff: the wall uses the fixed kickoff limit angle instead of the ball-x curve.</param>
+public record DefenceWall(bool Kickoff = false) : IRole
 {
     public Tactics.ITactic CreateTactic(Robot.Robot robot)
     {
-        return new Tactics.DefenceWall(robot);
+        return new Tactics.DefenceWall(robot, Kickoff);
     }
 
     public float Importance => 0.8f;

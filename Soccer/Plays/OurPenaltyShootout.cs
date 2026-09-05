@@ -16,16 +16,18 @@ public class OurPenaltyShootout : IPlay
         // Penalty Kicker is the one closest to the ball
         requiredRoles.Add(new PenaltyKicker());
 
-        // Everyone else waits in the dedicated spots
-        int waiterCount = Context.OwnRobots.Count - 2; // Minus Goalie and Kicker
+        // Everyone else who is actually on the field waits in the dedicated spots
+        var desiredRoles = new List<IRole>();
+        int waiterCount = Context.Knowledge.OwnRobotsCount - 2; // Minus Goalie and Kicker
         for (int i = 1; i <= waiterCount; i++)
         {
-            requiredRoles.Add(new PenaltyWaiter(i, true));
+            desiredRoles.Add(new PenaltyWaiter(i, true));
         }
 
         return new Formation
         {
-            RequiredRoles = requiredRoles
+            RequiredRoles = requiredRoles,
+            DesiredRoles = desiredRoles
         };
     }
 }

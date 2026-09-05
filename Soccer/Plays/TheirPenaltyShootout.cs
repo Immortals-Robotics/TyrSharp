@@ -13,16 +13,18 @@ public class TheirPenaltyShootout : IPlay
         // Goalie is always first
         requiredRoles.Add(new Goalie());
 
-        // Everyone else waits in the dedicated spots (further back for their penalty)
-        int waiterCount = Context.OwnRobots.Count - 1; // Minus Goalie
+        // Everyone else who is actually on the field waits in the dedicated spots (further back for their penalty)
+        var desiredRoles = new List<IRole>();
+        int waiterCount = Context.Knowledge.OwnRobotsCount - 1; // Minus Goalie
         for (int i = 1; i <= waiterCount; i++)
         {
-            requiredRoles.Add(new PenaltyWaiter(i, false));
+            desiredRoles.Add(new PenaltyWaiter(i, false));
         }
 
         return new Formation
         {
-            RequiredRoles = requiredRoles
+            RequiredRoles = requiredRoles,
+            DesiredRoles = desiredRoles
         };
     }
 }

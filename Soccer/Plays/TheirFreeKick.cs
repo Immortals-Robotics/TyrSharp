@@ -13,17 +13,18 @@ public class TheirFreeKick : IPlay
 
     public Formation Tick()
     {
-        var roles = new List<IRole>();
+        var requiredRoles = new List<IRole>();
+        var desiredRoles = new List<IRole>();
 
         // Goalkeeper
-        roles.Add(new Goalie());
+        requiredRoles.Add(new Goalie());
 
         // Essential defenders
-        roles.Add(new Defender(1));
-        roles.Add(new Defender(2));
+        requiredRoles.Add(new Defender(1));
+        requiredRoles.Add(new Defender(2));
 
         // Attacker becomes a wall
-        roles.Add(new DefenceWall());
+        requiredRoles.Add(new DefenceWall());
 
         // Mids: mark opponents or use zones
         var oppsToMark = Context.Knowledge.OpponentThreats
@@ -38,21 +39,23 @@ public class TheirFreeKick : IPlay
         var zones = Context.Knowledge.SortedZonesByDefense;
         int oppIdx = 0;
 
-        while (roles.Count < Context.OwnRobots.Count)
+        // Marks and supporters fill whatever robots are actually on the field; they are not required,
+        // so a missing robot costs nothing in the assignment instead of an unfilled-role penalty.
+        while (requiredRoles.Count + desiredRoles.Count < Context.Knowledge.OwnRobotsCount)
         {
             if (oppIdx < oppsToMark.Count)
             {
-                roles.Add(new Mark(oppsToMark[oppIdx++]));
+                desiredRoles.Add(new Mark(oppsToMark[oppIdx++]));
             }
             else
             {
                 if (zones.Count > 0)
                 {
-                    roles.Add(new Supporter { Zone = zones.Dequeue() });
+                    desiredRoles.Add(new Supporter { Zone = zones.Dequeue() });
                 }
                 else if (Context.Knowledge.Zones.Count > 0)
                 {
-                    roles.Add(new Supporter { Zone = Context.Knowledge.Zones[0] });
+                    desiredRoles.Add(new Supporter { Zone = Context.Knowledge.Zones[0] });
                 }
                 else
                 {
@@ -61,6 +64,10 @@ public class TheirFreeKick : IPlay
             }
         }
 
-        return new Formation { RequiredRoles = roles };
+        return new Formation
+        {
+            RequiredRoles = requiredRoles,
+            DesiredRoles = desiredRoles
+        };
     }
 }

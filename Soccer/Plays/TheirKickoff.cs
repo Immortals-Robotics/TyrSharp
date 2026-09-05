@@ -18,7 +18,7 @@ public class TheirKickoff : IPlay
             new Goalie(),
             new Defender(1),
             new Defender(2),
-            new DefenceWall(),
+            new DefenceWall(Kickoff: true),
         };
 
         var desiredRoles = new List<IRole>();
@@ -59,7 +59,7 @@ public class TheirKickoff : IPlay
         }
 
         var zones = Context.Knowledge.SortedZonesByDefense;
-        while (requiredRoles.Count + desiredRoles.Count < Context.OwnRobots.Count)
+        while (requiredRoles.Count + desiredRoles.Count < Context.Knowledge.OwnRobotsCount)
         {
             if (zones.Count > 0)
             {

@@ -41,7 +41,7 @@ public class OurFreekick : IPlay
         });
 
         // Supporters
-        while (requiredRoles.Count + desiredRoles.Count < Context.OwnRobots.Count)
+        while (requiredRoles.Count + desiredRoles.Count < Context.Knowledge.OwnRobotsCount)
         {
             if (zones.Count == 0)
             {

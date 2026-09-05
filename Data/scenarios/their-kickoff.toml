@@ -1,0 +1,195 @@
+# Their kickoff: blue prepares and takes the kickoff, yellow (us) defends with the kickoff wall
+# (audit NS18: TheirKickoff now requests DefenceWall with Kickoff = true). Expect one yellow robot
+# about 790 mm from the ball on the line towards our goal, i.e. near (-790, 0).
+#
+# Yellow defends the negative-x half (gc_side). Positions in mm. grSim's field is Division A.
+
+name = "their-kickoff"
+description = "Blue kickoff against a full yellow side; exercises the kickoff DefenceWall"
+
+[processes.grsim]
+mode = "launch"
+# grSim 2.6.1's -H mode does not advance physics (see docs/SIM-HARNESS.md), so run with the window.
+headless = false
+
+[processes.gc]
+mode = "launch"
+rcon_port = 10011
+ui_port = 8081
+
+[config]
+"Soccer.Runner.RunYellow" = true
+"Soccer.Runner.RunBlue" = false
+
+[[setup]]
+action = "gc"
+command = "HALT"
+
+[[setup]]
+action = "gc_side"
+team = "blue"
+positive_half = true
+
+[[setup]]
+action = "gc_side"
+team = "yellow"
+positive_half = false
+
+[[setup]]
+action = "teleport_ball"
+x = 0
+y = 0
+
+# Yellow: legal kickoff positions in our half.
+[[setup]]
+action = "teleport_robot"
+team = "yellow"
+id = 0
+x = -5500
+y = 0
+orientation_deg = 0
+
+[[setup]]
+action = "teleport_robot"
+team = "yellow"
+id = 1
+x = -4500
+y = 800
+
+[[setup]]
+action = "teleport_robot"
+team = "yellow"
+id = 2
+x = -4500
+y = -800
+
+[[setup]]
+action = "teleport_robot"
+team = "yellow"
+id = 3
+x = -1500
+y = 0
+
+[[setup]]
+action = "teleport_robot"
+team = "yellow"
+id = 4
+x = -2500
+y = 2000
+
+[[setup]]
+action = "teleport_robot"
+team = "yellow"
+id = 5
+x = -2500
+y = -2000
+
+[[setup]]
+action = "remove_robot"
+team = "yellow"
+id = 6
+
+[[setup]]
+action = "remove_robot"
+team = "yellow"
+id = 7
+
+[[setup]]
+action = "remove_robot"
+team = "yellow"
+id = 8
+
+[[setup]]
+action = "remove_robot"
+team = "yellow"
+id = 9
+
+[[setup]]
+action = "remove_robot"
+team = "yellow"
+id = 10
+
+# Blue: keeper, a kicker at the ball, two wide threats in the side lanes.
+[[setup]]
+action = "teleport_robot"
+team = "blue"
+id = 0
+x = 5500
+y = 0
+orientation_deg = 180
+
+[[setup]]
+action = "teleport_robot"
+team = "blue"
+id = 1
+x = 300
+y = 0
+orientation_deg = 180
+
+[[setup]]
+action = "teleport_robot"
+team = "blue"
+id = 2
+x = 800
+y = 1500
+orientation_deg = 180
+
+[[setup]]
+action = "teleport_robot"
+team = "blue"
+id = 3
+x = 800
+y = -1500
+orientation_deg = 180
+
+[[setup]]
+action = "remove_robot"
+team = "blue"
+id = 4
+
+[[setup]]
+action = "remove_robot"
+team = "blue"
+id = 5
+
+[[setup]]
+action = "remove_robot"
+team = "blue"
+id = 6
+
+[[setup]]
+action = "remove_robot"
+team = "blue"
+id = 7
+
+[[setup]]
+action = "remove_robot"
+team = "blue"
+id = 8
+
+[[setup]]
+action = "remove_robot"
+team = "blue"
+id = 9
+
+[[setup]]
+action = "remove_robot"
+team = "blue"
+id = 10
+
+[[setup]]
+action = "gc"
+command = "STOP"
+
+[[setup]]
+action = "wait"
+seconds = 1.0
+
+[[setup]]
+action = "gc"
+command = "KICKOFF"
+for_team = "blue"
+
+[run]
+duration_seconds = 8
+sample_hz = 10

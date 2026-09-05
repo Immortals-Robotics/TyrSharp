@@ -21,7 +21,7 @@ public class TheirBallPlacement : IPlay
 
         // The rest are supporters in offensive zones
         var zones = Context.Knowledge.SortedZonesByOffense;
-        while (requiredRoles.Count + desiredRoles.Count < Context.OwnRobots.Count)
+        while (requiredRoles.Count + desiredRoles.Count < Context.Knowledge.OwnRobotsCount)
         {
             if (zones.Count == 0)
             {
