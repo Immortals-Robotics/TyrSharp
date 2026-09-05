@@ -1,17 +1,17 @@
 using ProtoBuf;
 using Tyr.Common.Data;
 
-namespace Tyr.Gui.GameController;
+namespace Tyr.Control.GameController;
 
 [ProtoContract]
-internal sealed class ControllerReply
+public sealed class ControllerReply
 {
     [ProtoMember(1)] public ControllerStatusCode? StatusCode { get; set; }
     [ProtoMember(2)] public string? Reason { get; set; }
     [ProtoMember(3)] public string? NextToken { get; set; }
 }
 
-internal enum ControllerStatusCode
+public enum ControllerStatusCode
 {
     Unknown = 0,
     Ok = 1,
@@ -19,7 +19,7 @@ internal enum ControllerStatusCode
 }
 
 [ProtoContract]
-internal sealed class RemoteControlRegistration
+public sealed class RemoteControlRegistration
 {
     // proto2 required — TeamColor values match Team enum (UNKNOWN=0, YELLOW=1, BLUE=2)
     [ProtoMember(1, IsRequired = true)] public TeamColor Team { get; set; }
@@ -30,7 +30,7 @@ internal sealed class RemoteControlRegistration
 /// Only one of the oneof fields should be set per message.
 /// </summary>
 [ProtoContract]
-internal sealed class RemoteControlToController
+public sealed class RemoteControlToController
 {
     [ProtoMember(2)] public GcRequest? Request { get; set; }
     [ProtoMember(3)] public int? DesiredKeeper { get; set; }
@@ -55,7 +55,7 @@ internal sealed class RemoteControlToController
         new() { RequestEmergencyStop = value };
 }
 
-internal enum GcRequest
+public enum GcRequest
 {
     Unknown = 0,
     Ping = 1,
@@ -68,14 +68,14 @@ internal enum GcRequest
 /// Wrapper for all messages from the game controller to our client.
 /// </summary>
 [ProtoContract]
-internal sealed class ControllerToRemoteControl
+public sealed class ControllerToRemoteControl
 {
     [ProtoMember(1)] public ControllerReply? ControllerReply { get; set; }
     [ProtoMember(2)] public RemoteControlTeamState? State { get; set; }
 }
 
 [ProtoContract]
-internal sealed class RemoteControlTeamState
+public sealed class RemoteControlTeamState
 {
     [ProtoMember(12)] public TeamColor Team { get; set; }
     [ProtoMember(1)]  public List<GcRequestType> AvailableRequests { get; set; } = [];
@@ -93,7 +93,7 @@ internal sealed class RemoteControlTeamState
     [ProtoMember(14)] public float? BotSubstitutionTimeLeft { get; set; }
 }
 
-internal enum GcRequestType
+public enum GcRequestType
 {
     Unknown = 0,
     EmergencyStop = 1,

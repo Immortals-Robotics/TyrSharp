@@ -837,8 +837,9 @@ WallColor = "#D4D4D8D8" # default: #D4D4D8D8
 FontSize = 17 # default: 17
 
 
-[Gui.Simulator]
-[Gui.Simulator.SimulatorChannel]
+[Control]
+[Control.Simulator]
+[Control.Simulator.SimulatorChannel]
 # IP address of the machine running grSim
 Host = "127.0.0.1" # default: 127.0.0.1
 # UDP port for the grSim simulator control channel

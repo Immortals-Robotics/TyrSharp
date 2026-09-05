@@ -3,8 +3,8 @@ using Hexa.NET.ImGui;
 using Hexa.NET.SDL3;
 using Tyr.Common.Config;
 using Tyr.Common.Data;
+using Tyr.Control.GameController;
 using Tyr.Gui.Backend;
-using Tyr.Gui.GameController;
 using Tyr.Referee;
 using Color = Tyr.Common.Debug.Drawing.Color;
 

@@ -2,8 +2,8 @@ using Hexa.NET.ImGui;
 using Tyr.Common.Data;
 using Tyr.Common.Data.Ssl.Simulation;
 using Tyr.Common.Math;
+using Tyr.Control.Simulator;
 using Tyr.Gui.Backend;
-using Tyr.Gui.Simulator;
 using Tyr.Vision;
 using Color = Tyr.Common.Debug.Drawing.Color;
 

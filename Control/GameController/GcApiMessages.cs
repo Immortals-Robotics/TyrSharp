@@ -1,10 +1,10 @@
 using System.Text.Json.Serialization;
 
-namespace Tyr.Gui.GameController;
+namespace Tyr.Control.GameController;
 
 // ── Outbound (client → GC) ────────────────────────────────────────────────────
 
-internal sealed class GcInput
+public sealed class GcInput
 {
     [JsonPropertyName("change")]        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public GcChange? Change { get; set; }
@@ -41,7 +41,7 @@ internal sealed class GcInput
     public static GcInput Reset() => new() { ResetMatch = true };
 }
 
-internal sealed class GcChange
+public sealed class GcChange
 {
     [JsonPropertyName("origin")] [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public string? Origin { get; set; } = "TyrSharp2";
@@ -53,25 +53,25 @@ internal sealed class GcChange
     public GcChangeStage? ChangeStageChange { get; set; }
 }
 
-internal sealed class GcNewCommand
+public sealed class GcNewCommand
 {
     [JsonPropertyName("command")]
     public GcCommandRef? Command { get; set; }
 }
 
-internal sealed class GcChangeStage
+public sealed class GcChangeStage
 {
     [JsonPropertyName("newStage")]
     public string? NewStage { get; set; }
 }
 
-internal sealed class GcCommandRef
+public sealed class GcCommandRef
 {
     [JsonPropertyName("type")]    public string Type    { get; set; } = "UNKNOWN";
     [JsonPropertyName("forTeam")] public string ForTeam { get; set; } = "UNKNOWN";
 }
 
-internal sealed class GcContinueActionRef
+public sealed class GcContinueActionRef
 {
     [JsonPropertyName("type")]    public string Type    { get; set; } = "TYPE_UNKNOWN";
     [JsonPropertyName("forTeam")] public string ForTeam { get; set; } = "UNKNOWN";
@@ -79,13 +79,13 @@ internal sealed class GcContinueActionRef
 
 // ── Inbound (GC → client) ─────────────────────────────────────────────────────
 
-internal sealed class GcOutput
+public sealed class GcOutput
 {
     [JsonPropertyName("matchState")] public GcMatchState? MatchState { get; set; }
     [JsonPropertyName("gcState")]    public GcStateData?  GcState    { get; set; }
 }
 
-internal sealed class GcMatchState
+public sealed class GcMatchState
 {
     [JsonPropertyName("stage")]                    public string? Stage                   { get; set; }
     [JsonPropertyName("command")]                  public GcCommandRef? Command           { get; set; }
@@ -98,13 +98,13 @@ internal sealed class GcMatchState
     [JsonPropertyName("statusMessage")]            public string? StatusMessage           { get; set; }
 }
 
-internal sealed class GcGameStateData
+public sealed class GcGameStateData
 {
     [JsonPropertyName("type")]    public string? Type    { get; set; }
     [JsonPropertyName("forTeam")] public string? ForTeam { get; set; }
 }
 
-internal sealed class GcTeamInfo
+public sealed class GcTeamInfo
 {
     [JsonPropertyName("name")]          public string? Name         { get; set; }
     [JsonPropertyName("goals")]         public int     Goals        { get; set; }
@@ -115,18 +115,18 @@ internal sealed class GcTeamInfo
     [JsonPropertyName("onPositiveHalf")] public bool   OnPositiveHalf { get; set; }
 }
 
-internal sealed class GcYellowCard
+public sealed class GcYellowCard
 {
     [JsonPropertyName("timeRemaining")] public string? TimeRemaining { get; set; }
 }
 
-internal sealed class GcStateData
+public sealed class GcStateData
 {
     [JsonPropertyName("continueActions")] public GcContinueAction[]? ContinueActions { get; set; }
     [JsonPropertyName("continueHints")]   public GcContinueHint[]?   ContinueHints   { get; set; }
 }
 
-internal sealed class GcContinueAction
+public sealed class GcContinueAction
 {
     [JsonPropertyName("type")]               public string?   Type               { get; set; }
     [JsonPropertyName("forTeam")]            public string?   ForTeam            { get; set; }
@@ -134,7 +134,7 @@ internal sealed class GcContinueAction
     [JsonPropertyName("continuationIssues")] public string[]? ContinuationIssues { get; set; }
 }
 
-internal sealed class GcContinueHint
+public sealed class GcContinueHint
 {
     [JsonPropertyName("message")] public string? Message { get; set; }
 }

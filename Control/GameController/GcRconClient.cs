@@ -3,9 +3,9 @@ using System.Net.Sockets;
 using ProtoBuf;
 using Tyr.Common.Data;
 
-namespace Tyr.Gui.GameController;
+namespace Tyr.Control.GameController;
 
-internal sealed class GcRconClient : IDisposable
+public sealed class GcRconClient : IDisposable
 {
     public enum ConnectionState { Disconnected, Connecting, Connected, Error }
 

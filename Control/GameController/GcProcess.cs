@@ -6,9 +6,9 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using Tyr.Common.Network;
 
-namespace Tyr.Gui.GameController;
+namespace Tyr.Control.GameController;
 
-internal sealed class GcProcess : IDisposable
+public sealed class GcProcess : IDisposable
 {
     public enum Status { Idle, Downloading, Running, Exited, Error }
 

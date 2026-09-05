@@ -9,7 +9,7 @@ using Tyr.Common.Runner;
 using Tyr.Common.Time;
 using GeometryData = Tyr.Common.Data.Ssl.Vision.Geometry.Data;
 
-namespace Tyr.Gui.Simulator;
+namespace Tyr.Control.Simulator;
 
 /// <summary>
 /// Sends SimulatorCommand packets to the grSim control port and logs any

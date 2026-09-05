@@ -6,14 +6,14 @@ using System.Net.Http.Headers;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
-namespace Tyr.Gui.Simulator;
+namespace Tyr.Control.Simulator;
 
 // Release asset naming (as of v2.6.0):
 //   Windows : grsim_{ver}_win32.zip
 //   macOS   : grsim_{ver}_osx-universal.tar.gz   (also a .sh installer — we skip that)
 //   Linux   : grsim_{ver}_x86_64.tar.gz           (also .sh and .tar.Z — we skip those)
 
-internal sealed class GrSimProcess : IDisposable
+public sealed class GrSimProcess : IDisposable
 {
     public enum Status { Idle, Downloading, Running, Exited, Error }
 

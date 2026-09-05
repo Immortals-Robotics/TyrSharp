@@ -3,9 +3,9 @@ using System.Net.WebSockets;
 using System.Text;
 using System.Text.Json;
 
-namespace Tyr.Gui.GameController;
+namespace Tyr.Control.GameController;
 
-internal sealed class GcApiClient : IDisposable
+public sealed class GcApiClient : IDisposable
 {
     public enum ConnectionState { Disconnected, Connecting, Connected, Error }
 
