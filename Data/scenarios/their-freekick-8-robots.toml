@@ -1,0 +1,203 @@
+# Their direct free kick in our half while only 8 of our robots are on the field.
+# Exercises TheirFreeKick's role sizing (audit NS4/NS5): before the fix, the play asked for
+# 16 roles every tick and the solver paid the unfilled-required-role penalty for the phantoms.
+#
+# Yellow (us) defends the negative-x half; the gc_side steps below make that explicit rather than
+# relying on the game controller's defaults. Positions in mm, angles in degrees.
+
+name = "their-freekick-8-robots"
+description = "Blue direct free kick at (-1500, 1000) against 8 yellow robots"
+
+[processes.grsim]
+mode = "launch"
+# grSim 2.6.1's -H mode does not advance physics (see docs/SIM-HARNESS.md), so run with the window.
+headless = false
+
+[processes.gc]
+mode = "launch"
+rcon_port = 10011
+ui_port = 8081
+
+[config]
+"Soccer.Runner.RunYellow" = true
+"Soccer.Runner.RunBlue" = false
+
+[[setup]]
+action = "gc"
+command = "HALT"
+
+[[setup]]
+action = "gc_side"
+team = "blue"
+positive_half = true
+
+[[setup]]
+action = "gc_side"
+team = "yellow"
+positive_half = false
+
+[[setup]]
+action = "teleport_ball"
+x = -1500
+y = 1000
+
+# Our 8 robots: keeper plus a rough defensive shape.
+[[setup]]
+action = "teleport_robot"
+team = "yellow"
+id = 0
+x = -4300
+y = 0
+orientation_deg = 0
+
+[[setup]]
+action = "teleport_robot"
+team = "yellow"
+id = 1
+x = -3200
+y = 600
+
+[[setup]]
+action = "teleport_robot"
+team = "yellow"
+id = 2
+x = -3200
+y = -600
+
+[[setup]]
+action = "teleport_robot"
+team = "yellow"
+id = 3
+x = -2400
+y = 1800
+
+[[setup]]
+action = "teleport_robot"
+team = "yellow"
+id = 4
+x = -2400
+y = -1500
+
+[[setup]]
+action = "teleport_robot"
+team = "yellow"
+id = 5
+x = -1200
+y = 0
+
+[[setup]]
+action = "teleport_robot"
+team = "yellow"
+id = 6
+x = -600
+y = 2000
+
+[[setup]]
+action = "teleport_robot"
+team = "yellow"
+id = 7
+x = 400
+y = -1200
+
+[[setup]]
+action = "remove_robot"
+team = "yellow"
+id = 8
+
+[[setup]]
+action = "remove_robot"
+team = "yellow"
+id = 9
+
+[[setup]]
+action = "remove_robot"
+team = "yellow"
+id = 10
+
+# Blue: keeper, kicker at the ball, and a few receivers.
+[[setup]]
+action = "teleport_robot"
+team = "blue"
+id = 0
+x = 4300
+y = 0
+orientation_deg = 180
+
+[[setup]]
+action = "teleport_robot"
+team = "blue"
+id = 1
+x = -1200
+y = 1000
+orientation_deg = 180
+
+[[setup]]
+action = "teleport_robot"
+team = "blue"
+id = 2
+x = -1800
+y = -1200
+
+[[setup]]
+action = "teleport_robot"
+team = "blue"
+id = 3
+x = 0
+y = 2200
+
+[[setup]]
+action = "teleport_robot"
+team = "blue"
+id = 4
+x = 800
+y = -800
+
+[[setup]]
+action = "teleport_robot"
+team = "blue"
+id = 5
+x = 2500
+y = 0
+
+[[setup]]
+action = "remove_robot"
+team = "blue"
+id = 6
+
+[[setup]]
+action = "remove_robot"
+team = "blue"
+id = 7
+
+[[setup]]
+action = "remove_robot"
+team = "blue"
+id = 8
+
+[[setup]]
+action = "remove_robot"
+team = "blue"
+id = 9
+
+[[setup]]
+action = "remove_robot"
+team = "blue"
+id = 10
+
+
+[[setup]]
+action = "gc"
+command = "STOP"
+
+[[setup]]
+action = "wait"
+seconds = 2.0
+
+[[setup]]
+action = "gc"
+command = "DIRECT"
+for_team = "blue"
+
+[run]
+duration_seconds = 10
+sample_hz = 10

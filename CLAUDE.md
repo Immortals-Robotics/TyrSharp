@@ -18,8 +18,12 @@ dotnet test
 # Run a single test class/method
 dotnet test --filter "FullyQualifiedName~Tyr.Tests.Common.Math.GeometryTests"
 
-# Run the CLI (headless, no GUI)
+# Run the full stack headless (no GUI), until Ctrl+C
 dotnet run --project Cli -- Data/config.toml
+
+# Run a simulation scenario against grSim + game controller; results in runs/<timestamp>-<name>/summary.json
+# See docs/SIM-HARNESS.md for the scenario format, outputs, and known pain points.
+dotnet run --project Cli -- Data/config.toml --scenario Data/scenarios/their-freekick-8-robots.toml
 
 # Run the GUI (includes all modules)
 dotnet run --project Gui -- Data/config.toml
@@ -37,7 +41,8 @@ The solution (`Tyr.sln`) consists of these projects:
 | `Soccer` | AI and robot control logic (navigation, skills, etc.) |
 | `Sender` | Sends robot commands over NRF radio or to a simulator |
 | `Gui` | ImGui/OpenGL visualization and configuration UI |
-| `Cli` | Headless entry point (Vision + Referee only) |
+| `Control` | grSim and game-controller process management and protocol clients (used by Gui and Cli) |
+| `Cli` | Headless entry point and simulation harness (`--scenario`) |
 | `SourceGen` | Roslyn source generators used at compile time |
 | `Tests` | xUnit test project |
 

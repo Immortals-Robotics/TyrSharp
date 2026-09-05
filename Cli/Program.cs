@@ -1,16 +1,33 @@
-﻿using Config = Tyr.Common.Config;
+using System.Runtime.InteropServices;
+using Tyr.Cli;
 
-using var projectConfigs = new Config.Storage(args[0], Config.StorageType.Project);
-using var userConfigs = new Config.Storage(
-    Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Tyr", "user.toml"),
-    Config.StorageType.User);
+HarnessOptions options;
+try
+{
+    options = HarnessOptions.Parse(args);
+}
+catch (Exception ex) when (ex is ArgumentException or FormatException)
+{
+    Log.ZLogError($"{ex.Message}\n{HarnessOptions.Usage}");
+    return 64;
+}
 
-using var sslVisionPublisher = new Tyr.Vision.SslVisionDataPublisher();
-using var gcPublisher = new Tyr.Referee.GcDataPublisher();
-using var robotStatusPublisher = new Tyr.Sender.RobotStatusPublisher();
-using var robotDiscoveryPublisher = new Tyr.Sender.RobotDiscoveryPublisher();
+if (options.ShowHelp)
+{
+    Log.ZLogInformation($"{HarnessOptions.Usage}");
+    return 0;
+}
 
-using var referee = new Tyr.Referee.Runner();
-using var vision = new Tyr.Vision.Runner();
+using var cancellation = new CancellationTokenSource();
+using var sigint = PosixSignalRegistration.Create(PosixSignal.SIGINT, context =>
+{
+    context.Cancel = true;
+    cancellation.Cancel();
+});
+using var sigterm = PosixSignalRegistration.Create(PosixSignal.SIGTERM, context =>
+{
+    context.Cancel = true;
+    cancellation.Cancel();
+});
 
-Thread.Sleep(Timeout.Infinite);
+return Harness.Run(options, cancellation.Token);

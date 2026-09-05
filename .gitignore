@@ -3,6 +3,7 @@
 
 # Build results
 artifacts/
+runs/
 
 packages/
 

@@ -12,6 +12,7 @@
 
     <ItemGroup>
         <ProjectReference Include="..\Common\Common.csproj"/>
+        <ProjectReference Include="..\Control\Control.csproj"/>
         <ProjectReference Include="..\Referee\Referee.csproj"/>
         <ProjectReference Include="..\Sender\Sender.csproj"/>
         <ProjectReference Include="..\Soccer\Soccer.csproj"/>

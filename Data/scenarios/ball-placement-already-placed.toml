@@ -1,0 +1,195 @@
+# Our ball placement where the ball already sits on the designated position.
+# Exercises the BallPlacement tactic's Idle -> Done fallback (audit S2): before the fix, a tactic
+# starting in this state drove both placers to the field centre. Expect the placers to back off
+# to 600 / 800 mm from the ball and otherwise stay put.
+#
+# Yellow (us) defends the negative-x half, set explicitly via gc_side. Positions in mm.
+# Note: the designated position is sent over the GC API as a SetBallPlacementPos change; if the GC
+# ignores it, its own default position applies and this scenario needs revisiting.
+
+name = "ball-placement-already-placed"
+description = "Yellow ball placement with the ball already at the designated (-1000, 500)"
+
+[processes.grsim]
+mode = "launch"
+# grSim 2.6.1's -H mode does not advance physics (see docs/SIM-HARNESS.md), so run with the window.
+headless = false
+
+[processes.gc]
+mode = "launch"
+rcon_port = 10011
+ui_port = 8081
+
+[config]
+"Soccer.Runner.RunYellow" = true
+"Soccer.Runner.RunBlue" = false
+
+[[setup]]
+action = "gc"
+command = "HALT"
+
+[[setup]]
+action = "gc_side"
+team = "blue"
+positive_half = true
+
+[[setup]]
+action = "gc_side"
+team = "yellow"
+positive_half = false
+
+[[setup]]
+action = "teleport_ball"
+x = -1000
+y = 500
+
+[[setup]]
+action = "teleport_robot"
+team = "yellow"
+id = 0
+x = -4300
+y = 0
+
+[[setup]]
+action = "teleport_robot"
+team = "yellow"
+id = 1
+x = -3000
+y = 800
+
+[[setup]]
+action = "teleport_robot"
+team = "yellow"
+id = 2
+x = -3000
+y = -800
+
+# Two robots close to the ball, so they are the natural placers and start next to it.
+[[setup]]
+action = "teleport_robot"
+team = "yellow"
+id = 3
+x = -1400
+y = 500
+orientation_deg = 0
+
+[[setup]]
+action = "teleport_robot"
+team = "yellow"
+id = 4
+x = -600
+y = 500
+orientation_deg = 180
+
+[[setup]]
+action = "teleport_robot"
+team = "yellow"
+id = 5
+x = -1800
+y = -1500
+
+[[setup]]
+action = "remove_robot"
+team = "yellow"
+id = 6
+
+[[setup]]
+action = "remove_robot"
+team = "yellow"
+id = 7
+
+[[setup]]
+action = "remove_robot"
+team = "yellow"
+id = 8
+
+[[setup]]
+action = "remove_robot"
+team = "yellow"
+id = 9
+
+[[setup]]
+action = "remove_robot"
+team = "yellow"
+id = 10
+
+[[setup]]
+action = "teleport_robot"
+team = "blue"
+id = 0
+x = 4300
+y = 0
+orientation_deg = 180
+
+[[setup]]
+action = "remove_robot"
+team = "blue"
+id = 1
+
+[[setup]]
+action = "remove_robot"
+team = "blue"
+id = 2
+
+[[setup]]
+action = "remove_robot"
+team = "blue"
+id = 3
+
+[[setup]]
+action = "remove_robot"
+team = "blue"
+id = 4
+
+[[setup]]
+action = "remove_robot"
+team = "blue"
+id = 5
+
+[[setup]]
+action = "remove_robot"
+team = "blue"
+id = 6
+
+[[setup]]
+action = "remove_robot"
+team = "blue"
+id = 7
+
+[[setup]]
+action = "remove_robot"
+team = "blue"
+id = 8
+
+[[setup]]
+action = "remove_robot"
+team = "blue"
+id = 9
+
+[[setup]]
+action = "remove_robot"
+team = "blue"
+id = 10
+
+
+[[setup]]
+action = "gc"
+command = "STOP"
+
+[[setup]]
+action = "wait"
+seconds = 1.0
+
+[[setup]]
+action = "gc_ball_placement_pos"
+x = -1000
+y = 500
+
+[[setup]]
+action = "gc"
+command = "BALL_PLACEMENT"
+for_team = "yellow"
+
+[run]
+duration_seconds = 8
+sample_hz = 10
