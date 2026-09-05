@@ -420,7 +420,7 @@ public sealed class DebugDbTests
     }
 
     [Fact]
-    public void Queries_AreSafeWhileAnotherThreadAppendsAndInternsNewStrings()
+    public async Task Queries_AreSafeWhileAnotherThreadAppendsAndInternsNewStrings()
     {
         var directory = CreateTempDirectory();
 
@@ -457,7 +457,7 @@ public sealed class DebugDbTests
                 _ = db.QuerySourceLocations<PlotCommand>("Vision").Count();
             }
 
-            writer.GetAwaiter().GetResult();
+            await writer;
 
             results.Clear();
             Assert.Equal(total, db.QueryInto(results, "Vision", Timestamp.Zero, Timestamp.MaxValue));
