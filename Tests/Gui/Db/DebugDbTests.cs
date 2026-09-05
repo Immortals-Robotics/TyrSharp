@@ -266,6 +266,73 @@ public sealed class DebugDbTests
     }
 
     [Fact]
+    public void DebugDbIngest_PublishesFramesWhileAnEntryTypeIsStillBacklogged()
+    {
+        var directory = CreateTempDirectory();
+
+        try
+        {
+            using var db = new DebugDb(directory);
+            using var ingest = new DebugDbIngest(db);
+
+            const string module = "IngestBacklogModule";
+            const int budget = 10;
+            const int entriesBeforeFrame = 100;
+            const int entriesAfterFrame = 100;
+            const long frameNs = entriesBeforeFrame / 2;
+
+            var meta = Meta.GetOrCreate(module, layer: "TestLayer", file: "DebugDbTests.cs",
+                member: nameof(DebugDbIngest_PublishesFramesWhileAnEntryTypeIsStillBacklogged), line: 1);
+
+            // Flood one entry type far past the per-type budget, with a frame in the middle.
+            for (var i = 1; i <= entriesBeforeFrame; i++)
+                DebugBus.Publish(new TestDebugEntry { Value = i, Label = "flood", Meta = meta, Timestamp = Timestamp.FromNanoseconds(i) });
+
+            DebugBus.PublishFrame(new Frame { ModuleName = module, StartTimestamp = Timestamp.FromNanoseconds(frameNs) });
+
+            for (var i = 1; i <= entriesAfterFrame; i++)
+            {
+                DebugBus.Publish(new TestDebugEntry
+                {
+                    Value = entriesBeforeFrame + i,
+                    Label = "flood",
+                    Meta = meta,
+                    Timestamp = Timestamp.FromNanoseconds(entriesBeforeFrame + i),
+                });
+            }
+
+            // The frame must become visible while the entry channel is still backlogged, not
+            // only once it has fully drained (which needs (100 + 100) / 10 = 20 pumps).
+            var drainPumps = (entriesBeforeFrame + entriesAfterFrame) / budget;
+            var pumps = 0;
+            while (!db.QueryFrames(module, Timestamp.Zero, Timestamp.MaxValue).Any())
+            {
+                Assert.True(pumps < drainPumps, $"frame was still invisible after {pumps} pumps");
+                ingest.Pump(budget);
+                pumps++;
+            }
+
+            // Every entry up to the frame is in, and the rest is demonstrably still queued.
+            var ingested = db.Query<TestDebugEntry>(module, Timestamp.Zero, Timestamp.MaxValue).Count();
+            Assert.InRange(ingested, frameNs, entriesBeforeFrame + entriesAfterFrame - 1);
+
+            var frame = Assert.Single(db.QueryFrames(module, Timestamp.Zero, Timestamp.MaxValue));
+            Assert.Equal(frameNs, frame.StartTimestamp.Nanoseconds);
+
+            // Draining the rest still lands every entry.
+            for (var i = 0; i < drainPumps + 2; i++)
+                ingest.Pump(budget);
+
+            Assert.Equal(entriesBeforeFrame + entriesAfterFrame,
+                db.Query<TestDebugEntry>(module, Timestamp.Zero, Timestamp.MaxValue).Count());
+        }
+        finally
+        {
+            Directory.Delete(directory, recursive: true);
+        }
+    }
+
+    [Fact]
     public void Bucket_GrowsPastInitialCapacityAndTruncatesOnDispose()
     {
         var directory = CreateTempDirectory();

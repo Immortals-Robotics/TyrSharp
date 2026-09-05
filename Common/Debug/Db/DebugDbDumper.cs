@@ -49,6 +49,9 @@ public sealed partial class DebugDbDumper : IDisposable
         _runner.Start();
     }
 
+    /// <summary>Bound on the shutdown drain, so a still-publishing producer cannot hold us forever.</summary>
+    private const int MaxFlushPumps = 64;
+
     private bool Tick()
     {
         if (_ingest.Pump())
@@ -62,8 +65,9 @@ public sealed partial class DebugDbDumper : IDisposable
     {
         _runner.Stop();
 
-        // Save the tail of the session: whatever was published since the last tick.
-        while (_ingest.Pump(int.MaxValue))
+        // Save the tail of the session: whatever was published since the last tick. Publishers
+        // are not stopped before us, so bound the drain instead of spinning on a live stream.
+        for (var flush = 0; flush < MaxFlushPumps && _ingest.Pump(int.MaxValue); flush++)
         {
         }
 

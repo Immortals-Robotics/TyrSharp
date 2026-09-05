@@ -1,9 +1,9 @@
 using System.Buffers;
 using System.Collections.Concurrent;
-using System.Diagnostics;
 using MemoryPack;
 using Microsoft.Extensions.Logging;
 using Tyr.Common.Debug.Logging;
+using ZLogger;
 
 namespace Tyr.Common.Debug.Db;
 
@@ -291,7 +291,7 @@ public sealed class DebugDb : IDebugDb
             shardKeyId = resolvedShardKeyId;
         }
 
-        return QueryCore(destination, t0.Nanoseconds, t1.Nanoseconds, moduleId, sourceLocationId, shardKeyId, maxCount, metaFilter);
+        return QueryCore<T, ListSink<T>>(new ListSink<T>(destination), t0.Nanoseconds, t1.Nanoseconds, moduleId, sourceLocationId, shardKeyId, maxCount, metaFilter);
     }
 
     public IEnumerable<T> Query<T>(string module, Timestamp t0, Timestamp t1, string? shardKey = null, int? maxCount = null) where T : struct, IEntry
@@ -381,15 +381,30 @@ public sealed class DebugDb : IDebugDb
         }
     }
 
-    private int QueryCore<T>(
-        List<T> destination,
+    /// <summary>
+    /// Where a query puts its matches. A struct implementation keeps the query generic over
+    /// its destination — the GUI fills a caller-owned list, the journal folds entries in as
+    /// they arrive — with no delegate call and no intermediate buffer.
+    /// </summary>
+    private interface IEntrySink<T> where T : struct, IEntry
+    {
+        void Add(in T entry);
+    }
+
+    private readonly struct ListSink<T>(List<T> destination) : IEntrySink<T> where T : struct, IEntry
+    {
+        public void Add(in T entry) => destination.Add(entry);
+    }
+
+    private int QueryCore<T, TSink>(
+        TSink sink,
         long t0,
         long t1,
         int? moduleId,
         int? sourceLocationId,
         int? shardKeyId,
         int? maxCount,
-        Func<Meta, bool>? metaFilter) where T : struct, IEntry
+        Func<Meta, bool>? metaFilter) where T : struct, IEntry where TSink : IEntrySink<T>
     {
         if (!TryGetBucketSet(typeof(T), out var bucketSet))
             return 0;
@@ -469,7 +484,7 @@ public sealed class DebugDb : IDebugDb
 
                     if (TryDeserialize(record, match.View, match.Bucket, match.Meta, out T entry))
                     {
-                        destination.Add(entry);
+                        sink.Add(entry);
                         added++;
                     }
                 }
@@ -496,7 +511,7 @@ public sealed class DebugDb : IDebugDb
 
                 if (TryDeserialize(record, match.View, match.Bucket, match.Meta, out T entry))
                 {
-                    destination.Add(entry);
+                    sink.Add(entry);
                     added++;
                 }
             }
@@ -581,7 +596,8 @@ public sealed class DebugDb : IDebugDb
             var current = bucket.View;
             if (ReferenceEquals(current, view) || !current.TryGetBlob(record, out blob))
             {
-                Trace.WriteLine($"DebugDb warning: {typeof(T).FullName} record at timestamp {record.Timestamp} points outside its blob file. Skipping.");
+                Log.ZLogWarning(
+                    $"DebugDb: {typeof(T).FullName} record at timestamp {record.Timestamp} points outside its blob file. Skipping.");
                 entry = default;
                 return false;
             }
@@ -593,9 +609,9 @@ public sealed class DebugDb : IDebugDb
         }
         catch (Exception ex)
         {
-            Trace.WriteLine(
-                $"DebugDb warning: failed to deserialize {typeof(T).FullName} at timestamp {record.Timestamp}. " +
-                $"Skipping corrupt or incompatible row. {ex}");
+            Log.ZLogWarning(ex,
+                $"DebugDb: failed to deserialize {typeof(T).FullName} at timestamp {record.Timestamp}. " +
+                $"Skipping corrupt or incompatible row.");
             entry = default;
             return false;
         }
@@ -814,22 +830,34 @@ public sealed class DebugDb : IDebugDb
 
     // ─── Journal ────────────────────────────────────────────────────────────
 
+    /// <summary>Folds log entries straight into the journal as the query produces them.</summary>
+    private readonly struct JournalSink(DebugDb db) : IEntrySink<Entry>
+    {
+        public void Add(in Entry entry)
+        {
+            if (entry.Level >= JournalMinLevel)
+                db.AddToJournal(entry);
+        }
+    }
+
     public void BuildJournal(bool group = true)
     {
         var range = GetFrameRange();
         if (range is null) return;
-
-        var entries = QueryAll<Entry>(range.Value.Start, range.Value.End)
-            .Where(e => e.Level >= JournalMinLevel)
-            .OrderBy(e => e.Timestamp);
 
         lock (_journalLock)
         {
             _groupJournalEntries = group;
             _journal.Clear();
             _journalIndex.Clear();
-            foreach (var e in entries)
-                AddToJournal(e);
+
+            // Streamed, not materialized: the k-way merge already yields entries oldest first,
+            // so the journal can be folded as they arrive instead of buffering every log entry
+            // of the session (and then sorting an already-sorted list) first.
+            QueryCore<Entry, JournalSink>(
+                new JournalSink(this),
+                range.Value.Start.Nanoseconds, range.Value.End.Nanoseconds,
+                moduleId: null, sourceLocationId: null, shardKeyId: null, maxCount: null, metaFilter: null);
         }
     }
 
