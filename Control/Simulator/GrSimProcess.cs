@@ -231,7 +231,8 @@ public sealed class GrSimProcess : IDisposable
 
     // ── process ──────────────────────────────────────────────────────────────
 
-    public void Start()
+    /// <param name="headless">Pass grSim's -H flag: no window and no GL rendering, physics and networking unchanged.</param>
+    public void Start(bool headless = false)
     {
         if (_status == Status.Running) return;
 
@@ -245,7 +246,7 @@ public sealed class GrSimProcess : IDisposable
 
         try
         {
-            LaunchDetached(exe);
+            LaunchDetached(exe, headless ? "-H" : "");
             _process?.Dispose();
             _process = null;
 
@@ -283,7 +284,7 @@ public sealed class GrSimProcess : IDisposable
 
     // ── helpers ──────────────────────────────────────────────────────────────
 
-    private static void LaunchDetached(string exe)
+    private static void LaunchDetached(string exe, string arguments)
     {
         var workingDirectory = Path.GetDirectoryName(exe)!;
 
@@ -292,7 +293,7 @@ public sealed class GrSimProcess : IDisposable
             using var launcher = Process.Start(new ProcessStartInfo
             {
                 FileName = "cmd.exe",
-                Arguments = $"/c start \"\" \"{exe}\"",
+                Arguments = $"/c start \"\" \"{exe}\" {arguments}",
                 WorkingDirectory = workingDirectory,
                 UseShellExecute = false,
                 CreateNoWindow = true,
@@ -306,8 +307,8 @@ public sealed class GrSimProcess : IDisposable
             $"'{value.Replace("'", "'\\''")}'";
 
         var shellCommand = OperatingSystem.IsMacOS()
-            ? $"nohup {QuoteForShell(exe)} >/dev/null 2>&1 &"
-            : $"setsid {QuoteForShell(exe)} >/dev/null 2>&1 < /dev/null &";
+            ? $"nohup {QuoteForShell(exe)} {arguments} >/dev/null 2>&1 &"
+            : $"setsid {QuoteForShell(exe)} {arguments} >/dev/null 2>&1 < /dev/null &";
 
         var unixLauncherInfo = new ProcessStartInfo
         {

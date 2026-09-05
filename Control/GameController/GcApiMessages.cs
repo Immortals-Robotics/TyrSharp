@@ -39,6 +39,24 @@ public sealed class GcInput
     };
 
     public static GcInput Reset() => new() { ResetMatch = true };
+
+    /// <summary>Puts a team on the positive or negative half of the field.</summary>
+    public static GcInput SetTeamOnPositiveHalf(string forTeam, bool onPositiveHalf) => new()
+    {
+        Change = new GcChange
+        {
+            UpdateTeamStateChange = new GcUpdateTeamState { ForTeam = forTeam, OnPositiveHalf = onPositiveHalf }
+        }
+    };
+
+    /// <summary>Sets the designated ball placement position. The GC protocol uses meters.</summary>
+    public static GcInput SetBallPlacementPos(float xMeters, float yMeters) => new()
+    {
+        Change = new GcChange
+        {
+            SetBallPlacementPosChange = new GcSetBallPlacementPos { Pos = new GcVector2 { X = xMeters, Y = yMeters } }
+        }
+    };
 }
 
 public sealed class GcChange
@@ -51,6 +69,39 @@ public sealed class GcChange
 
     [JsonPropertyName("changeStageChange")] [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public GcChangeStage? ChangeStageChange { get; set; }
+
+    [JsonPropertyName("setBallPlacementPosChange")] [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public GcSetBallPlacementPos? SetBallPlacementPosChange { get; set; }
+
+    [JsonPropertyName("updateTeamStateChange")] [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public GcUpdateTeamState? UpdateTeamStateChange { get; set; }
+}
+
+/// <summary>Partial team-state update; only the fields set are changed by the GC.</summary>
+public sealed class GcUpdateTeamState
+{
+    [JsonPropertyName("forTeam")] public string ForTeam { get; set; } = "UNKNOWN";
+
+    [JsonPropertyName("onPositiveHalf")] [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public bool? OnPositiveHalf { get; set; }
+
+    [JsonPropertyName("teamName")] [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public string? TeamName { get; set; }
+
+    [JsonPropertyName("goalkeeper")] [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public int? Goalkeeper { get; set; }
+}
+
+public sealed class GcSetBallPlacementPos
+{
+    [JsonPropertyName("pos")]
+    public GcVector2? Pos { get; set; }
+}
+
+public sealed class GcVector2
+{
+    [JsonPropertyName("x")] public float X { get; set; }
+    [JsonPropertyName("y")] public float Y { get; set; }
 }
 
 public sealed class GcNewCommand

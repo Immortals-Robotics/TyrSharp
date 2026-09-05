@@ -197,10 +197,12 @@ public sealed class GcProcess : IDisposable
         {
             _process?.Dispose();
             
-            // Delete state store so we start fresh
+            // The GC writes its config/ and state store relative to its working directory; keep
+            // that in our cache dir rather than wherever the host process happens to run from.
+            // Delete the state store so we start fresh.
             try
             {
-                var stateStore = Path.Combine(Environment.CurrentDirectory, "config", "state-store.json.stream");
+                var stateStore = Path.Combine(CacheDir, "config", "state-store.json.stream");
                 if (File.Exists(stateStore))
                     File.Delete(stateStore);
             }
@@ -208,6 +210,7 @@ public sealed class GcProcess : IDisposable
 
             _process = new Process();
             _process.StartInfo.FileName = exe;
+            _process.StartInfo.WorkingDirectory = CacheDir;
             _process.StartInfo.Arguments =
                 $"-remoteControlAddress :{rconPort} -address :{uiPort} -publishAddress {publishAddress}";
             _process.StartInfo.UseShellExecute = false;
