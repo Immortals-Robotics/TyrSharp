@@ -10,8 +10,8 @@ namespace Tyr.Soccer.Knowledge;
 [Configurable]
 public partial class Zone
 {
-    [ConfigEntry] public static int ZoneCountX { get; set; } = 6;
-    [ConfigEntry] public static int ZoneCountY { get; set; } = 4;
+    [ConfigEntry] public static partial int ZoneCountX { get; set; } = 6;
+    [ConfigEntry] public static partial int ZoneCountY { get; set; } = 4;
 
     public Rectangle Rect { get; init; }
 

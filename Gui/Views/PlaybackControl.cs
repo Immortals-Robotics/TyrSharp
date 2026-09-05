@@ -13,8 +13,8 @@ namespace Tyr.Gui.Views;
 public sealed partial class PlaybackControl(IDebugDb debugDb, SessionsView sessionsView)
 {
     public static readonly string WindowTitle = $"{IconFonts.FontAwesome6.Clapperboard} Playback";
-    [ConfigEntry(StorageType.User)] private static double StepMilliseconds { get; set; } = 16.0;
-    [ConfigEntry(StorageType.User)] private static double ShuttleMaxSpeedSecondsPerSecond { get; set; } = 0.5;
+    [ConfigEntry(StorageType.User)] private static partial double StepMilliseconds { get; set; } = 16.0;
+    [ConfigEntry(StorageType.User)] private static partial double ShuttleMaxSpeedSecondsPerSecond { get; set; } = 0.5;
 
     private float _offset;
     private bool _live = true;

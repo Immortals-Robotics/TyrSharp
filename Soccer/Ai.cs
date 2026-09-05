@@ -20,8 +20,8 @@ namespace Tyr.Soccer;
 [Configurable]
 public partial class Ai
 {
-    [ConfigEntry] internal static DeltaTime VisionPredictionTime { get; set; } = DeltaTime.FromMilliseconds(120);
-    [ConfigEntry] internal static DeltaTime RequiredRoleUnfilledPenalty { get; set; } = DeltaTime.FromSeconds(30);
+    [ConfigEntry] internal static partial DeltaTime VisionPredictionTime { get; set; } = DeltaTime.FromMilliseconds(120);
+    [ConfigEntry] internal static partial DeltaTime RequiredRoleUnfilledPenalty { get; set; } = DeltaTime.FromSeconds(30);
 
     private readonly Dictionary<int, LinkedList<(Timestamp, Command)>> _commandHistories = [];
 

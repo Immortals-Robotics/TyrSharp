@@ -58,7 +58,18 @@ Every project has a `Module.cs` with `[GenerateGlobals]`. This triggers `Globals
 `ConfigurableGenerator` emits a partial class with a `Configurable` property for any class marked `[Configurable]`.
 
 ### Configuration System
-Classes annotated with `[Configurable]` expose static `[ConfigEntry]` properties. Two `Storage` instances are loaded: a project config (`Data/config.toml`) and a user override (`user.toml`). Config is live-reloaded via file watchers with debouncing. Classes subscribe to `Configurable.OnUpdated` to react to changes.
+Types annotated with `[Configurable]` must be `partial` and declare static **partial** `[ConfigEntry]` properties whose initializer is the default value:
+
+```csharp
+[Configurable]
+public sealed partial class Runner
+{
+    [ConfigEntry("Frames per second, 0 = unlimited", StorageType.User)]
+    private static partial int MaxFps { get; set; } = 0;
+}
+```
+
+`ConfigurableGenerator` implements each property with change detection: assigning an equal value is a no-op, a different value bumps `Configurable.Version` and raises `Configurable.OnUpdated`. It also emits a per-type `Configurable` handle that lists the entries with typed getters/setters, so the runtime uses no reflection; each assembly's module initializer (in `Globals.g.cs`) registers those handles with `Config.Registry`. Two `Storage` instances are loaded: a project config (`Data/config.toml`) and a user override (`user.toml`). A storage loaded before a module registered its configurables replays its values onto them, and saves merge into the parsed file so tables owned by modules not loaded in this process survive. Config is live-reloaded via file watchers with debouncing. `OnUpdated` fires on the thread that made the change (the watcher thread for reloads); code that must react on a specific thread polls `Configurable.Version` instead. Values edited in place (lists, dictionaries) do not go through a setter, so call `Configurable.MarkChanged(storageType)` or `ConfigEntry.Set` for those.
 
 ### Soccer AI Loop
 `Soccer.Runner` creates two `TeamRunner` instances (Yellow and Blue), enabled by config. Each `TeamRunner` subscribes to vision, referee, and field-size channels, then on each tick:

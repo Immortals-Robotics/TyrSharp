@@ -10,10 +10,10 @@ public partial class BallMerger
 {
     [ConfigEntry(
         "Factor to weight stdDeviation during tracker merging, reasonable range: 1.0 - 2.0. High values lead to more jitter")]
-    private static float MergePower { get; set; } = 1.5f;
+    private static partial float MergePower { get; set; } = 1.5f;
 
     [ConfigEntry("Minimum search radius for cam balls around last known position [mm]")]
-    private static float MinSearchRadius { get; set; } = 300f;
+    private static partial float MinSearchRadius { get; set; } = 300f;
 
     private Timestamp? _lastBallUpdateTimestamp;
 

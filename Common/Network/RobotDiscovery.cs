@@ -11,9 +11,9 @@ namespace Tyr.Common.Network;
 [Configurable]
 public static partial class RobotDiscoveryConfigs
 {
-    [ConfigEntry] public static int Port { get; set; } = 5669;
-    [ConfigEntry] public static DeltaTime Timeout { get; set; } = DeltaTime.FromSeconds(3);
-    [ConfigEntry] public static DeltaTime PollTimeout { get; set; } = DeltaTime.FromMilliseconds(100);
+    [ConfigEntry] public static partial int Port { get; set; } = 5669;
+    [ConfigEntry] public static partial DeltaTime Timeout { get; set; } = DeltaTime.FromSeconds(3);
+    [ConfigEntry] public static partial DeltaTime PollTimeout { get; set; } = DeltaTime.FromMilliseconds(100);
 }
 
 public sealed class RobotDiscovery : IDisposable

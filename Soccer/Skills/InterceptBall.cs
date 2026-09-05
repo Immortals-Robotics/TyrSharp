@@ -16,7 +16,7 @@ public sealed partial class InterceptBall : ISkill
     private const float DribblerActivationTimeSeconds = 0.2f;
 
     [ConfigEntry("Default fallback distance from ball toward our goal when no interception solution is available [mm]")]
-    private static float DefaultFallbackDistanceMm { get; set; } = 500f;
+    private static partial float DefaultFallbackDistanceMm { get; set; } = 500f;
 
     public Vector2? FallbackPoint { get; set; }
 

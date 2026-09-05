@@ -10,18 +10,18 @@ namespace Tyr.Vision.Tracking;
 [Configurable]
 public partial class BallTracker
 {
-    [ConfigEntry] private static float InitialCovariance { get; set; } = 1000f;
-    [ConfigEntry] private static float ModelError { get; set; } = 0.1f;
-    [ConfigEntry] private static float MeasurementError { get; set; } = 100.0f;
+    [ConfigEntry] private static partial float InitialCovariance { get; set; } = 1000f;
+    [ConfigEntry] private static partial float ModelError { get; set; } = 0.1f;
+    [ConfigEntry] private static partial float MeasurementError { get; set; } = 100.0f;
 
     [ConfigEntry("Maximum assumed ball speed in [mm/s] to filter outliers")]
-    public static float MaxLinearVelocity { get; private set; } = 15000f;
+    public static partial float MaxLinearVelocity { get; private set; } = 15000f;
 
     [ConfigEntry("Reciprocal health is used as uncertainty, increased on update, decreased on prediction")]
-    private static int MaxHealth { get; set; } = 20;
+    private static partial int MaxHealth { get; set; } = 20;
 
     [ConfigEntry("How many updates are required until this tracker is grown up?")]
-    private static int GrownUpAge { get; set; } = 3;
+    private static partial int GrownUpAge { get; set; } = 3;
 
     public Filter2D Filter { get; }
 

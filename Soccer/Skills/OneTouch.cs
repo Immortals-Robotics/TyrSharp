@@ -11,9 +11,9 @@ namespace Tyr.Soccer.Skills;
 [Configurable]
 public sealed partial class OneTouch : ISkill
 {
-    [ConfigEntry] private static float Beta { get; set; } = 0.4f;
-    [ConfigEntry] private static float Gamma { get; set; } = 0.14f;
-    [ConfigEntry] private static float ShootK { get; set; } = 4000f;
+    [ConfigEntry] private static partial float Beta { get; set; } = 0.4f;
+    [ConfigEntry] private static partial float Gamma { get; set; } = 0.14f;
+    [ConfigEntry] private static partial float ShootK { get; set; } = 4000f;
 
     public Vector2? TargetPoint { get; set; }
     public float Kick { get; set; }

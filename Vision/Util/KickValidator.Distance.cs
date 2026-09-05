@@ -8,15 +8,15 @@ namespace Tyr.Vision.Util;
 public partial class KickValidator
 {
     [ConfigEntry("Minimum distance (in mm) that at least one ball sample must be from the robot to consider a kick")]
-    private static double AtLeastOneBeyondDist { get; set; } = 160.0;
+    private static partial double AtLeastOneBeyondDist { get; set; } = 160.0;
 
     [ConfigEntry(
         "Distance threshold (in mm) for kick validation: first sample must be closer, all others further away")]
-    private static double ThresholdDist1 { get; set; } = 130.0;
+    private static partial double ThresholdDist1 { get; set; } = 130.0;
 
     [ConfigEntry(
         "Alternative distance threshold (in mm) for kick validation: first sample must be closer, all others further away")]
-    private static double ThresholdDist2 { get; set; } = 170.0;
+    private static partial double ThresholdDist2 { get; set; } = 170.0;
 
     private bool DistanceValidator(List<MergedBall> balls, List<FilteredRobot> robots)
     {

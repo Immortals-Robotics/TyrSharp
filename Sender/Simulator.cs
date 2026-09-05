@@ -14,13 +14,13 @@ namespace Tyr.Sender;
 [Configurable]
 public sealed partial class Simulator : ISender
 {
-    [ConfigEntry] private static bool Enabled { get; set; } = false;
+    [ConfigEntry] private static partial bool Enabled { get; set; } = false;
 
-    [ConfigEntry] private static Address BlueAddress { get; set; } = new() { Ip = "127.0.0.1", Port = 10301 };
-    [ConfigEntry] private static Address YellowAddress { get; set; } = new() { Ip = "127.0.0.1", Port = 10302 };
+    [ConfigEntry] private static partial Address BlueAddress { get; set; } = new() { Ip = "127.0.0.1", Port = 10301 };
+    [ConfigEntry] private static partial Address YellowAddress { get; set; } = new() { Ip = "127.0.0.1", Port = 10302 };
 
-    [ConfigEntry] private static Angle ChipAngle { get; set; } = Angle.FromDeg(45f);
-    [ConfigEntry] private static DeltaTime FeedbackPollTimeout { get; set; } = DeltaTime.FromMilliseconds(10);
+    [ConfigEntry] private static partial Angle ChipAngle { get; set; } = Angle.FromDeg(45f);
+    [ConfigEntry] private static partial DeltaTime FeedbackPollTimeout { get; set; } = DeltaTime.FromMilliseconds(10);
 
     private readonly UdpSocket _udp = new();
     private readonly RunnerSync _runner;

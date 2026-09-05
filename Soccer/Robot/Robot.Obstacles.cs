@@ -8,9 +8,9 @@ namespace Tyr.Soccer.Robot;
 
 public partial class Robot
 {
-    [ConfigEntry] private static float BallAreaRadius { get; set; } = 550.0f;
-    [ConfigEntry] private static float PenaltyAreaExtensionBehindGoal { get; set; } = 300.0f;
-    [ConfigEntry] private static float BigPenaltyAddition { get; set; } = 220.0f;
+    [ConfigEntry] private static partial float BallAreaRadius { get; set; } = 550.0f;
+    [ConfigEntry] private static partial float PenaltyAreaExtensionBehindGoal { get; set; } = 300.0f;
+    [ConfigEntry] private static partial float BigPenaltyAddition { get; set; } = 220.0f;
 
     public static float CalculateRobotRadius(RobotState state)
     {

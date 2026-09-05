@@ -8,7 +8,7 @@ namespace Tyr.Vision.Util;
 public partial class KickValidator
 {
     [ConfigEntry("Maximum angle difference for a valid kick")]
-    private static double MaxAngleDiff { get; set; } = 45.0;
+    private static partial double MaxAngleDiff { get; set; } = 45.0;
 
     private readonly Dictionary<uint, List<MergedBall>> _ballsByCamera = new(2);
     private readonly Stack<List<MergedBall>> _ballGroupPool = [];

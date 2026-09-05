@@ -19,35 +19,35 @@ namespace Tyr.Gui.Simulator;
 public sealed partial class SimulatorChannel : IDisposable
 {
     [ConfigEntry("IP address of the machine running grSim")]
-    private static string Host { get; set; } = "127.0.0.1";
+    private static partial string Host { get; set; } = "127.0.0.1";
 
     [ConfigEntry("UDP port for the grSim simulator control channel")]
-    private static int ControlPort { get; set; } = 10300;
+    private static partial int ControlPort { get; set; } = 10300;
 
     [ConfigEntry("Polling interval for simulator feedback")]
-    private static DeltaTime FeedbackPollTimeout { get; set; } = DeltaTime.FromMilliseconds(10);
+    private static partial DeltaTime FeedbackPollTimeout { get; set; } = DeltaTime.FromMilliseconds(10);
 
     // ── Robot geometry (SI units: meters, kg) ─────────────────────────────────
-    [ConfigEntry("Robot body radius (m)")]              private static float? RobotRadius          { get; set; }
-    [ConfigEntry("Robot body height (m)")]              private static float? RobotHeight          { get; set; }
-    [ConfigEntry("Robot mass (kg)")]                    private static float? RobotMass            { get; set; }
-    [ConfigEntry("Max linear kick speed (m/s)")]        private static float? MaxLinearKickSpeed   { get; set; }
-    [ConfigEntry("Max chip kick speed (m/s)")]          private static float? MaxChipKickSpeed     { get; set; }
-    [ConfigEntry("Center to dribbler distance (m)")]    private static float? CenterToDribbler     { get; set; }
+    [ConfigEntry("Robot body radius (m)")]              private static partial float? RobotRadius          { get; set; }
+    [ConfigEntry("Robot body height (m)")]              private static partial float? RobotHeight          { get; set; }
+    [ConfigEntry("Robot mass (kg)")]                    private static partial float? RobotMass            { get; set; }
+    [ConfigEntry("Max linear kick speed (m/s)")]        private static partial float? MaxLinearKickSpeed   { get; set; }
+    [ConfigEntry("Max chip kick speed (m/s)")]          private static partial float? MaxChipKickSpeed     { get; set; }
+    [ConfigEntry("Center to dribbler distance (m)")]    private static partial float? CenterToDribbler     { get; set; }
 
     // ── Robot motion limits (SI: m/s², rad/s², m/s, rad/s) ───────────────────
-    [ConfigEntry("Max linear speedup acceleration (m/s²)")]  private static float? AccSpeedupAbsoluteMax { get; set; }
-    [ConfigEntry("Max angular speedup acceleration (rad/s²)")] private static float? AccSpeedupAngularMax { get; set; }
-    [ConfigEntry("Max linear brake acceleration (m/s²)")]    private static float? AccBrakeAbsoluteMax   { get; set; }
-    [ConfigEntry("Max angular brake acceleration (rad/s²)")] private static float? AccBrakeAngularMax    { get; set; }
-    [ConfigEntry("Max linear velocity (m/s)")]               private static float? VelAbsoluteMax        { get; set; }
-    [ConfigEntry("Max angular velocity (rad/s)")]            private static float? VelAngularMax         { get; set; }
+    [ConfigEntry("Max linear speedup acceleration (m/s²)")]  private static partial float? AccSpeedupAbsoluteMax { get; set; }
+    [ConfigEntry("Max angular speedup acceleration (rad/s²)")] private static partial float? AccSpeedupAngularMax { get; set; }
+    [ConfigEntry("Max linear brake acceleration (m/s²)")]    private static partial float? AccBrakeAbsoluteMax   { get; set; }
+    [ConfigEntry("Max angular brake acceleration (rad/s²)")] private static partial float? AccBrakeAngularMax    { get; set; }
+    [ConfigEntry("Max linear velocity (m/s)")]               private static partial float? VelAbsoluteMax        { get; set; }
+    [ConfigEntry("Max angular velocity (rad/s)")]            private static partial float? VelAngularMax         { get; set; }
 
     // ── Wheel angles (degrees, converted to rad when sending) ─────────────────
-    [ConfigEntry("Front-right wheel angle (deg)")]  private static float? WheelFrontRightDeg { get; set; }
-    [ConfigEntry("Back-right wheel angle (deg)")]   private static float? WheelBackRightDeg  { get; set; }
-    [ConfigEntry("Back-left wheel angle (deg)")]    private static float? WheelBackLeftDeg   { get; set; }
-    [ConfigEntry("Front-left wheel angle (deg)")]   private static float? WheelFrontLeftDeg  { get; set; }
+    [ConfigEntry("Front-right wheel angle (deg)")]  private static partial float? WheelFrontRightDeg { get; set; }
+    [ConfigEntry("Back-right wheel angle (deg)")]   private static partial float? WheelBackRightDeg  { get; set; }
+    [ConfigEntry("Back-left wheel angle (deg)")]    private static partial float? WheelBackLeftDeg   { get; set; }
+    [ConfigEntry("Front-left wheel angle (deg)")]   private static partial float? WheelFrontLeftDeg  { get; set; }
 
     /// <summary>Set by SimulatorView each frame to reflect whether grSim is currently running.</summary>
     public bool SimulatorRunning { get; set; }

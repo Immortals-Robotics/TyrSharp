@@ -7,13 +7,13 @@ namespace Tyr.Soccer.Helpers;
 public static partial class BallControl
 {
     [ConfigEntry("Kicker-to-ball distance below which the dribbler is enabled [mm]")]
-    private static float NearKickerDistanceMm { get; set; } = 200f;
+    private static partial float NearKickerDistanceMm { get; set; } = 200f;
 
     [ConfigEntry("Dribbler speed used when the ball is near the kicker")]
-    private static float NearKickerDribblerSpeed { get; set; } = 2f;
+    private static partial float NearKickerDribblerSpeed { get; set; } = 2f;
 
     [ConfigEntry("Dribbler force used when the ball is near the kicker")]
-    private static float NearKickerDribblerForce { get; set; } = 1f;
+    private static partial float NearKickerDribblerForce { get; set; } = 1f;
 
     public static bool TryEnableDribblerWhenBallNearKicker(Robot.Robot robot, Vector2 ballPosition)
     {

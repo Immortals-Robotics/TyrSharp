@@ -17,19 +17,19 @@ public partial class ChipKickEstimator : IKickEstimator
     private const float Gravity = 9810f;
 
     [ConfigEntry("Minimum number of records to start chip estimation")]
-    private static int MinRecords { get; set; } = 8;
+    private static partial int MinRecords { get; set; } = 8;
 
     [ConfigEntry("Max fitting failures until this chip estimator is dropped")]
-    private static int MaxFailures { get; set; } = 12;
+    private static partial int MaxFailures { get; set; } = 12;
 
     [ConfigEntry("Max fitting error until this chip estimator is dropped [mm]")]
-    private static double MaxFittingError { get; set; } = 100.0;
+    private static partial double MaxFittingError { get; set; } = 100.0;
 
     [ConfigEntry("Max number of records to keep over all cameras")]
-    private static int MaxNumberOfRecords { get; set; } = 50;
+    private static partial int MaxNumberOfRecords { get; set; } = 50;
 
     [ConfigEntry("Estimate chip kick position if the ball is visible on two cameras")]
-    private static bool UseKickPositionEstimator { get; set; } = false;
+    private static partial bool UseKickPositionEstimator { get; set; } = false;
 
     private readonly IReadOnlyDictionary<uint, CameraCalibration> _cameraCalibrations;
     private readonly List<RawBall> _records = [];

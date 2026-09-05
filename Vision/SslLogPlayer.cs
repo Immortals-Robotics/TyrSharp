@@ -14,16 +14,16 @@ public sealed partial class SslLogPlayer : IDisposable
     public static double PlaybackSpeed { get; set; } = 1.0;
     
     [ConfigEntry("Restart playback from start when finished", StorageType.User)] 
-    public static bool Loop { get; set; } = true;
+    public static partial bool Loop { get; set; } = true;
     
     [ConfigEntry("Publish data to internal Hub for processing", StorageType.User)] 
-    public static bool PublishToHub { get; set; } = true;
+    public static partial bool PublishToHub { get; set; } = true;
     
     [ConfigEntry("Broadcast data over UDP network", StorageType.User)] 
-    public static bool PublishToUdp { get; set; } = false;
+    public static partial bool PublishToUdp { get; set; } = false;
     
     [ConfigEntry("Target IP for UDP (127.0.0.1 for local, 0.0.0.0 for multicast)", StorageType.User)] 
-    public static string UdpAddress { get; set; } = "127.0.0.1";
+    public static partial string UdpAddress { get; set; } = "127.0.0.1";
 
     // Elapsed time since start of log
     public static double CurrentTimeSeconds { get; set; } = 0;

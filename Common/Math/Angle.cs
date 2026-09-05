@@ -11,7 +11,7 @@ public readonly record struct Angle
     static Angle()
     {
         TomletMain.RegisterMapper(
-            angle => new TomlDouble(angle.Deg),
+            angle => Config.TomlMappers.Double(angle.Deg),
             toml => FromDeg((float)((TomlDouble)toml).Value));
     }
 

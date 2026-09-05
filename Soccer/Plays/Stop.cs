@@ -6,7 +6,7 @@ namespace Tyr.Soccer.Plays;
 [Configurable]
 public partial class Stop : IPlay
 {
-    [ConfigEntry] private static bool MarkInStop { get; set; } = true;
+    [ConfigEntry] private static partial bool MarkInStop { get; set; } = true;
 
     public static bool IsApplicable() => Context.Referee.Stop();
 

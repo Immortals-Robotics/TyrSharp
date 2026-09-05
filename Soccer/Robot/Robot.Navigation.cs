@@ -11,14 +11,14 @@ namespace Tyr.Soccer.Robot;
 public partial class Robot
 {
     [ConfigEntry("Run navigation as a job on a separate task")]
-    private static bool NavigationJob { get; set; } = true;
+    private static partial bool NavigationJob { get; set; } = true;
 
     [ConfigEntry("Speed used when we're required by the referee to slow down (eg. stop)")]
-    private static float SlowdownSpeed { get; set; } = 900f;
+    private static partial float SlowdownSpeed { get; set; } = 900f;
 
     [ConfigEntry(
         "below this speed we consider the collision \"ok\" even if it happens. We only break when above this speed, and slow down only to below this speed")]
-    private static float BreakSpeedThreshold { get; set; } = 500.0f;
+    private static partial float BreakSpeedThreshold { get; set; } = 500.0f;
 
     public Trajectory2D Trajectory { get; private set; } = new();
 

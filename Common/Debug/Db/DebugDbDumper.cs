@@ -12,11 +12,11 @@ namespace Tyr.Common.Debug.Db;
 [Configurable]
 public sealed partial class DebugDbDumper : IDisposable
 {
-    [ConfigEntry] private static DeltaTime SleepTime { get; set; } = DeltaTime.FromMilliseconds(1);
-    [ConfigEntry(StorageType.User)] private static string RootDirectory { get; set; } = "";
-    [ConfigEntry(StorageType.User)] private static string CaptureLabel { get; set; } = "";
-    [ConfigEntry] private static int ViewerPort { get; set; } = 9000;
-    [ConfigEntry] private static ThreadPriority RunnerPriority { get; set; } = ThreadPriority.BelowNormal;
+    [ConfigEntry] private static partial DeltaTime SleepTime { get; set; } = DeltaTime.FromMilliseconds(1);
+    [ConfigEntry(StorageType.User)] private static partial string RootDirectory { get; set; } = "";
+    [ConfigEntry(StorageType.User)] private static partial string CaptureLabel { get; set; } = "";
+    [ConfigEntry] private static partial int ViewerPort { get; set; } = 9000;
+    [ConfigEntry] private static partial ThreadPriority RunnerPriority { get; set; } = ThreadPriority.BelowNormal;
 
     private readonly Subscriber<Debug.DebugDumpEntry> _dumpSubscriber = Debug.DebugBus.SubscribeDumpEntries(Mode.All);
 

@@ -10,7 +10,7 @@ namespace Tyr.Soccer.Navigation.Planner;
 [Configurable]
 public partial class Planner
 {
-    [ConfigEntry] private static float LookaheadTime { get; set; } = 3.0f;
+    [ConfigEntry] private static partial float LookaheadTime { get; set; } = 3.0f;
 
     public Map Map { get; set; } = null!;
     public VelocityProfile Profile { get; set; }

@@ -25,19 +25,19 @@ public sealed partial class InterceptV2 : ISkill
         float BallArrivalTime);
 
     [ConfigEntry("Dribbler speed used while receiving a moving ball")]
-    private static float ReceiveDribblerSpeed { get; set; } = 2f;
+    private static partial float ReceiveDribblerSpeed { get; set; } = 2f;
 
     [ConfigEntry("Ball arrival time below which the bot forces blocking on the ball path [s]")]
-    private static float ImminentImpactTimeSeconds { get; set; } = 0.3f;
+    private static partial float ImminentImpactTimeSeconds { get; set; } = 0.3f;
 
     [ConfigEntry("Distance from robot kicker to ball path below which the bot forces blocking [mm]")]
-    private static float ImminentImpactDistanceMm { get; set; } = 150f;
+    private static partial float ImminentImpactDistanceMm { get; set; } = 150f;
 
     [ConfigEntry("Time until ball impact below which the dribbler is activated [s]")]
-    private static float DribblerActivationTimeSeconds { get; set; } = 0.2f;
+    private static partial float DribblerActivationTimeSeconds { get; set; } = 0.2f;
 
     [ConfigEntry("Default fallback distance from ball toward our goal when no interception solution is available [mm]")]
-    private static float DefaultFallbackDistanceMm { get; set; } = 500f;
+    private static partial float DefaultFallbackDistanceMm { get; set; } = 500f;
 
     public Vector2? FallbackPoint { get; set; }
 
