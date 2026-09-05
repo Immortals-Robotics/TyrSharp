@@ -12,7 +12,7 @@ public partial record struct Point : IEntry
     private static float DefaultSize { get; set; } = 25f;
 
     [MemoryPackIgnore] public Time.Timestamp Timestamp { get; set; }
-    [MemoryPackIgnore] public Meta Meta { get; set; }
+    [MemoryPackIgnore] public Meta Meta { get; set; } = Meta.Empty;
     [MemoryPackIgnore] public string? ShardKey => null;
 
     public Vector2 Position { get; init; }

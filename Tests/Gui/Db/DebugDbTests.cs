@@ -227,64 +227,179 @@ public sealed class DebugDbTests
     }
 
     [Fact]
-    public void DebugBus_PublishesFramesAndEntriesThroughOrderedDumpTransport()
+    public void DebugDbIngest_DrainsPublishedEntriesAndFramesIntoDb()
     {
-        using var subscriber = DebugBus.SubscribeDumpEntries(Tyr.Common.Dataflow.Mode.All);
+        var directory = CreateTempDirectory();
 
-        var firstEntry = new TestDebugEntry
+        try
         {
-            Value = 1,
-            Label = "first",
-            Meta = Meta.GetOrCreate("Vision", layer: "TestLayer", file: "DebugDbTests.cs", member: nameof(DebugBus_PublishesFramesAndEntriesThroughOrderedDumpTransport), line: 1),
-            Timestamp = Timestamp.FromNanoseconds(10),
-            ShardKey = "robot-1",
-        };
-        var frame = new Frame
-        {
-            ModuleName = "Vision",
-            StartTimestamp = Timestamp.FromNanoseconds(20),
-        };
-        var secondEntry = new TestDebugEntry
-        {
-            Value = 2,
-            Label = "second",
-            Meta = Meta.GetOrCreate("Vision", layer: "TestLayer", file: "DebugDbTests.cs", member: nameof(DebugBus_PublishesFramesAndEntriesThroughOrderedDumpTransport), line: 1),
-            Timestamp = Timestamp.FromNanoseconds(30),
-            ShardKey = "robot-2",
-        };
+            using var db = new DebugDb(directory);
+            using var ingest = new DebugDbIngest(db);
 
-        DebugBus.Publish(firstEntry);
-        DebugBus.PublishFrame(frame);
-        DebugBus.Publish(secondEntry);
+            // The bus is process-global, so use a module name no other test publishes to.
+            const string module = "IngestTestModule";
+            var meta = Meta.GetOrCreate(module, layer: "TestLayer", file: "DebugDbTests.cs", member: nameof(DebugDbIngest_DrainsPublishedEntriesAndFramesIntoDb), line: 1);
 
-        // The dump channel is a global static bus, so entries published by
-        // tests running in parallel can interleave with ours. Skip foreign
-        // traffic and assert only the relative order of our own publishes.
-        var observed = new List<string>();
-        while (subscriber.Reader.TryRead(out var published))
-        {
-            if (published.TryGetEntry<TestDebugEntry>(out var typed))
-            {
-                if (typed.Label == firstEntry.Label)
-                {
-                    Assert.Equal(firstEntry.Value, typed.Value);
-                    observed.Add("first");
-                }
-                else if (typed.Label == secondEntry.Label)
-                {
-                    Assert.Equal(secondEntry.Value, typed.Value);
-                    observed.Add("second");
-                }
-            }
-            else if (published.TryGetFrame(out var typedFrame) &&
-                     typedFrame.ModuleName == frame.ModuleName &&
-                     typedFrame.StartTimestamp == frame.StartTimestamp)
-            {
-                observed.Add("frame");
-            }
+            DebugBus.Publish(new TestDebugEntry { Value = 1, Label = "first", Meta = meta, Timestamp = Timestamp.FromNanoseconds(10), ShardKey = "robot-1" });
+            DebugBus.PublishFrame(new Frame { ModuleName = module, StartTimestamp = Timestamp.FromNanoseconds(20) });
+            DebugBus.Publish(new TestDebugEntry { Value = 2, Label = "second", Meta = meta, Timestamp = Timestamp.FromNanoseconds(30), ShardKey = "robot-2" });
+            DebugBus.Publish(CreateEntry(35, module, "ingested-log"));
+
+            Assert.True(ingest.Pump());
+
+            var entries = db.Query<TestDebugEntry>(module, Timestamp.Zero, Timestamp.MaxValue).ToArray();
+            Assert.Equal(new[] { "first", "second" }, entries.Select(e => e.Label));
+            Assert.Equal(new[] { 1, 2 }, entries.Select(e => e.Value));
+            Assert.All(entries, e => Assert.Same(meta, e.Meta));
+            Assert.Equal(new[] { "robot-1", "robot-2" }, db.QueryShardKeys<TestDebugEntry>(module));
+
+            var log = Assert.Single(db.Query<Entry>(module, Timestamp.Zero, Timestamp.MaxValue));
+            Assert.Equal("ingested-log", log.Message);
+
+            var frame = Assert.Single(db.QueryFrames(module, Timestamp.Zero, Timestamp.MaxValue));
+            Assert.Equal(20, frame.StartTimestamp.Nanoseconds);
         }
+        finally
+        {
+            Directory.Delete(directory, recursive: true);
+        }
+    }
 
-        Assert.Equal(new[] { "first", "frame", "second" }, observed);
+    [Fact]
+    public void Bucket_GrowsPastInitialCapacityAndTruncatesOnDispose()
+    {
+        var directory = CreateTempDirectory();
+        const int count = 20_000; // far more than the initial 64 KB records mapping holds
+
+        try
+        {
+            var meta = Meta.GetOrCreate("Vision", layer: "TestLayer", file: "DebugDbTests.cs", member: nameof(Bucket_GrowsPastInitialCapacityAndTruncatesOnDispose), line: 1);
+            using (var db = new DebugDb(directory).RegisterType<Entry>())
+            {
+                for (var i = 0; i < count; i++)
+                {
+                    db.Append(new Entry
+                    {
+                        Message = $"message-{i}",
+                        Level = LogLevel.Debug,
+                        Meta = meta,
+                        Timestamp = Timestamp.FromNanoseconds(i),
+                    });
+                }
+
+                var live = db.QueryAll<Entry>(Timestamp.Zero, Timestamp.MaxValue).ToArray();
+                Assert.Equal(count, live.Length);
+            }
+
+            // Files shrink to their used size once unmapped.
+            var recordsFile = Assert.Single(Directory.GetFiles(directory, "*.records", SearchOption.AllDirectories));
+            Assert.Equal(8 + count * 16L, new FileInfo(recordsFile).Length);
+
+            using var reopened = new DebugDb(directory).RegisterType<Entry>();
+            var entries = reopened.QueryAll<Entry>(Timestamp.Zero, Timestamp.MaxValue).ToArray();
+            Assert.Equal(count, entries.Length);
+            for (var i = 0; i < count; i++)
+            {
+                Assert.Equal(i, entries[i].Timestamp.Nanoseconds);
+                Assert.Equal($"message-{i}", entries[i].Message);
+            }
+
+            // Appending after reopening a truncated file grows it again.
+            reopened.Append(new Entry { Message = "after-reopen", Level = LogLevel.Debug, Meta = meta, Timestamp = Timestamp.FromNanoseconds(count) });
+            Assert.Equal(count + 1, reopened.QueryAll<Entry>(Timestamp.Zero, Timestamp.MaxValue).Count());
+        }
+        finally
+        {
+            Directory.Delete(directory, recursive: true);
+        }
+    }
+
+    [Fact]
+    public void QueryInto_MetaFilterSkipsWholeShardsAndMergesTheRest()
+    {
+        var directory = CreateTempDirectory();
+
+        try
+        {
+            using var db = new DebugDb(directory).RegisterType<Entry>();
+            var keep = Meta.GetOrCreate("Vision", layer: "Keep", file: "DebugDbTests.cs", member: nameof(QueryInto_MetaFilterSkipsWholeShardsAndMergesTheRest), line: 1);
+            var drop = Meta.GetOrCreate("Vision", layer: "Drop", file: "DebugDbTests.cs", member: nameof(QueryInto_MetaFilterSkipsWholeShardsAndMergesTheRest), line: 2);
+            var other = Meta.GetOrCreate("Vision", layer: "Other", file: "DebugDbTests.cs", member: nameof(QueryInto_MetaFilterSkipsWholeShardsAndMergesTheRest), line: 3);
+
+            // Three shards with interleaved timestamps.
+            for (var i = 0; i < 30; i++)
+            {
+                var meta = (i % 3) switch { 0 => keep, 1 => drop, _ => other };
+                db.Append(new Entry { Message = $"m{i}", Level = LogLevel.Debug, Meta = meta, Timestamp = Timestamp.FromNanoseconds(i) });
+            }
+
+            var results = new List<Entry>();
+            var added = db.QueryInto(results, "Vision", Timestamp.Zero, Timestamp.MaxValue, metaFilter: m => !ReferenceEquals(m, drop));
+
+            Assert.Equal(20, added);
+            Assert.Equal(20, results.Count);
+            Assert.DoesNotContain(results, e => ReferenceEquals(e.Meta, drop));
+            for (var i = 1; i < results.Count; i++)
+                Assert.True(results[i].Timestamp > results[i - 1].Timestamp, "merged output must stay timestamp ordered");
+
+            // The destination list is appended to, never cleared.
+            db.QueryInto(results, "Vision", Timestamp.Zero, Timestamp.FromNanoseconds(2));
+            Assert.Equal(23, results.Count);
+        }
+        finally
+        {
+            Directory.Delete(directory, recursive: true);
+        }
+    }
+
+    [Fact]
+    public void Queries_AreSafeWhileAnotherThreadAppendsAndInternsNewStrings()
+    {
+        var directory = CreateTempDirectory();
+
+        try
+        {
+            using var db = new DebugDb(directory).RegisterType<PlotCommand>();
+            var meta = Meta.GetOrCreate("Vision", layer: "TestLayer", file: "DebugDbTests.cs", member: nameof(Queries_AreSafeWhileAnotherThreadAppendsAndInternsNewStrings), line: 1);
+            const int total = 20_000;
+
+            // Writer: appends past several bucket growths and keeps interning new shard keys,
+            // which is exactly what the reader-side string lookups race against.
+            var writer = Task.Run(() =>
+            {
+                for (var i = 0; i < total; i++)
+                {
+                    db.Append(new PlotCommand
+                    {
+                        Value = PlotValue.From(i),
+                        Meta = meta,
+                        ShardKey = $"signal-{i % 64}",
+                        Timestamp = Timestamp.FromNanoseconds(i),
+                    });
+                }
+            });
+
+            var results = new List<PlotCommand>();
+            while (!writer.IsCompleted)
+            {
+                results.Clear();
+                db.QueryInto(results, "Vision", Timestamp.Zero, Timestamp.MaxValue, maxCount: 100);
+                db.QueryInto(results, "Vision", Timestamp.Zero, Timestamp.MaxValue, "signal-7");
+                _ = db.TryGetShardMeta<PlotCommand>("Vision", "signal-63");
+                _ = db.QueryShardKeys<PlotCommand>("Vision").Count();
+                _ = db.QuerySourceLocations<PlotCommand>("Vision").Count();
+            }
+
+            writer.GetAwaiter().GetResult();
+
+            results.Clear();
+            Assert.Equal(total, db.QueryInto(results, "Vision", Timestamp.Zero, Timestamp.MaxValue));
+            Assert.Equal(64, db.QueryShardKeys<PlotCommand>("Vision").Count());
+        }
+        finally
+        {
+            Directory.Delete(directory, recursive: true);
+        }
     }
 
     [Fact]

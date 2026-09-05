@@ -26,7 +26,8 @@ public sealed class DebugDbViewer : IDisposable
 {
     private readonly DebugDb _db;
     private readonly int _port;
-    private readonly Dictionary<string, RegisteredType> _types = new();
+    private readonly ConcurrentDictionary<string, RegisteredType> _types = new();
+    private bool _followsRegistry;
     private static readonly ConcurrentDictionary<Type, Func<DebugDb, string?, Timestamp, Timestamp, IEnumerable<Dictionary<string, object?>>>> QueryFactories = new();
     private static readonly ConcurrentDictionary<Type, Func<string[]>> FieldFactories = new();
 
@@ -66,13 +67,19 @@ public sealed class DebugDbViewer : IDisposable
         return this;
     }
 
+    /// <summary>Registers every known entry type, and every type registered later on.</summary>
     public DebugDbViewer RegisterAllRegisteredTypes()
     {
-        foreach (var type in DebugTypeRegistry.GetRegisteredTypes())
-            Register(type);
+        if (!_followsRegistry)
+        {
+            _followsRegistry = true;
+            DebugTypeRegistry.Registered += OnTypeRegistered;
+        }
 
         return this;
     }
+
+    private void OnTypeRegistered(Type type) => Register(type);
 
     public void Start()
     {
@@ -967,6 +974,9 @@ init();
 
     public void Dispose()
     {
+        if (_followsRegistry)
+            DebugTypeRegistry.Registered -= OnTypeRegistered;
+
         _cts?.Cancel();
         _listener?.Stop();
         _listener?.Close();
